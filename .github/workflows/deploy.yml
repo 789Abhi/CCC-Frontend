@@ -1,0 +1,47 @@
+name: Deploy Frontend Build
+
+on:
+  push:
+    branches:
+      - master  # This is the branch in your React frontend repo
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Frontend Code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build React App
+        run: npm run build
+
+      - name: Clone Plugin Repository
+        uses: actions/checkout@v2
+        with:
+          repository: 789Abhi/CCC-Plugin  # Your plugin repo
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # Store this token as a secret
+          path: plugin-repo
+          ref: Master  
+
+      - name: Copy Build Files to Plugin Repo
+        run: |
+          rm -rf plugin-repo/build/*
+          cp -r build/* plugin-repo/build/
+
+      - name: Commit and Push Changes
+        run: |
+          cd plugin-repo
+          git config user.name "Abhishek"
+          git config user.email "abhishektk18@gmail.com"
+          git add .
+          git commit -m "Update frontend build"
+          git push origin Master  # ✅ Push to the correct plugin branch
