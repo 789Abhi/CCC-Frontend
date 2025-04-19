@@ -11,37 +11,47 @@ jobs:
 
     steps:
       - name: Checkout Frontend Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3  # Updated to v3
 
       - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3  # Updated to v3
         with:
           node-version: '18'
 
-      - name: Install Dependencies
+      - name: Install Dependencies 
         run: npm install
 
       - name: Build React App
         run: npm run build
 
       - name: Clone Plugin Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
-          repository: 789Abhi/CCC-Plugin  # Your plugin repo
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # Store this token as a secret
+          repository: 789Abhi/CCC-Plugin  
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  
           path: plugin-repo
           ref: Master  
 
       - name: Copy Build Files to Plugin Repo
         run: |
-          rm -rf plugin-repo/build/*
-          cp -r build/* plugin-repo/build/
+          mkdir -p plugin-repo/build  # Ensure build directory exists
+          rm -rf plugin-repo/build/*  # Clear existing contents
+          cp -r build/* plugin-repo/build/  # Copy new build files
 
       - name: Commit and Push Changes
         run: |
           cd plugin-repo
           git config user.name "Abhishek"
           git config user.email "abhishektk18@gmail.com"
+          
+          # Add all changes
           git add .
-          git commit -m "Update frontend build"
-          git push origin Master  # ✅ Push to the correct plugin branch
+          
+          # Check if there are any changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          else
+            git commit -m "Update frontend build"
+            git push origin Master
+          fi
