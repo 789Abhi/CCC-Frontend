@@ -33,12 +33,21 @@ jobs:
           ref: Master
 
       - name: List files in build directory
-        run: ls plugin-repo/build
+        run: |
+          echo "Listing build directory contents"
+          ls plugin-repo/build || echo "Build directory not found or empty"
 
       - name: Check git diff for frontend changes
         run: |
-          git diff --name-only
-          git diff --name-only | grep "^plugin-repo/build/"
+          CHANGES=$(git diff --name-only)
+          echo "Changes: $CHANGES"
+          if [ -n "$CHANGES" ]; then
+            # Filter by the plugin-repo/build directory
+            BUILD_CHANGES=$(echo "$CHANGES" | grep "^plugin-repo/build/")
+            echo "Build changes: $BUILD_CHANGES"
+          else
+            echo "No changes detected"
+          fi
 
       - name: Determine Version Update
         id: version_update
