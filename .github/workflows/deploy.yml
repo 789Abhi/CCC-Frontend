@@ -32,12 +32,6 @@ jobs:
           path: plugin-repo
           ref: Master
 
-      - name: Ensure VERSION.txt Exists
-        run: |
-          if [ ! -f plugin-repo/VERSION.txt ]; then
-            echo "1.1.0" > plugin-repo/VERSION.txt  # Initialize with a default version if it doesn't exist
-          fi
-
       - name: Check for Frontend Changes
         run: |
           git diff --exit-code plugin-repo/build || echo "Frontend changes detected"
