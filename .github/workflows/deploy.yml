@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install Dependencies 
+      - name: Install Dependencies
         run: npm install
 
       - name: Build React App
@@ -27,31 +27,71 @@ jobs:
       - name: Clone Plugin Repository
         uses: actions/checkout@v3
         with:
-          repository: 789Abhi/CCC-Plugin  
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  
+          repository: 789Abhi/CCC-Plugin
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           path: plugin-repo
-          ref: Master  
+          ref: Master
 
-      - name: Copy Build Files to Plugin Repo
+      - name: Check for Frontend Changes
         run: |
-          mkdir -p plugin-repo/build  # Ensure build directory exists
-          rm -rf plugin-repo/build/*  # Clear existing contents
-          cp -r build/* plugin-repo/build/  # Copy new build files
+          git diff --exit-code plugin-repo/build || echo "Frontend changes detected"
 
-      - name: Commit and Push Changes
+      - name: Determine Version Update
+        id: version_update
+        run: |
+          # Get the current version
+          VERSION=$(cat plugin-repo/VERSION.txt)
+          
+          # Check if frontend changes or backend changes are detected
+          FRONTEND_CHANGED=$(git diff --name-only plugin-repo/build | wc -l)
+          BACKEND_CHANGED=$(git diff --name-only plugin-repo | grep -v 'build' | wc -l)
+          
+          echo "Frontend changes: $FRONTEND_CHANGED"
+          echo "Backend changes: $BACKEND_CHANGED"
+          
+          if [ "$FRONTEND_CHANGED" -gt 0 ]; then
+            # Frontend changes: Increment patch version (1.1.2 -> 1.1.3)
+            VERSION_PARTS=(${VERSION//./ })
+            PATCH=${VERSION_PARTS[2]}
+            PATCH=$((PATCH + 1))
+            VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH"
+            echo "Updated version due to frontend change: $VERSION"
+          elif [ "$BACKEND_CHANGED" -gt 0 ]; then
+            # Backend changes: Increment minor version (1.1.2 -> 1.2.0)
+            VERSION_PARTS=(${VERSION//./ })
+            MINOR=${VERSION_PARTS[1]}
+            MINOR=$((MINOR + 1))
+            VERSION="${VERSION_PARTS[0]}.$MINOR.0"
+            echo "Updated version due to backend change: $VERSION"
+          fi
+          
+          # Set the new version as output
+          echo "::set-output name=NEW_VERSION::$VERSION"
+          
+          # Update version in the plugin repo
+          echo $VERSION > plugin-repo/VERSION.txt
+
+      - name: Commit and Push Version Update
         run: |
           cd plugin-repo
           git config user.name "Abhishek"
           git config user.email "abhishektk18@gmail.com"
           
-          # Add all changes
-          git add .
+          # Add all changes (version and build files)
+          git add VERSION.txt build/*
           
           # Check if there are any changes to commit
           if git diff --staged --quiet; then
             echo "No changes to commit"
             exit 0
           else
-            git commit -m "Update frontend build"
+            git commit -m "Update version to ${{ steps.version_update.outputs.NEW_VERSION }}"
             git push origin Master
           fi
+          
+      - name: Deploy to Plugin Repository
+        run: |
+          cd plugin-repo
+          # Assuming deploy command here to your plugin repo
+          # (e.g., zip files, upload, etc.)
+          echo "Deploying plugin with version ${{ steps.version_update.outputs.NEW_VERSION }}"
