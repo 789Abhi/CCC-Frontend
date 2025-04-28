@@ -32,9 +32,13 @@ jobs:
           path: plugin-repo
           ref: Master
 
-      - name: Check for Frontend Changes
+      - name: List files in build directory
+        run: ls plugin-repo/build
+
+      - name: Check git diff for frontend changes
         run: |
-          git diff --exit-code plugin-repo/build || echo "Frontend changes detected"
+          git diff --name-only
+          git diff --name-only | grep "^plugin-repo/build/"
 
       - name: Determine Version Update
         id: version_update
@@ -43,7 +47,7 @@ jobs:
           VERSION=$(cat plugin-repo/VERSION.txt)
           
           # Check if frontend changes or backend changes are detected
-          FRONTEND_CHANGED=$(git diff --name-only plugin-repo/build | wc -l)
+          FRONTEND_CHANGED=$(git diff --name-only | grep "^plugin-repo/build/" | wc -l)
           BACKEND_CHANGED=$(git diff --name-only plugin-repo | grep -v 'build' | wc -l)
           
           echo "Frontend changes: $FRONTEND_CHANGED"
@@ -66,7 +70,7 @@ jobs:
           fi
           
           # Set the new version as output
-          echo "::set-output name=NEW_VERSION::$VERSION"
+          echo "NEW_VERSION=$VERSION" >> $GITHUB_ENV
           
           # Update version in the plugin repo
           echo $VERSION > plugin-repo/VERSION.txt
@@ -85,7 +89,7 @@ jobs:
             echo "No changes to commit"
             exit 0
           else
-            git commit -m "Update version to ${{ steps.version_update.outputs.NEW_VERSION }}"
+            git commit -m "Update version to ${{ env.NEW_VERSION }}"
             git push origin Master
           fi
           
@@ -94,4 +98,4 @@ jobs:
           cd plugin-repo
           # Assuming deploy command here to your plugin repo
           # (e.g., zip files, upload, etc.)
-          echo "Deploying plugin with version ${{ steps.version_update.outputs.NEW_VERSION }}"
+          echo "Deploying plugin with version ${{ env.NEW_VERSION }}"
