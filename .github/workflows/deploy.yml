@@ -1,67 +1,57 @@
-name: Build and Sync Frontend
+name: Deploy Frontend Build
 
 on:
   push:
     branches:
-      - master
-  workflow_dispatch:
+      - master  # This is the branch in your React frontend repo
 
 jobs:
-  build-and-sync:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout frontend code
-        uses: actions/checkout@v3
+      - name: Checkout Frontend Code
+        uses: actions/checkout@v3  # Updated to v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3  # Updated to v3
         with:
           node-version: '18'
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install Dependencies 
+        run: npm install
 
-      - name: Build React app
+      - name: Build React App
         run: npm run build
 
-      - name: Get current date
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y%m%d%H%M%S')"
-
-      - name: Create version file
-        run: |
-          echo "{\"version\": \"1.0.0.${{ steps.date.outputs.date }}\", \"updated_at\": \"$(date +'%Y-%m-%d %H:%M:%S')\"}" > build/version.json
-
-      - name: Checkout plugin repository
+      - name: Clone Plugin Repository
         uses: actions/checkout@v3
         with:
-          repository: 789Abhi/CCC-Plugin
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          repository: 789Abhi/CCC-Plugin  
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  
           path: plugin-repo
-          ref: Master
+          ref: Master  
 
-      - name: Clean assets directory
+      - name: Copy Build Files to Plugin Repo
         run: |
-          mkdir -p plugin-repo/assets
-          rm -rf plugin-repo/assets/*
+          mkdir -p plugin-repo/build  # Ensure build directory exists
+          rm -rf plugin-repo/build/*  # Clear existing contents
+          cp -r build/* plugin-repo/build/  # Copy new build files
 
-      - name: Copy build to plugin assets
+      - name: Commit and Push Changes
         run: |
-          cp -r build/* plugin-repo/assets/
-          
-      - name: Update plugin version
-        run: |
-          VERSION=$(cat build/version.json | jq -r .version)
-          sed -i "s/Version: [0-9.]\+/Version: $VERSION/" plugin-repo/ccc-plugin.php
-          sed -i "s/define( 'CCC_PLUGIN_VERSION', '[0-9.]\+' );/define( 'CCC_PLUGIN_VERSION', '$VERSION' );/" plugin-repo/ccc-plugin.php
-
-      - name: Commit and push changes to plugin repo
-        working-directory: ./plugin-repo
-        run: |
+          cd plugin-repo
           git config user.name "Abhishek"
           git config user.email "abhishektk18@gmail.com"
+          
+          # Add all changes
           git add .
-          git commit -m "Update frontend assets to version from ${{ steps.date.outputs.date }}"
-          git push origin Master
+          
+          # Check if there are any changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          else
+            git commit -m "Update frontend build"
+            git push origin Master
+          fi
