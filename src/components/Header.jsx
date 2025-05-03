@@ -8,7 +8,7 @@ function Header() {
           <img className="h-full object-contain" src={logo} alt="CCC Logo" />
         </div>
         <div className="bg-customGray rounded-custom flex-1 py-3 px-3 flex justify-center items-center">
-          <h1 className="text-bgPrimary font-bold lg:text-[30px] text-lg text-center">New Version Update 3-5-25</h1>
+          <h1 className="text-bgPrimary font-bold lg:text-[30px] text-lg text-center">New Version 1.5 Update 3-5-25</h1>
         </div>
       </div>
     </section>
