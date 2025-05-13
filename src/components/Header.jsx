@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import logo from "/CCC-Logo.svg";
 import settingsLogo from "/Settings.svg";
 import Components from "./Components";
+import ComponentList from "./ComponentList";
 
 const CustomCraftComponent = () => {
   const [activeTab, setActiveTab] = useState("Components");
@@ -43,7 +44,7 @@ const CustomCraftComponent = () => {
         </div>
       </div>
 
-      <Components />
+      <ComponentList />
     </div>
   );
 };
