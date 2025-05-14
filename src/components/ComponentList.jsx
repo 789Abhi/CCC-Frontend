@@ -1,13 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const ComponentList = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [componentName, setComponentName] = useState('');
   const [handle, setHandle] = useState('');
+  const [components, setComponents] = useState([]);
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState(''); // 'success' | 'error'
 
   const generateHandle = (name) => {
     return name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w_]+/g, '');
+  };
+
+  const fetchComponents = async () => {
+    try {
+      const response = await axios.post(cccData.ajaxUrl, new URLSearchParams({
+        action: 'ccc_get_components',
+        nonce: cccData.nonce,
+      }));
+      if (response.data.success) {
+        setComponents(response.data.components);
+      }
+    } catch (err) {
+      console.error('Failed to fetch components', err);
+    }
   };
 
   const handleSubmit = async () => {
@@ -22,23 +39,69 @@ const ComponentList = () => {
 
     try {
       const response = await axios.post(cccData.ajaxUrl, new URLSearchParams(payload));
-      alert(response.data.message);
-      setShowPopup(false);
-      setComponentName('');
+      if (response.data.success) {
+        setMessage(response.data.message || 'Component created.');
+        setMessageType('success');
+        fetchComponents(); // refresh list
+        setShowPopup(false);
+        setComponentName('');
+        setHandle('');
+      } else {
+        setMessage(response.data.message || 'Failed to create component.');
+        setMessageType('error');
+      }
     } catch (error) {
-      alert('Error creating component.');
+      setMessage('Error creating component.');
+      setMessageType('error');
     }
+
+    // Clear message after 3 seconds
+    setTimeout(() => {
+      setMessage('');
+      setMessageType('');
+    }, 3000);
   };
+
+  useEffect(() => {
+    fetchComponents();
+  }, []);
 
   return (
     <div className="p-6">
+      {message && (
+        <div className={`mb-4 px-4 py-2 rounded ${messageType === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          {message}
+        </div>
+      )}
+
       <button
-        onClick={() => setShowPopup(true)}
+        onClick={() => {
+          setShowPopup(true);
+          setComponentName('');
+          setHandle('');
+        }}
         className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
       >
         Add New Component
       </button>
 
+      {/* Component List */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-2 text-gray-800">Existing Components</h3>
+        {components.length === 0 ? (
+          <p className="text-gray-500">No components found.</p>
+        ) : (
+          <ul className="space-y-1">
+            {components.map((comp, index) => (
+              <li key={index} className="text-gray-800">
+                <strong>{comp.name}</strong> — <code>{comp.handle_name}</code>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Popup */}
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
@@ -48,12 +111,15 @@ const ComponentList = () => {
               value={componentName}
               placeholder="Component Name"
               onChange={(e) => {
-                setComponentName(e.target.value);
-                setHandle(generateHandle(e.target.value));
+                const value = e.target.value;
+                setComponentName(value);
+                setHandle(generateHandle(value));
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
             />
-            <p className="text-sm text-gray-600 mb-4">Handle: <span className="font-mono text-black">{handle}</span></p>
+            <p className="text-sm text-gray-600 mb-4">
+              Handle: <span className="font-mono text-black">{handle}</span>
+            </p>
             <div className="flex justify-end space-x-2">
               <button
                 onClick={handleSubmit}
@@ -62,7 +128,11 @@ const ComponentList = () => {
                 Save
               </button>
               <button
-                onClick={() => setShowPopup(false)}
+                onClick={() => {
+                  setShowPopup(false);
+                  setComponentName('');
+                  setHandle('');
+                }}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
               >
                 Cancel
