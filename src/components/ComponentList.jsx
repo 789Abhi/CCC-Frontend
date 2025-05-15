@@ -1,3 +1,4 @@
+// src/components/ComponentList.js (or similar path)
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -30,8 +31,8 @@ const ComponentList = () => {
         })
       );
 
-      if (response.data.success && Array.isArray(response.data.components)) {
-        setComponents(response.data.components);
+      if (response.data.success && Array.isArray(response.data.data?.components)) {
+        setComponents(response.data.data.components);
       } else {
         setComponents([]);
       }
@@ -77,7 +78,6 @@ const ComponentList = () => {
       setMessageType("error");
     }
 
-    // Clear message after 3 seconds
     setTimeout(() => {
       setMessage("");
       setMessageType("");
