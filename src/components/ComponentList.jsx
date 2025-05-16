@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import FieldPopup from "./FieldPopup"; // import your popup component
+import FieldPopup from "./FieldPopup";
+
 
 const ComponentList = () => {
   const [showPopup, setShowPopup] = useState(false);

@@ -1,37 +1,35 @@
-import React from 'react'
+import React, { useState } from 'react';
+import axios from 'axios';
 
 function FieldPopup({ componentId, onClose, onFieldAdded }) {
+  const [label, setLabel] = useState('');
+  const [name, setName] = useState('');
+  const [type, setType] = useState('text');
 
-    const [label, setLabel] = useState('');
-    const [name, setName] = useState('');
-    const [type, setType] = useState('text');
+  const handleSubmit = async () => {
+    try {
+      const response = await axios.post(window.cccData.ajaxUrl, new URLSearchParams({
+        action: 'ccc_add_field',
+        nonce: window.cccData.nonce,
+        label,
+        name,
+        type,
+        component_id: componentId
+      }));
 
-
-    const handleSubmit = async () => {
-        try {
-          const response = await axios.post(window.cccData.ajaxUrl, new URLSearchParams({
-            action: 'ccc_add_field',
-            nonce: window.cccData.nonce,
-            label,
-            name,
-            type,
-            component_id: componentId
-          }));
-    
-          if (response.data.success) {
-            onFieldAdded();
-            onClose();
-          } else {
-            alert(response.data.message || 'Failed to add field.');
-          }
-        } catch (error) {
-          console.error('Error adding field:', error);
-        }
-      };
+      if (response.data.success) {
+        onFieldAdded();
+        onClose();
+      } else {
+        alert(response.data.message || 'Failed to add field.');
+      }
+    } catch (error) {
+      console.error('Error adding field:', error);
+    }
+  };
 
   return (
-    <div>
-      <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
         <h3 className="text-xl font-semibold mb-4 text-gray-800">Add New Field</h3>
         <input
@@ -72,8 +70,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
         </div>
       </div>
     </div>
-    </div>
-  )
+  );
 }
 
-export default FieldPopup
+export default FieldPopup;
