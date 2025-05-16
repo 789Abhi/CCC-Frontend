@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import FieldPopup from "./FieldPopup";
 
-
 const ComponentList = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [componentName, setComponentName] = useState("");
@@ -10,7 +9,6 @@ const ComponentList = () => {
   const [components, setComponents] = useState([]);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
-
   const [showFieldPopup, setShowFieldPopup] = useState(false);
   const [selectedComponentId, setSelectedComponentId] = useState(null);
 
@@ -20,17 +18,11 @@ const ComponentList = () => {
 
   const fetchComponents = async () => {
     try {
-      if (typeof window.cccData === "undefined") {
-        throw new Error("cccData is not defined.");
-      }
+      const formData = new FormData();
+      formData.append("action", "ccc_get_components");
+      formData.append("nonce", window.cccData.nonce);
 
-      const response = await axios.post(
-        window.cccData.ajaxUrl,
-        new URLSearchParams({
-          action: "ccc_get_components",
-          nonce: window.cccData.nonce,
-        })
-      );
+      const response = await axios.post(window.cccData.ajaxUrl, formData);
 
       if (
         response.data.success &&
@@ -48,28 +40,19 @@ const ComponentList = () => {
   const handleSubmit = async () => {
     if (!componentName) return;
 
-    if (typeof window.cccData === "undefined") {
-      console.error("cccData is not defined.");
-      return;
-    }
-
-    const payload = {
-      action: "ccc_create_component",
-      name: componentName,
-      handle: generateHandle(componentName),
-      nonce: window.cccData.nonce,
-    };
+    const formData = new FormData();
+    formData.append("action", "ccc_create_component");
+    formData.append("name", componentName);
+    formData.append("handle", generateHandle(componentName));
+    formData.append("nonce", window.cccData.nonce);
 
     try {
-      const response = await axios.post(
-        window.cccData.ajaxUrl,
-        new URLSearchParams(payload)
-      );
+      const response = await axios.post(window.cccData.ajaxUrl, formData);
 
       if (response.data.success) {
         setMessage(response.data.message || "Component created.");
         setMessageType("success");
-        fetchComponents(); // refresh list
+        fetchComponents();
         setShowPopup(false);
         setComponentName("");
         setHandle("");
@@ -122,7 +105,6 @@ const ComponentList = () => {
         Add New Component
       </button>
 
-      {/* Component List */}
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-2 text-gray-800">
           Existing Components
@@ -151,7 +133,6 @@ const ComponentList = () => {
         )}
       </div>
 
-      {/* Component Creation Popup */}
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
@@ -194,7 +175,6 @@ const ComponentList = () => {
         </div>
       )}
 
-      {/* FieldPopup */}
       {showFieldPopup && selectedComponentId && (
         <FieldPopup
           componentId={selectedComponentId}

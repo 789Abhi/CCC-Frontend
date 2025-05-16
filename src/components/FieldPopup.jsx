@@ -8,14 +8,15 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
 
   const handleSubmit = async () => {
     try {
-      const response = await axios.post(window.cccData.ajaxUrl, new URLSearchParams({
-        action: 'ccc_add_field',
-        nonce: window.cccData.nonce,
-        label,
-        name,
-        type,
-        component_id: componentId
-      }));
+      const formData = new FormData();
+      formData.append('action', 'ccc_add_field');
+      formData.append('nonce', window.cccData.nonce);
+      formData.append('label', label);
+      formData.append('name', name);
+      formData.append('type', type);
+      formData.append('component_id', componentId);
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData);
 
       if (response.data.success) {
         onFieldAdded();
