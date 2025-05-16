@@ -1,6 +1,6 @@
-// src/components/ComponentList.js (or similar path)
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import FieldPopup from "./FieldPopup"; // import your popup component
 
 const ComponentList = () => {
   const [showPopup, setShowPopup] = useState(false);
@@ -8,13 +8,13 @@ const ComponentList = () => {
   const [handle, setHandle] = useState("");
   const [components, setComponents] = useState([]);
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState(""); // 'success' | 'error'
+  const [messageType, setMessageType] = useState("");
+
+  const [showFieldPopup, setShowFieldPopup] = useState(false);
+  const [selectedComponentId, setSelectedComponentId] = useState(null);
 
   const generateHandle = (name) => {
-    return name
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^\w_]+/g, "");
+    return name.toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]+/g, "");
   };
 
   const fetchComponents = async () => {
@@ -31,7 +31,10 @@ const ComponentList = () => {
         })
       );
 
-      if (response.data.success && Array.isArray(response.data.data?.components)) {
+      if (
+        response.data.success &&
+        Array.isArray(response.data.data?.components)
+      ) {
         setComponents(response.data.data.components);
       } else {
         setComponents([]);
@@ -88,6 +91,11 @@ const ComponentList = () => {
     fetchComponents();
   }, []);
 
+  const openFieldPopup = (componentId) => {
+    setSelectedComponentId(componentId);
+    setShowFieldPopup(true);
+  };
+
   return (
     <div className="p-6">
       {message && (
@@ -118,20 +126,31 @@ const ComponentList = () => {
         <h3 className="text-lg font-semibold mb-2 text-gray-800">
           Existing Components
         </h3>
-        {Array.isArray(components) && components.length === 0 ? (
+        {components.length === 0 ? (
           <p className="text-gray-500">No components found.</p>
         ) : (
-          <ul className="space-y-1">
-            {components?.map((comp, index) => (
+          <ul className="space-y-3">
+            {components.map((comp, index) => (
               <li key={index} className="text-gray-800">
-                <strong>{comp.name}</strong> — <code>{comp.handle_name}</code>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <strong>{comp.name}</strong> —{" "}
+                    <code>{comp.handle_name}</code>
+                  </div>
+                  <button
+                    onClick={() => openFieldPopup(comp.id)}
+                    className="bg-blue-500 text-white px-3 py-1 rounded"
+                  >
+                    Add Field
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      {/* Popup */}
+      {/* Component Creation Popup */}
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
@@ -172,6 +191,18 @@ const ComponentList = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* FieldPopup */}
+      {showFieldPopup && selectedComponentId && (
+        <FieldPopup
+          componentId={selectedComponentId}
+          onClose={() => {
+            setShowFieldPopup(false);
+            setSelectedComponentId(null);
+          }}
+          onFieldAdded={fetchComponents}
+        />
       )}
     </div>
   );
