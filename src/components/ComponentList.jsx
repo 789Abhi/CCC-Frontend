@@ -106,15 +106,15 @@ const ComponentList = () => {
       </button>
 
       <div className="mt-6">
-        <h3 className="text-lg font-semibold mb-2 text-gray-800">
+        <h3 className="text-lg font-semibold mb-2 text-white">
           Existing Components
         </h3>
         {components.length === 0 ? (
-          <p className="text-gray-500">No components found.</p>
+          <p className="text-white">No components found.</p>
         ) : (
           <ul className="space-y-3">
             {components.map((comp, index) => (
-              <li key={index} className="text-gray-800">
+              <li key={index} className="text-white">
                 <div className="flex items-center justify-between">
                   <div>
                     <strong>{comp.name}</strong> —{" "}
@@ -136,7 +136,7 @@ const ComponentList = () => {
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h3 className="text-xl font-semibold mb-4 text-gray-800">
+            <h3 className="text-xl font-semibold mb-4 text-white">
               Create New Component
             </h3>
             <input
