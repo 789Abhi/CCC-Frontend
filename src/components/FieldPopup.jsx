@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 const FieldPopup = ({ componentId, onClose, onFieldAdded }) => {
@@ -7,30 +7,33 @@ const FieldPopup = ({ componentId, onClose, onFieldAdded }) => {
   const [type, setType] = useState("text");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pages, setPages] = useState([]);
+  const [selectedPage, setSelectedPage] = useState("");
 
-  const generateFieldName = (label) => {
-    return label.toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]+/g, "");
-  };
+  useEffect(() => {
+    const fetchPages = async () => {
+      try {
+        const response = await axios.post(window.cccData.ajaxUrl, {
+          action: "ccc_get_pages",
+          nonce: window.cccData.nonce,
+        });
+        if (response.data.success) {
+          setPages(response.data.data.pages);
+        }
+      } catch (err) {
+        console.error("Error fetching pages:", err);
+      }
+    };
+    fetchPages();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    if (!label.trim()) {
-      setError("Please enter a field label");
-      setLoading(false);
-      return;
-    }
-
-    if (!name.trim()) {
-      setError("Please enter a field name");
-      setLoading(false);
-      return;
-    }
-
-    if (!type) {
-      setError("Please select a field type");
+    if (!label.trim() || !name.trim() || !type) {
+      setError("Please fill all fields.");
       setLoading(false);
       return;
     }
@@ -43,6 +46,7 @@ const FieldPopup = ({ componentId, onClose, onFieldAdded }) => {
       formData.append("name", name);
       formData.append("type", type);
       formData.append("component_id", componentId);
+      formData.append("selected_page", selectedPage); // Save selected page
 
       const response = await axios.post(window.cccData.ajaxUrl, formData);
 
@@ -82,7 +86,6 @@ const FieldPopup = ({ componentId, onClose, onFieldAdded }) => {
               onChange={(e) => {
                 const value = e.target.value;
                 setLabel(value);
-                // Auto-generate name if not manually modified
                 if (!name || name === generateFieldName(label)) {
                   setName(generateFieldName(value));
                 }
@@ -124,6 +127,25 @@ const FieldPopup = ({ componentId, onClose, onFieldAdded }) => {
               <option value="image">Image</option>
               <option value="rich_text">Rich Text Editor</option>
               <option value="post_selector">Post Selector</option>
+            </select>
+          </div>
+
+          {/* Dropdown for Pages */}
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Select Page/Post
+            </label>
+            <select
+              value={selectedPage}
+              onChange={(e) => setSelectedPage(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select a page/post</option>
+              {pages.map((page) => (
+                <option key={page.id} value={page.id}>
+                  {page.title}
+                </option>
+              ))}
             </select>
           </div>
 
