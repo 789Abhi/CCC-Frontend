@@ -11,12 +11,15 @@ const ComponentList = () => {
   const [messageType, setMessageType] = useState("");
   const [showFieldPopup, setShowFieldPopup] = useState(false);
   const [selectedComponentId, setSelectedComponentId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const generateHandle = (name) => {
     return name.toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]+/g, "");
   };
 
   const fetchComponents = async () => {
+    setLoading(true);
     try {
       const formData = new FormData();
       formData.append("action", "ccc_get_components");
@@ -29,17 +32,26 @@ const ComponentList = () => {
         Array.isArray(response.data.data?.components)
       ) {
         setComponents(response.data.data.components);
+        setError("");
       } else {
         setComponents([]);
-        console.error("Failed to get components or invalid response format", response.data);
+        setError("Failed to fetch components. Invalid response format.");
+        console.error("Invalid response format:", response.data);
       }
     } catch (err) {
+      setError("Failed to connect to server. Please refresh and try again.");
       console.error("Failed to fetch components", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSubmit = async () => {
-    if (!componentName) return;
+    if (!componentName) {
+      setMessage("Please enter a component name");
+      setMessageType("error");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("action", "ccc_create_component");
@@ -51,7 +63,7 @@ const ComponentList = () => {
       const response = await axios.post(window.cccData.ajaxUrl, formData);
 
       if (response.data.success) {
-        setMessage(response.data.message || "Component created.");
+        setMessage(response.data.message || "Component created successfully.");
         setMessageType("success");
         fetchComponents();
         setShowPopup(false);
@@ -62,15 +74,15 @@ const ComponentList = () => {
         setMessageType("error");
       }
     } catch (error) {
-      setMessage("Error creating component.");
-      setMessageType("error");
       console.error("Error creating component:", error);
+      setMessage("Error connecting to server. Please try again.");
+      setMessageType("error");
     }
 
     setTimeout(() => {
       setMessage("");
       setMessageType("");
-    }, 3000);
+    }, 5000);
   };
 
   useEffect(() => {
@@ -78,6 +90,7 @@ const ComponentList = () => {
   }, []);
 
   const openFieldPopup = (componentId) => {
+    console.log("Opening field popup for component ID:", componentId);
     setSelectedComponentId(componentId);
     setShowFieldPopup(true);
   };
@@ -108,18 +121,22 @@ const ComponentList = () => {
       </button>
 
       <div className="mt-6">
-        <h3 className="text-lg font-semibold mb-2">
-          Existing Components
-        </h3>
-        {components.length === 0 ? (
-          <p>No components found.</p>
+        <h3 className="text-lg font-semibold mb-2">Existing Components</h3>
+        
+        {loading ? (
+          <p className="text-gray-500">Loading components...</p>
+        ) : error ? (
+          <p className="text-red-500">{error}</p>
+        ) : components.length === 0 ? (
+          <p>No components found. Create your first component above.</p>
         ) : (
           <ul className="space-y-3">
             {components.map((comp) => (
               <li key={comp.id} className="bg-white p-4 rounded shadow">
                 <div className="flex items-center justify-between">
                   <div>
-                    <strong>{comp.name}</strong> —{" "}
+                    <strong>{comp.name}</strong>{" "}
+                    <span className="text-gray-500">—</span>{" "}
                     <code className="bg-gray-100 px-1 rounded">{comp.handle_name}</code>
                   </div>
                   <button
@@ -138,9 +155,7 @@ const ComponentList = () => {
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h3 className="text-xl font-semibold mb-4">
-              Create New Component
-            </h3>
+            <h3 className="text-xl font-semibold mb-4">Create New Component</h3>
             <input
               type="text"
               value={componentName}
@@ -148,7 +163,10 @@ const ComponentList = () => {
               onChange={(e) => {
                 const value = e.target.value;
                 setComponentName(value);
-                setHandle(generateHandle(value));
+                // Auto-generate handle if not manually modified
+                if (!handle || handle === generateHandle(componentName)) {
+                  setHandle(generateHandle(value));
+                }
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
             />
