@@ -31,6 +31,7 @@ const ComponentList = () => {
         setComponents(response.data.data.components);
       } else {
         setComponents([]);
+        console.error("Failed to get components or invalid response format", response.data);
       }
     } catch (err) {
       console.error("Failed to fetch components", err);
@@ -43,7 +44,7 @@ const ComponentList = () => {
     const formData = new FormData();
     formData.append("action", "ccc_create_component");
     formData.append("name", componentName);
-    formData.append("handle", generateHandle(componentName));
+    formData.append("handle", handle || generateHandle(componentName));
     formData.append("nonce", window.cccData.nonce);
 
     try {
@@ -63,6 +64,7 @@ const ComponentList = () => {
     } catch (error) {
       setMessage("Error creating component.");
       setMessageType("error");
+      console.error("Error creating component:", error);
     }
 
     setTimeout(() => {
@@ -106,23 +108,23 @@ const ComponentList = () => {
       </button>
 
       <div className="mt-6">
-        <h3 className="text-lg font-semibold mb-2 text-white">
+        <h3 className="text-lg font-semibold mb-2">
           Existing Components
         </h3>
         {components.length === 0 ? (
-          <p className="text-white">No components found.</p>
+          <p>No components found.</p>
         ) : (
           <ul className="space-y-3">
-            {components.map((comp, index) => (
-              <li key={index} className="text-white">
+            {components.map((comp) => (
+              <li key={comp.id} className="bg-white p-4 rounded shadow">
                 <div className="flex items-center justify-between">
                   <div>
                     <strong>{comp.name}</strong> —{" "}
-                    <code>{comp.handle_name}</code>
+                    <code className="bg-gray-100 px-1 rounded">{comp.handle_name}</code>
                   </div>
                   <button
                     onClick={() => openFieldPopup(comp.id)}
-                    className="bg-blue-500 text-white px-3 py-1 rounded"
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
                   >
                     Add Field
                   </button>
@@ -136,7 +138,7 @@ const ComponentList = () => {
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h3 className="text-xl font-semibold mb-4 text-white">
+            <h3 className="text-xl font-semibold mb-4">
               Create New Component
             </h3>
             <input
@@ -151,7 +153,7 @@ const ComponentList = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
             />
             <p className="text-sm text-gray-600 mb-4">
-              Handle: <span className="font-mono text-black">{handle}</span>
+              Handle: <span className="font-mono">{handle}</span>
             </p>
             <div className="flex justify-end space-x-2">
               <button
@@ -175,7 +177,7 @@ const ComponentList = () => {
         </div>
       )}
 
-      {showFieldPopup && selectedComponentId && (
+      {showFieldPopup && (
         <FieldPopup
           componentId={selectedComponentId}
           onClose={() => {
