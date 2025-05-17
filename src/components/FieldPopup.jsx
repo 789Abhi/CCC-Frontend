@@ -1,157 +1,152 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState } from "react";
+import axios from "axios";
 
-function FieldPopup({ componentId, onClose, onFieldAdded }) {
-  const [label, setLabel] = useState('');
-  const [name, setName] = useState('');
-  const [type, setType] = useState('text');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+const FieldPopup = ({ componentId, onClose, onFieldAdded }) => {
+  const [label, setLabel] = useState("");
+  const [name, setName] = useState("");
+  const [type, setType] = useState("text");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Generate a handle from the label
-  const generateHandle = (inputLabel) => {
-    return inputLabel.toLowerCase().replace(/\s+/g, '_').replace(/[^\w_]+/g, '');
+  const generateFieldName = (label) => {
+    return label.toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]+/g, "");
   };
 
-  const handleSubmit = async () => {
-    // Validate form
-    if (!label) {
-      setError('Please enter a display label');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    if (!label.trim()) {
+      setError("Please enter a field label");
+      setLoading(false);
       return;
     }
 
-    setIsSubmitting(true);
-    setError('');
+    if (!name.trim()) {
+      setError("Please enter a field name");
+      setLoading(false);
+      return;
+    }
+
+    if (!type) {
+      setError("Please select a field type");
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Use a handle generated from the label if none is provided
-      const fieldName = name || generateHandle(label);
-      
       const formData = new FormData();
-      formData.append('action', 'ccc_add_field');
-      formData.append('nonce', window.cccData.nonce);
-      formData.append('label', label);
-      formData.append('name', fieldName);
-      formData.append('type', type);
-      formData.append('component_id', componentId);
-
-      // Log data for debugging
-      console.log('Submitting field:', {
-        label,
-        name: fieldName,
-        type,
-        componentId
-      });
+      formData.append("action", "ccc_add_field");
+      formData.append("nonce", window.cccData.nonce);
+      formData.append("label", label);
+      formData.append("name", name);
+      formData.append("type", type);
+      formData.append("component_id", componentId);
 
       const response = await axios.post(window.cccData.ajaxUrl, formData);
-      
-      console.log('Response:', response.data);
 
       if (response.data.success) {
-        onFieldAdded();
+        onFieldAdded && onFieldAdded();
         onClose();
       } else {
-        setError(response.data.data?.message || 'Failed to add field');
+        setError(response.data.data?.message || "Failed to add field");
       }
-    } catch (error) {
-      console.error('Error adding field:', error);
-      
-      // Provide detailed error information
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('Response data:', error.response.data);
-        console.error('Response status:', error.response.status);
-        setError(`Server error (${error.response.status}): ${error.message}`);
-      } else if (error.request) {
-        // The request was made but no response was received
-        setError('No response from server. Please try again.');
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        setError(`Error: ${error.message}`);
-      }
+    } catch (err) {
+      console.error("Error adding field:", err);
+      setError("Failed to connect to server. Please try again.");
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h3 className="text-xl font-semibold mb-4 text-gray-800">Add New Field</h3>
+        <h3 className="text-xl font-semibold mb-4">Add New Field</h3>
         
         {error && (
-          <div className="mb-4 px-4 py-2 rounded bg-red-100 text-red-800">
+          <div className="mb-4 px-3 py-2 bg-red-100 text-red-800 rounded">
             {error}
           </div>
         )}
         
-        <div className="mb-3">
-          <label className="block text-gray-700 mb-1">Display Label</label>
-          <input
-            type="text" 
-            value={label}
-            placeholder="Display Label"
-            onChange={(e) => {
-              setLabel(e.target.value);
-              // Auto-generate the handle if not manually modified
-              if (!name || name === generateHandle(label)) {
-                setName(generateHandle(e.target.value));
-              }
-            }}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        
-        <div className="mb-3">
-          <label className="block text-gray-700 mb-1">Handle</label>
-          <input
-            type="text"
-            value={name}
-            placeholder="Handle (generated automatically)"
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            This will be used in code. Automatically generated from label if left empty.
-          </p>
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-1">Field Type</label>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="text">Text</option>
-            <option value="text-area">Textarea</option>
-          </select>
-        </div>
-        
-        <div className="flex justify-end space-x-2">
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className={`px-4 py-2 rounded transition ${
-              isSubmitting
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-700 text-white'
-            }`}
-          >
-            {isSubmitting ? 'Saving...' : 'Save'}
-          </button>
-          <button
-            onClick={onClose}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Label
+            </label>
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => {
+                const value = e.target.value;
+                setLabel(value);
+                // Auto-generate name if not manually modified
+                if (!name || name === generateFieldName(label)) {
+                  setName(generateFieldName(value));
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Field Label"
+            />
+          </div>
+
+          <div className="mb-3">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="field_name"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Unique identifier used in code
+            </p>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Type
+            </label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="text">Text</option>
+              <option value="textarea">Text Area</option>
+              <option value="number">Number</option>
+              <option value="select">Select</option>
+              <option value="image">Image</option>
+              <option value="rich_text">Rich Text Editor</option>
+              <option value="post_selector">Post Selector</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end space-x-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+              disabled={loading}
+            >
+              {loading ? "Adding..." : "Add Field"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
-}
+};
 
 export default FieldPopup;
