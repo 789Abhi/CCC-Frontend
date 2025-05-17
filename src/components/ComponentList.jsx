@@ -7,24 +7,15 @@ const ComponentList = () => {
   const [componentName, setComponentName] = useState("");
   const [handle, setHandle] = useState("");
   const [components, setComponents] = useState([]);
-  const [componentFields, setComponentFields] = useState({});
-  const [message, setMessageStatus] = useState({ text: "", type: "" });
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
   const [showFieldPopup, setShowFieldPopup] = useState(false);
   const [selectedComponentId, setSelectedComponentId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [expandedComponents, setExpandedComponents] = useState({});
-
-  const setMessage = (text, type = "error") => {
-    setMessageStatus({ text, type });
-    setTimeout(() => setMessageStatus({ text: "", type: "" }), 5000);
-  };
 
   const generateHandle = (name) => {
-    return name
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^\w_]+/g, "");
+    return name.toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]+/g, "");
   };
 
   const fetchComponents = async () => {
@@ -55,51 +46,10 @@ const ComponentList = () => {
     }
   };
 
-  const assignFieldToPage = async (fieldId, selectedPage) => {
-    try {
-      const response = await axios.post(window.cccData.ajaxUrl, {
-        action: "ccc_save_field_value",
-        nonce: window.cccData.nonce,
-        field_id: fieldId,
-        post_id: selectedPage,
-        value: "Your Value Here", // Replace with the actual value you want to save
-      });
-
-      if (response.data.success) {
-        console.log("Field assigned successfully");
-      } else {
-        console.error("Failed to assign field:", response.data.data?.message);
-      }
-    } catch (err) {
-      console.error("Error assigning field:", err);
-    }
-  };
-
-  const fetchComponentFields = async (componentId) => {
-    try {
-      const formData = new FormData();
-      formData.append("action", "ccc_get_component_fields");
-      formData.append("nonce", window.cccData.nonce);
-      formData.append("component_id", componentId);
-
-      const response = await axios.post(window.cccData.ajaxUrl, formData);
-
-      if (response.data.success) {
-        setComponentFields((prevFields) => ({
-          ...prevFields,
-          [componentId]: response.data.data.fields || [],
-        }));
-      } else {
-        console.error("Failed to fetch fields:", response.data);
-      }
-    } catch (err) {
-      console.error("Error fetching component fields:", err);
-    }
-  };
-
   const handleSubmit = async () => {
     if (!componentName) {
-      setMessage("Please enter a component name", "error");
+      setMessage("Please enter a component name");
+      setMessageType("error");
       return;
     }
 
@@ -113,44 +63,26 @@ const ComponentList = () => {
       const response = await axios.post(window.cccData.ajaxUrl, formData);
 
       if (response.data.success) {
-        setMessage(
-          response.data.data?.message || "Component created successfully.",
-          "success"
-        );
+        setMessage(response.data.message || "Component created successfully.");
+        setMessageType("success");
         fetchComponents();
         setShowPopup(false);
         setComponentName("");
         setHandle("");
       } else {
-        setMessage(
-          response.data.data?.message || "Failed to create component.",
-          "error"
-        );
+        setMessage(response.data.message || "Failed to create component.");
+        setMessageType("error");
       }
     } catch (error) {
       console.error("Error creating component:", error);
-      setMessage("Error connecting to server. Please try again.", "error");
+      setMessage("Error connecting to server. Please try again.");
+      setMessageType("error");
     }
-  };
 
-  const toggleComponentExpand = (componentId) => {
-    setExpandedComponents((prev) => {
-      const newState = {
-        ...prev,
-        [componentId]: !prev[componentId],
-      };
-
-      // If expanding, fetch fields if we don't have them yet
-      if (
-        newState[componentId] &&
-        (!componentFields[componentId] ||
-          componentFields[componentId].length === 0)
-      ) {
-        fetchComponentFields(componentId);
-      }
-
-      return newState;
-    });
+    setTimeout(() => {
+      setMessage("");
+      setMessageType("");
+    }, 5000);
   };
 
   useEffect(() => {
@@ -158,49 +90,39 @@ const ComponentList = () => {
   }, []);
 
   const openFieldPopup = (componentId) => {
+    console.log("Opening field popup for component ID:", componentId);
     setSelectedComponentId(componentId);
     setShowFieldPopup(true);
   };
 
-  const handleFieldAdded = () => {
-    // Refetch fields for the component that had a field added
-    if (selectedComponentId) {
-      fetchComponentFields(selectedComponentId);
-    }
-    setMessage("Field added successfully", "success");
-  };
-
   return (
     <div className="p-6">
-      {message.text && (
+      {message && (
         <div
           className={`mb-4 px-4 py-2 rounded ${
-            message.type === "success"
+            messageType === "success"
               ? "bg-green-100 text-green-800"
               : "bg-red-100 text-red-800"
           }`}
         >
-          {message.text}
+          {message}
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Component Manager</h2>
-        <button
-          onClick={() => {
-            setShowPopup(true);
-            setComponentName("");
-            setHandle("");
-          }}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-        >
-          Add New Component
-        </button>
-      </div>
+      <button
+        onClick={() => {
+          setShowPopup(true);
+          setComponentName("");
+          setHandle("");
+        }}
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+      >
+        Add New Component
+      </button>
 
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-2">Existing Components</h3>
-
+        
         {loading ? (
           <p className="text-gray-500">Loading components...</p>
         ) : error ? (
@@ -208,128 +130,25 @@ const ComponentList = () => {
         ) : components.length === 0 ? (
           <p>No components found. Create your first component above.</p>
         ) : (
-          <div className="space-y-4">
+          <ul className="space-y-3">
             {components.map((comp) => (
-              <div
-                key={comp.id}
-                className="bg-white p-4 rounded shadow border-l-4 border-blue-500"
-              >
+              <li key={comp.id} className="bg-white p-4 rounded shadow">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => toggleComponentExpand(comp.id)}
-                      className="mr-2 text-gray-500 hover:text-gray-800 focus:outline-none"
-                    >
-                      {expandedComponents[comp.id] ? (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      )}
-                    </button>
-                    <div>
-                      <strong className="text-lg">{comp.name}</strong>{" "}
-                      <code className="text-sm bg-gray-100 px-1 rounded ml-2">
-                        {comp.handle_name}
-                      </code>
-                    </div>
+                  <div>
+                    <strong>{comp.name}</strong>{" "}
+                    <span className="text-gray-500">—</span>{" "}
+                    <code className="bg-gray-100 px-1 rounded">{comp.handle_name}</code>
                   </div>
                   <button
                     onClick={() => openFieldPopup(comp.id)}
-                    className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm"
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
                   >
                     Add Field
                   </button>
                 </div>
-
-                {expandedComponents[comp.id] && (
-                  <div className="mt-4 pl-7">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">
-                      Fields
-                    </h4>
-                    {componentFields[comp.id]?.length > 0 ? (
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead>
-                            <tr>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Label
-                              </th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Name
-                              </th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Type
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {componentFields[comp.id].map((field) => (
-                              <tr key={field.id}>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                                  {field.label}
-                                </td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm font-mono text-gray-600">
-                                  {field.name}
-                                </td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                    {field.type}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">
-                        No fields added yet
-                      </p>
-                    )}
-
-                    {/* Post Type Selection */}
-                    <div className="mt-4">
-                      <h4 className="text-sm font-medium text-gray-600 mb-2">
-                        Display Component On
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <button
-                          onClick={() =>
-                            assignFieldToPage(field.id, selectedPage)
-                          }
-                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition text-sm"
-                        >
-                          Assign to Page
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
 
@@ -356,20 +175,20 @@ const ComponentList = () => {
             </p>
             <div className="flex justify-end space-x-2">
               <button
+                onClick={handleSubmit}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+              >
+                Save
+              </button>
+              <button
                 onClick={() => {
                   setShowPopup(false);
                   setComponentName("");
                   setHandle("");
                 }}
-                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
               >
                 Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-              >
-                Save
               </button>
             </div>
           </div>
@@ -383,7 +202,7 @@ const ComponentList = () => {
             setShowFieldPopup(false);
             setSelectedComponentId(null);
           }}
-          onFieldAdded={handleFieldAdded}
+          onFieldAdded={fetchComponents}
         />
       )}
     </div>
