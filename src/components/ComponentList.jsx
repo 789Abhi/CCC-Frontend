@@ -131,35 +131,24 @@ const ComponentList = () => {
           <p>No components found. Create your first component above.</p>
         ) : (
           <ul className="space-y-3">
-          {components.map((comp) => (
-            <li key={comp.id} className="bg-white p-4 rounded shadow">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <strong>{comp.name}</strong> — <code className="bg-gray-100 px-1 rounded">{comp.handle_name}</code>
+            {components.map((comp) => (
+              <li key={comp.id} className="bg-white p-4 rounded shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <strong>{comp.name}</strong>{" "}
+                    <span className="text-gray-500">—</span>{" "}
+                    <code className="bg-gray-100 px-1 rounded">{comp.handle_name}</code>
+                  </div>
+                  <button
+                    onClick={() => openFieldPopup(comp.id)}
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
+                  >
+                    Add Field
+                  </button>
                 </div>
-                <button
-                  onClick={() => openFieldPopup(comp.id)}
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
-                >
-                  Add Field
-                </button>
-              </div>
-              {/* List fields associated with the component */}
-              {comp.fields && comp.fields.length > 0 && (
-                <div className="mt-2 ml-4">
-                  <h4 className="font-semibold mb-1 text-sm">Fields:</h4>
-                  <ul className="list-disc list-inside text-sm">
-                    {comp.fields.map((field) => (
-                      <li key={field.id}>
-                        {field.label} ({field.type})
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
