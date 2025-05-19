@@ -8,13 +8,11 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  // Generate a handle from the label
   const generateHandle = (inputLabel) => {
     return inputLabel.toLowerCase().replace(/\s+/g, '_').replace(/[^\w_]+/g, '');
   };
 
   const handleSubmit = async () => {
-    // Validate form
     if (!label) {
       setError('Please enter a display label');
       return;
@@ -24,7 +22,6 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
     setError('');
 
     try {
-      // Use a handle generated from the label if none is provided
       const fieldName = name || generateHandle(label);
       
       const formData = new FormData();
@@ -35,17 +32,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
       formData.append('type', type);
       formData.append('component_id', componentId);
 
-      // Log data for debugging
-      console.log('Submitting field:', {
-        label,
-        name: fieldName,
-        type,
-        componentId
-      });
-
       const response = await axios.post(window.cccData.ajaxUrl, formData);
-      
-      console.log('Response:', response.data);
 
       if (response.data.success) {
         onFieldAdded();
@@ -55,21 +42,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
       }
     } catch (error) {
       console.error('Error adding field:', error);
-      
-      // Provide detailed error information
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('Response data:', error.response.data);
-        console.error('Response status:', error.response.status);
-        setError(`Server error (${error.response.status}): ${error.message}`);
-      } else if (error.request) {
-        // The request was made but no response was received
-        setError('No response from server. Please try again.');
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        setError(`Error: ${error.message}`);
-      }
+      setError('Failed to connect to server. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -87,14 +60,13 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
         )}
         
         <div className="mb-3">
-          <label className="block text-gray-700 mb-1">Display Label</label>
+          <label className="block text-gray-700 mb-1">Display Label</label> 
           <input
             type="text" 
             value={label}
             placeholder="Display Label"
             onChange={(e) => {
               setLabel(e.target.value);
-              // Auto-generate the handle if not manually modified
               if (!name || name === generateHandle(label)) {
                 setName(generateHandle(e.target.value));
               }

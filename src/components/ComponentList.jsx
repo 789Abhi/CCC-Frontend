@@ -13,6 +13,9 @@ const ComponentList = () => {
   const [selectedComponentId, setSelectedComponentId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedPage, setSelectedPage] = useState("");
+  const [pages, setPages] = useState([]);
+  const [fieldValues, setFieldValues] = useState({});
 
   const generateHandle = (name) => {
     return name.toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]+/g, "");
@@ -43,6 +46,20 @@ const ComponentList = () => {
       console.error("Failed to fetch components", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPages = async () => {
+    try {
+      const response = await axios.post(window.cccData.ajaxUrl, {
+        action: "ccc_get_pages",
+        nonce: window.cccData.nonce,
+      });
+      if (response.data.success) {
+        setPages(response.data.data.pages);
+      }
+    } catch (err) {
+      console.error("Error fetching pages:", err);
     }
   };
 
@@ -85,15 +102,44 @@ const ComponentList = () => {
     }, 5000);
   };
 
-  useEffect(() => {
-    fetchComponents();
-  }, []);
-
   const openFieldPopup = (componentId) => {
     console.log("Opening field popup for component ID:", componentId);
     setSelectedComponentId(componentId);
     setShowFieldPopup(true);
   };
+
+  const handleFieldValueChange = (fieldId, value) => {
+    setFieldValues((prev) => ({
+      ...prev,
+      [fieldId]: value,
+    }));
+  };
+
+  const saveFieldValues = async () => {
+    for (const [fieldId, value] of Object.entries(fieldValues)) {
+      try {
+        const response = await axios.post(window.cccData.ajaxUrl, {
+          action: "ccc_save_field_value",
+          nonce: window.cccData.nonce,
+          field_id: fieldId,
+          post_id: selectedPage,
+          value: value,
+        });
+
+        if (!response.data.success) {
+          console.error("Failed to save field value:", response.data.data?.message);
+        }
+      } catch (err) {
+        console.error("Error saving field value:", err);
+      }
+    }
+    setFieldValues({});
+  };
+
+  useEffect(() => {
+    fetchComponents();
+    fetchPages();
+  }, []);
 
   return (
     <div className="p-6">
@@ -146,63 +192,65 @@ const ComponentList = () => {
                     Add Field
                   </button>
                 </div>
+
+                {/* Display Fields for the Component */}
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">Fields</h4>
+                  {comp.fields && comp.fields.length > 0 ? (
+                    <div>
+                      {comp.fields.map((field) => (
+                        <div key={field.id} className="mb-2">
+                          <label className="block text-gray-700">{field.label}</label>
+                          <input
+                            type="text"
+                            placeholder={`Enter ${field.label}`}
+                            value={fieldValues[field.id] || ""}
+                            onChange={(e) => handleFieldValueChange(field.id, e.target.value)}
+                            className="w-full border border-gray-300 rounded p-2"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p>No fields added yet.</p>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      {showPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h3 className="text-xl font-semibold mb-4">Create New Component</h3>
-            <input
-              type="text"
-              value={componentName}
-              placeholder="Component Name"
-              onChange={(e) => {
-                const value = e.target.value;
-                setComponentName(value);
-                // Auto-generate handle if not manually modified
-                if (!handle || handle === generateHandle(componentName)) {
-                  setHandle(generateHandle(value));
-                }
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-            />
-            <p className="text-sm text-gray-600 mb-4">
-              Handle: <span className="font-mono">{handle}</span>
-            </p>
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={handleSubmit}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-              >
-                Save
-              </button>
-              <button
-                onClick={() => {
-                  setShowPopup(false);
-                  setComponentName("");
-                  setHandle("");
-                }}
-                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-2">Assign Component to Page/Post</h3>
+        <select
+          value={selectedPage}
+          onChange={(e) => setSelectedPage(e.target.value)}
+          className="border border-gray-300 rounded p-2 mb-4"
+        >
+          <option value="">Select a Page/Post</option>
+          {pages.map((page) => (
+            <option key={page.id} value={page.id}>
+              {page.title}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={saveFieldValues}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+        >
+          Save Field Values
+        </button>
+      </div>
 
-      {showFieldPopup && (
+      {showPopup && (
         <FieldPopup
           componentId={selectedComponentId}
           onClose={() => {
             setShowFieldPopup(false);
             setSelectedComponentId(null);
           }}
-          onFieldAdded={fetchComponents}
+          onFieldAdded={fetchComponents} 
         />
       )}
     </div>
