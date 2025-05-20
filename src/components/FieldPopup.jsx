@@ -23,7 +23,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
 
     try {
       const fieldName = name || generateHandle(label);
-      
+
       const formData = new FormData();
       formData.append('action', 'ccc_add_field');
       formData.append('nonce', window.cccData.nonce);
@@ -38,7 +38,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
         onFieldAdded();
         onClose();
       } else {
-        setError(response.data.data?.message || 'Failed to add field');
+        setError(response.data.message || 'Failed to add field');
       }
     } catch (error) {
       console.error('Error adding field:', error);
@@ -52,29 +52,31 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
         <h3 className="text-xl font-semibold mb-4 text-gray-800">Add New Field</h3>
-        
+
         {error && (
           <div className="mb-4 px-4 py-2 rounded bg-red-100 text-red-800">
             {error}
           </div>
         )}
-        
+
         <div className="mb-3">
-          <label className="block text-gray-700 mb-1">Display Label</label> 
+          <label className="block text-gray-700 mb-1">Display Label</label>
           <input
-            type="text" 
+            type="text"
             value={label}
             placeholder="Display Label"
             onChange={(e) => {
-              setLabel(e.target.value);
+              const value = e.target.value;
+              setLabel(value);
               if (!name || name === generateHandle(label)) {
-                setName(generateHandle(e.target.value));
+                setName(generateHandle(value));
               }
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isSubmitting}
           />
         </div>
-        
+
         <div className="mb-3">
           <label className="block text-gray-700 mb-1">Handle</label>
           <input
@@ -83,24 +85,26 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
             placeholder="Handle (generated automatically)"
             onChange={(e) => setName(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isSubmitting}
           />
           <p className="text-xs text-gray-500 mt-1">
             This will be used in code. Automatically generated from label if left empty.
           </p>
         </div>
-        
+
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Field Type</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isSubmitting}
           >
             <option value="text">Text</option>
             <option value="text-area">Textarea</option>
           </select>
         </div>
-        
+
         <div className="flex justify-end space-x-2">
           <button
             onClick={handleSubmit}

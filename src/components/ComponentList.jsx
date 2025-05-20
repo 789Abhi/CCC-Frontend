@@ -122,7 +122,7 @@ const ComponentList = () => {
 
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-2">Existing Components</h3>
-        
+
         {loading ? (
           <p className="text-gray-500">Loading components...</p>
         ) : error ? (
@@ -146,6 +146,31 @@ const ComponentList = () => {
                     Add Field
                   </button>
                 </div>
+                {/* Display Fields */}
+                {comp.fields && comp.fields.length > 0 ? (
+                  <div className="mt-3">
+                    <h4 className="text-sm font-medium text-gray-700">Fields:</h4>
+                    <ul className="mt-2 space-y-2">
+                      {comp.fields.map((field) => (
+                        <li
+                          key={field.id}
+                          className="border-l-4 border-blue-500 pl-3 py-2 bg-gray-50 rounded"
+                        >
+                          <div className="flex justify-between">
+                            <div>
+                              <span className="font-medium">{field.label}</span>{" "}
+                              <span className="text-gray-500">—</span>{" "}
+                              <code className="bg-gray-100 px-1 rounded">{field.name}</code>
+                            </div>
+                            <span className="text-gray-600 text-sm capitalize">{field.type}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-gray-500 text-sm">No fields added yet.</p>
+                )}
               </li>
             ))}
           </ul>
@@ -163,7 +188,6 @@ const ComponentList = () => {
               onChange={(e) => {
                 const value = e.target.value;
                 setComponentName(value);
-                // Auto-generate handle if not manually modified
                 if (!handle || handle === generateHandle(componentName)) {
                   setHandle(generateHandle(value));
                 }
@@ -202,17 +226,9 @@ const ComponentList = () => {
             setShowFieldPopup(false);
             setSelectedComponentId(null);
           }}
-          onFieldAdded={fetchComponents} 
+          onFieldAdded={fetchComponents}
         />
       )}
-
-      <div>
-        <select name="" id="">
-          <option value="">Pages</option>
-          <option value="">Posts</option>
-        </select>
-        <button>Save</button>
-      </div>
     </div>
   );
 };
