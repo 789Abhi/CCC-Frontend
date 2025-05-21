@@ -16,9 +16,12 @@ const ComponentList = () => {
   const [error, setError] = useState("");
   const [postType, setPostType] = useState("page");
   const [posts, setPosts] = useState([]);
-  const [selectedPostId, setSelectedPostId] = useState("");
+  const [selectedPosts, setSelectedPosts] = useState([]);
+  const [selectAllPages, setSelectAllPages] = useState(false);
+  const [selectAllPosts, setSelectAllPosts] = useState(false);
   const [selectedComponents, setSelectedComponents] = useState([]);
   const [fieldValues, setFieldValues] = useState({});
+  const [selectedTemplate, setSelectedTemplate] = useState("");
 
   const isEditor = !!document.getElementById('ccc-component-selector');
   const postId = document.getElementById('ccc-component-selector')?.dataset.postId || '';
@@ -40,7 +43,7 @@ const ComponentList = () => {
         setComponents(response.data.data.components);
         setError("");
         if (isEditor) {
-          const savedComponents = wp.data.select('core/editor')?.getEditedPostAttribute('meta')?._ccc_components || [];
+          const savedComponents = get_post_meta('_ccc_components') || [];
           setSelectedComponents(savedComponents);
           const initialFieldValues = {};
           response.data.data.components.forEach((comp) => {
@@ -53,6 +56,8 @@ const ComponentList = () => {
             });
           });
           setFieldValues(initialFieldValues);
+          const savedTemplate = get_post_meta('_wp_page_template') || '';
+          setSelectedTemplate(savedTemplate);
         }
       } else {
         setComponents([]);
@@ -198,11 +203,11 @@ const ComponentList = () => {
       value
     }));
 
-    const metaInput = document.createElement('input');
-    metaInput.type = 'hidden';
-    metaInput.name = 'ccc_components';
-    metaInput.value = JSON.stringify(selectedComponents);
-    document.getElementById('post').appendChild(metaInput);
+    const componentsInput = document.createElement('input');
+    componentsInput.type = 'hidden';
+    componentsInput.name = 'ccc_components';
+    componentsInput.value = JSON.stringify(selectedComponents);
+    document.getElementById('post').appendChild(componentsInput);
 
     const valuesInput = document.createElement('input');
     valuesInput.type = 'hidden';
@@ -210,9 +215,51 @@ const ComponentList = () => {
     valuesInput.value = JSON.stringify(values);
     document.getElementById('post').appendChild(valuesInput);
 
+    const templateInput = document.createElement('input');
+    templateInput.type = 'hidden';
+    templateInput.name = '_wp_page_template';
+    templateInput.value = selectedTemplate;
+    document.getElementById('post').appendChild(templateInput);
+
     setMessage('Changes will be saved when you update the post.');
     setMessageType('success');
     setTimeout(() => setMessage(''), 5000);
+  };
+
+  const handleSaveAssignments = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("action", "ccc_save_assignments");
+      formData.append("nonce", window.cccData.nonce);
+      formData.append("post_type", postType);
+      const postIds = [];
+      if (selectAllPages && postType === "page") {
+        postIds.push(0);
+      }
+      if (selectAllPosts && postType === "post") {
+        postIds.push(0);
+      }
+      postIds.push(...selectedPosts);
+      formData.append("post_ids", JSON.stringify(postIds));
+      formData.append("components", JSON.stringify(selectedComponents));
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData);
+
+      if (response.data.success) {
+        setMessage(response.data.message || "Assignments saved successfully.");
+        setMessageType("success");
+        fetchPosts(postType);
+      } else {
+        setMessage(response.data.message || "Failed to save assignments.");
+        setMessageType("error");
+      }
+    } catch (error) {
+      console.error("Error saving assignments:", error);
+      setMessage("Error connecting to server. Please try again.");
+      setMessageType("error");
+    }
+
+    setTimeout(() => setMessage(""), 5000);
   };
 
   useEffect(() => {
@@ -220,20 +267,25 @@ const ComponentList = () => {
   }, []);
 
   useEffect(() => {
-    if (!isEditor && postType !== "all_pages") {
+    if (!isEditor) {
       fetchPosts(postType);
-      setSelectedComponents([]);
-      setFieldValues({});
-    } else if (!isEditor && postType === "all_pages") {
-      setPosts([]);
-      setSelectedPostId("");
-      setSelectedComponents(components.map(comp => ({ id: comp.id, name: comp.name })));
+      setSelectedPosts([]);
+      setSelectAllPages(false);
+      setSelectAllPosts(false);
     }
-  }, [postType, components]);
+  }, [postType]);
 
   const openFieldPopup = (componentId) => {
     setSelectedComponentId(componentId);
     setShowFieldPopup(true);
+  };
+
+  // Helper function to get post meta (works in editor context)
+  const get_post_meta = (key) => {
+    if (wp.data && wp.data.select('core/editor')) {
+      return wp.data.select('core/editor').getEditedPostAttribute('meta')?.[key] || '';
+    }
+    return '';
   };
 
   if (isEditor) {
@@ -257,6 +309,18 @@ const ComponentList = () => {
           <p className="text-red-500">{error}</p>
         ) : (
           <>
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-1">Page Template</label>
+              <select
+                value={selectedTemplate}
+                onChange={(e) => setSelectedTemplate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Default Template</option>
+                <option value="ccc-template.php">CCC Component Template</option>
+              </select>
+            </div>
+
             <h4 className="text-sm font-medium text-gray-700 mb-2">Select Components</h4>
             <DragDropContext onDragEnd={onDragEnd}>
               <Droppable droppableId="components">
@@ -278,6 +342,10 @@ const ComponentList = () => {
                                   checked
                                   onChange={() => {
                                     setSelectedComponents(selectedComponents.filter((c) => c.id !== comp.id));
+                                    setFieldValues({
+                                      ...fieldValues,
+                                      [`${comp.id}`]: undefined
+                                    });
                                   }}
                                   className="mr-2"
                                 />
@@ -327,30 +395,34 @@ const ComponentList = () => {
                   return (
                     <div key={comp.id} className="mb-4">
                       <h5 className="font-medium">{comp.name}</h5>
-                      {component.fields.map((field) => (
-                        <div key={field.id} className="mt-2">
-                          <label className="block text-gray-700 mb-1">{field.label}</label>
-                          {field.type === "text" ? (
-                            <input
-                              type="text"
-                              value={fieldValues[field.id] || ""}
-                              onChange={(e) =>
-                                setFieldValues({ ...fieldValues, [field.id]: e.target.value })
-                              }
-                              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          ) : (
-                            <textarea
-                              value={fieldValues[field.id] || ""}
-                              onChange={(e) =>
-                                setFieldValues({ ...fieldValues, [field.id]: e.target.value })
-                              }
-                              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              rows="4"
-                            />
-                          )}
-                        </div>
-                      ))}
+                      {component.fields.length > 0 ? (
+                        component.fields.map((field) => (
+                          <div key={field.id} className="mt-2">
+                            <label className="block text-gray-700 mb-1">{field.label}</label>
+                            {field.type === "text" ? (
+                              <input
+                                type="text"
+                                value={fieldValues[field.id] || ""}
+                                onChange={(e) =>
+                                  setFieldValues({ ...fieldValues, [field.id]: e.target.value })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            ) : (
+                              <textarea
+                                value={fieldValues[field.id] || ""}
+                                onChange={(e) =>
+                                  setFieldValues({ ...fieldValues, [field.id]: e.target.value })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows="4"
+                              />
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-500 text-sm">No fields added to this component.</p>
+                      )}
                     </div>
                   );
                 })}
@@ -466,39 +538,132 @@ const ComponentList = () => {
 
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-2">Assign Components to Content</h3>
-        <div className="flex space-x-4 mb-4">
-          <div>
-            <label className="block text-gray-700 mb-1">Content Type</label>
-            <select
-              value={postType}
-              onChange={(e) => setPostType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="page">Pages</option>
-              <option value="post">Posts</option>
-              <option value="all_pages">All Pages</option>
-            </select>
-          </div>
-          {postType !== "all_pages" && (
-            <div>
-              <label className="block text-gray-700 mb-1">Select {postType === "page" ? "Page" : "Post"}</label>
-              <select
-                value={selectedPostId}
-                onChange={(e) => setSelectedPostId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select a {postType}</option>
-                {posts.map((post) => (
-                  <option key={post.id} value={post.id}>{post.title}</option>
-                ))}
-              </select>
-            </div>
-          )}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-1">Content Type</label>
+          <select
+            value={postType}
+            onChange={(e) => setPostType(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="page">Pages</option>
+            <option value="post">Posts</option>
+          </select>
         </div>
+
+        <div className="mb-4">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Select {postType === "page" ? "Pages" : "Posts"}</h4>
+          <div className="space-y-2">
+            {postType === "page" && (
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={selectAllPages}
+                  onChange={(e) => setSelectAllPages(e.target.checked)}
+                  className="mr-2"
+                />
+                All Pages
+              </label>
+            )}
+            {postType === "post" && (
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={selectAllPosts}
+                  onChange={(e) => setSelectAllPosts(e.target.checked)}
+                  className="mr-2"
+                />
+                All Posts
+              </label>
+            )}
+            {posts.map((post) => (
+              <label key={post.id} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={selectedPosts.includes(post.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedPosts([...selectedPosts, post.id]);
+                    } else {
+                      setSelectedPosts(selectedPosts.filter((id) => id !== post.id));
+                    }
+                  }}
+                  className="mr-2"
+                />
+                {post.title} {post.has_components && <span className="text-green-600 text-sm">(Assigned)</span>}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Select Components to Assign</h4>
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="components">
+              {(provided) => (
+                <ul className="space-y-2" {...provided.droppableProps} ref={provided.innerRef}>
+                  {selectedComponents.map((comp, index) => (
+                    <Draggable key={comp.id} draggableId={comp.id.toString()} index={index}>
+                      {(provided) => (
+                        <li
+                          className="bg-gray-50 p-2 rounded flex justify-between items-center"
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                        >
+                          <div>
+                            <label className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked
+                                onChange={() => {
+                                  setSelectedComponents(selectedComponents.filter((c) => c.id !== comp.id));
+                                }}
+                                className="mr-2"
+                              />
+                              {comp.name}
+                            </label>
+                          </div>
+                          <span className="text-gray-500">Drag to reorder</span>
+                        </li>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </ul>
+              )}
+            </Droppable>
+          </DragDropContext>
+
+          <div className="mt-4">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Available Components</h4>
+            <ul className="space-y-2">
+              {components
+                .filter((comp) => !selectedComponents.some((c) => c.id === comp.id))
+                .map((comp) => (
+                  <li key={comp.id} className="bg-gray-50 p-2 rounded">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedComponents([...selectedComponents, { id: comp.id, name: comp.name }]);
+                          }
+                        }}
+                        className="mr-2"
+                      />
+                      {comp.name}
+                    </label>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        </div>
+
         <button
+          onClick={handleSaveAssignments}
           className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
         >
-          Save
+          Save Assignments
         </button>
       </div>
 
