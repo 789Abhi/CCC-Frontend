@@ -15,7 +15,7 @@ const CustomCraftComponent = () => {
         </div>
         <div className="bg-customGray rounded-custom flex-1 py-3 px-3 flex justify-center items-center">
           <h1 className="text-bgPrimary font-bold lg:text-[30px] text-lg text-center">
-            Custom Craft Component Updates ssss
+            Custom Craft Component Updates
           </h1>
         </div>
       </div>
