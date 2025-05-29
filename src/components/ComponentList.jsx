@@ -467,7 +467,7 @@ const ComponentList = () => {
       </button>
 
       <div className="mt-6">
-        <h3 className="text-lg font-semibold mb-2">Existing Components</h3>
+        <h3 className="text-lg text-white font-semibold mb-2">Existing Components</h3>
 
         {loading ? (
           <p className="text-gray-500">Loading components...</p>
