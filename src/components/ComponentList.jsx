@@ -310,7 +310,7 @@ const ComponentList = () => {
         ) : (
           <>
             <div className="mb-4">
-              <label className="block text-gray-700 mb-1">Page Template</label>
+              <label className="block text-white mb-1">Page Template</label>
               <select
                 value={selectedTemplate}
                 onChange={(e) => setSelectedTemplate(e.target.value)}
@@ -398,7 +398,7 @@ const ComponentList = () => {
                       {component.fields.length > 0 ? (
                         component.fields.map((field) => (
                           <div key={field.id} className="mt-2">
-                            <label className="block text-gray-700 mb-1">{field.label}</label>
+                            <label className="block text-white mb-1">{field.label}</label>
                             {field.type === "text" ? (
                               <input
                                 type="text"
@@ -536,10 +536,10 @@ const ComponentList = () => {
         )}
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 text-white">
         <h3 className="text-lg font-semibold mb-2">Assign Components to Content</h3>
         <div className="mb-4">
-          <label className="block text-gray-700 mb-1">Content Type</label>
+          <label className="block text-white mb-1">Content Type</label>
           <select
             value={postType}
             onChange={(e) => setPostType(e.target.value)}
@@ -594,77 +594,6 @@ const ComponentList = () => {
             ))}
           </div>
         </div>
-
-        <div className="mb-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Select Components to Assign</h4>
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="components">
-              {(provided) => (
-                <ul className="space-y-2" {...provided.droppableProps} ref={provided.innerRef}>
-                  {selectedComponents.map((comp, index) => (
-                    <Draggable key={comp.id} draggableId={comp.id.toString()} index={index}>
-                      {(provided) => (
-                        <li
-                          className="bg-gray-50 p-2 rounded flex justify-between items-center"
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                        >
-                          <div>
-                            <label className="flex items-center">
-                              <input
-                                type="checkbox"
-                                checked
-                                onChange={() => {
-                                  setSelectedComponents(selectedComponents.filter((c) => c.id !== comp.id));
-                                }}
-                                className="mr-2"
-                              />
-                              {comp.name}
-                            </label>
-                          </div>
-                          <span className="text-gray-500">Drag to reorder</span>
-                        </li>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </ul>
-              )}
-            </Droppable>
-          </DragDropContext>
-
-          <div className="mt-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Available Components</h4>
-            <ul className="space-y-2">
-              {components
-                .filter((comp) => !selectedComponents.some((c) => c.id === comp.id))
-                .map((comp) => (
-                  <li key={comp.id} className="bg-gray-50 p-2 rounded">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedComponents([...selectedComponents, { id: comp.id, name: comp.name }]);
-                          }
-                        }}
-                        className="mr-2"
-                      />
-                      {comp.name}
-                    </label>
-                  </li>
-                ))}
-            </ul>
-          </div>
-        </div>
-
-        <button
-          onClick={handleSaveAssignments}
-          className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-        >
-          Save Assignments
-        </button>
       </div>
 
       {showPopup && (
