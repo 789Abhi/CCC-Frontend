@@ -5,6 +5,7 @@ import logo from "/CCC-Logo.svg"
 import settingsLogo from "/Settings.svg"
 import Components from "./Components"
 import PostTypes from "./PostTypes"
+import ComponentList from "./ComponentList"
 
 
 const CustomCraftComponent = () => {
@@ -60,7 +61,7 @@ const CustomCraftComponent = () => {
   const renderActiveComponent = () => {
     switch (activeTab) {
       case "Components":
-        return <Components />
+        return <ComponentList />
       case "Post Types":
         return <PostTypes />
       case "Taxonomies":
