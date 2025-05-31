@@ -193,14 +193,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
               value={type}
               onChange={(e) => setType(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-custom focus:outline-none focus:ring-2 focus:ring-bgPrimary focus:border-transparent"
-              disabled={isSubmitting || isEditing} // Type cannot be changed after creation
+              disabled={isSubmitting} // Removed `isEditing` from disabled prop
             >
               <option value="text">Text</option>
               <option value="text-area">Textarea</option>
               <option value="image">Image</option>
               <option value="repeater">Repeater</option>
             </select>
-            {isEditing && <p className="text-xs text-gray-500 mt-1">Field type cannot be changed after creation.</p>}
+            {isEditing && <p className="text-xs text-gray-500 mt-1">Field type can be changed.</p>}
           </div>
 
           {type !== "repeater" && (
