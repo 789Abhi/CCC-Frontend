@@ -31,8 +31,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
       setName(field.name || "")
       setType(field.type || "text")
       setIsRequired(field.required || false)
-      setPlaceholder(field.placeholder || "")
-
+      setPlaceholder(field.placeholder || "") // Load placeholder value
       if (field.type === "repeater" && field.config) {
         const config = field.config // config is already parsed object from AjaxHandler
         setMaxSets(config.max_sets || "")
