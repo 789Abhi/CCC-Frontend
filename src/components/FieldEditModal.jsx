@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import axios from "axios"
-import { Plus, X, GripVertical, Edit } from "lucide-react" // Using Lucide React icons
+import { Plus, X, GripVertical, Edit } from "lucide-react"
 
 function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
   const [label, setLabel] = useState("")
@@ -22,7 +22,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
 
   const isEditing = !!field
 
-  const availableFieldTypes = ["text", "textarea", "image"] // Allowed types for nested fields
+  // Allowed types for nested fields - Repeater is explicitly excluded here.
+  const availableFieldTypes = ["text", "textarea", "image"]
 
   useEffect(() => {
     if (field) {

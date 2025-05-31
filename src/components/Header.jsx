@@ -25,7 +25,7 @@ function Header() {
   }
 
   return (
-    <div className="bg-gray-800 text-white p-4">
+    <div className=" text-white p-4">
       <h1 className="text-2xl font-bold mb-4">Custom Craft Components</h1>
       <nav className="flex space-x-4">
         <button

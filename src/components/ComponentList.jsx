@@ -2,33 +2,41 @@
 
 import { useState, useEffect } from "react"
 import axios from "axios"
-import FieldEditModal from "./FieldEditModal" // Corrected import
-import { Plus, Edit, Trash2 } from "lucide-react" // Using Lucide React icons
+import FieldEditModal from "./FieldEditModal"
+import { Plus, Edit, Trash2 } from "lucide-react"
 
 const ComponentList = () => {
   const [showPopup, setShowPopup] = useState(false)
   const [componentName, setComponentName] = useState("")
   const [handle, setHandle] = useState("")
-  const [components, setComponents] = useState([])
+  const [components, setComponents] = useState([]) // All defined components
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState("")
-  const [showFieldEditModal, setShowFieldEditModal] = useState(false) // Renamed state
-  const [selectedComponentForField, setSelectedComponentForField] = useState(null) // Store full component object
-  const [editingField, setEditingField] = useState(null) // State for field being edited
+  const [showFieldEditModal, setShowFieldEditModal] = useState(false)
+  const [selectedComponentForField, setSelectedComponentForField] = useState(null)
+  const [editingField, setEditingField] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [postType, setPostType] = useState("page")
-  const [posts, setPosts] = useState([])
-  const [selectedPosts, setSelectedPosts] = useState([])
+  const [posts, setPosts] = useState([]) // Posts/pages for assignment
+  const [selectedPosts, setSelectedPosts] = useState([]) // IDs of selected posts/pages
   const [selectAllPages, setSelectAllPages] = useState(false)
   const [selectAllPosts, setSelectAllPosts] = useState(false)
-  const [selectedComponentsForAssignment, setSelectedComponentsForAssignment] = useState([]) // Renamed for clarity
 
   const generateHandle = (name) => {
     return name
       .toLowerCase()
       .replace(/\s+/g, "_")
       .replace(/[^\w_]+/g, "")
+  }
+
+  const showMessage = (msg, type) => {
+    setMessage(msg)
+    setMessageType(type)
+    setTimeout(() => {
+      setMessage("")
+      setMessageType("")
+    }, 5000)
   }
 
   const fetchComponents = async () => {
@@ -59,7 +67,7 @@ const ComponentList = () => {
   const fetchPosts = async (type) => {
     try {
       const formData = new FormData()
-      formData.append("action", "ccc_get_posts_with_components") // Use the new AJAX action
+      formData.append("action", "ccc_get_posts_with_components")
       formData.append("post_type", type)
       formData.append("nonce", window.cccData.nonce)
 
@@ -67,18 +75,18 @@ const ComponentList = () => {
 
       if (response.data.success && Array.isArray(response.data.data?.posts)) {
         setPosts(response.data.data.posts)
-        // Initialize selectedComponentsForAssignment based on fetched posts
-        const initialSelected = []
-        response.data.data.posts.forEach((post) => {
-          if (post.assigned_components && post.assigned_components.length > 0) {
-            post.assigned_components.forEach((comp_id) => {
-              if (!initialSelected.includes(comp_id)) {
-                initialSelected.push(comp_id)
-              }
-            })
-          }
-        })
-        setSelectedComponentsForAssignment(initialSelected)
+        // Initialize selectedPosts based on which posts already have components assigned
+        const initiallySelected = response.data.data.posts.filter((post) => post.has_components).map((post) => post.id)
+        setSelectedPosts(initiallySelected)
+
+        // If all posts are initially selected, set selectAll checkbox
+        if (initiallySelected.length > 0 && initiallySelected.length === response.data.data.posts.length) {
+          if (type === "page") setSelectAllPages(true)
+          if (type === "post") setSelectAllPosts(true)
+        } else {
+          if (type === "page") setSelectAllPages(false)
+          if (type === "post") setSelectAllPosts(false)
+        }
       } else {
         setPosts([])
         setError("Failed to fetch posts.")
@@ -89,10 +97,9 @@ const ComponentList = () => {
     }
   }
 
-  const handleSubmit = async () => {
+  const handleSubmitNewComponent = async () => {
     if (!componentName) {
-      setMessage("Please enter a component name")
-      setMessageType("error")
+      showMessage("Please enter a component name", "error")
       return
     }
 
@@ -106,26 +113,18 @@ const ComponentList = () => {
       const response = await axios.post(window.cccData.ajaxUrl, formData)
 
       if (response.data.success) {
-        setMessage(response.data.message || "Component created successfully.")
-        setMessageType("success")
+        showMessage(response.data.message || "Component created successfully.", "success")
         fetchComponents()
         setShowPopup(false)
         setComponentName("")
         setHandle("")
       } else {
-        setMessage(response.data.message || "Failed to create component.")
-        setMessageType("error")
+        showMessage(response.data.message || "Failed to create component.", "error")
       }
     } catch (error) {
       console.error("Error creating component:", error)
-      setMessage("Error connecting to server. Please try again.")
-      setMessageType("error")
+      showMessage("Error connecting to server. Please try again.", "error")
     }
-
-    setTimeout(() => {
-      setMessage("")
-      setMessageType("")
-    }, 5000)
   }
 
   const handleDeleteComponent = async (componentId) => {
@@ -145,21 +144,16 @@ const ComponentList = () => {
       const response = await axios.post(window.cccData.ajaxUrl, formData)
 
       if (response.data.success) {
-        setMessage("Component deleted successfully.")
-        setMessageType("success")
+        showMessage("Component deleted successfully.", "success")
         fetchComponents()
         fetchPosts(postType) // Refresh assignments after deletion
       } else {
-        setMessage(response.data.message || "Failed to delete component.")
-        setMessageType("error")
+        showMessage(response.data.message || "Failed to delete component.", "error")
       }
     } catch (error) {
       console.error("Error deleting component:", error)
-      setMessage("Error connecting to server. Please try again.")
-      setMessageType("error")
+      showMessage("Error connecting to server. Please try again.", "error")
     }
-
-    setTimeout(() => setMessage(""), 5000)
   }
 
   const handleDeleteField = async (fieldId) => {
@@ -174,75 +168,59 @@ const ComponentList = () => {
       const response = await axios.post(window.cccData.ajaxUrl, formData)
 
       if (response.data.success) {
-        setMessage("Field deleted successfully.")
-        setMessageType("success")
+        showMessage("Field deleted successfully.", "success")
         fetchComponents() // Re-fetch components to update field list
       } else {
-        setMessage(response.data.message || "Failed to delete field.")
-        setMessageType("error")
+        showMessage(response.data.message || "Failed to delete field.", "error")
       }
     } catch (error) {
       console.error("Error deleting field:", error)
-      setMessage("Error connecting to server. Please try again.")
-      setMessageType("error")
+      showMessage("Error connecting to server. Please try again.", "error")
     }
-
-    setTimeout(() => setMessage(""), 5000)
   }
 
   const handleSaveAssignments = async () => {
     try {
       const assignments = {}
-      const allPostIds = posts.map((p) => p.id)
+      const allComponentObjects = components.map((comp) => ({
+        id: comp.id,
+        name: comp.name,
+        handle_name: comp.handle_name,
+      }))
 
-      if (selectAllPages && postType === "page") {
-        // Assign selected components to all pages
-        allPostIds.forEach((id) => {
-          assignments[id] = selectedComponentsForAssignment
-        })
-      } else if (selectAllPosts && postType === "post") {
-        // Assign selected components to all posts
-        allPostIds.forEach((id) => {
-          assignments[id] = selectedComponentsForAssignment
-        })
-      } else {
-        // Assign selected components to specific posts
-        selectedPosts.forEach((id) => {
-          assignments[id] = selectedComponentsForAssignment
-        })
-        // For posts not selected, ensure components are removed if they were previously assigned
-        const unselectedPosts = allPostIds.filter((id) => !selectedPosts.includes(id))
-        unselectedPosts.forEach((id) => {
-          // Only clear if the post was previously managed by this system
-          const post = posts.find((p) => p.id === id)
-          if (post && post.has_components) {
-            assignments[id] = []
-          }
-        })
-      }
+      // Determine which posts should have all components, and which should have none
+      posts.forEach((post) => {
+        const isSelected =
+          (postType === "page" && selectAllPages) ||
+          (postType === "post" && selectAllPosts) ||
+          selectedPosts.includes(post.id)
+
+        if (isSelected) {
+          // Assign all currently defined components to this post
+          assignments[post.id] = allComponentObjects
+        } else {
+          // Remove all components from this post
+          assignments[post.id] = []
+        }
+      })
 
       const formData = new FormData()
-      formData.append("action", "ccc_save_component_assignments") // Use the new AJAX action
+      formData.append("action", "ccc_save_component_assignments")
       formData.append("nonce", window.cccData.nonce)
       formData.append("assignments", JSON.stringify(assignments))
 
       const response = await axios.post(window.cccData.ajaxUrl, formData)
 
       if (response.data.success) {
-        setMessage(response.data.message || "Assignments saved successfully.")
-        setMessageType("success")
+        showMessage(response.data.message || "Assignments saved successfully.", "success")
         fetchPosts(postType) // Refresh posts to show updated assignment status
       } else {
-        setMessage(response.data.message || "Failed to save assignments.")
-        setMessageType("error")
+        showMessage(response.data.message || "Failed to save assignments.", "error")
       }
     } catch (error) {
       console.error("Error saving assignments:", error)
-      setMessage("Error connecting to server. Please try again.")
-      setMessageType("error")
+      showMessage("Error connecting to server. Please try again.", "error")
     }
-
-    setTimeout(() => setMessage(""), 5000)
   }
 
   useEffect(() => {
@@ -251,7 +229,7 @@ const ComponentList = () => {
 
   useEffect(() => {
     fetchPosts(postType)
-    setSelectedPosts([])
+    // Reset selectAll checkboxes when postType changes
     setSelectAllPages(false)
     setSelectAllPosts(false)
   }, [postType])
@@ -269,16 +247,6 @@ const ComponentList = () => {
     fetchComponents() // Refresh components after field changes
   }
 
-  const handleComponentAssignmentChange = (componentId, isChecked) => {
-    setSelectedComponentsForAssignment((prev) => {
-      if (isChecked) {
-        return [...prev, componentId]
-      } else {
-        return prev.filter((id) => id !== componentId)
-      }
-    })
-  }
-
   const handlePostSelectionChange = (postId, isChecked) => {
     setSelectedPosts((prev) => {
       if (isChecked) {
@@ -292,14 +260,18 @@ const ComponentList = () => {
   const handleSelectAllPagesChange = (isChecked) => {
     setSelectAllPages(isChecked)
     if (isChecked) {
-      setSelectedPosts([]) // Clear individual selections if 'All Pages' is checked
+      setSelectedPosts(posts.map((p) => p.id)) // Select all current pages
+    } else {
+      setSelectedPosts([]) // Deselect all pages
     }
   }
 
   const handleSelectAllPostsChange = (isChecked) => {
     setSelectAllPosts(isChecked)
     if (isChecked) {
-      setSelectedPosts([]) // Clear individual selections if 'All Posts' is checked
+      setSelectedPosts(posts.map((p) => p.id)) // Select all current posts
+    } else {
+      setSelectedPosts([]) // Deselect all posts
     }
   }
 
@@ -424,32 +396,11 @@ const ComponentList = () => {
           </select>
         </div>
 
-        <div className="mb-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">
-            Select Components to Assign to {postType === "page" ? "Pages" : "Posts"}
-          </h4>
-          <div className="space-y-2 bg-white p-4 rounded shadow">
-            {components.length === 0 ? (
-              <p className="text-gray-500">No components available to assign.</p>
-            ) : (
-              components.map((comp) => (
-                <label key={comp.id} className="flex items-center text-gray-800">
-                  <input
-                    type="checkbox"
-                    checked={selectedComponentsForAssignment.includes(comp.id)}
-                    onChange={(e) => handleComponentAssignmentChange(comp.id, e.target.checked)}
-                    className="mr-2"
-                  />
-                  {comp.name}
-                </label>
-              ))
-            )}
-          </div>
-        </div>
+        {/* Removed "Select Components to Assign" section as per user request */}
 
         <div className="mb-4">
           <h4 className="text-sm font-medium text-gray-700 mb-2">
-            Select {postType === "page" ? "Pages" : "Posts"} to Assign Components To
+            Select {postType === "page" ? "Pages" : "Posts"} to Assign All Components To
           </h4>
           <div className="space-y-2 bg-white p-4 rounded shadow">
             {postType === "page" && (
@@ -478,25 +429,12 @@ const ComponentList = () => {
               <label key={post.id} className="flex items-center text-gray-800">
                 <input
                   type="checkbox"
-                  checked={
-                    (postType === "page" && selectAllPages) ||
-                    (postType === "post" && selectAllPosts) ||
-                    selectedPosts.includes(post.id)
-                  }
+                  checked={selectedPosts.includes(post.id)}
                   onChange={(e) => handlePostSelectionChange(post.id, e.target.checked)}
                   className="mr-2"
-                  disabled={(postType === "page" && selectAllPages) || (postType === "post" && selectAllPosts)}
                 />
                 {post.title}{" "}
-                {post.assigned_components && post.assigned_components.length > 0 && (
-                  <span className="text-green-600 text-sm ml-1">
-                    (Assigned:{" "}
-                    {post.assigned_components
-                      .map((id) => components.find((c) => c.id === id)?.name || `ID:${id}`)
-                      .join(", ")}
-                    )
-                  </span>
-                )}
+                {post.has_components && <span className="text-green-600 text-sm ml-1">(Components Assigned)</span>}
               </label>
             ))}
           </div>
@@ -532,7 +470,7 @@ const ComponentList = () => {
             </p>
             <div className="flex justify-end space-x-2">
               <button
-                onClick={handleSubmit}
+                onClick={handleSubmitNewComponent}
                 className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
               >
                 Save
@@ -558,7 +496,7 @@ const ComponentList = () => {
           component={selectedComponentForField}
           field={editingField}
           onClose={closeFieldEditModal}
-          onSave={closeFieldEditModal} // Close and refresh components on save
+          onSave={closeFieldEditModal}
         />
       )}
     </div>
