@@ -371,6 +371,7 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
   const [label, setLabel] = useState("")
   const [name, setName] = useState("")
   const [type, setType] = useState("text")
+  const [imageReturnType, setImageReturnType] = useState("url") // New state for image return type
   const [error, setError] = useState("")
 
   const isEditing = !!field
@@ -380,10 +381,16 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
       setLabel(field.label || "")
       setName(field.name || "")
       setType(field.type || "text")
+      if (field.type === "image" && field.config) {
+        setImageReturnType(field.config.return_type || "url")
+      } else {
+        setImageReturnType("url")
+      }
     } else {
       setLabel("")
       setName("")
       setType("text")
+      setImageReturnType("url")
     }
     setError("")
   }, [field])
@@ -406,7 +413,12 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
       return
     }
 
-    onSave({ label: label.trim(), name: name.trim(), type })
+    const newFieldData = { label: label.trim(), name: name.trim(), type }
+    if (type === "image") {
+      newFieldData.config = { return_type: imageReturnType }
+    }
+
+    onSave(newFieldData)
     onClose()
   }
 
@@ -465,6 +477,24 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
               ))}
             </select>
           </div>
+
+          {type === "image" && (
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-1">Return Type</label>
+              <select
+                value={imageReturnType}
+                onChange={(e) => setImageReturnType(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="url">URL Only</option>
+                <option value="array">Full Image Data (ID, URL, Alt, etc.)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Choose whether to return just the image URL or complete image data including ID, alt text, etc.
+              </p>
+            </div>
+          )}
+
           <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"
