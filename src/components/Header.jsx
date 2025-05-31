@@ -26,7 +26,7 @@ function Header() {
 
   return (
     <div className=" text-white p-4">
-      <h1 className="text-2xl font-bold mb-4">Custom Craft Components</h1>
+      <h1 className="text-2xl font-bold mb-4">Custom Craft Componentskk</h1>
       <nav className="flex space-x-4">
         <button
           className={`px-4 py-2 rounded ${
