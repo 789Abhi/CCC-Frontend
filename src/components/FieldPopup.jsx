@@ -8,8 +8,12 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
   const [name, setName] = useState("")
   const [type, setType] = useState("text")
   const [maxSets, setMaxSets] = useState("")
+  const [allowedFields, setAllowedFields] = useState(["text", "textarea", "image"])
+  const [imageReturnType, setImageReturnType] = useState("url")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+
+  const availableFieldTypes = ["text", "textarea", "image", "repeater"]
 
   const generateHandle = (inputLabel) => {
     return inputLabel
@@ -18,9 +22,22 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
       .replace(/[^\w_]+/g, "")
   }
 
+  const handleAllowedFieldChange = (fieldType, checked) => {
+    if (checked) {
+      setAllowedFields([...allowedFields, fieldType])
+    } else {
+      setAllowedFields(allowedFields.filter((f) => f !== fieldType))
+    }
+  }
+
   const handleSubmit = async () => {
     if (!label) {
       setError("Please enter a display label")
+      return
+    }
+
+    if (type === "repeater" && allowedFields.length === 0) {
+      setError("Please select at least one allowed field type for the repeater")
       return
     }
 
@@ -38,9 +55,12 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
       formData.append("type", type)
       formData.append("component_id", componentId)
 
-      // Add max_sets for repeater fields
+      // Add type-specific configurations
       if (type === "repeater") {
         formData.append("max_sets", maxSets || "0")
+        formData.append("allowed_fields", JSON.stringify(allowedFields))
+      } else if (type === "image") {
+        formData.append("return_type", imageReturnType)
       }
 
       const response = await axios.post(window.cccData.ajaxUrl, formData)
@@ -61,7 +81,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-semibold mb-4 text-gray-800">Add New Field</h3>
 
         {error && <div className="mb-4 px-4 py-2 rounded bg-red-100 text-red-800">{error}</div>}
@@ -114,22 +134,63 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
           </select>
         </div>
 
-        {type === "repeater" && (
+        {type === "image" && (
           <div className="mb-4">
-            <label className="block text-gray-700 mb-1">Maximum Sets (leave empty for unlimited)</label>
-            <input
-              type="number"
-              value={maxSets}
-              onChange={(e) => setMaxSets(e.target.value)}
-              placeholder="Optional"
-              min="0"
+            <label className="block text-gray-700 mb-1">Return Type</label>
+            <select
+              value={imageReturnType}
+              onChange={(e) => setImageReturnType(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isSubmitting}
-            />
+            >
+              <option value="url">URL Only</option>
+              <option value="array">Full Image Data (ID, URL, Alt, etc.)</option>
+            </select>
             <p className="text-xs text-gray-500 mt-1">
-              Limit how many items can be added to this repeater field. Leave empty for unlimited.
+              Choose whether to return just the image URL or complete image data including ID, alt text, etc.
             </p>
           </div>
+        )}
+
+        {type === "repeater" && (
+          <>
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-1">Maximum Sets (leave empty for unlimited)</label>
+              <input
+                type="number"
+                value={maxSets}
+                onChange={(e) => setMaxSets(e.target.value)}
+                placeholder="Optional"
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Limit how many items can be added to this repeater field. Leave empty for unlimited.
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">Allowed Field Types</label>
+              <div className="space-y-2">
+                {availableFieldTypes.map((fieldType) => (
+                  <label key={fieldType} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={allowedFields.includes(fieldType)}
+                      onChange={(e) => handleAllowedFieldChange(fieldType, e.target.checked)}
+                      className="mr-2"
+                      disabled={isSubmitting}
+                    />
+                    <span className="capitalize">{fieldType}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Select which field types can be added inside this repeater field.
+              </p>
+            </div>
+          </>
         )}
 
         <div className="flex justify-end space-x-2">
