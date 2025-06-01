@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react"
 import axios from "axios"
 import FieldEditModal from "./FieldEditModal"
-import { Plus, Edit, Trash2 } from "lucide-react"
+import { Plus, Edit, Trash2, LayoutGrid, FileText, ImageIcon, Repeat } from "lucide-react"
 
 const ComponentList = () => {
-  const [showPopup, setShowPopup] = useState(false)
+  const [showNewComponentDialog, setShowNewComponentDialog] = useState(false)
   const [componentName, setComponentName] = useState("")
   const [handle, setHandle] = useState("")
-  const [components, setComponents] = useState([]) // All defined components
+  const [components, setComponents] = useState([])
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState("")
   const [showFieldEditModal, setShowFieldEditModal] = useState(false)
@@ -17,11 +17,6 @@ const ComponentList = () => {
   const [editingField, setEditingField] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [postType, setPostType] = useState("page")
-  const [posts, setPosts] = useState([]) // Posts/pages for assignment
-  const [selectedPosts, setSelectedPosts] = useState([]) // IDs of selected posts/pages
-  const [selectAllPages, setSelectAllPages] = useState(false)
-  const [selectAllPosts, setSelectAllPosts] = useState(false)
 
   const generateHandle = (name) => {
     return name
@@ -64,39 +59,6 @@ const ComponentList = () => {
     }
   }
 
-  const fetchPosts = async (type) => {
-    try {
-      const formData = new FormData()
-      formData.append("action", "ccc_get_posts_with_components")
-      formData.append("post_type", type)
-      formData.append("nonce", window.cccData.nonce)
-
-      const response = await axios.post(window.cccData.ajaxUrl, formData)
-
-      if (response.data.success && Array.isArray(response.data.data?.posts)) {
-        setPosts(response.data.data.posts)
-        // Initialize selectedPosts based on which posts already have components assigned
-        const initiallySelected = response.data.data.posts.filter((post) => post.has_components).map((post) => post.id)
-        setSelectedPosts(initiallySelected)
-
-        // If all posts are initially selected, set selectAll checkbox
-        if (initiallySelected.length > 0 && initiallySelected.length === response.data.data.posts.length) {
-          if (type === "page") setSelectAllPages(true)
-          if (type === "post") setSelectAllPosts(true)
-        } else {
-          if (type === "page") setSelectAllPages(false)
-          if (type === "post") setSelectAllPosts(false)
-        }
-      } else {
-        setPosts([])
-        setError("Failed to fetch posts.")
-      }
-    } catch (err) {
-      setError("Failed to fetch posts. Please try again.")
-      console.error("Failed to fetch posts", err)
-    }
-  }
-
   const handleSubmitNewComponent = async () => {
     if (!componentName) {
       showMessage("Please enter a component name", "error")
@@ -115,7 +77,7 @@ const ComponentList = () => {
       if (response.data.success) {
         showMessage(response.data.message || "Component created successfully.", "success")
         fetchComponents()
-        setShowPopup(false)
+        setShowNewComponentDialog(false)
         setComponentName("")
         setHandle("")
       } else {
@@ -146,7 +108,6 @@ const ComponentList = () => {
       if (response.data.success) {
         showMessage("Component deleted successfully.", "success")
         fetchComponents()
-        fetchPosts(postType) // Refresh assignments after deletion
       } else {
         showMessage(response.data.message || "Failed to delete component.", "error")
       }
@@ -179,60 +140,9 @@ const ComponentList = () => {
     }
   }
 
-  const handleSaveAssignments = async () => {
-    try {
-      const assignments = {}
-      const allComponentObjects = components.map((comp) => ({
-        id: comp.id,
-        name: comp.name,
-        handle_name: comp.handle_name,
-      }))
-
-      // Determine which posts should have all components, and which should have none
-      posts.forEach((post) => {
-        const isSelected =
-          (postType === "page" && selectAllPages) ||
-          (postType === "post" && selectAllPosts) ||
-          selectedPosts.includes(post.id)
-
-        if (isSelected) {
-          // Assign all currently defined components to this post
-          assignments[post.id] = allComponentObjects
-        } else {
-          // Remove all components from this post
-          assignments[post.id] = []
-        }
-      })
-
-      const formData = new FormData()
-      formData.append("action", "ccc_save_component_assignments")
-      formData.append("nonce", window.cccData.nonce)
-      formData.append("assignments", JSON.stringify(assignments))
-
-      const response = await axios.post(window.cccData.ajaxUrl, formData)
-
-      if (response.data.success) {
-        showMessage(response.data.message || "Assignments saved successfully.", "success")
-        fetchPosts(postType) // Refresh posts to show updated assignment status
-      } else {
-        showMessage(response.data.message || "Failed to save assignments.", "error")
-      }
-    } catch (error) {
-      console.error("Error saving assignments:", error)
-      showMessage("Error connecting to server. Please try again.", "error")
-    }
-  }
-
   useEffect(() => {
     fetchComponents()
   }, [])
-
-  useEffect(() => {
-    fetchPosts(postType)
-    // Reset selectAll checkboxes when postType changes
-    setSelectAllPages(false)
-    setSelectAllPosts(false)
-  }, [postType])
 
   const openFieldEditModal = (component, field = null) => {
     setSelectedComponentForField(component)
@@ -247,243 +157,219 @@ const ComponentList = () => {
     fetchComponents() // Refresh components after field changes
   }
 
-  const handlePostSelectionChange = (postId, isChecked) => {
-    setSelectedPosts((prev) => {
-      if (isChecked) {
-        return [...prev, postId]
-      } else {
-        return prev.filter((id) => id !== postId)
-      }
-    })
-  }
-
-  const handleSelectAllPagesChange = (isChecked) => {
-    setSelectAllPages(isChecked)
-    if (isChecked) {
-      setSelectedPosts(posts.map((p) => p.id)) // Select all current pages
-    } else {
-      setSelectedPosts([]) // Deselect all pages
-    }
-  }
-
-  const handleSelectAllPostsChange = (isChecked) => {
-    setSelectAllPosts(isChecked)
-    if (isChecked) {
-      setSelectedPosts(posts.map((p) => p.id)) // Select all current posts
-    } else {
-      setSelectedPosts([]) // Deselect all posts
+  const getFieldIcon = (type) => {
+    switch (type) {
+      case "text":
+        return <FileText className="w-4 h-4 text-blue-500" />
+      case "textarea":
+        return <FileText className="w-4 h-4 text-green-500" />
+      case "image":
+        return <ImageIcon className="w-4 h-4 text-purple-500" />
+      case "repeater":
+        return <Repeat className="w-4 h-4 text-orange-500" />
+      default:
+        return <FileText className="w-4 h-4 text-gray-500" />
     }
   }
 
   if (loading) {
-    return <p className="text-gray-500">Loading components...</p>
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
+        <p className="ml-4 text-lg text-gray-600">Loading components...</p>
+      </div>
+    )
   }
 
   if (error) {
-    return <p className="text-red-500">{error}</p>
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong className="font-bold">Error!</strong>
+        <span className="block sm:inline"> {error}</span>
+      </div>
+    )
   }
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       {message && (
         <div
-          className={`mb-4 px-4 py-2 rounded ${
-            messageType === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+          className={`mb-4 px-4 py-3 rounded-lg ${
+            messageType === "success"
+              ? "bg-green-100 text-green-800 border border-green-200"
+              : "bg-red-100 text-red-800 border border-red-200"
           }`}
         >
           {message}
         </div>
       )}
 
-      <button
-        onClick={() => {
-          setShowPopup(true)
-          setComponentName("")
-          setHandle("")
-        }}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition flex items-center gap-2"
-      >
-        <Plus className="w-5 h-5" /> Add New Component
-      </button>
-
-      <div className="mt-6">
-        <h3 className="text-lg text-white font-semibold mb-2">Existing Components</h3>
-
-        {components.length === 0 ? (
-          <p>No components found. Create your first component above.</p>
-        ) : (
-          <ul className="space-y-3">
-            {components.map((comp) => (
-              <li key={comp.id} className="bg-white p-4 rounded shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <strong>{comp.name}</strong> <span className="text-gray-500">—</span>{" "}
-                    <code className="bg-gray-100 px-1 rounded">{comp.handle_name}</code>
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+        <div className="flex flex-row items-center justify-between space-y-0 pb-2 mb-4">
+          <h2 className="text-2xl font-bold text-gray-800">Defined Components</h2>
+          <button
+            onClick={() => {
+              setShowNewComponentDialog(true)
+              setComponentName("")
+              setHandle("")
+            }}
+            className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
+          >
+            <Plus className="w-5 h-5" /> Add New Component
+          </button>
+        </div>
+        <div>
+          {components.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">
+              No components found. Click "Add New Component" to get started!
+            </p>
+          ) : (
+            <div className="grid gap-4">
+              {components.map((comp) => (
+                <div
+                  key={comp.id}
+                  className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg overflow-hidden"
+                >
+                  <div className="flex flex-row items-center justify-between space-y-0 p-4 pb-2 bg-gray-50 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <LayoutGrid className="w-6 h-6 text-pink-600" />
+                      <div>
+                        <h3 className="text-lg font-semibold">{comp.name}</h3>
+                        <code className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-mono">
+                          {comp.handle_name}
+                        </code>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openFieldEditModal(comp)}
+                        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 disabled:pointer-events-none disabled:opacity-50 border border-blue-200 bg-white hover:bg-blue-50 text-blue-600 h-9 px-3 py-2 gap-1"
+                      >
+                        <Plus className="w-4 h-4" /> Add Field
+                      </button>
+                      <button
+                        onClick={() => handleDeleteComponent(comp.id)}
+                        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 disabled:pointer-events-none disabled:opacity-50 bg-red-600 text-white hover:bg-red-700 h-9 px-3 py-2 gap-1"
+                      >
+                        <Trash2 className="w-4 h-4" /> Delete
+                      </button>
+                    </div>
                   </div>
-                  <div className="space-x-2 flex items-center">
-                    <button
-                      onClick={() => openFieldEditModal(comp)}
-                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition flex items-center gap-1 text-sm"
-                    >
-                      <Plus className="w-4 h-4" /> Add Field
-                    </button>
-                    <button
-                      onClick={() => handleDeleteComponent(comp.id)}
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition flex items-center gap-1 text-sm"
-                    >
-                      <Trash2 className="w-4 h-4" /> Delete
-                    </button>
+                  <div className="p-4 pt-0">
+                    {comp.fields && comp.fields.length > 0 ? (
+                      <div className="mt-3 border-t border-gray-100 pt-3">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Fields ({comp.fields.length}):</h4>
+                        <ul className="space-y-2">
+                          {comp.fields.map((field) => (
+                            <li
+                              key={field.id}
+                              className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-md"
+                            >
+                              <div className="flex items-center gap-2">
+                                {getFieldIcon(field.type)}
+                                <span className="font-medium text-gray-800">{field.label}</span>
+                                <span className="text-gray-500 mx-1">—</span>
+                                <code className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">
+                                  {field.name}
+                                </code>
+                                <span className="ml-2 text-sm text-gray-600 capitalize">
+                                  ({field.type}
+                                  {field.type === "repeater" && field.config?.nested_fields?.length > 0
+                                    ? ` with ${field.config.nested_fields.length} nested fields`
+                                    : ""}
+                                  )
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => openFieldEditModal(comp, field)}
+                                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 disabled:pointer-events-none disabled:opacity-50 hover:bg-yellow-50 text-yellow-600 h-9 w-9 p-0"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteField(field.id)}
+                                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-600 disabled:pointer-events-none disabled:opacity-50 hover:bg-red-50 text-red-600 h-9 w-9 p-0"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-gray-500 text-sm">No fields added yet. Click "Add Field" above.</p>
+                    )}
                   </div>
                 </div>
-                {comp.fields && comp.fields.length > 0 ? (
-                  <div className="mt-3">
-                    <h4 className="text-sm font-medium text-gray-700">Fields:</h4>
-                    <ul className="mt-2 space-y-2">
-                      {comp.fields.map((field) => (
-                        <li
-                          key={field.id}
-                          className="border-l-4 border-blue-500 pl-3 py-2 bg-gray-50 rounded flex justify-between items-center"
-                        >
-                          <div>
-                            <span className="font-medium">{field.label}</span> <span className="text-gray-500">—</span>{" "}
-                            <code className="bg-gray-100 px-1 rounded">{field.name}</code>
-                            <span className="ml-2 text-gray-600 text-sm capitalize">
-                              ({field.type}
-                              {field.type === "repeater" && field.config?.nested_fields?.length > 0
-                                ? ` with ${field.config.nested_fields.length} nested fields`
-                                : ""}
-                              )
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => openFieldEditModal(comp, field)}
-                              className="text-yellow-600 hover:text-yellow-800 p-1 rounded-full hover:bg-yellow-50 transition-colors"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteField(field.id)}
-                              className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
-                  <p className="mt-2 text-gray-500 text-sm">No fields added yet.</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="mt-6 text-white">
-        <h3 className="text-lg font-semibold mb-2 text-white">Assign Components to Content</h3>
-        <div className="mb-4">
-          <label className="block text-white mb-1">Content Type</label>
-          <select
-            value={postType}
-            onChange={(e) => setPostType(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
-          >
-            <option value="page">Pages</option>
-            <option value="post">Posts</option>
-          </select>
-        </div>
-
-        {/* Removed "Select Components to Assign" section as per user request */}
-
-        <div className="mb-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">
-            Select {postType === "page" ? "Pages" : "Posts"} to Assign All Components To
-          </h4>
-          <div className="space-y-2 bg-white p-4 rounded shadow">
-            {postType === "page" && (
-              <label className="flex items-center text-gray-800 font-semibold">
-                <input
-                  type="checkbox"
-                  checked={selectAllPages}
-                  onChange={(e) => handleSelectAllPagesChange(e.target.checked)}
-                  className="mr-2"
-                />
-                All Pages
-              </label>
-            )}
-            {postType === "post" && (
-              <label className="flex items-center text-gray-800 font-semibold">
-                <input
-                  type="checkbox"
-                  checked={selectAllPosts}
-                  onChange={(e) => handleSelectAllPostsChange(e.target.checked)}
-                  className="mr-2"
-                />
-                All Posts
-              </label>
-            )}
-            {posts.map((post) => (
-              <label key={post.id} className="flex items-center text-gray-800">
-                <input
-                  type="checkbox"
-                  checked={selectedPosts.includes(post.id)}
-                  onChange={(e) => handlePostSelectionChange(post.id, e.target.checked)}
-                  className="mr-2"
-                />
-                {post.title}{" "}
-                {post.has_components && <span className="text-green-600 text-sm ml-1">(Components Assigned)</span>}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <button
-          onClick={handleSaveAssignments}
-          className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition flex items-center gap-2"
-        >
-          Save Assignments
-        </button>
-      </div>
-
-      {showPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h3 className="text-xl font-semibold mb-4">Create New Component</h3>
-            <input
-              type="text"
-              value={componentName}
-              placeholder="Component Name"
-              onChange={(e) => {
-                const value = e.target.value
-                setComponentName(value)
-                if (!handle || handle === generateHandle(componentName)) {
-                  setHandle(generateHandle(value))
-                }
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-            />
-            <p className="text-sm text-gray-600 mb-4">
-              Handle: <span className="font-mono">{handle}</span>
-            </p>
-            <div className="flex justify-end space-x-2">
+      {showNewComponentDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-800">Create New Component</h3>
               <button
-                onClick={handleSubmitNewComponent}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+                onClick={() => setShowNewComponentDialog(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
               >
-                Save
+                &times;
               </button>
+            </div>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="componentName" className="text-right text-gray-700">
+                  Name
+                </label>
+                <input
+                  id="componentName"
+                  type="text"
+                  value={componentName}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setComponentName(value)
+                    if (!handle || handle === generateHandle(componentName)) {
+                      setHandle(generateHandle(value))
+                    }
+                  }}
+                  placeholder="e.g., Hero Section"
+                  className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-600"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="handle" className="text-right text-gray-700">
+                  Handle
+                </label>
+                <input
+                  id="handle"
+                  type="text"
+                  value={handle}
+                  onChange={(e) => setHandle(e.target.value)}
+                  placeholder="e.g., hero_section"
+                  className="col-span-3 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                  disabled={true}
+                />
+              </div>
+              <p className="text-sm text-gray-500 text-center">Handle is auto-generated and used in templates.</p>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4">
               <button
-                onClick={() => {
-                  setShowPopup(false)
-                  setComponentName("")
-                  setHandle("")
-                }}
-                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
+                type="button"
+                onClick={() => setShowNewComponentDialog(false)}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
               >
                 Cancel
+              </button>
+              <button
+                onClick={handleSubmitNewComponent}
+                className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-2 rounded-md transition-colors"
+              >
+                Save Component
               </button>
             </div>
           </div>
