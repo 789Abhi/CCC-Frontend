@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import axios from "axios"
 import { Plus, X, GripVertical, Edit } from "lucide-react"
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
 
 function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
   const [label, setLabel] = useState("")
@@ -81,12 +82,16 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
     }
   }
 
-  const handleMoveNestedField = (dragIndex, hoverIndex) => {
-    const draggedField = nestedFieldDefinitions[dragIndex]
-    const newNestedFields = [...nestedFieldDefinitions]
-    newNestedFields.splice(dragIndex, 1)
-    newNestedFields.splice(hoverIndex, 0, draggedField)
-    setNestedFieldDefinitions(newNestedFields)
+  const onDragEnd = (result) => {
+    if (!result.destination) {
+      return
+    }
+
+    const reorderedFields = Array.from(nestedFieldDefinitions)
+    const [removed] = reorderedFields.splice(result.source.index, 1)
+    reorderedFields.splice(result.destination.index, 0, removed)
+
+    setNestedFieldDefinitions(reorderedFields)
   }
 
   const handleSubmit = async (e) => {
@@ -177,7 +182,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
               placeholder="Enter field label"
               disabled={isSubmitting}
               required
-              className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-600"
             />
           </div>
 
@@ -192,7 +197,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
               onChange={(e) => setName(e.target.value)}
               placeholder="field_name"
               disabled={isSubmitting || isEditing}
-              className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-600"
             />
             <p className="col-span-4 text-xs text-gray-500 text-center">
               {isEditing
@@ -210,7 +215,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
               value={type}
               onChange={(e) => setType(e.target.value)}
               disabled={isSubmitting}
-              className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-600"
             >
               <option value="text">Text</option>
               <option value="text-area">Textarea</option>
@@ -233,7 +238,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                   onChange={(e) => setPlaceholder(e.target.value)}
                   placeholder="Enter placeholder text"
                   disabled={isSubmitting}
-                  className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-600"
                 />
               </div>
 
@@ -243,7 +248,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                   id="required"
                   checked={isRequired}
                   onChange={(e) => setIsRequired(e.target.checked)}
-                  className="mr-2 rounded focus:ring-pink-500"
+                  className="mr-2 rounded focus:ring-pink-600"
                   disabled={isSubmitting}
                 />
                 <label htmlFor="required" className="text-gray-700">
@@ -267,7 +272,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                   onChange={(e) => setMaxSets(e.target.value)}
                   placeholder="Unlimited"
                   min="0"
-                  className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-600"
                   disabled={isSubmitting}
                 />
                 <p className="col-span-4 text-xs text-gray-500 text-center">
@@ -298,44 +303,60 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {nestedFieldDefinitions.map((nf, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-md shadow-sm"
-                      >
-                        <div className="flex items-center gap-2">
-                          <GripVertical className="w-4 h-4 text-gray-400 cursor-grab" />
-                          <span className="font-medium text-gray-800">{nf.label}</span>
-                          <span className="text-gray-500 mx-1">—</span>
-                          <code className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">{nf.name}</code>
-                          <span className="ml-2 text-sm text-gray-600 capitalize">({nf.type})</span>
+                  <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="nested-fields">
+                      {(provided) => (
+                        <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                          {nestedFieldDefinitions.map((nf, index) => (
+                            <Draggable key={nf.name + index} draggableId={nf.name + index} index={index}>
+                              {(provided) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-md shadow-sm"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span {...provided.dragHandleProps}>
+                                      <GripVertical className="w-4 h-4 text-gray-400 cursor-grab" />
+                                    </span>
+                                    <span className="font-medium text-gray-800">{nf.label}</span>
+                                    <span className="text-gray-500 mx-1">—</span>
+                                    <code className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">
+                                      {nf.name}
+                                    </code>
+                                    <span className="ml-2 text-sm text-gray-600 capitalize">({nf.type})</span>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setCurrentNestedField(nf)
+                                        setEditingNestedFieldIndex(index)
+                                        setShowNestedFieldModal(true)
+                                      }}
+                                      className="p-1 rounded-md text-yellow-600 hover:bg-yellow-50"
+                                      disabled={isSubmitting}
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteNestedField(index)}
+                                      className="p-1 rounded-md text-red-600 hover:bg-red-50"
+                                      disabled={isSubmitting}
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCurrentNestedField(nf)
-                              setEditingNestedFieldIndex(index)
-                              setShowNestedFieldModal(true)
-                            }}
-                            className="p-1 rounded-md text-yellow-600 hover:bg-yellow-50"
-                            disabled={isSubmitting}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteNestedField(index)}
-                            className="p-1 rounded-md text-red-600 hover:bg-red-50"
-                            disabled={isSubmitting}
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
                 )}
                 <button
                   type="button"
@@ -397,7 +418,9 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
   const [error, setError] = useState("")
   const [maxSets, setMaxSets] = useState("") // For nested repeater's max_sets
   const [nestedFieldDefinitions, setNestedFieldDefinitions] = useState([]) // For nested repeater's nested_fields
-  const [currentNestedField, setCurrentNestedField] = useState(null)
+  const [editingDeeplyNestedFieldIndex, setEditingDeeplyNestedFieldIndex] = useState(null)
+  const [showDeeplyNestedFieldModal, setShowDeeplyNestedFieldModal] = useState(false)
+  const [currentDeeplyNestedField, setCurrentDeeplyNestedField] = useState(null)
 
   const isEditing = !!field
 
@@ -421,6 +444,9 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
       setNestedFieldDefinitions([])
     }
     setError("")
+    setEditingDeeplyNestedFieldIndex(null)
+    setShowDeeplyNestedFieldModal(false)
+    setCurrentDeeplyNestedField(null)
   }, [field])
 
   const generateHandle = (inputLabel) => {
@@ -428,6 +454,37 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
       .toLowerCase()
       .replace(/\s+/g, "_")
       .replace(/[^\w_]+/g, "")
+  }
+
+  const handleAddDeeplyNestedField = (newField) => {
+    setNestedFieldDefinitions((prev) => [...prev, newField])
+    setShowDeeplyNestedFieldModal(false)
+    setCurrentDeeplyNestedField(null)
+  }
+
+  const handleUpdateDeeplyNestedField = (updatedField) => {
+    setNestedFieldDefinitions((prev) => prev.map((f, i) => (i === editingDeeplyNestedFieldIndex ? updatedField : f)))
+    setEditingDeeplyNestedFieldIndex(null)
+    setShowDeeplyNestedFieldModal(false)
+    setCurrentDeeplyNestedField(null)
+  }
+
+  const handleDeleteDeeplyNestedField = (indexToDelete) => {
+    if (window.confirm("Are you sure you want to delete this deeply nested field?")) {
+      setNestedFieldDefinitions((prev) => prev.filter((_, i) => i !== indexToDelete))
+    }
+  }
+
+  const onDeeplyNestedDragEnd = (result) => {
+    if (!result.destination) {
+      return
+    }
+
+    const reorderedFields = Array.from(nestedFieldDefinitions)
+    const [removed] = reorderedFields.splice(result.source.index, 1)
+    reorderedFields.splice(result.destination.index, 0, removed)
+
+    setNestedFieldDefinitions(reorderedFields)
   }
 
   const handleSubmit = (e) => {
@@ -493,7 +550,7 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
               }}
               placeholder="e.g., Item Title"
               required
-              className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-600"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -507,7 +564,7 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., item_title"
               required
-              className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-600"
             />
             <p className="col-span-4 text-xs text-gray-500 text-center">
               Used in code. Must be unique within this repeater.
@@ -521,7 +578,7 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
               id="nestedType"
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-600"
             >
               {availableFieldTypes.map((ft) => (
                 <option key={ft} value={ft}>
@@ -545,7 +602,7 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
                   onChange={(e) => setMaxSets(e.target.value)}
                   placeholder="Unlimited"
                   min="0"
-                  className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-600"
                 />
                 <p className="col-span-4 text-xs text-gray-500 text-center">
                   Limit the number of items that can be added to this nested repeater.
@@ -564,14 +621,9 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
                     <button
                       type="button"
                       onClick={() => {
-                        setCurrentNestedField(null) // This is for the *parent* modal, not this one
-                        // For deeply nested fields, we need a way to add them.
-                        // For simplicity, I'll add a basic text field as an example.
-                        // A more robust solution would involve another modal for deep nesting.
-                        setNestedFieldDefinitions((prev) => [
-                          ...prev,
-                          { label: "New Text Field", name: "new_text_field", type: "text" },
-                        ])
+                        setCurrentDeeplyNestedField(null)
+                        setEditingDeeplyNestedFieldIndex(null)
+                        setShowDeeplyNestedFieldModal(true)
                       }}
                       className="text-pink-600 hover:underline text-sm mt-2"
                     >
@@ -579,41 +631,65 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {nestedFieldDefinitions.map((nf, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-md shadow-sm"
-                      >
-                        <div className="flex items-center gap-2">
-                          <GripVertical className="w-4 h-4 text-gray-400 cursor-grab" />
-                          <span className="font-medium text-gray-800">{nf.label}</span>
-                          <span className="text-gray-500 mx-1">—</span>
-                          <code className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">{nf.name}</code>
-                          <span className="ml-2 text-sm text-gray-600 capitalize">({nf.type})</span>
+                  <DragDropContext onDragEnd={onDeeplyNestedDragEnd}>
+                    <Droppable droppableId="deeply-nested-fields">
+                      {(provided) => (
+                        <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                          {nestedFieldDefinitions.map((nf, index) => (
+                            <Draggable key={nf.name + index} draggableId={nf.name + index} index={index}>
+                              {(provided) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-md shadow-sm"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span {...provided.dragHandleProps}>
+                                      <GripVertical className="w-4 h-4 text-gray-400 cursor-grab" />
+                                    </span>
+                                    <span className="font-medium text-gray-800">{nf.label}</span>
+                                    <span className="text-gray-500 mx-1">—</span>
+                                    <code className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">
+                                      {nf.name}
+                                    </code>
+                                    <span className="ml-2 text-sm text-gray-600 capitalize">({nf.type})</span>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setCurrentDeeplyNestedField(nf)
+                                        setEditingDeeplyNestedFieldIndex(index)
+                                        setShowDeeplyNestedFieldModal(true)
+                                      }}
+                                      className="p-1 rounded-md text-yellow-600 hover:bg-yellow-50"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteDeeplyNestedField(index)}
+                                      className="p-1 rounded-md text-red-600 hover:bg-red-50"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
                         </div>
-                        <div className="flex gap-2">
-                          {/* For simplicity, no edit/delete for deeply nested fields in this modal */}
-                          <button
-                            type="button"
-                            onClick={() => setNestedFieldDefinitions((prev) => prev.filter((_, i) => i !== index))}
-                            className="p-1 rounded-md text-red-600 hover:bg-red-50"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
                 )}
                 <button
                   type="button"
                   onClick={() => {
-                    // Add a new field to the deeply nested repeater
-                    setNestedFieldDefinitions((prev) => [
-                      ...prev,
-                      { label: "New Field", name: generateHandle("New Field"), type: "text" },
-                    ])
+                    setCurrentDeeplyNestedField(null)
+                    setEditingDeeplyNestedFieldIndex(null)
+                    setShowDeeplyNestedFieldModal(true)
                   }}
                   className="mt-4 bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
@@ -640,6 +716,16 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
             </button>
           </div>
         </form>
+
+        {showDeeplyNestedFieldModal && (
+          <NestedFieldModal
+            isOpen={showDeeplyNestedFieldModal}
+            field={currentDeeplyNestedField}
+            onClose={() => setShowDeeplyNestedFieldModal(false)}
+            onSave={editingDeeplyNestedFieldIndex !== null ? handleUpdateDeeplyNestedField : handleAddDeeplyNestedField}
+            availableFieldTypes={availableFieldTypes}
+          />
+        )}
       </div>
     </div>
   )
