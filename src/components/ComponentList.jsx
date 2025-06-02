@@ -3,7 +3,19 @@
 import { useState, useEffect } from "react"
 import axios from "axios"
 import FieldEditModal from "./FieldEditModal"
-import { Plus, Edit, Trash2, LayoutGrid, FileText, ImageIcon, Repeat, Search, Filter, Settings } from "lucide-react"
+import {
+  Plus,
+  Edit,
+  Trash2,
+  LayoutGrid,
+  FileText,
+  ImageIcon,
+  Repeat,
+  Search,
+  Filter,
+  Settings,
+  Users,
+} from "lucide-react"
 
 const ComponentList = () => {
   const [showNewComponentDialog, setShowNewComponentDialog] = useState(false)
@@ -19,6 +31,13 @@ const ComponentList = () => {
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
+
+  // Assignment functionality
+  const [postType, setPostType] = useState("page")
+  const [posts, setPosts] = useState([])
+  const [selectedPosts, setSelectedPosts] = useState([])
+  const [selectAllPages, setSelectAllPages] = useState(false)
+  const [selectAllPosts, setSelectAllPosts] = useState(false)
 
   const generateHandle = (name) => {
     return name
@@ -61,6 +80,39 @@ const ComponentList = () => {
     }
   }
 
+  const fetchPosts = async (type) => {
+    try {
+      const formData = new FormData()
+      formData.append("action", "ccc_get_posts_with_components")
+      formData.append("post_type", type)
+      formData.append("nonce", window.cccData.nonce)
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData)
+
+      if (response.data.success && Array.isArray(response.data.data?.posts)) {
+        setPosts(response.data.data.posts)
+        // Initialize selectedPosts based on which posts already have components assigned
+        const initiallySelected = response.data.data.posts.filter((post) => post.has_components).map((post) => post.id)
+        setSelectedPosts(initiallySelected)
+
+        // If all posts are initially selected, set selectAll checkbox
+        if (initiallySelected.length > 0 && initiallySelected.length === response.data.data.posts.length) {
+          if (type === "page") setSelectAllPages(true)
+          if (type === "post") setSelectAllPosts(true)
+        } else {
+          if (type === "page") setSelectAllPages(false)
+          if (type === "post") setSelectAllPosts(false)
+        }
+      } else {
+        setPosts([])
+        setError("Failed to fetch posts.")
+      }
+    } catch (err) {
+      setError("Failed to fetch posts. Please try again.")
+      console.error("Failed to fetch posts", err)
+    }
+  }
+
   const handleSubmitNewComponent = async () => {
     if (!componentName) {
       showMessage("Please enter a component name", "error")
@@ -79,6 +131,7 @@ const ComponentList = () => {
       if (response.data.success) {
         showMessage(response.data.message || "Component created successfully.", "success")
         fetchComponents()
+        fetchPosts(postType) // Refresh posts after creating component
         setShowNewComponentDialog(false)
         setComponentName("")
         setHandle("")
@@ -110,6 +163,7 @@ const ComponentList = () => {
       if (response.data.success) {
         showMessage("Component deleted successfully.", "success")
         fetchComponents()
+        fetchPosts(postType) // Refresh assignments after deletion
       } else {
         showMessage(response.data.message || "Failed to delete component.", "error")
       }
@@ -142,9 +196,88 @@ const ComponentList = () => {
     }
   }
 
+  const handleSaveAssignments = async () => {
+    try {
+      const assignments = {}
+      const allComponentObjects = components.map((comp) => ({
+        id: comp.id,
+        name: comp.name,
+        handle_name: comp.handle_name,
+      }))
+
+      // Determine which posts should have all components, and which should have none
+      posts.forEach((post) => {
+        const isSelected =
+          (postType === "page" && selectAllPages) ||
+          (postType === "post" && selectAllPosts) ||
+          selectedPosts.includes(post.id)
+
+        if (isSelected) {
+          // Assign all currently defined components to this post
+          assignments[post.id] = allComponentObjects
+        } else {
+          // Remove all components from this post
+          assignments[post.id] = []
+        }
+      })
+
+      const formData = new FormData()
+      formData.append("action", "ccc_save_component_assignments")
+      formData.append("nonce", window.cccData.nonce)
+      formData.append("assignments", JSON.stringify(assignments))
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData)
+
+      if (response.data.success) {
+        showMessage(response.data.message || "Assignments saved successfully.", "success")
+        fetchPosts(postType) // Refresh posts to show updated assignment status
+      } else {
+        showMessage(response.data.message || "Failed to save assignments.", "error")
+      }
+    } catch (error) {
+      console.error("Error saving assignments:", error)
+      showMessage("Error connecting to server. Please try again.", "error")
+    }
+  }
+
+  const handlePostSelectionChange = (postId, isChecked) => {
+    setSelectedPosts((prev) => {
+      if (isChecked) {
+        return [...prev, postId]
+      } else {
+        return prev.filter((id) => id !== postId)
+      }
+    })
+  }
+
+  const handleSelectAllPagesChange = (isChecked) => {
+    setSelectAllPages(isChecked)
+    if (isChecked) {
+      setSelectedPosts(posts.map((p) => p.id)) // Select all current pages
+    } else {
+      setSelectedPosts([]) // Deselect all pages
+    }
+  }
+
+  const handleSelectAllPostsChange = (isChecked) => {
+    setSelectAllPosts(isChecked)
+    if (isChecked) {
+      setSelectedPosts(posts.map((p) => p.id)) // Select all current posts
+    } else {
+      setSelectedPosts([]) // Deselect all posts
+    }
+  }
+
   useEffect(() => {
     fetchComponents()
   }, [])
+
+  useEffect(() => {
+    fetchPosts(postType)
+    // Reset selectAll checkboxes when postType changes
+    setSelectAllPages(false)
+    setSelectAllPosts(false)
+  }, [postType])
 
   const openFieldEditModal = (component, field = null) => {
     setSelectedComponentForField(component)
@@ -466,6 +599,94 @@ const ComponentList = () => {
               </div>
             ))
           )}
+        </div>
+
+        {/* Component Assignment Section */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-3 rounded-xl text-white">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-800">Assign Components to Content</h3>
+              <p className="text-gray-600">Choose which pages or posts should display your components</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Content Type Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Content Type</label>
+              <select
+                value={postType}
+                onChange={(e) => setPostType(e.target.value)}
+                className="w-full max-w-xs px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+              >
+                <option value="page">Pages</option>
+                <option value="post">Posts</option>
+              </select>
+            </div>
+
+            {/* Page/Post Selection */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                Select {postType === "page" ? "Pages" : "Posts"} to Assign All Components To
+              </h4>
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3 max-h-64 overflow-y-auto">
+                {postType === "page" && (
+                  <label className="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200">
+                    <input
+                      type="checkbox"
+                      checked={selectAllPages}
+                      onChange={(e) => handleSelectAllPagesChange(e.target.checked)}
+                      className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                    />
+                    <span className="font-semibold text-gray-800">All Pages</span>
+                  </label>
+                )}
+                {postType === "post" && (
+                  <label className="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200">
+                    <input
+                      type="checkbox"
+                      checked={selectAllPosts}
+                      onChange={(e) => handleSelectAllPostsChange(e.target.checked)}
+                      className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                    />
+                    <span className="font-semibold text-gray-800">All Posts</span>
+                  </label>
+                )}
+                {posts.map((post) => (
+                  <label
+                    key={post.id}
+                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200"
+                  >
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedPosts.includes(post.id)}
+                        onChange={(e) => handlePostSelectionChange(post.id, e.target.checked)}
+                        className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                      />
+                      <span className="text-gray-800">{post.title}</span>
+                    </div>
+                    {post.has_components && (
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                        Components Assigned
+                      </span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <button
+              onClick={handleSaveAssignments}
+              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+            >
+              Save Assignments
+            </button>
+          </div>
         </div>
 
         {/* Stats Footer */}
