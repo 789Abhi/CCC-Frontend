@@ -27,6 +27,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
   const availableFieldTypes = ["text", "textarea", "image", "repeater"]
 
   useEffect(() => {
+    console.log("FieldEditModal: Received field prop:", field) // DEBUG: Check the entire field object
     if (field) {
       setLabel(field.label || "")
       setName(field.name || "")
@@ -34,7 +35,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
       setIsRequired(field.required || false)
       setPlaceholder(field.placeholder || "") // Load placeholder value
       if (field.type === "repeater" && field.config) {
-        const config = field.config // config is already parsed object from AjaxHandler
+        console.log("FieldEditModal: Repeater field config:", field.config) // DEBUG: Check repeater config
+        // Ensure config is an object, not a string
+        const config = typeof field.config === "string" ? JSON.parse(field.config) : field.config
         setMaxSets(config.max_sets || "")
         setNestedFieldDefinitions(config.nested_fields || [])
       } else {
@@ -425,13 +428,17 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
   const isEditing = !!field
 
   useEffect(() => {
+    console.log("NestedFieldModal: Received field prop:", field) // DEBUG: Check the entire nested field object
     if (field) {
       setLabel(field.label || "")
       setName(field.name || "")
       setType(field.type || "text")
       if (field.type === "repeater" && field.config) {
-        setMaxSets(field.config.max_sets || "")
-        setNestedFieldDefinitions(field.config.nested_fields || [])
+        console.log("NestedFieldModal: Nested repeater field config:", field.config) // DEBUG: Check deeply nested repeater config
+        // Ensure config is an object, not a string
+        const config = typeof field.config === "string" ? JSON.parse(field.config) : field.config
+        setMaxSets(config.max_sets || "")
+        setNestedFieldDefinitions(config.nested_fields || [])
       } else {
         setMaxSets("")
         setNestedFieldDefinitions([])
