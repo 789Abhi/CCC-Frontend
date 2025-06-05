@@ -70,7 +70,7 @@ function Header() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="bg-customGray border-b p-5 rounded-custom">
+      <div className="bg-customGray border-b p-5 rounded-custom mt-3">
         <div className="">
           <nav className="flex space-x-8" aria-label="Tabs">
             {tabs.map((tab) => {
@@ -106,7 +106,7 @@ function Header() {
       </div>
 
       {/* Main Content */}
-      <main className="rounded-custom  py-8">{renderActiveComponent()}</main>
+      <main className="rounded-custom  py-3">{renderActiveComponent()}</main>
     </div>
   )
 }

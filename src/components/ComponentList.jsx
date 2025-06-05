@@ -367,7 +367,7 @@ const ComponentList = () => {
 
   return (
     <div className="min-h-screen bg-customGray rounded-custom py-3 px-10">
-      <div className="space-y-8">
+      <div className="flex flex-col gap-5">
         {/* Message Display */}
         {message && (
           <div
@@ -487,9 +487,9 @@ const ComponentList = () => {
         </div>
 
         {/* Components Grid */}
-        <div className="grid gap-6">
+        <div className="grid gap-6 p-5 bg-white rounded-custom">
           {filteredComponents.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
+            <div className="bg-customGray rounded-custom">
               <div className="text-gray-400 mb-6">
                 <LayoutGrid className="w-16 h-16 mx-auto" />
               </div>
@@ -504,7 +504,7 @@ const ComponentList = () => {
               {!searchTerm && filterType === "all" && (
                 <button
                   onClick={() => setShowNewComponentDialog(true)}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="bg-customGray"
                 >
                   Create Your First Component
                 </button>
@@ -514,10 +514,10 @@ const ComponentList = () => {
             filteredComponents.map((comp) => (
               <div
                 key={comp.id}
-                className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                className="bg-customGray rounded-custom "
               >
                 {/* Component Header */}
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 text-white">
+                <div className="">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="bg-white/20 p-3 rounded-xl">
