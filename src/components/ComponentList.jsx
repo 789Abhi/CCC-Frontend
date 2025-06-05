@@ -536,14 +536,14 @@ const ComponentList = () => {
                       >
                         <Plus className="w-5 h-5" />
                       </button>
-                        <img  onClick={() => openFieldEditModal(comp)} className="w-[30px] h-[30px]" src={editIcon} alt="Delete Component" />
-                        <img onClick={() => handleDeleteComponent(comp.id)} className="w-[30px] h-[30px]" src={deleteIcon} alt="Delete Component" />
+                        <img  onClick={() => openFieldEditModal(comp)} className="w-[25px] h-[25px]" src={editIcon} alt="Delete Component" />
+                        <img onClick={() => handleDeleteComponent(comp.id)} className="w-[25px] h-[25px]" src={deleteIcon} alt="Delete Component" />
                     </div>
                   </div>
                 </div>
 
                 {/* Component Body */}
-                <div className="p-6">
+                <div className="py-6">
                   {comp.fields && comp.fields.length > 0 ? (
                     <div>
                       <div className="space-y-3">
@@ -552,7 +552,7 @@ const ComponentList = () => {
                             key={field.id}
                             className="border border-bgPrimary rounded-custom"
                           >
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between p-3">
                               <div className="flex items-center gap-3">
                                 <div className="flex items-center">
                                   <img className="w-[30px] h-[30px]" src={dragDropIcon} alt="" />
