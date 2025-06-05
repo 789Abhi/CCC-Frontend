@@ -487,7 +487,7 @@ const ComponentList = () => {
         </div>
 
         {/* Components Grid */}
-        <div className="grid gap-6 p-5 bg-white rounded-custom">
+        <div className="grid gap-6 p-5 bg-white rounded-custom border-bgPrimary">
           {filteredComponents.length === 0 ? (
             <div className="bg-customGray rounded-custom">
               <div className="text-gray-400 mb-6">
@@ -514,16 +514,13 @@ const ComponentList = () => {
             filteredComponents.map((comp) => (
               <div
                 key={comp.id}
-                className="bg-customGray rounded-custom "
+                className="bg-customGray rounded-custom p-5"
               >
                 {/* Component Header */}
                 <div className="">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="bg-white/20 p-3 rounded-xl">
-                        <LayoutGrid className="w-6 h-6" />
-                      </div>
-                      <div>
+                      <div className="flex flex-row"> 
                         <h3 className="text-xl font-bold">{comp.name}</h3>
                         <code className="bg-white/20 text-white/90 px-3 py-1 rounded-lg text-sm font-mono">
                           {comp.handle_name}
@@ -553,12 +550,6 @@ const ComponentList = () => {
                 <div className="p-6">
                   {comp.fields && comp.fields.length > 0 ? (
                     <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-lg font-semibold text-gray-800">Fields ({comp.fields.length})</h4>
-                        <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
-                          {comp.fields.length} field{comp.fields.length !== 1 ? "s" : ""}
-                        </span>
-                      </div>
                       <div className="space-y-3">
                         {comp.fields.map((field) => (
                           <div
