@@ -7,6 +7,8 @@ import plusIcon from "/plus-Icon.svg";
 import SearchIcon from "/SearchIcon.svg"; 
 import FilterIcon from "/Filter.svg"; 
 import dragDropIcon from "/drag-drop-icon.svg"; 
+import deleteIcon from "/delete.svg"; 
+import editIcon from "/Edit.svg"; 
 import {
   Plus,
   Edit,
@@ -15,8 +17,6 @@ import {
   FileText,
   ImageIcon,
   Repeat,
-  Search,
-  Filter,
   Settings,
   Users,
 } from "lucide-react"
@@ -406,7 +406,7 @@ const ComponentList = () => {
         )}
 
         {/* Controls Section */}
-        <div className="rounded-custom p-5">
+        <div className="rounded-custom ">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Add Component Button */}
             <button
@@ -530,19 +530,14 @@ const ComponentList = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => openFieldEditModal(comp)}
+                       
                         className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-all duration-200 backdrop-blur-sm"
                         title="Add Field"
                       >
                         <Plus className="w-5 h-5" />
                       </button>
-                      <button
-                        onClick={() => handleDeleteComponent(comp.id)}
-                        className="bg-red-500/80 hover:bg-red-600 text-white p-2 rounded-lg transition-all duration-200"
-                        title="Delete Component"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                        <img  onClick={() => openFieldEditModal(comp)} className="w-[30px] h-[30px]" src={editIcon} alt="Delete Component" />
+                        <img onClick={() => handleDeleteComponent(comp.id)} className="w-[30px] h-[30px]" src={deleteIcon} alt="Delete Component" />
                     </div>
                   </div>
                 </div>
@@ -555,7 +550,7 @@ const ComponentList = () => {
                         {comp.fields.map((field) => (
                           <div
                             key={field.id}
-                            className="bg-gray-50 border border-gray-200 rounded-xl p-4  transition-all duration-200"
+                            className="border border-bgPrimary rounded-custom"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
