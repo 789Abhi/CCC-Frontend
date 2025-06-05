@@ -462,7 +462,7 @@ const ComponentList = () => {
                         setFilterType("with-fields")
                         setIsFilterDropdownOpen(false)
                       }}
-                      className={`block w-full text-left px-4 py-2 text-bgSecondary hover:bg-gray-100 ${
+                      className={`block w-full text-left px-4 py-2 text-bgSecondary  ${
                         filterType === "with-fields" ? "bg-gray-100 font-semibold" : ""
                       }`}
                     >
@@ -473,7 +473,7 @@ const ComponentList = () => {
                         setFilterType("no-fields")
                         setIsFilterDropdownOpen(false)
                       }}
-                      className={`block w-full text-left px-4 py-2 text-bgSecondary hover:bg-gray-100 ${
+                      className={`block w-full text-left px-4 py-2 text-bgSecondary  ${
                         filterType === "no-fields" ? "bg-gray-100 font-semibold" : ""
                       }`}
                     >
@@ -563,7 +563,7 @@ const ComponentList = () => {
                         {comp.fields.map((field) => (
                           <div
                             key={field.id}
-                            className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:bg-gray-100 transition-all duration-200"
+                            className="bg-gray-50 border border-gray-200 rounded-xl p-4  transition-all duration-200"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
@@ -801,7 +801,7 @@ const ComponentList = () => {
               <button
                 type="button"
                 onClick={() => setShowNewComponentDialog(false)}
-                className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all duration-200 font-medium"
+                className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl  transition-all duration-200 font-medium"
               >
                 Cancel
               </button>
