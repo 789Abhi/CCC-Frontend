@@ -6,6 +6,7 @@ import FieldEditModal from "./FieldEditModal"
 import plusIcon from "/plus-Icon.svg"; 
 import SearchIcon from "/SearchIcon.svg"; 
 import FilterIcon from "/Filter.svg"; 
+import dragDropIcon from "/drag-drop-icon.svg"; 
 import {
   Plus,
   Edit,
@@ -487,7 +488,7 @@ const ComponentList = () => {
         </div>
 
         {/* Components Grid */}
-        <div className="grid gap-6 p-5 bg-white rounded-custom border-bgPrimary">
+        <div className="grid gap-6 p-5 bg-white rounded-custom border border-bgPrimary">
           {filteredComponents.length === 0 ? (
             <div className="bg-customGray rounded-custom">
               <div className="text-gray-400 mb-6">
@@ -520,9 +521,9 @@ const ComponentList = () => {
                 <div className="">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="flex flex-row"> 
+                      <div className="flex flex-row items-center gap-2"> 
                         <h3 className="text-xl font-bold">{comp.name}</h3>
-                        <code className="bg-white/20 text-white/90 px-3 py-1 rounded-lg text-sm font-mono">
+                        <code className="bg-[#f09ccb] text-white px-3 py-1 rounded-lg text-sm font-mono">
                           {comp.handle_name}
                         </code>
                       </div>
@@ -558,16 +559,19 @@ const ComponentList = () => {
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
-                                <div className="p-2 bg-white rounded-lg shadow-sm">{getFieldIcon(field.type)}</div>
-                                <div>
+                                <div className="flex items-center">
+                                  <img className="w-[30px] h-[30px]" src={dragDropIcon} alt="" />
                                   <div className="flex items-center gap-2">
                                     <span className="font-semibold text-gray-800">{field.label}</span>
                                     <span className="text-gray-400">•</span>
-                                    <code className="bg-gray-200 px-2 py-1 rounded text-xs text-gray-700 font-mono">
+                                    <code className="bg-[#f09ccb] text-white px-2 py-1 rounded-lg text-sm font-mono">
                                       {field.name}
                                     </code>
                                   </div>
-                                  <div className="flex items-center gap-2 mt-1">
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 mt-1">
                                     <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium capitalize">
                                       {field.type}
                                     </span>
@@ -578,9 +582,6 @@ const ComponentList = () => {
                                       </span>
                                     )}
                                   </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => openFieldEditModal(comp, field)}
                                   className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
