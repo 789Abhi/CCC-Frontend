@@ -421,7 +421,7 @@ const ComponentList = () => {
             </button>
 
             {/* Search and Filter */}
-            <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex flex-row items-center gap-4">
               <div className="relative flex items-center border rounded-custom border-bgPrimary px-3 py-3 w-[255px]">
                 <img className="h-[25px] w-[25px]" src={SearchIcon} alt="" />
                 <input
