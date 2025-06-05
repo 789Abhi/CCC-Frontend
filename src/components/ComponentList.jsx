@@ -426,14 +426,14 @@ const ComponentList = () => {
 
                  {/* Search and Filter */}
               <div className="flex flex-col  sm:flex-row gap-4">
-              <div className="relative flex items-center border border-bgPrimary px-6 py-3">
+              <div className="relative flex items-center border rounded-custom border-bgPrimary px-3 py-3">
                 <img className="h-[30px] w-[30px]" src={SearchIcon} alt="" />
                 <input
                   type="text"
                   placeholder="Search components/Fields"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full outline-0 "
+                  className="w-full outline-0 !border-0 focus:shadow-none bg-transparent focus:outline-0 focus:border-0"
                 />
               </div>
 
@@ -442,8 +442,7 @@ const ComponentList = () => {
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
-                  className="!bg-transparent"
-                >
+                  className="!bg-transparent">
                   <option value="all">All Components</option>
                   <option value="with-fields">With Fields</option>
                   <option value="no-fields">No Fields</option>
