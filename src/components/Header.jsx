@@ -1,11 +1,9 @@
-"use client"
-
 import { useState } from "react"
-import { Blocks, FileType, Tags, Download, Settings, Sparkles } from "lucide-react"
 import PostTypes from "./PostTypes"
 import ImportExport from "./ImportExport"
 import ComponentList from "./ComponentList"
 import Taxonomies from "./Taxonomies"
+import logo from "/CCC-Logo.svg"; 
 
 function Header() {
   const [activeTab, setActiveTab] = useState("components")
@@ -14,26 +12,23 @@ function Header() {
     {
       id: "components",
       label: "Components",
-      icon: Blocks,
       description: "Create and manage custom components",
     },
     {
       id: "post-types",
       label: "Post Types",
-      icon: FileType,
       description: "Assign components to content types",
+      comingSoon: true,
     },
     {
       id: "taxonomies",
       label: "Taxonomies",
-      icon: Tags,
       description: "Manage taxonomy assignments",
       comingSoon: true,
     },
     {
       id: "import-export",
       label: "Import/Export",
-      icon: Download,
       description: "Backup and migrate components",
       comingSoon: true,
     },
@@ -57,51 +52,41 @@ function Header() {
   return (
     <div className="min-h-screen ">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      <div className="">
+        <div className="">
+          <div className="flex items-center justify-between">
             {/* Logo and Title */}
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
-                <Sparkles className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-[30px]  w-full">
+
+              <div className="h-[160px] w-[160px] flex items-center justify-center ">
+              <img className="w-full h-full  object-contain" src={logo} alt="CCC Logo" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Custom Craft Components</h1>
-                <p className="text-sm text-slate-500">Build dynamic content with ease</p>
+              <div className="flex-1 px-10 py-7 bg-customGray text-center rounded-custom">
+                <h1 className="text-4xl font-bold text-bgPrimary">Custom Craft Components</h1>
               </div>
             </div>
-
-            {/* Settings Button */}
-            <button className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
-              <Settings className="w-4 h-4" />
-              <span className="text-sm font-medium">Settings</span>
-            </button>
           </div>
         </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="bg-customGray border-b p-5 rounded-custom">
+        <div className="">
           <nav className="flex space-x-8" aria-label="Tabs">
             {tabs.map((tab) => {
-              const Icon = tab.icon
               const isActive = activeTab === tab.id
 
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`group relative flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  className={`group rounded-custom relative flex border border-bgPrimary items-center space-x-2 py-4 px-4  font-medium text-sm transition-colors ${
                     isActive
-                      ? "border-purple-500 text-purple-600"
-                      : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                      ? " text-white bg-bgPrimary"
+                      : " text-bgSecondary"
                   }`}
                 >
-                  <Icon
-                    className={`w-5 h-5 ${isActive ? "text-purple-500" : "text-slate-400 group-hover:text-slate-500"}`}
-                  />
-                  <span>{tab.label}</span>
+                  <span className="text-lg font-bold">{tab.label}</span>
                   {tab.comingSoon && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
                       Soon

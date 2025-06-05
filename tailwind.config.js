@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       borderRadius: {
-        custom: '20px', // You can change this value to match your CSS variable
+        custom: '30px', // You can change this value to match your CSS variable
       },
       colors: {
         bgPrimary: '#FF269E',
