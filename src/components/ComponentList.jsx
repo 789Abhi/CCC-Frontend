@@ -421,13 +421,14 @@ const ComponentList = () => {
             </button>
 
             {/* Search and Filter */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex items-center border rounded-custom border-bgPrimary px-3 py-3">
-                <img className="h-[30px] w-[30px]" src={SearchIcon} alt="" />
+            <div className="flex flex-col sm:flex items-center-row gap-4">
+              <div className="relative flex items-center border rounded-custom border-bgPrimary px-3 py-3 w-[255px]">
+                <img className="h-[25px] w-[25px]" src={SearchIcon} alt="" />
                 <input
                   type="text"
                   placeholder="Search components/Fields"
                   value={searchTerm}
+                  style={{boxShadow:'none'}}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full outline-0 !border-0 !focus:shadow-none !bg-transparent focus:outline-0 focus:border-0"
                 />
@@ -450,7 +451,7 @@ const ComponentList = () => {
                         setFilterType("all")
                         setIsFilterDropdownOpen(false)
                       }}
-                      className={`block w-full text-left px-4 py-2 text-bgSecondary hover:bg-gray-100 ${
+                      className={`block w-full text-left px-4 py-2 text-bgSecondary ${
                         filterType === "all" ? "bg-gray-100 font-semibold" : ""
                       }`}
                     >
