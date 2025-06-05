@@ -3,23 +3,14 @@
 import { useState, useEffect } from "react"
 import axios from "axios"
 import FieldEditModal from "./FieldEditModal"
-import plusIcon from "/plus-Icon.svg"; 
-import SearchIcon from "/SearchIcon.svg"; 
-import FilterIcon from "/Filter.svg"; 
-import dragDropIcon from "/drag-drop-icon.svg"; 
-import deleteIcon from "/delete.svg"; 
-import editIcon from "/Edit.svg"; 
-import {
-  Plus,
-  Edit,
-  Trash2,
-  LayoutGrid,
-  FileText,
-  ImageIcon,
-  Repeat,
-  Settings,
-  Users,
-} from "lucide-react"
+import ComponentEditNameModal from "./ComponentEditNameModal" 
+import plusIcon from "/plus-Icon.svg"
+import SearchIcon from "/SearchIcon.svg"
+import FilterIcon from "/Filter.svg"
+import dragDropIcon from "/drag-drop-icon.svg"
+import deleteIcon from "/delete.svg"
+import editIcon from "/Edit.svg"
+import { Edit, Trash2, LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users } from "lucide-react"
 
 const ComponentList = () => {
   const [showNewComponentDialog, setShowNewComponentDialog] = useState(false)
@@ -36,6 +27,10 @@ const ComponentList = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false) // New state for dropdown
+
+  // New states for component name editing
+  const [showEditComponentNameModal, setShowEditComponentNameModal] = useState(false)
+  const [componentToEditName, setComponentToEditName] = useState(null)
 
   // Assignment functionality
   const [postType, setPostType] = useState("page")
@@ -291,6 +286,17 @@ const ComponentList = () => {
     fetchComponents()
   }
 
+  const openEditComponentNameModal = (component) => {
+    setComponentToEditName(component)
+    setShowEditComponentNameModal(true)
+  }
+
+  const closeEditComponentNameModal = () => {
+    setShowEditComponentNameModal(false)
+    setComponentToEditName(null)
+    fetchComponents() // Refresh components after editing name
+  }
+
   const getFieldIcon = (type) => {
     switch (type) {
       case "text":
@@ -308,10 +314,13 @@ const ComponentList = () => {
 
   const filteredComponents = components.filter((comp) => {
     const searchLower = searchTerm.toLowerCase()
-    const matchesComponentName = comp.name.toLowerCase().includes(searchLower) || comp.handle_name.toLowerCase().includes(searchLower)
-    const matchesFieldName = comp.fields && comp.fields.some(
-      (field) => field.label.toLowerCase().includes(searchLower) || field.name.toLowerCase().includes(searchLower)
-    )
+    const matchesComponentName =
+      comp.name.toLowerCase().includes(searchLower) || comp.handle_name.toLowerCase().includes(searchLower)
+    const matchesFieldName =
+      comp.fields &&
+      comp.fields.some(
+        (field) => field.label.toLowerCase().includes(searchLower) || field.name.toLowerCase().includes(searchLower),
+      )
 
     const matchesSearch = matchesComponentName || matchesFieldName
 
@@ -418,18 +427,22 @@ const ComponentList = () => {
               className="text-bgSecondary px-6 py-3 text-lg rounded-custom flex border border-bgPrimary items-center gap-3 font-medium"
             >
               Add New
-              <img className="h-[30px] w-[30px] object-contain" src={plusIcon} alt="" />
+              <img
+                className="h-[30px] w-[30px] object-contain"
+                src={plusIcon || "/placeholder.svg"}
+                alt="Add New Component"
+              />
             </button>
 
             {/* Search and Filter */}
             <div className="flex flex-row items-center gap-4">
               <div className="relative flex items-center border rounded-custom border-bgPrimary px-3 py-3 w-[220px]">
-                <img className="h-[25px] w-[25px]" src={SearchIcon} alt="" />
+                <img className="h-[25px] w-[25px]" src={SearchIcon || "/placeholder.svg"} alt="Search" />
                 <input
                   type="text"
                   placeholder="Search components/Fields"
                   value={searchTerm}
-                  style={{boxShadow:'none'}}
+                  style={{ boxShadow: "none" }}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full outline-0 !border-0 !focus:shadow-none !bg-transparent focus:outline-0 focus:border-0"
                 />
@@ -440,9 +453,13 @@ const ComponentList = () => {
                   onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
                   className="flex items-center border rounded-custom border-bgPrimary px-3 py-3 gap-2"
                 >
-                  <img src={FilterIcon} alt="Filter" className="h-[30px] w-[30px]" />
+                  <img src={FilterIcon || "/placeholder.svg"} alt="Filter" className="h-[30px] w-[30px]" />
                   <span className="text-[#aca3af] text-[13px]">
-                    {filterType === "all" ? "All Components" : filterType === "with-fields" ? "With Fields" : "No Fields"}
+                    {filterType === "all"
+                      ? "All Components"
+                      : filterType === "with-fields"
+                        ? "With Fields"
+                        : "No Fields"}
                   </span>
                 </button>
                 {isFilterDropdownOpen && (
@@ -490,7 +507,7 @@ const ComponentList = () => {
         {/* Components Grid */}
         <div className="grid gap-6 p-5 bg-white rounded-custom border border-bgPrimary">
           {filteredComponents.length === 0 ? (
-            <div className="bg-customGray rounded-custom">
+            <div className="bg-customGray rounded-custom p-12 text-center">
               <div className="text-gray-400 mb-6">
                 <LayoutGrid className="w-16 h-16 mx-auto" />
               </div>
@@ -505,7 +522,7 @@ const ComponentList = () => {
               {!searchTerm && filterType === "all" && (
                 <button
                   onClick={() => setShowNewComponentDialog(true)}
-                  className="bg-customGray"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   Create Your First Component
                 </button>
@@ -513,31 +530,37 @@ const ComponentList = () => {
             </div>
           ) : (
             filteredComponents.map((comp) => (
-              <div
-                key={comp.id}
-                className="bg-customGray rounded-custom p-5"
-              >
+              <div key={comp.id} className="bg-customGray rounded-custom p-5">
                 {/* Component Header */}
                 <div className="">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="flex flex-row items-center gap-2"> 
+                      <div className="flex flex-row items-center gap-2">
                         <h3 className="text-xl font-bold">{comp.name}</h3>
-                        <code className="bg-[#f09ccb] text-white px-3 py-1 rounded-lg text-sm font-mono">
+                        <code className="bg-pinkAccent text-white px-3 py-1 rounded-lg text-sm font-mono">
                           {comp.handle_name}
                         </code>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                       
-                        className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-all duration-200 backdrop-blur-sm"
-                        title="Add Field"
-                      >
-                        <Plus className="w-5 h-5" />
-                      </button>
-                        <img  onClick={() => openFieldEditModal(comp)} className="w-[25px] h-[25px]" src={editIcon} alt="Delete Component" />
-                        <img onClick={() => handleDeleteComponent(comp.id)} className="w-[25px] h-[25px]" src={deleteIcon} alt="Delete Component" />
+                      <img
+                        onClick={() => openFieldEditModal(comp)}
+                        className="w-[25px] h-[25px] cursor-pointer"
+                        src={plusIcon || "/placeholder.svg"}
+                        alt="add feild"
+                      />
+                      <img
+                        onClick={() => openEditComponentNameModal(comp)}
+                        className="w-[25px] h-[25px] cursor-pointer"
+                        src={editIcon || "/placeholder.svg"}
+                        alt="edit Component"
+                      />
+                      <img
+                        onClick={() => handleDeleteComponent(comp.id)}
+                        className="w-[25px] h-[25px] cursor-pointer"
+                        src={deleteIcon || "/placeholder.svg"}
+                        alt="Delete Component"
+                      />
                     </div>
                   </div>
                 </div>
@@ -548,35 +571,36 @@ const ComponentList = () => {
                     <div>
                       <div className="space-y-3">
                         {comp.fields.map((field) => (
-                          <div
-                            key={field.id}
-                            className="border border-bgPrimary rounded-custom"
-                          >
+                          <div key={field.id} className="border border-bgPrimary rounded-custom">
                             <div className="flex items-center justify-between p-3">
                               <div className="flex items-center gap-3">
                                 <div className="flex items-center">
-                                  <img className="w-[30px] h-[30px]" src={dragDropIcon} alt="" />
+                                  <img
+                                    className="w-[30px] h-[30px]"
+                                    src={dragDropIcon || "/placeholder.svg"}
+                                    alt="Drag and Drop"
+                                  />
                                   <div className="flex items-center gap-2">
                                     <span className="font-semibold text-gray-800">{field.label}</span>
                                     <span className="text-gray-400">•</span>
-                                    <code className="bg-[#f09ccb] text-white px-2 py-1 rounded-lg text-sm font-mono">
+                                    <code className="bg-pinkAccent text-white px-2 py-1 rounded-lg text-sm font-mono">
                                       {field.name}
                                     </code>
                                   </div>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-2 mt-1">
-                                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium capitalize">
-                                      {field.type}
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium capitalize">
+                                    {field.type}
+                                  </span>
+                                  {field.type === "repeater" && field.config?.nested_fields?.length > 0 && (
+                                    <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                                      {field.config.nested_fields.length} nested field
+                                      {field.config.nested_fields.length !== 1 ? "s" : ""}
                                     </span>
-                                    {field.type === "repeater" && field.config?.nested_fields?.length > 0 && (
-                                      <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                                        {field.config.nested_fields.length} nested field
-                                        {field.config.nested_fields.length !== 1 ? "s" : ""}
-                                      </span>
-                                    )}
-                                  </div>
+                                  )}
+                                </div>
                                 <button
                                   onClick={() => openFieldEditModal(comp, field)}
                                   className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
@@ -811,6 +835,16 @@ const ComponentList = () => {
           field={editingField}
           onClose={closeFieldEditModal}
           onSave={closeFieldEditModal}
+        />
+      )}
+
+      {/* Component Name Edit Modal */}
+      {showEditComponentNameModal && (
+        <ComponentEditNameModal
+          isOpen={showEditComponentNameModal}
+          component={componentToEditName}
+          onClose={closeEditComponentNameModal}
+          onSave={closeEditComponentNameModal} // This will trigger fetchComponents in parent
         />
       )}
     </div>
