@@ -34,6 +34,7 @@ const ComponentList = () => {
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false) // New state for dropdown
 
   // Assignment functionality
   const [postType, setPostType] = useState("page")
@@ -94,11 +95,9 @@ const ComponentList = () => {
 
       if (response.data.success && Array.isArray(response.data.data?.posts)) {
         setPosts(response.data.data.posts)
-        // Initialize selectedPosts based on which posts already have components assigned
         const initiallySelected = response.data.data.posts.filter((post) => post.has_components).map((post) => post.id)
         setSelectedPosts(initiallySelected)
 
-        // If all posts are initially selected, set selectAll checkbox
         if (initiallySelected.length > 0 && initiallySelected.length === response.data.data.posts.length) {
           if (type === "page") setSelectAllPages(true)
           if (type === "post") setSelectAllPosts(true)
@@ -134,7 +133,7 @@ const ComponentList = () => {
       if (response.data.success) {
         showMessage(response.data.message || "Component created successfully.", "success")
         fetchComponents()
-        fetchPosts(postType) // Refresh posts after creating component
+        fetchPosts(postType)
         setShowNewComponentDialog(false)
         setComponentName("")
         setHandle("")
@@ -166,7 +165,7 @@ const ComponentList = () => {
       if (response.data.success) {
         showMessage("Component deleted successfully.", "success")
         fetchComponents()
-        fetchPosts(postType) // Refresh assignments after deletion
+        fetchPosts(postType)
       } else {
         showMessage(response.data.message || "Failed to delete component.", "error")
       }
@@ -208,7 +207,6 @@ const ComponentList = () => {
         handle_name: comp.handle_name,
       }))
 
-      // Determine which posts should have all components, and which should have none
       posts.forEach((post) => {
         const isSelected =
           (postType === "page" && selectAllPages) ||
@@ -216,10 +214,8 @@ const ComponentList = () => {
           selectedPosts.includes(post.id)
 
         if (isSelected) {
-          // Assign all currently defined components to this post
           assignments[post.id] = allComponentObjects
         } else {
-          // Remove all components from this post
           assignments[post.id] = []
         }
       })
@@ -233,7 +229,7 @@ const ComponentList = () => {
 
       if (response.data.success) {
         showMessage(response.data.message || "Assignments saved successfully.", "success")
-        fetchPosts(postType) // Refresh posts to show updated assignment status
+        fetchPosts(postType)
       } else {
         showMessage(response.data.message || "Failed to save assignments.", "error")
       }
@@ -256,18 +252,18 @@ const ComponentList = () => {
   const handleSelectAllPagesChange = (isChecked) => {
     setSelectAllPages(isChecked)
     if (isChecked) {
-      setSelectedPosts(posts.map((p) => p.id)) // Select all current pages
+      setSelectedPosts(posts.map((p) => p.id))
     } else {
-      setSelectedPosts([]) // Deselect all pages
+      setSelectedPosts([])
     }
   }
 
   const handleSelectAllPostsChange = (isChecked) => {
     setSelectAllPosts(isChecked)
     if (isChecked) {
-      setSelectedPosts(posts.map((p) => p.id)) // Select all current posts
+      setSelectedPosts(posts.map((p) => p.id))
     } else {
-      setSelectedPosts([]) // Deselect all posts
+      setSelectedPosts([])
     }
   }
 
@@ -277,7 +273,6 @@ const ComponentList = () => {
 
   useEffect(() => {
     fetchPosts(postType)
-    // Reset selectAll checkboxes when postType changes
     setSelectAllPages(false)
     setSelectAllPosts(false)
   }, [postType])
@@ -311,9 +306,13 @@ const ComponentList = () => {
   }
 
   const filteredComponents = components.filter((comp) => {
-    const matchesSearch =
-      comp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      comp.handle_name.toLowerCase().includes(searchTerm.toLowerCase())
+    const searchLower = searchTerm.toLowerCase()
+    const matchesComponentName = comp.name.toLowerCase().includes(searchLower) || comp.handle_name.toLowerCase().includes(searchLower)
+    const matchesFieldName = comp.fields && comp.fields.some(
+      (field) => field.label.toLowerCase().includes(searchLower) || field.name.toLowerCase().includes(searchLower)
+    )
+
+    const matchesSearch = matchesComponentName || matchesFieldName
 
     if (filterType === "all") return matchesSearch
     if (filterType === "with-fields") return matchesSearch && comp.fields && comp.fields.length > 0
@@ -367,10 +366,8 @@ const ComponentList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-customGray rounded-custom py-3 px-10 ">
-      <div className=" space-y-8">
-     
-
+    <div className="min-h-screen bg-customGray rounded-custom py-3 px-10">
+      <div className="space-y-8">
         {/* Message Display */}
         {message && (
           <div
@@ -408,9 +405,8 @@ const ComponentList = () => {
         )}
 
         {/* Controls Section */}
-        <div className=" rounded-custom p-5">
+        <div className="rounded-custom p-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-
             {/* Add Component Button */}
             <button
               onClick={() => {
@@ -418,14 +414,14 @@ const ComponentList = () => {
                 setComponentName("")
                 setHandle("")
               }}
-              className=" text-bgSecondary px-6 py-3 text-lg  rounded-custom flex border border-bgPrimary items-center gap-3 font-medium"
+              className="text-bgSecondary px-6 py-3 text-lg rounded-custom flex border border-bgPrimary items-center gap-3 font-medium"
             >
               Add New
               <img className="h-[30px] w-[30px] object-contain" src={plusIcon} alt="" />
             </button>
 
-                 {/* Search and Filter */}
-              <div className="flex flex-col  sm:flex-row gap-4">
+            {/* Search and Filter */}
+            <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex items-center border rounded-custom border-bgPrimary px-3 py-3">
                 <img className="h-[30px] w-[30px]" src={SearchIcon} alt="" />
                 <input
@@ -433,20 +429,57 @@ const ComponentList = () => {
                   placeholder="Search components/Fields"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full outline-0 !border-0 focus:shadow-none bg-transparent focus:outline-0 focus:border-0"
+                  className="w-full outline-0 !border-0 !focus:shadow-none !bg-transparent focus:outline-0 focus:border-0"
                 />
               </div>
 
               <div className="relative">
-               <img src={FilterIcon} alt="" />
-                <select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                  className="!bg-transparent">
-                  <option value="all">All Components</option>
-                  <option value="with-fields">With Fields</option>
-                  <option value="no-fields">No Fields</option>
-                </select>
+                <button
+                  onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                  className="flex items-center border rounded-custom border-bgPrimary px-3 py-3 gap-2"
+                >
+                  <img src={FilterIcon} alt="Filter" className="h-[30px] w-[30px]" />
+                  <span className="text-bgSecondary font-medium">
+                    {filterType === "all" ? "All Components" : filterType === "with-fields" ? "With Fields" : "No Fields"}
+                  </span>
+                </button>
+                {isFilterDropdownOpen && (
+                  <div className="absolute top-full mt-2 right-0 w-48 bg-white border border-gray-200 rounded-custom shadow-lg z-10">
+                    <button
+                      onClick={() => {
+                        setFilterType("all")
+                        setIsFilterDropdownOpen(false)
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-bgSecondary hover:bg-gray-100 ${
+                        filterType === "all" ? "bg-gray-100 font-semibold" : ""
+                      }`}
+                    >
+                      All Components
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFilterType("with-fields")
+                        setIsFilterDropdownOpen(false)
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-bgSecondary hover:bg-gray-100 ${
+                        filterType === "with-fields" ? "bg-gray-100 font-semibold" : ""
+                      }`}
+                    >
+                      With Fields
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFilterType("no-fields")
+                        setIsFilterDropdownOpen(false)
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-bgSecondary hover:bg-gray-100 ${
+                        filterType === "no-fields" ? "bg-gray-100 font-semibold" : ""
+                      }`}
+                    >
+                      No Fields
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
