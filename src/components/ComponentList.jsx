@@ -321,7 +321,7 @@ const ComponentList = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 p-6">
+      <div className="min-h-screen rounded-custom bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-center items-center h-64">
             <div className="relative">
@@ -337,7 +337,7 @@ const ComponentList = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br rounded-custom from-purple-50 via-pink-50 to-indigo-50 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-lg shadow-sm">
             <div className="flex">
@@ -364,17 +364,9 @@ const ComponentList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header Section */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
-            Component Management
-          </h1>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Create, manage, and organize your custom components with powerful field management capabilities.
-          </p>
-        </div>
+    <div className="min-h-screen bg-customGray py-3 px-10 ">
+      <div className=" space-y-8">
+     
 
         {/* Message Display */}
         {message && (

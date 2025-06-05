@@ -58,7 +58,7 @@ function Header() {
             {/* Logo and Title */}
             <div className="flex items-center gap-[30px]  w-full">
 
-              <div className="h-[160px] w-[160px] flex items-center justify-center ">
+              <div className="h-[110px] w-[160px] flex items-center justify-center ">
               <img className="w-full h-full  object-contain" src={logo} alt="CCC Logo" />
               </div>
               <div className="flex-1 px-10 py-7 bg-customGray text-center rounded-custom">
@@ -106,7 +106,7 @@ function Header() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{renderActiveComponent()}</main>
+      <main className="rounded-custom  py-8">{renderActiveComponent()}</main>
     </div>
   )
 }
