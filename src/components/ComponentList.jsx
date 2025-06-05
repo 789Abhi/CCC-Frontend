@@ -422,7 +422,7 @@ const ComponentList = () => {
 
             {/* Search and Filter */}
             <div className="flex flex-row items-center gap-4">
-              <div className="relative flex items-center border rounded-custom border-bgPrimary px-3 py-3 w-[255px]">
+              <div className="relative flex items-center border rounded-custom border-bgPrimary px-3 py-3 w-[220px]">
                 <img className="h-[25px] w-[25px]" src={SearchIcon} alt="" />
                 <input
                   type="text"
@@ -440,7 +440,7 @@ const ComponentList = () => {
                   className="flex items-center border rounded-custom border-bgPrimary px-3 py-3 gap-2"
                 >
                   <img src={FilterIcon} alt="Filter" className="h-[30px] w-[30px]" />
-                  <span className="text-bgSecondary font-medium">
+                  <span className="text-[#aca3af] text-[13px]">
                     {filterType === "all" ? "All Components" : filterType === "with-fields" ? "With Fields" : "No Fields"}
                   </span>
                 </button>
