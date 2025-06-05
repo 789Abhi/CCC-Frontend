@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react"
 import axios from "axios"
 import FieldEditModal from "./FieldEditModal"
+import plusIcon from "/plus-Icon.svg"; 
+import SearchIcon from "/SearchIcon.svg"; 
+import FilterIcon from "/Filter.svg"; 
 import {
   Plus,
   Edit,
@@ -364,7 +367,7 @@ const ComponentList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-customGray py-3 px-10 ">
+    <div className="min-h-screen bg-customGray rounded-custom py-3 px-10 ">
       <div className=" space-y-8">
      
 
@@ -407,13 +410,27 @@ const ComponentList = () => {
         {/* Controls Section */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            {/* Search and Filter */}
-            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+
+            {/* Add Component Button */}
+            <button
+              onClick={() => {
+                setShowNewComponentDialog(true)
+                setComponentName("")
+                setHandle("")
+              }}
+              className=" text-black px-6 py-3  rounded-custom flex border border-bgPrimary items-center gap-3 font-medium"
+            >
+              Add New
+              <img src={plusIcon} alt="" />
+            </button>
+
+                 {/* Search and Filter */}
+              <div className="flex flex-col sm:flex-row gap-4 flex-1">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <img src={SearchIcon} alt="" />
                 <input
                   type="text"
-                  placeholder="Search components..."
+                  placeholder="Search components/Fields"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
@@ -421,7 +438,7 @@ const ComponentList = () => {
               </div>
 
               <div className="relative">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+               <img src={FilterIcon} alt="" />
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
@@ -433,19 +450,6 @@ const ComponentList = () => {
                 </select>
               </div>
             </div>
-
-            {/* Add Component Button */}
-            <button
-              onClick={() => {
-                setShowNewComponentDialog(true)
-                setComponentName("")
-                setHandle("")
-              }}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl flex items-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
-            >
-              <Plus className="w-5 h-5" />
-              Create Component
-            </button>
           </div>
         </div>
 
