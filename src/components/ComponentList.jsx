@@ -408,7 +408,7 @@ const ComponentList = () => {
         )}
 
         {/* Controls Section */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+        <div className=" rounded-custom p-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
 
             {/* Add Component Button */}
@@ -418,22 +418,22 @@ const ComponentList = () => {
                 setComponentName("")
                 setHandle("")
               }}
-              className=" text-black px-6 py-3  rounded-custom flex border border-bgPrimary items-center gap-3 font-medium"
+              className=" text-bgSecondary px-6 py-3 text-lg  rounded-custom flex border border-bgPrimary items-center gap-3 font-medium"
             >
               Add New
-              <img src={plusIcon} alt="" />
+              <img className="h-[30px] w-[30px] object-contain" src={plusIcon} alt="" />
             </button>
 
                  {/* Search and Filter */}
-              <div className="flex flex-col sm:flex-row gap-4 flex-1">
-              <div className="relative flex-1 max-w-md">
-                <img src={SearchIcon} alt="" />
+              <div className="flex flex-col  sm:flex-row gap-4">
+              <div className="relative flex items-center border border-bgPrimary px-6 py-3">
+                <img className="h-[30px] w-[30px]" src={SearchIcon} alt="" />
                 <input
                   type="text"
                   placeholder="Search components/Fields"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                  className="w-full outline-0 "
                 />
               </div>
 
@@ -442,7 +442,7 @@ const ComponentList = () => {
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
-                  className="pl-10 pr-8 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white"
+                  className="!bg-transparent"
                 >
                   <option value="all">All Components</option>
                   <option value="with-fields">With Fields</option>
