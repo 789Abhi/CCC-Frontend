@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import axios from "axios"
 import FieldEditModal from "./FieldEditModal"
-import ComponentEditNameModal from "./ComponentEditNameModal" 
+import ComponentEditNameModal from "./ComponentEditNameModal"
 import plusIcon from "/plus-Icon.svg"
 import SearchIcon from "/SearchIcon.svg"
 import FilterIcon from "/Filter.svg"
@@ -11,6 +11,7 @@ import dragDropIcon from "/drag-drop-icon.svg"
 import deleteIcon from "/delete.svg"
 import editIcon from "/Edit.svg"
 import { Edit, Trash2, LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users } from "lucide-react"
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
 
 const ComponentList = () => {
   const [showNewComponentDialog, setShowNewComponentDialog] = useState(false)
@@ -26,13 +27,9 @@ const ComponentList = () => {
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false) // New state for dropdown
-
-  // New states for component name editing
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false)
   const [showEditComponentNameModal, setShowEditComponentNameModal] = useState(false)
   const [componentToEditName, setComponentToEditName] = useState(null)
-
-  // Assignment functionality
   const [postType, setPostType] = useState("page")
   const [posts, setPosts] = useState([])
   const [selectedPosts, setSelectedPosts] = useState([])
@@ -91,7 +88,9 @@ const ComponentList = () => {
 
       if (response.data.success && Array.isArray(response.data.data?.posts)) {
         setPosts(response.data.data.posts)
-        const initiallySelected = response.data.data.posts.filter((post) => post.has_components).map((post) => post.id)
+        const initiallySelected = response.data.data.posts
+          .filter((post) => post.has_components)
+          .map((post) => post.id)
         setSelectedPosts(initiallySelected)
 
         if (initiallySelected.length > 0 && initiallySelected.length === response.data.data.posts.length) {
@@ -263,6 +262,76 @@ const ComponentList = () => {
     }
   }
 
+  const onDragEnd = async (result) => {
+    const { source, destination, type } = result
+
+    if (!destination) return // Dropped outside the list
+
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return // No change in position
+
+    if (type === "component") {
+      // Reorder components
+      const reorderedComponents = Array.from(components)
+      const [removed] = reorderedComponents.splice(source.index, 1)
+      reorderedComponents.splice(destination.index, 0, removed)
+
+      setComponents(reorderedComponents)
+
+      // Save the new component order to the backend
+      try {
+        const formData = new FormData()
+        formData.append("action", "ccc_update_component_order")
+        formData.append("nonce", window.cccData.nonce)
+        formData.append("component_order", JSON.stringify(reorderedComponents.map((comp) => comp.id)))
+
+        const response = await axios.post(window.cccData.ajaxUrl, formData)
+
+        if (!response.data.success) {
+          showMessage(response.data.message || "Failed to update component order.", "error")
+          fetchComponents() // Revert to server state on failure
+        }
+      } catch (error) {
+        console.error("Error updating component order:", error)
+        showMessage("Error connecting to server. Please try again.", "error")
+        fetchComponents() // Revert to server state on failure
+      }
+    } else if (type === "field") {
+      // Reorder fields within a component
+      const componentId = source.droppableId.split("-")[1]
+      const componentIndex = components.findIndex((comp) => comp.id == componentId)
+      if (componentIndex === -1) return
+
+      const updatedComponents = [...components]
+      const component = updatedComponents[componentIndex]
+      const reorderedFields = Array.from(component.fields)
+      const [removed] = reorderedFields.splice(source.index, 1)
+      reorderedFields.splice(destination.index, 0, removed)
+
+      updatedComponents[componentIndex] = { ...component, fields: reorderedFields }
+      setComponents(updatedComponents)
+
+      // Save the new field order to the backend
+      try {
+        const formData = new FormData()
+        formData.append("action", "ccc_update_field_order")
+        formData.append("nonce", window.cccData.nonce)
+        formData.append("component_id", componentId)
+        formData.append("field_order", JSON.stringify(reorderedFields.map((field) => field.id)))
+
+        const response = await axios.post(window.cccData.ajaxUrl, formData)
+
+        if (!response.data.success) {
+          showMessage(response.data.message || "Failed to update field order.", "error")
+          fetchComponents() // Revert to server state on failure
+        }
+      } catch (error) {
+        console.error("Error updating field order:", error)
+        showMessage("Error connecting to server. Please try again.", "error")
+        fetchComponents() // Revert to server state on failure
+      }
+    }
+  }
+
   useEffect(() => {
     fetchComponents()
   }, [])
@@ -290,11 +359,11 @@ const ComponentList = () => {
     setComponentToEditName(component)
     setShowEditComponentNameModal(true)
   }
-  
+
   const closeEditComponentNameModal = () => {
     setShowEditComponentNameModal(false)
     setComponentToEditName(null)
-    fetchComponents() // Refresh components after editing name
+    fetchComponents()
   }
 
   const getFieldIcon = (type) => {
@@ -378,7 +447,6 @@ const ComponentList = () => {
   return (
     <div className="min-h-screen bg-customGray rounded-custom py-3 px-10">
       <div className="flex flex-col gap-5">
-        {/* Message Display */}
         {message && (
           <div
             className={`mb-6 p-4 rounded-lg shadow-sm border-l-4 ${
@@ -414,10 +482,8 @@ const ComponentList = () => {
           </div>
         )}
 
-        {/* Controls Section */}
-        <div className="rounded-custom ">
+        <div className="rounded-custom">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            {/* Add Component Button */}
             <button
               onClick={() => {
                 setShowNewComponentDialog(true)
@@ -434,7 +500,6 @@ const ComponentList = () => {
               />
             </button>
 
-            {/* Search and Filter */}
             <div className="flex flex-row items-center gap-4">
               <div className="relative flex items-center border rounded-custom border-bgPrimary px-3 py-3 w-[220px]">
                 <img className="h-[25px] w-[25px]" src={SearchIcon || "/placeholder.svg"} alt="Search" />
@@ -458,8 +523,8 @@ const ComponentList = () => {
                     {filterType === "all"
                       ? "All Components"
                       : filterType === "with-fields"
-                        ? "With Fields"
-                        : "No Fields"}
+                      ? "With Fields"
+                      : "No Fields"}
                   </span>
                 </button>
                 {isFilterDropdownOpen && (
@@ -480,7 +545,7 @@ const ComponentList = () => {
                         setFilterType("with-fields")
                         setIsFilterDropdownOpen(false)
                       }}
-                      className={`block w-full text-left px-4 py-2 text-bgSecondary  ${
+                      className={`block w-full text-left px-4 py-2 text-bgSecondary ${
                         filterType === "with-fields" ? "bg-gray-100 font-semibold" : ""
                       }`}
                     >
@@ -491,7 +556,7 @@ const ComponentList = () => {
                         setFilterType("no-fields")
                         setIsFilterDropdownOpen(false)
                       }}
-                      className={`block w-full text-left px-4 py-2 text-bgSecondary  ${
+                      className={`block w-full text-left px-4 py-2 text-bgSecondary ${
                         filterType === "no-fields" ? "bg-gray-100 font-semibold" : ""
                       }`}
                     >
@@ -504,144 +569,178 @@ const ComponentList = () => {
           </div>
         </div>
 
-        {/* Components Grid */}
-        <div className="grid gap-6 p-5 bg-white rounded-custom border border-bgPrimary">
-          {filteredComponents.length === 0 ? (
-            <div className="bg-customGray rounded-custom p-12 text-center">
-              <div className="text-gray-400 mb-6">
-                <LayoutGrid className="w-16 h-16 mx-auto" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                {searchTerm || filterType !== "all" ? "No components found" : "No components yet"}
-              </h3>
-              <p className="text-gray-500 mb-6">
-                {searchTerm || filterType !== "all"
-                  ? "Try adjusting your search or filter criteria"
-                  : "Get started by creating your first component"}
-              </p>
-              {!searchTerm && filterType === "all" && (
-                <button
-                  onClick={() => setShowNewComponentDialog(true)}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  Create Your First Component
-                </button>
-              )}
-            </div>
-          ) : (
-            filteredComponents.map((comp) => (
-              <div key={comp.id} className="bg-customGray rounded-custom p-5">
-                {/* Component Header */}
-                <div className="">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-row items-center gap-2">
-                        <h3 className="text-xl font-bold">{comp.name}</h3>
-                        <code className="bg-[#F672BB] border border-[#F2080C] text-white px-3 py-1 rounded-lg text-sm font-mono">
-                          {comp.handle_name}
-                        </code>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <img
-                        onClick={() => openFieldEditModal(comp)}
-                        className="w-[25px] h-[25px] cursor-pointer"
-                        src={plusIcon || "/placeholder.svg"}
-                        alt="add feild"
-                      />
-                      <img
-                        onClick={() => openEditComponentNameModal(comp)}
-                        className="w-[25px] h-[25px] cursor-pointer"
-                        src={editIcon || "/placeholder.svg"}
-                        alt="edit Component"
-                      />
-                      <img
-                        onClick={() => handleDeleteComponent(comp.id)}
-                        className="w-[25px] h-[25px] cursor-pointer"
-                        src={deleteIcon || "/placeholder.svg"}
-                        alt="Delete Component"
-                      />
-                    </div>
-                  </div>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="grid gap-6 p-5 bg-white rounded-custom border border-bgPrimary">
+            {filteredComponents.length === 0 ? (
+              <div className="bg-customGray rounded-custom p-12 text-center">
+                <div className="text-gray-400 mb-6">
+                  <LayoutGrid className="w-16 h-16 mx-auto" />
                 </div>
-
-                {/* Component Body */}
-                <div className="py-6">
-                  {comp.fields && comp.fields.length > 0 ? (
-                    <div>
-                      <div className="space-y-3">
-                        {comp.fields.map((field) => (
-                          <div key={field.id} className="border border-bgPrimary rounded-custom">
-                            <div className="flex items-center justify-between p-3">
-                              <div className="flex items-center gap-3">
-                                <div className="flex items-center">
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                  {searchTerm || filterType !== "all" ? "No components found" : "No components yet"}
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  {searchTerm || filterType !== "all"
+                    ? "Try adjusting your search or filter criteria"
+                    : "Get started by creating your first component"}
+                </p>
+                {!searchTerm && filterType === "all" && (
+                  <button
+                    onClick={() => setShowNewComponentDialog(true)}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    Create Your First Component
+                  </button>
+                )}
+              </div>
+            ) : (
+              <Droppable droppableId="components" type="component">
+                {(provided) => (
+                  <div {...provided.droppableProps} ref={provided.innerRef}>
+                    {filteredComponents.map((comp, index) => (
+                      <Draggable key={comp.id} draggableId={`comp-${comp.id}`} index={index}>
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className="bg-customGray rounded-custom p-5 mb-4 border border-gray-200 shadow-sm"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <span {...provided.dragHandleProps}>
                                   <img
-                                    className="w-[30px] h-[30px]"
+                                    className="w-[30px] h-[30px] cursor-grab"
                                     src={dragDropIcon || "/placeholder.svg"}
                                     alt="Drag and Drop"
                                   />
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-gray-800">{field.label}</span>
-                                    <span className="text-gray-400">•</span>
-                                    <code className="bg-pinkAccent text-white px-2 py-1 rounded-lg text-sm font-mono">
-                                      {field.name}
-                                    </code>
-                                  </div>
+                                </span>
+                                <div className="flex flex-row items-center gap-2">
+                                  <h3 className="text-xl font-bold">{comp.name}</h3>
+                                  <code className="bg-[#F672BB] border border-[#F2080C] text-white px-3 py-1 rounded-lg text-sm font-mono">
+                                    {comp.handle_name}
+                                  </code>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium capitalize">
-                                    {field.type}
-                                  </span>
-                                  {field.type === "repeater" && field.config?.nested_fields?.length > 0 && (
-                                    <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                                      {field.config.nested_fields.length} nested field
-                                      {field.config.nested_fields.length !== 1 ? "s" : ""}
-                                    </span>
-                                  )}
-                                </div>
-                                <button
-                                  onClick={() => openFieldEditModal(comp, field)}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                                  title="Edit Field"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteField(field.id)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                                  title="Delete Field"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
+                                <img
+                                  onClick={() => openFieldEditModal(comp)}
+                                  className="w-[25px] h-[25px] cursor-pointer"
+                                  src={plusIcon || "/placeholder.svg"}
+                                  alt="Add Field"
+                                />
+                                <img
+                                  onClick={() => openEditComponentNameModal(comp)}
+                                  className="w-[25px] h-[25px] cursor-pointer"
+                                  src={editIcon || "/placeholder.svg"}
+                                  alt="Edit Component"
+                                />
+                                <img
+                                  onClick={() => handleDeleteComponent(comp.id)}
+                                  className="w-[25px] h-[25px] cursor-pointer"
+                                  src={deleteIcon || "/placeholder.svg"}
+                                  alt="Delete Component"
+                                />
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="text-gray-400 mb-4">
-                        <Settings className="w-12 h-12 mx-auto" />
-                      </div>
-                      <p className="text-gray-500 mb-4">No fields added yet</p>
-                      <button
-                        onClick={() => openFieldEditModal(comp)}
-                        className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-                      >
-                        Add First Field
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
 
-        {/* Component Assignment Section */}
+                            <div className="py-6">
+                              {comp.fields && comp.fields.length > 0 ? (
+                                <Droppable droppableId={`fields-${comp.id}`} type="field">
+                                  {(provided) => (
+                                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                                      {comp.fields.map((field, fieldIndex) => (
+                                        <Draggable
+                                          key={field.id}
+                                          draggableId={`field-${field.id}`}
+                                          index={fieldIndex}
+                                        >
+                                          {(provided) => (
+                                            <div
+                                              ref={provided.innerRef}
+                                              {...provided.draggableProps}
+                                              className="border border-bgPrimary rounded-custom flex items-center justify-between p-3 bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
+                                            >
+                                              <div className="flex items-center gap-3">
+                                                <span {...provided.dragHandleProps}>
+                                                  <img
+                                                    className="w-[30px] h-[30px] cursor-grab"
+                                                    src={dragDropIcon || "/placeholder.svg"}
+                                                    alt="Drag and Drop"
+                                                  />
+                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                  <span className="font-semibold text-gray-800">
+                                                    {field.label}
+                                                  </span>
+                                                  <span className="text-gray-400">•</span>
+                                                  <code className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono">
+                                                    {field.name}
+                                                  </code>
+                                                </div>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 mt-1">
+                                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium capitalize">
+                                                    {field.type}
+                                                  </span>
+                                                  {field.type === "repeater" &&
+                                                    field.config?.nested_fields?.length > 0 && (
+                                                      <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                        {field.config.nested_fields.length} nested field
+                                                        {field.config.nested_fields.length !== 1 ? "s" : ""}
+                                                      </span>
+                                                    )}
+                                                </div>
+                                                <button
+                                                  onClick={() => openFieldEditModal(comp, field)}
+                                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                                                  title="Edit Field"
+                                                >
+                                                  <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                  onClick={() => handleDeleteField(field.id)}
+                                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                                  title="Delete Field"
+                                                >
+                                                  <Trash2 className="w-4 h-4" />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </Draggable>
+                                      ))}
+                                      {provided.placeholder}
+                                    </div>
+                                  )}
+                                </Droppable>
+                              ) : (
+                                <div className="text-center py-8">
+                                  <div className="text-gray-400 mb-4">
+                                    <Settings className="w-12 h-12 mx-auto" />
+                                  </div>
+                                  <p className="text-gray-500 mb-4">No fields added yet</p>
+                                  <button
+                                    onClick={() => openFieldEditModal(comp)}
+                                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+                                  >
+                                    Add First Field
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            )}
+          </div>
+        </DragDropContext>
+
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-3 rounded-xl text-white">
@@ -654,7 +753,6 @@ const ComponentList = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Content Type Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Content Type</label>
               <select
@@ -667,7 +765,6 @@ const ComponentList = () => {
               </select>
             </div>
 
-            {/* Page/Post Selection */}
             <div>
               <h4 className="text-lg font-semibold text-gray-800 mb-4">
                 Select {postType === "page" ? "Pages" : "Posts"} to Assign All Components To
@@ -719,7 +816,6 @@ const ComponentList = () => {
               </div>
             </div>
 
-            {/* Save Button */}
             <button
               onClick={handleSaveAssignments}
               className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
@@ -729,7 +825,6 @@ const ComponentList = () => {
           </div>
         </div>
 
-        {/* Stats Footer */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             <div>
@@ -752,7 +847,6 @@ const ComponentList = () => {
         </div>
       </div>
 
-      {/* Create Component Modal */}
       {showNewComponentDialog && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300">
@@ -812,7 +906,7 @@ const ComponentList = () => {
               <button
                 type="button"
                 onClick={() => setShowNewComponentDialog(false)}
-                className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl  transition-all duration-200 font-medium"
+                className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl transition-all duration-200 font-medium"
               >
                 Cancel
               </button>
@@ -827,7 +921,6 @@ const ComponentList = () => {
         </div>
       )}
 
-      {/* Field Edit Modal */}
       {showFieldEditModal && (
         <FieldEditModal
           isOpen={showFieldEditModal}
@@ -838,13 +931,12 @@ const ComponentList = () => {
         />
       )}
 
-      {/* Component Name Edit Modal */}
       {showEditComponentNameModal && (
         <ComponentEditNameModal
           isOpen={showEditComponentNameModal}
           component={componentToEditName}
           onClose={closeEditComponentNameModal}
-          onSave={closeEditComponentNameModal} // This will trigger fetchComponents in parent
+          onSave={closeEditComponentNameModal}
         />
       )}
     </div>
