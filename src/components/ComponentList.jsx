@@ -290,7 +290,7 @@ const ComponentList = () => {
     setComponentToEditName(component)
     setShowEditComponentNameModal(true)
   }
-
+  
   const closeEditComponentNameModal = () => {
     setShowEditComponentNameModal(false)
     setComponentToEditName(null)
@@ -537,7 +537,7 @@ const ComponentList = () => {
                     <div className="flex items-center gap-4">
                       <div className="flex flex-row items-center gap-2">
                         <h3 className="text-xl font-bold">{comp.name}</h3>
-                        <code className="bg-pinkAccent text-white px-3 py-1 rounded-lg text-sm font-mono">
+                        <code className="bg-[#F672BB] border border-[#F2080C] text-white px-3 py-1 rounded-lg text-sm font-mono">
                           {comp.handle_name}
                         </code>
                       </div>
