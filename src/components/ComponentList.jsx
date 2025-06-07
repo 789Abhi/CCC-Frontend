@@ -26,18 +26,15 @@ const ComponentList = () => {
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false) // New state for dropdown
-
-  // New states for component name editing
-  const [showEditComponentNameModal, setShowEditComponentNameModal] = useState(false)
-  const [componentToEditName, setComponentToEditName] = useState(null)
-
-  // Assignment functionality
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false)
   const [postType, setPostType] = useState("page")
   const [posts, setPosts] = useState([])
   const [selectedPosts, setSelectedPosts] = useState([])
   const [selectAllPages, setSelectAllPages] = useState(false)
   const [selectAllPosts, setSelectAllPosts] = useState(false)
+
+  // New state for showing "Copied!" tooltip
+  const [copiedText, setCopiedText] = useState(null)
 
   const generateHandle = (name) => {
     return name
@@ -53,6 +50,17 @@ const ComponentList = () => {
       setMessage("")
       setMessageType("")
     }, 5000)
+  }
+
+  // Function to handle copying text to clipboard
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedText(text)
+      setTimeout(() => setCopiedText(null), 2000) // Hide "Copied!" after 2 seconds
+    }).catch((err) => {
+      console.error("Failed to copy text:", err)
+      showMessage("Failed to copy text.", "error")
+    })
   }
 
   const fetchComponents = async () => {
@@ -294,7 +302,7 @@ const ComponentList = () => {
   const closeEditComponentNameModal = () => {
     setShowEditComponentNameModal(false)
     setComponentToEditName(null)
-    fetchComponents() // Refresh components after editing name
+    fetchComponents()
   }
 
   const getFieldIcon = (type) => {
@@ -417,7 +425,6 @@ const ComponentList = () => {
         {/* Controls Section */}
         <div className="rounded-custom ">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            {/* Add Component Button */}
             <button
               onClick={() => {
                 setShowNewComponentDialog(true)
@@ -434,7 +441,6 @@ const ComponentList = () => {
               />
             </button>
 
-            {/* Search and Filter */}
             <div className="flex flex-row items-center gap-4">
               <div className="relative flex items-center border rounded-custom border-bgPrimary px-3 py-3 w-[220px]">
                 <img className="h-[25px] w-[25px]" src={SearchIcon || "/placeholder.svg"} alt="Search" />
@@ -537,9 +543,20 @@ const ComponentList = () => {
                     <div className="flex items-center gap-4">
                       <div className="flex flex-row items-center gap-2">
                         <h3 className="text-xl font-bold">{comp.name}</h3>
-                        <code className="bg-[#F672BB] border border-[#F2080C] text-white px-3 py-1 rounded-lg text-sm font-mono">
-                          {comp.handle_name}
-                        </code>
+                        {/* Modified to add copy functionality for comp.handle_name */}
+                        <div className="relative">
+                          <code
+                            className="bg-[#F672BB] border border-[#F2080C] text-white px-3 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
+                            onClick={() => handleCopy(comp.handle_name)}
+                          >
+                            {comp.handle_name}
+                          </code>
+                          {copiedText === comp.handle_name && (
+                            <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2">
+                              Copied!
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -547,7 +564,7 @@ const ComponentList = () => {
                         onClick={() => openFieldEditModal(comp)}
                         className="w-[25px] h-[25px] cursor-pointer"
                         src={plusIcon || "/placeholder.svg"}
-                        alt="add feild"
+                        alt="add field"
                       />
                       <img
                         onClick={() => openEditComponentNameModal(comp)}
@@ -581,17 +598,28 @@ const ComponentList = () => {
                                     alt="Drag and Drop"
                                   />
                                   <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-gray-800">{field.label}</span>
+                                    <span className="font-semibold text-gray-800 text-lg">{field.label}</span>
                                     <span className="text-gray-400">•</span>
-                                    <code className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono">
-                                      {field.name}
-                                    </code>
+                                    {/* Modified to add copy functionality for field.name */}
+                                    <div className="relative">
+                                      <code
+                                        className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
+                                        onClick={() => handleCopy(field.name)}
+                                      >
+                                        {field.name}
+                                      </code>
+                                      {copiedText === field.name && (
+                                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2">
+                                          Copied!
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 <div className="flex items-center gap-2 mt-1">
-                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium capitalize">
+                                  <span className="bg-blue-100 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
                                     {field.type}
                                   </span>
                                   {field.type === "repeater" && field.config?.nested_fields?.length > 0 && (
@@ -601,20 +629,18 @@ const ComponentList = () => {
                                     </span>
                                   )}
                                 </div>
-                                <button
+                                <img
                                   onClick={() => openFieldEditModal(comp, field)}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                                  title="Edit Field"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </button>
-                                <button
+                                  src={editIcon}
+                                  className="h-[18px] w-[18px] cursor-pointer"
+                                  alt="edit-icon"
+                                />
+                                <img
                                   onClick={() => handleDeleteField(field.id)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                                  title="Delete Field"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
+                                  className="h-[18px] w-[18px] cursor-pointer"
+                                  src={deleteIcon}
+                                  alt="delete-icon"
+                                />
                               </div>
                             </div>
                           </div>
@@ -654,7 +680,6 @@ const ComponentList = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Content Type Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Content Type</label>
               <select
@@ -667,7 +692,6 @@ const ComponentList = () => {
               </select>
             </div>
 
-            {/* Page/Post Selection */}
             <div>
               <h4 className="text-lg font-semibold text-gray-800 mb-4">
                 Select {postType === "page" ? "Pages" : "Posts"} to Assign All Components To
@@ -719,7 +743,6 @@ const ComponentList = () => {
               </div>
             </div>
 
-            {/* Save Button */}
             <button
               onClick={handleSaveAssignments}
               className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
@@ -729,7 +752,6 @@ const ComponentList = () => {
           </div>
         </div>
 
-        {/* Stats Footer */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             <div>
@@ -812,7 +834,7 @@ const ComponentList = () => {
               <button
                 type="button"
                 onClick={() => setShowNewComponentDialog(false)}
-                className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl  transition-all duration-200 font-medium"
+                className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl transition-all duration-200 font-medium"
               >
                 Cancel
               </button>
@@ -827,7 +849,6 @@ const ComponentList = () => {
         </div>
       )}
 
-      {/* Field Edit Modal */}
       {showFieldEditModal && (
         <FieldEditModal
           isOpen={showFieldEditModal}
@@ -838,13 +859,12 @@ const ComponentList = () => {
         />
       )}
 
-      {/* Component Name Edit Modal */}
       {showEditComponentNameModal && (
         <ComponentEditNameModal
           isOpen={showEditComponentNameModal}
           component={componentToEditName}
           onClose={closeEditComponentNameModal}
-          onSave={closeEditComponentNameModal} // This will trigger fetchComponents in parent
+          onSave={closeEditComponentNameModal}
         />
       )}
     </div>
