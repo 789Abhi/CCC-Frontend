@@ -32,9 +32,11 @@ const ComponentList = () => {
   const [selectedPosts, setSelectedPosts] = useState([])
   const [selectAllPages, setSelectAllPages] = useState(false)
   const [selectAllPosts, setSelectAllPosts] = useState(false)
-
-  // New state for showing "Copied!" tooltip
   const [copiedText, setCopiedText] = useState(null)
+  
+  // Add missing state for ComponentEditNameModal
+  const [showEditComponentNameModal, setShowEditComponentNameModal] = useState(false)
+  const [componentToEditName, setComponentToEditName] = useState(null)
 
   const generateHandle = (name) => {
     return name
@@ -52,11 +54,10 @@ const ComponentList = () => {
     }, 5000)
   }
 
-  // Function to handle copying text to clipboard
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedText(text)
-      setTimeout(() => setCopiedText(null), 2000) // Hide "Copied!" after 2 seconds
+      setTimeout(() => setCopiedText(null), 2000)
     }).catch((err) => {
       console.error("Failed to copy text:", err)
       showMessage("Failed to copy text.", "error")
@@ -386,7 +387,6 @@ const ComponentList = () => {
   return (
     <div className="min-h-screen bg-customGray rounded-custom py-3 px-10">
       <div className="flex flex-col gap-5">
-        {/* Message Display */}
         {message && (
           <div
             className={`mb-6 p-4 rounded-lg shadow-sm border-l-4 ${
@@ -422,8 +422,7 @@ const ComponentList = () => {
           </div>
         )}
 
-        {/* Controls Section */}
-        <div className="rounded-custom ">
+        <div className="rounded-custom">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <button
               onClick={() => {
@@ -510,7 +509,6 @@ const ComponentList = () => {
           </div>
         </div>
 
-        {/* Components Grid */}
         <div className="grid gap-6 p-5 bg-white rounded-custom border border-bgPrimary">
           {filteredComponents.length === 0 ? (
             <div className="bg-customGray rounded-custom p-12 text-center">
@@ -537,13 +535,11 @@ const ComponentList = () => {
           ) : (
             filteredComponents.map((comp) => (
               <div key={comp.id} className="bg-customGray rounded-custom p-5">
-                {/* Component Header */}
                 <div className="">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="flex flex-row items-center gap-2">
                         <h3 className="text-xl font-bold">{comp.name}</h3>
-                        {/* Modified to add copy functionality for comp.handle_name */}
                         <div className="relative">
                           <code
                             className="bg-[#F672BB] border border-[#F2080C] text-white px-3 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
@@ -582,7 +578,6 @@ const ComponentList = () => {
                   </div>
                 </div>
 
-                {/* Component Body */}
                 <div className="py-6">
                   {comp.fields && comp.fields.length > 0 ? (
                     <div>
@@ -600,7 +595,6 @@ const ComponentList = () => {
                                   <div className="flex items-center gap-2">
                                     <span className="font-semibold text-gray-800 text-lg">{field.label}</span>
                                     <span className="text-gray-400">•</span>
-                                    {/* Modified to add copy functionality for field.name */}
                                     <div className="relative">
                                       <code
                                         className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
@@ -667,7 +661,6 @@ const ComponentList = () => {
           )}
         </div>
 
-        {/* Component Assignment Section */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-3 rounded-xl text-white">
@@ -774,7 +767,6 @@ const ComponentList = () => {
         </div>
       </div>
 
-      {/* Create Component Modal */}
       {showNewComponentDialog && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300">
