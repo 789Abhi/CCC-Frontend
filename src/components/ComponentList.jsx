@@ -33,7 +33,8 @@ const ComponentList = () => {
   const [selectAllPages, setSelectAllPages] = useState(false)
   const [selectAllPosts, setSelectAllPosts] = useState(false)
   const [copiedText, setCopiedText] = useState(null)
-
+  
+  // Add missing state for ComponentEditNameModal
   const [showEditComponentNameModal, setShowEditComponentNameModal] = useState(false)
   const [componentToEditName, setComponentToEditName] = useState(null)
 
@@ -54,53 +55,14 @@ const ComponentList = () => {
   }
 
   const handleCopy = (text) => {
-    console.log("Attempting to copy text:", text); // Debug log
-    // Fallback for older browsers or non-secure contexts
-    const copyFallback = (textToCopy) => {
-      const textArea = document.createElement("textarea");
-      textArea.value = textToCopy;
-      document.body.appendChild(textArea);
-      textArea.select();
-      try {
-        document.execCommand("copy");
-        console.log("Copy successful using fallback");
-        return true;
-      } catch (err) {
-        console.error("Fallback copy failed:", err);
-        return false;
-      } finally {
-        document.body.removeChild(textArea);
-      }
-    };
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          console.log("Text copied to clipboard:", text);
-          setCopiedText(text);
-          setTimeout(() => setCopiedText(null), 2000);
-        })
-        .catch((err) => {
-          console.error("Failed to copy text with clipboard API:", err);
-          const success = copyFallback(text);
-          if (success) {
-            setCopiedText(text);
-            setTimeout(() => setCopiedText(null), 2000);
-          } else {
-            showMessage("Failed to copy text.", "error");
-          }
-        });
-    } else {
-      console.warn("Clipboard API not supported, using fallback");
-      const success = copyFallback(text);
-      if (success) {
-        setCopiedText(text);
-        setTimeout(() => setCopiedText(null), 2000);
-      } else {
-        showMessage("Failed to copy text.", "error");
-      }
-    }
-  };
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedText(text)
+      setTimeout(() => setCopiedText(null), 2000)
+    }).catch((err) => {
+      console.error("Failed to copy text:", err)
+      showMessage("Failed to copy text.", "error")
+    })
+  }
 
   const fetchComponents = async () => {
     setLoading(true)
@@ -586,7 +548,7 @@ const ComponentList = () => {
                             {comp.handle_name}
                           </code>
                           {copiedText === comp.handle_name && (
-                            <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 shadow-lg">
+                            <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2">
                               Copied!
                             </span>
                           )}
@@ -641,7 +603,7 @@ const ComponentList = () => {
                                         {field.name}
                                       </code>
                                       {copiedText === field.name && (
-                                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 shadow-lg">
+                                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2">
                                           Copied!
                                         </span>
                                       )}
