@@ -62,7 +62,7 @@ function Header() {
               <img className="w-full h-full  object-contain" src={logo} alt="CCC Logo" />
               </div>
               <div className="flex-1 px-10 py-7 bg-customGray text-center rounded-custom">
-                <h1 className="text-4xl font-bold text-bgPrimary">Custom Craft Components V1</h1>
+                <h1 className="text-4xl font-bold text-bgPrimary">Custom Craft Components </h1>
               </div>
             </div>
           </div>
