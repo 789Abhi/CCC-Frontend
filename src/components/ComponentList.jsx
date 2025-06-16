@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 import FieldEditModal from "./FieldEditModal"
 import { Plus, Edit, Trash2 } from "lucide-react"
+import FieldPopup from "./FieldPopup"
 
 const ComponentList = () => {
   const [showPopup, setShowPopup] = useState(false)
@@ -22,6 +23,8 @@ const ComponentList = () => {
   const [selectedPosts, setSelectedPosts] = useState([]) // IDs of selected posts/pages
   const [selectAllPages, setSelectAllPages] = useState(false)
   const [selectAllPosts, setSelectAllPosts] = useState(false)
+  const [showFieldPopup, setShowFieldPopup] = useState(false)
+  const [selectedComponentId, setSelectedComponentId] = useState(null)
 
   const generateHandle = (name) => {
     return name
@@ -156,13 +159,14 @@ const ComponentList = () => {
     }
   }
 
-  const handleDeleteField = async (fieldId) => {
+  const handleDeleteField = async (componentId, fieldName) => {
     if (!window.confirm("Are you sure you want to delete this field?")) return
 
     try {
       const formData = new FormData()
       formData.append("action", "ccc_delete_field")
-      formData.append("field_id", fieldId)
+      formData.append("component_id", componentId)
+      formData.append("field_name", fieldName)
       formData.append("nonce", window.cccData.nonce)
 
       const response = await axios.post(window.cccData.ajaxUrl, formData)
@@ -234,17 +238,12 @@ const ComponentList = () => {
     setSelectAllPosts(false)
   }, [postType])
 
-  const openFieldEditModal = (component, field = null) => {
-    setSelectedComponentForField(component)
-    setEditingField(field)
-    setShowFieldEditModal(true)
+  const openFieldEditModal = (component, field) => {
+    setEditingField({ ...field, componentId: component.id })
   }
 
-  const closeFieldEditModal = () => {
-    setShowFieldEditModal(false)
-    setSelectedComponentForField(null)
-    setEditingField(null)
-    fetchComponents() // Refresh components after field changes
+  const handleFieldUpdated = () => {
+    fetchComponents()
   }
 
   const handlePostSelectionChange = (postId, isChecked) => {
@@ -488,12 +487,20 @@ const ComponentList = () => {
                               <span className="font-medium text-gray-900">{field.label}</span>
                               <span className="ml-2 text-sm text-gray-500">({renderFieldType(field.type)})</span>
                             </div>
-                            <button
-                              onClick={() => handleDeleteField(field.id)}
-                              className="text-red-600 hover:text-red-800 text-sm"
-                            >
-                              Delete
-                            </button>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => openFieldEditModal(comp, field)}
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteField(comp.id, field.name)}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </div>
                           <div className="text-sm text-gray-600">{renderFieldValue(field)}</div>
                         </li>
@@ -522,8 +529,6 @@ const ComponentList = () => {
             <option value="post">Posts</option>
           </select>
         </div>
-
-        {/* Removed "Select Components to Assign" section as per user request */}
 
         <div className="mb-4">
           <h4 className="text-sm font-medium text-gray-700 mb-2">
@@ -617,13 +622,20 @@ const ComponentList = () => {
         </div>
       )}
 
-      {showFieldEditModal && (
+      {showFieldPopup && (
+        <FieldPopup
+          componentId={selectedComponentId}
+          onClose={() => setShowFieldPopup(false)}
+          onFieldAdded={handleFieldAdded}
+        />
+      )}
+
+      {editingField && (
         <FieldEditModal
-          isOpen={showFieldEditModal}
-          component={selectedComponentForField}
           field={editingField}
-          onClose={closeFieldEditModal}
-          onSave={closeFieldEditModal}
+          componentId={editingField.componentId}
+          onClose={() => setEditingField(null)}
+          onFieldUpdated={handleFieldUpdated}
         />
       )}
     </div>
