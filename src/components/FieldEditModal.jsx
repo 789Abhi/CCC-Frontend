@@ -20,7 +20,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
   const [currentNestedField, setCurrentNestedField] = useState(null)
 
   const isEditing = !!field
-  const availableFieldTypes = ["text", "textarea", "image", "repeater"]
+  const availableFieldTypes = ["text", "textarea", "image", "repeater", "color"] // ADDED: "color"
 
   useEffect(() => {
     if (field) {
@@ -68,9 +68,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
   }
 
   const handleUpdateNestedField = (updatedField) => {
-    setNestedFieldDefinitions((prev) =>
-      prev.map((f, i) => (i === editingNestedFieldIndex ? updatedField : f))
-    )
+    setNestedFieldDefinitions((prev) => prev.map((f, i) => (i === editingNestedFieldIndex ? updatedField : f)))
     setEditingNestedFieldIndex(null)
     setShowNestedFieldModal(false)
     setCurrentNestedField(null)
@@ -127,6 +125,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
         formData.append("nested_field_definitions", JSON.stringify(nestedFieldDefinitions))
       } else if (type === "image") {
         formData.append("return_type", "url")
+      } else if (type === "color") {
+        // No additional config needed for a simple color field
       }
 
       const response = await axios.post(window.cccData.ajaxUrl, formData)
@@ -151,9 +151,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-gray-200">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-gray-50 rounded-t-xl">
-          <h3 className="text-xl font-semibold text-gray-800">
-            {isEditing ? "Edit Field" : "Add New Field"}
-          </h3>
+          <h3 className="text-xl font-semibold text-gray-800">{isEditing ? "Edit Field" : "Add New Field"}</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
             <X className="w-6 h-6" />
           </button>
@@ -236,44 +234,44 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                 <option value="textarea">Textarea</option>
                 <option value="image">Image</option>
                 <option value="repeater">Repeater</option>
+                <option value="color">Color</option> {/* ADDED: Color option */}
               </select>
-              {isEditing && (
-                <p className="text-xs text-gray-500">Field type can be changed.</p>
-              )}
+              {isEditing && <p className="text-xs text-gray-500">Field type can be changed.</p>}
             </div>
 
-            {/* Placeholder and Required for non-repeater fields */}
-            {type !== "repeater" && (
-              <>
-                <div className="space-y-2">
-                  <label htmlFor="placeholder" className="block text-sm font-medium text-gray-700">
-                    Placeholder
-                  </label>
-                  <input
-                    id="placeholder"
-                    type="text"
-                    value={placeholder}
-                    onChange={(e) => setPlaceholder(e.target.value)}
-                    placeholder="Enter placeholder text"
-                    disabled={isSubmitting}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                  />
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="required"
-                    checked={isRequired}
-                    onChange={(e) => setIsRequired(e.target.checked)}
-                    className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    disabled={isSubmitting}
-                  />
-                  <label htmlFor="required" className="ml-2 text-sm text-gray-700">
-                    Required field
-                  </label>
-                </div>
-              </>
-            )}
+            {/* Placeholder and Required for non-repeater and non-color fields */}
+            {type !== "repeater" &&
+              type !== "color" && ( // MODIFIED: Exclude color from placeholder/required
+                <>
+                  <div className="space-y-2">
+                    <label htmlFor="placeholder" className="block text-sm font-medium text-gray-700">
+                      Placeholder
+                    </label>
+                    <input
+                      id="placeholder"
+                      type="text"
+                      value={placeholder}
+                      onChange={(e) => setPlaceholder(e.target.value)}
+                      placeholder="Enter placeholder text"
+                      disabled={isSubmitting}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="required"
+                      checked={isRequired}
+                      onChange={(e) => setIsRequired(e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      disabled={isSubmitting}
+                    />
+                    <label htmlFor="required" className="ml-2 text-sm text-gray-700">
+                      Required field
+                    </label>
+                  </div>
+                </>
+              )}
 
             {/* Repeater Settings */}
             {type === "repeater" && (
@@ -293,16 +291,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                     disabled={isSubmitting}
                   />
-                  <p className="text-xs text-gray-500">
-                    Limit the number of items that can be added to this repeater.
-                  </p>
+                  <p className="text-xs text-gray-500">Limit the number of items that can be added to this repeater.</p>
                 </div>
 
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium text-gray-700">Nested Fields</h4>
-                  <p className="text-xs text-gray-600">
-                    Define the fields that will appear within each repeater item.
-                  </p>
+                  <p className="text-xs text-gray-600">Define the fields that will appear within each repeater item.</p>
 
                   {nestedFieldDefinitions.length === 0 ? (
                     <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-lg">
@@ -324,17 +318,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                     <DragDropContext onDragEnd={onDragEnd}>
                       <Droppable droppableId="nested-fields">
                         {(provided) => (
-                          <div
-                            {...provided.droppableProps}
-                            ref={provided.innerRef}
-                            className="space-y-2"
-                          >
+                          <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                             {nestedFieldDefinitions.map((nf, index) => (
-                              <Draggable
-                                key={nf.name + index}
-                                draggableId={nf.name + index}
-                                index={index}
-                              >
+                              <Draggable key={nf.name + index} draggableId={nf.name + index} index={index}>
                                 {(provided) => (
                                   <div
                                     ref={provided.innerRef}
@@ -350,9 +336,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                                       <code className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">
                                         {nf.name}
                                       </code>
-                                      <span className="ml-2 text-sm text-gray-600 capitalize">
-                                        ({nf.type})
-                                      </span>
+                                      <span className="ml-2 text-sm text-gray-600 capitalize">({nf.type})</span>
                                     </div>
                                     <div className="flex gap-2">
                                       <button
@@ -496,9 +480,7 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
   }
 
   const handleUpdateDeeplyNestedField = (updatedField) => {
-    setNestedFieldDefinitions((prev) =>
-      prev.map((f, i) => (i === editingDeeplyNestedFieldIndex ? updatedField : f))
-    )
+    setNestedFieldDefinitions((prev) => prev.map((f, i) => (i === editingDeeplyNestedFieldIndex ? updatedField : f)))
     setEditingDeeplyNestedFieldIndex(null)
     setShowDeeplyNestedFieldModal(false)
     setCurrentDeeplyNestedField(null)
@@ -546,6 +528,9 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
         max_sets: maxSets || "0",
         nested_fields: nestedFieldDefinitions,
       }
+    } else if (type === "color") {
+      // NEW: No specific config for nested color field
+      // No additional config needed
     }
 
     onSave(newFieldData)
@@ -620,9 +605,7 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
               />
-              <p className="text-xs text-gray-500">
-                Used in code. Must be unique within this repeater.
-              </p>
+              <p className="text-xs text-gray-500">Used in code. Must be unique within this repeater.</p>
             </div>
 
             {/* Type */}
@@ -691,17 +674,9 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
                     <DragDropContext onDragEnd={onDeeplyNestedDragEnd}>
                       <Droppable droppableId="deeply-nested-fields">
                         {(provided) => (
-                          <div
-                            {...provided.droppableProps}
-                            ref={provided.innerRef}
-                            className="space-y-2"
-                          >
+                          <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                             {nestedFieldDefinitions.map((nf, index) => (
-                              <Draggable
-                                key={nf.name + index}
-                                draggableId={nf.name + index}
-                                index={index}
-                              >
+                              <Draggable key={nf.name + index} draggableId={nf.name + index} index={index}>
                                 {(provided) => (
                                   <div
                                     ref={provided.innerRef}
@@ -717,9 +692,7 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
                                       <code className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">
                                         {nf.name}
                                       </code>
-                                      <span className="ml-2 text-sm text-gray-600 capitalize">
-                                        ({nf.type})
-                                      </span>
+                                      <span className="ml-2 text-sm text-gray-600 capitalize">({nf.type})</span>
                                     </div>
                                     <div className="flex gap-2">
                                       <button
@@ -793,11 +766,7 @@ function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes 
           isOpen={showDeeplyNestedFieldModal}
           field={currentDeeplyNestedField}
           onClose={() => setShowDeeplyNestedFieldModal(false)}
-          onSave={
-            editingDeeplyNestedFieldIndex !== null
-              ? handleUpdateDeeplyNestedField
-              : handleAddDeeplyNestedField
-          }
+          onSave={editingDeeplyNestedFieldIndex !== null ? handleUpdateDeeplyNestedField : handleAddDeeplyNestedField}
           availableFieldTypes={availableFieldTypes}
         />
       )}

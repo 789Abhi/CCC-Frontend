@@ -10,7 +10,7 @@ import FilterIcon from "/Filter.svg"
 import dragDropIcon from "/drag-drop-icon.svg"
 import deleteIcon from "/delete.svg"
 import editIcon from "/Edit.svg"
-import { Edit, Trash2, LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users } from "lucide-react"
+import { LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users, Palette } from "lucide-react" // ADDED: Palette icon
 import ComponentEditNameModal from "./ComponentEditModal"
 
 const ComponentList = () => {
@@ -75,7 +75,8 @@ const ComponentList = () => {
     }
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text)
+      navigator.clipboard
+        .writeText(text)
         .then(() => {
           console.log("Text copied to clipboard:", text)
           setCopiedText(text)
@@ -139,9 +140,7 @@ const ComponentList = () => {
 
       if (response.data.success && Array.isArray(response.data.data?.posts)) {
         setPosts(response.data.data.posts)
-        const initiallySelected = response.data.data.posts
-          .filter((post) => post.has_components)
-          .map((post) => post.id)
+        const initiallySelected = response.data.data.posts.filter((post) => post.has_components).map((post) => post.id)
         setSelectedPosts(initiallySelected)
 
         if (initiallySelected.length > 0 && initiallySelected.length === response.data.data.posts.length) {
@@ -193,7 +192,11 @@ const ComponentList = () => {
   }
 
   const handleDeleteComponent = async (componentId) => {
-    if (!window.confirm("Are you sure you want to delete this component? This will also remove it from all assigned pages.")) {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this component? This will also remove it from all assigned pages.",
+      )
+    ) {
       return
     }
 
@@ -354,6 +357,8 @@ const ComponentList = () => {
         return <ImageIcon className="w-4 h-4 text-purple-500" />
       case "repeater":
         return <Repeat className="w-4 h-4 text-orange-500" />
+      case "color": // NEW: Icon for color field
+        return <Palette className="w-4 h-4 text-pink-500" />
       default:
         return <FileText className="w-4 h-4 text-gray-500" />
     }
@@ -362,15 +367,12 @@ const ComponentList = () => {
   const filteredComponents = components.filter((comp) => {
     const searchLower = searchTerm.toLowerCase()
     const matchesComponentName =
-      comp.name.toLowerCase().includes(searchLower) ||
-      comp.handle_name.toLowerCase().includes(searchLower)
+      comp.name.toLowerCase().includes(searchLower) || comp.handle_name.toLowerCase().includes(searchLower)
 
     const matchesFieldName =
       comp.fields &&
       comp.fields.some(
-        (field) =>
-          field.label.toLowerCase().includes(searchLower) ||
-          field.name.toLowerCase().includes(searchLower),
+        (field) => field.label.toLowerCase().includes(searchLower) || field.name.toLowerCase().includes(searchLower),
       )
 
     const matchesSearch = matchesComponentName || matchesFieldName
@@ -433,9 +435,10 @@ const ComponentList = () => {
           <div
             className={`
               mb-6 p-4 rounded-lg shadow-sm border-l-4 
-              ${messageType === "success"
-                ? "bg-green-50 border-green-400 text-green-800"
-                : "bg-red-50 border-red-400 text-red-800"
+              ${
+                messageType === "success"
+                  ? "bg-green-50 border-green-400 text-green-800"
+                  : "bg-red-50 border-red-400 text-red-800"
               }
             `}
           >
@@ -507,8 +510,8 @@ const ComponentList = () => {
                     {filterType === "all"
                       ? "All Components"
                       : filterType === "with-fields"
-                      ? "With Fields"
-                      : "No Fields"}
+                        ? "With Fields"
+                        : "No Fields"}
                   </span>
                 </button>
 
@@ -672,14 +675,14 @@ const ComponentList = () => {
                                 </div>
                                 <img
                                   onClick={() => openFieldEditModal(comp, field)}
-                                  src={editIcon}
+                                  src={editIcon || "/placeholder.svg"}
                                   className="h-[18px] w-[18px] cursor-pointer"
                                   alt="edit-icon"
                                 />
                                 <img
                                   onClick={() => handleDeleteField(field.id)}
                                   className="h-[18px] w-[18px] cursor-pointer"
-                                  src={deleteIcon}
+                                  src={deleteIcon || "/placeholder.svg"}
                                   alt="delete-icon"
                                 />
                               </div>
