@@ -58,16 +58,16 @@ const ComponentSelector = () => {
     const reorderedComponents = Array.from(selectedComponents);
     const [movedComponent] = reorderedComponents.splice(result.source.index, 1);
     reorderedComponents.splice(result.destination.index, 0, movedComponent);
+
     setSelectedComponents(reorderedComponents);
   };
 
   const handleSave = () => {
     const values = Object.entries(fieldValues).map(([field_id, value]) => ({
       field_id,
-      value
+      value,
     }));
 
-    // Update post meta and field values via hidden inputs
     const metaInput = document.createElement('input');
     metaInput.type = 'hidden';
     metaInput.name = 'ccc_components';
@@ -82,6 +82,7 @@ const ComponentSelector = () => {
 
     setMessage('Changes will be saved when you update the post.');
     setMessageType('success');
+
     setTimeout(() => setMessage(''), 5000);
   };
 
@@ -92,13 +93,7 @@ const ComponentSelector = () => {
   return (
     <div className="p-4">
       {message && (
-        <div
-          className={`mb-4 px-4 py-2 rounded ${
-            messageType === 'success'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}
-        >
+        <div className={`mb-4 px-4 py-2 rounded ${messageType === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
           {message}
         </div>
       )}
@@ -128,9 +123,9 @@ const ComponentSelector = () => {
                               <input
                                 type="checkbox"
                                 checked
-                                onChange={() => {
-                                  setSelectedComponents(selectedComponents.filter((c) => c.id !== comp.id));
-                                }}
+                                onChange={() =>
+                                  setSelectedComponents(selectedComponents.filter((c) => c.id !== comp.id))
+                                }
                                 className="mr-2"
                               />
                               {comp.name}
@@ -182,20 +177,26 @@ const ComponentSelector = () => {
                     {component.fields.map((field) => (
                       <div key={field.id} className="mt-2">
                         <label className="block text-gray-700 mb-1">{field.label}</label>
-                        {field.type === "text" ? (
+                        {field.type === 'text' ? (
                           <input
                             type="text"
-                            value={fieldValues[field.id] || ""}
+                            value={fieldValues[field.id] || ''}
                             onChange={(e) =>
-                              setFieldValues({ ...fieldValues, [field.id]: e.target.value })
+                              setFieldValues({
+                                ...fieldValues,
+                                [field.id]: e.target.value,
+                              })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         ) : (
                           <textarea
-                            value={fieldValues[field.id] || ""}
+                            value={fieldValues[field.id] || ''}
                             onChange={(e) =>
-                              setFieldValues({ ...fieldValues, [field.id]: e.target.value })
+                              setFieldValues({
+                                ...fieldValues,
+                                [field.id]: e.target.value,
+                              })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             rows="4"

@@ -12,26 +12,25 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
   const [imageReturnType, setImageReturnType] = useState("url")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
-  const [options, setOptions] = useState([{ label: "", value: "" }])
-  const [groupFields, setGroupFields] = useState([{ type: "text", label: "", name: "", required: false }])
+  const [message, setMessage] = useState("")
+  const [messageType, setMessageType] = useState("")
 
-  const availableFieldTypes = [
-    "text",
-    "textarea",
-    "image",
-    "repeater",
-    "color",
-    "wysiwyg",
-    "checkbox",
-    "radio",
-    "group"
-  ]
+  const availableFieldTypes = ["text", "textarea", "image", "repeater"]
 
   const generateHandle = (inputLabel) => {
     return inputLabel
       .toLowerCase()
       .replace(/\s+/g, "_")
       .replace(/[^\w_]+/g, "")
+  }
+
+  const showMessage = (msg, type) => {
+    setMessage(msg)
+    setMessageType(type)
+    setTimeout(() => {
+      setMessage("")
+      setMessageType("")
+    }, 5000)
   }
 
   const handleAllowedFieldChange = (fieldType, checked) => {
@@ -42,52 +41,19 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
     }
   }
 
-  const handleOptionChange = (index, field, value) => {
-    const newOptions = [...options]
-    newOptions[index] = { ...newOptions[index], [field]: value }
-    setOptions(newOptions)
-  }
-
-  const addOption = () => {
-    setOptions([...options, { label: "", value: "" }])
-  }
-
-  const removeOption = (index) => {
-    setOptions(options.filter((_, i) => i !== index))
-  }
-
-  const handleGroupFieldChange = (index, field, value) => {
-    const newFields = [...groupFields]
-    newFields[index] = { ...newFields[index], [field]: value }
-    setGroupFields(newFields)
-  }
-
-  const addGroupField = () => {
-    setGroupFields([...groupFields, { type: "text", label: "", name: "", required: false }])
-  }
-
-  const removeGroupField = (index) => {
-    setGroupFields(groupFields.filter((_, i) => i !== index))
-  }
-
   const handleSubmit = async () => {
     if (!label) {
-      setError("Please enter a display label")
+      showMessage("Please enter a display label", "error")
+      return
+    }
+
+    if (!name) {
+      showMessage("Please enter a field name", "error")
       return
     }
 
     if (type === "repeater" && allowedFields.length === 0) {
-      setError("Please select at least one allowed field type for the repeater")
-      return
-    }
-
-    if ((type === "checkbox" || type === "radio") && options.some(opt => !opt.label || !opt.value)) {
-      setError("Please fill in all option labels and values")
-      return
-    }
-
-    if (type === "group" && groupFields.some(field => !field.label || !field.name)) {
-      setError("Please fill in all group field labels and names")
+      showMessage("Please select at least one allowed field type for the repeater", "error")
       return
     }
 
@@ -95,290 +61,199 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
     setError("")
 
     try {
-      const fieldName = name || generateHandle(label)
-
       const formData = new FormData()
       formData.append("action", "ccc_add_field")
       formData.append("nonce", window.cccData.nonce)
       formData.append("label", label)
-      formData.append("name", fieldName)
+      formData.append("name", name)
       formData.append("type", type)
       formData.append("component_id", componentId)
 
-      // Add type-specific configurations
       if (type === "repeater") {
         formData.append("max_sets", maxSets || "0")
         formData.append("allowed_fields", JSON.stringify(allowedFields))
       } else if (type === "image") {
         formData.append("return_type", imageReturnType)
-      } else if (type === "checkbox" || type === "radio") {
-        formData.append("field_config", JSON.stringify({ options }))
-      } else if (type === "group") {
-        formData.append("field_config", JSON.stringify({ fields: groupFields }))
       }
 
       const response = await axios.post(window.cccData.ajaxUrl, formData)
 
       if (response.data.success) {
+        showMessage("Field added successfully", "success")
         onFieldAdded()
         onClose()
       } else {
-        setError(response.data.message || "Failed to add field")
+        showMessage(response.data.message || "Failed to add field", "error")
       }
     } catch (error) {
       console.error("Error adding field:", error)
-      setError("Failed to connect to server. Please try again.")
+      showMessage("Failed to connect to server. Please try again.", "error")
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <h3 className="text-xl font-semibold mb-4 text-gray-800">Add New Field</h3>
-
-        {error && <div className="mb-4 px-4 py-2 rounded bg-red-100 text-red-800">{error}</div>}
-
-        <div className="mb-3">
-          <label className="block text-gray-700 mb-1">Display Label</label>
-          <input
-            type="text"
-            value={label}
-            placeholder="Display Label"
-            onChange={(e) => {
-              const value = e.target.value
-              setLabel(value)
-              if (!name || name === generateHandle(label)) {
-                setName(generateHandle(value))
-              }
-            }}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isSubmitting}
-          />
-        </div>
-
-        <div className="mb-3">
-          <label className="block text-gray-700 mb-1">Handle</label>
-          <input
-            type="text"
-            value={name}
-            placeholder="Handle (generated automatically)"
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isSubmitting}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            This will be used in code. Automatically generated from label if left empty.
-          </p>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-1">Field Type</label>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isSubmitting}
-          >
-            <option value="text">Text</option>
-            <option value="text-area">Textarea</option>
-            <option value="image">Image</option>
-            <option value="repeater">Repeater</option>
-            <option value="color">Color Picker</option>
-            <option value="wysiwyg">WYSIWYG Editor</option>
-            <option value="checkbox">Checkbox</option>
-            <option value="radio">Radio Buttons</option>
-            <option value="group">Field Group</option>
-          </select>
-        </div>
-
-        {type === "image" && (
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-1">Return Type</label>
-            <select
-              value={imageReturnType}
-              onChange={(e) => setImageReturnType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={isSubmitting}
-            >
-              <option value="url">URL Only</option>
-              <option value="array">Full Image Data (ID, URL, Alt, etc.)</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Choose whether to return just the image URL or complete image data including ID, alt text, etc.
-            </p>
-          </div>
-        )}
-
-        {(type === "checkbox" || type === "radio") && (
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Options</label>
-            {options.map((option, index) => (
-              <div key={index} className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={option.label}
-                  onChange={(e) => handleOptionChange(index, "label", e.target.value)}
-                  placeholder="Option Label"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isSubmitting}
-                />
-                <input
-                  type="text"
-                  value={option.value}
-                  onChange={(e) => handleOptionChange(index, "value", e.target.value)}
-                  placeholder="Option Value"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isSubmitting}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeOption(index)}
-                  className="px-2 py-1 text-red-600 hover:text-red-800"
-                  disabled={isSubmitting}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 max-h-[90vh] overflow-y-auto">
+        <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 rounded-t-2xl text-white">
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold">Add New Field</h3>
             <button
-              type="button"
-              onClick={addOption}
-              className="mt-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+              onClick={onClose}
+              className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
               disabled={isSubmitting}
             >
-              Add Option
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
             </button>
           </div>
-        )}
+        </div>
 
-        {type === "group" && (
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Group Fields</label>
-            {groupFields.map((field, index) => (
-              <div key={index} className="mb-4 p-3 border border-gray-200 rounded">
-                <div className="flex gap-2 mb-2">
-                  <select
-                    value={field.type}
-                    onChange={(e) => handleGroupFieldChange(index, "type", e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isSubmitting}
-                  >
-                    <option value="text">Text</option>
-                    <option value="text-area">Textarea</option>
-                    <option value="image">Image</option>
-                    <option value="color">Color Picker</option>
-                    <option value="wysiwyg">WYSIWYG Editor</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => removeGroupField(index)}
-                    className="px-2 py-1 text-red-600 hover:text-red-800"
-                    disabled={isSubmitting}
-                  >
-                    ×
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  value={field.label}
-                  onChange={(e) => handleGroupFieldChange(index, "label", e.target.value)}
-                  placeholder="Field Label"
-                  className="w-full mb-2 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isSubmitting}
-                />
-                <input
-                  type="text"
-                  value={field.name}
-                  onChange={(e) => handleGroupFieldChange(index, "name", e.target.value)}
-                  placeholder="Field Name"
-                  className="w-full mb-2 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isSubmitting}
-                />
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={field.required}
-                    onChange={(e) => handleGroupFieldChange(index, "required", e.target.checked)}
-                    className="mr-2"
-                    disabled={isSubmitting}
-                  />
-                  Required
-                </label>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={addGroupField}
-              className="mt-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-              disabled={isSubmitting}
+        <div className="p-6 space-y-6">
+          {(error || message) && (
+            <div
+              className={`mb-4 p-3 rounded-lg border-l-4 ${
+                error || messageType === "error"
+                  ? "bg-red-50 border-red-400 text-red-800"
+                  : "bg-green-50 border-green-400 text-green-800"
+              }`}
             >
-              Add Field to Group
-            </button>
-          </div>
-        )}
+              <p className="font-medium">{error || message}</p>
+            </div>
+          )}
 
-        {type === "repeater" && (
-          <>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-1">Maximum Sets (leave empty for unlimited)</label>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Display Label *</label>
               <input
-                type="number"
-                value={maxSets}
-                onChange={(e) => setMaxSets(e.target.value)}
-                placeholder="Optional"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                type="text"
+                value={label}
+                placeholder="Enter display label (e.g., Title)"
+                onChange={(e) => {
+                  const value = e.target.value
+                  setLabel(value)
+                  if (!name || name === generateHandle(label)) {
+                    setName(generateHandle(value))
+                  }
+                }}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
                 disabled={isSubmitting}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Limit how many items can be added to this repeater field. Leave empty for unlimited.
-              </p>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">Allowed Field Types</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Handle *</label>
+              <input
+                type="text"
+                value={name}
+                placeholder="Enter handle (e.g., title)"
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-gray-500">This will be used in code. Must be unique.</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Field Type</label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+                disabled={isSubmitting}
+              >
+                <option value="text">Text</option>
+                <option value="textarea">Textarea</option>
+                <option value="image">Image</option>
+                <option value="repeater">Repeater</option>
+              </select>
+            </div>
+
+            {type === "image" && (
               <div className="space-y-2">
-                {availableFieldTypes
-                  .filter((t) => t !== "repeater" && t !== "group")
-                  .map((fieldType) => (
-                    <label key={fieldType} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={allowedFields.includes(fieldType)}
-                        onChange={(e) => handleAllowedFieldChange(fieldType, e.target.checked)}
-                        className="mr-2"
-                        disabled={isSubmitting}
-                      />
-                      <span className="capitalize">{fieldType.replace(/-/g, " ")}</span>
-                    </label>
-                  ))}
+                <label className="block text-sm font-medium text-gray-700">Return Type</label>
+                <select
+                  value={imageReturnType}
+                  onChange={(e) => setImageReturnType(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+                  disabled={isSubmitting}
+                >
+                  <option value="url">URL Only</option>
+                  <option value="array">Full Image Data (ID, URL, Alt, etc.)</option>
+                </select>
+                <p className="text-xs text-gray-500">
+                  Choose whether to return just the image URL or complete image data including ID, alt text, etc.
+                </p>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Select which field types can be added inside this repeater field.
-              </p>
-            </div>
-          </>
-        )}
+            )}
 
-        <div className="flex justify-end space-x-2">
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className={`px-4 py-2 rounded transition ${
-              isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700 text-white"
-            }`}
-          >
-            {isSubmitting ? "Saving..." : "Save"}
-          </button>
-          <button
-            onClick={onClose}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
+            {type === "repeater" && (
+              <>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Maximum Sets (leave empty for unlimited)
+                  </label>
+                  <input
+                    type="number"
+                    value={maxSets}
+                    onChange={(e) => setMaxSets(e.target.value)}
+                    placeholder="Unlimited (leave blank for no limit)"
+                    min="0"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Limit how many items can be added to this repeater field.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Allowed Field Types</label>
+                  <div className="space-y-3">
+                    {availableFieldTypes.map((fieldType) => (
+                      <label key={fieldType} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={allowedFields.includes(fieldType)}
+                          onChange={(e) => handleAllowedFieldChange(fieldType, e.target.checked)}
+                          className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 disabled:opacity-50"
+                          disabled={isSubmitting}
+                        />
+                        <span className="ml-2 text-sm capitalize text-gray-700">{fieldType}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Select which field types can be added inside this repeater field.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-5 bg-gray-50 p-6 rounded-b-2xl">
+            <button
+              onClick={onClose}
+              className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all duration-200 font-medium disabled:bg-gray-200 disabled:cursor-not-allowed"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className={`bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed`}
+            >
+              {isSubmitting ? "Saving..." : "Save"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

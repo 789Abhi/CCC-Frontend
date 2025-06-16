@@ -1,77 +1,83 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import axios from "axios"
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 function AssignedPagesModal({ isOpen, component, onClose, onUpdate }) {
-  const [assignedPages, setAssignedPages] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+  const [assignedPages, setAssignedPages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const fetchAssignedPages = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const formData = new FormData()
-      formData.append("action", "ccc_get_assigned_pages")
-      formData.append("component_id", component.id)
-      formData.append("nonce", window.cccData.nonce)
+      const formData = new FormData();
+      formData.append("action", "ccc_get_assigned_pages");
+      formData.append("component_id", component.id);
+      formData.append("nonce", window.cccData.nonce);
 
-      const response = await axios.post(window.cccData.ajaxUrl, formData)
+      const response = await axios.post(window.cccData.ajaxUrl, formData);
 
       if (response.data.success) {
-        setAssignedPages(response.data.data.pages || [])
+        setAssignedPages(response.data.data.pages || []);
       } else {
-        setError("Failed to fetch assigned pages")
+        setError("Failed to fetch assigned pages");
       }
     } catch (err) {
-      setError("Failed to connect to server")
+      setError("Failed to connect to server");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleRemoveFromPage = async (postId) => {
-    if (!window.confirm("Are you sure you want to remove this component from this page?")) return
+    if (!window.confirm("Are you sure you want to remove this component from this page?")) return;
 
     try {
-      const formData = new FormData()
-      formData.append("action", "ccc_remove_component_from_page")
-      formData.append("component_id", component.id)
-      formData.append("post_id", postId)
-      formData.append("nonce", window.cccData.nonce)
+      const formData = new FormData();
+      formData.append("action", "ccc_remove_component_from_page");
+      formData.append("component_id", component.id);
+      formData.append("post_id", postId);
+      formData.append("nonce", window.cccData.nonce);
 
-      const response = await axios.post(window.cccData.ajaxUrl, formData)
+      const response = await axios.post(window.cccData.ajaxUrl, formData);
 
       if (response.data.success) {
-        fetchAssignedPages()
-        onUpdate()
+        fetchAssignedPages();
+        onUpdate();
       } else {
-        setError(response.data.message || "Failed to remove component")
+        setError(response.data.message || "Failed to remove component");
       }
     } catch (error) {
-      setError("Error connecting to server")
+      setError("Error connecting to server");
     }
-  }
+  };
 
   useEffect(() => {
     if (isOpen && component) {
-      fetchAssignedPages()
+      fetchAssignedPages();
     }
-  }, [isOpen, component])
+  }, [isOpen, component]);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white rounded-custom p-6 w-full max-w-2xl shadow-xl max-h-[80vh] overflow-hidden">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-800">Pages Using "{component.name}"</h3>
+          <h3 className="text-xl font-semibold text-gray-800">
+            Pages Using "{component.name}"
+          </h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
             ×
           </button>
         </div>
 
-        {error && <div className="mb-4 px-4 py-2 rounded bg-red-100 text-red-800 border border-red-200">{error}</div>}
+        {error && (
+          <div className="mb-4 px-4 py-2 rounded bg-red-100 text-red-800 border border-red-200">
+            {error}
+          </div>
+        )}
 
         <div className="overflow-y-auto max-h-96">
           {loading ? (
@@ -80,7 +86,12 @@ function AssignedPagesModal({ isOpen, component, onClose, onUpdate }) {
             </div>
           ) : assignedPages.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-12 h-12 mx-auto mb-4 opacity-50"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -104,7 +115,9 @@ function AssignedPagesModal({ isOpen, component, onClose, onUpdate }) {
                       <span>•</span>
                       <span
                         className={`px-2 py-1 rounded text-xs ${
-                          page.status === "publish" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                          page.status === "publish"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
                         }`}
                       >
                         {page.status}
@@ -115,6 +128,7 @@ function AssignedPagesModal({ isOpen, component, onClose, onUpdate }) {
                       </span>
                     </div>
                   </div>
+
                   <div className="flex gap-2">
                     <a
                       href={page.edit_url}
@@ -124,6 +138,7 @@ function AssignedPagesModal({ isOpen, component, onClose, onUpdate }) {
                     >
                       Edit
                     </a>
+
                     {page.view_url && (
                       <a
                         href={page.view_url}
@@ -134,6 +149,7 @@ function AssignedPagesModal({ isOpen, component, onClose, onUpdate }) {
                         View
                       </a>
                     )}
+
                     <button
                       onClick={() => handleRemoveFromPage(page.id)}
                       className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
@@ -157,7 +173,7 @@ function AssignedPagesModal({ isOpen, component, onClose, onUpdate }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default AssignedPagesModal
+export default AssignedPagesModal;

@@ -21,6 +21,7 @@ function ImportExport() {
 
   const handleExport = async () => {
     setExportLoading(true)
+
     try {
       const formData = new FormData()
       formData.append("action", "ccc_export_components")
@@ -60,6 +61,7 @@ function ImportExport() {
     }
 
     setImportLoading(true)
+
     try {
       const formData = new FormData()
       formData.append("action", "ccc_import_components")
@@ -214,7 +216,9 @@ function ImportExport() {
                 onClick={handleImport}
                 disabled={importLoading || !importFile}
                 className={`w-full py-3 px-4 rounded-custom text-white transition-colors ${
-                  importLoading || !importFile ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600"
+                  importLoading || !importFile
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-green-500 hover:bg-green-600"
                 }`}
               >
                 {importLoading ? (
