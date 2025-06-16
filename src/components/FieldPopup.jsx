@@ -12,8 +12,20 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
   const [imageReturnType, setImageReturnType] = useState("url")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [options, setOptions] = useState([{ label: "", value: "" }])
+  const [groupFields, setGroupFields] = useState([{ type: "text", label: "", name: "", required: false }])
 
-  const availableFieldTypes = ["text", "textarea", "image", "repeater"]
+  const availableFieldTypes = [
+    "text",
+    "textarea",
+    "image",
+    "repeater",
+    "color",
+    "wysiwyg",
+    "checkbox",
+    "radio",
+    "group"
+  ]
 
   const generateHandle = (inputLabel) => {
     return inputLabel
@@ -30,6 +42,34 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
     }
   }
 
+  const handleOptionChange = (index, field, value) => {
+    const newOptions = [...options]
+    newOptions[index] = { ...newOptions[index], [field]: value }
+    setOptions(newOptions)
+  }
+
+  const addOption = () => {
+    setOptions([...options, { label: "", value: "" }])
+  }
+
+  const removeOption = (index) => {
+    setOptions(options.filter((_, i) => i !== index))
+  }
+
+  const handleGroupFieldChange = (index, field, value) => {
+    const newFields = [...groupFields]
+    newFields[index] = { ...newFields[index], [field]: value }
+    setGroupFields(newFields)
+  }
+
+  const addGroupField = () => {
+    setGroupFields([...groupFields, { type: "text", label: "", name: "", required: false }])
+  }
+
+  const removeGroupField = (index) => {
+    setGroupFields(groupFields.filter((_, i) => i !== index))
+  }
+
   const handleSubmit = async () => {
     if (!label) {
       setError("Please enter a display label")
@@ -38,6 +78,16 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
 
     if (type === "repeater" && allowedFields.length === 0) {
       setError("Please select at least one allowed field type for the repeater")
+      return
+    }
+
+    if ((type === "checkbox" || type === "radio") && options.some(opt => !opt.label || !opt.value)) {
+      setError("Please fill in all option labels and values")
+      return
+    }
+
+    if (type === "group" && groupFields.some(field => !field.label || !field.name)) {
+      setError("Please fill in all group field labels and names")
       return
     }
 
@@ -61,6 +111,10 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
         formData.append("allowed_fields", JSON.stringify(allowedFields))
       } else if (type === "image") {
         formData.append("return_type", imageReturnType)
+      } else if (type === "checkbox" || type === "radio") {
+        formData.append("field_config", JSON.stringify({ options }))
+      } else if (type === "group") {
+        formData.append("field_config", JSON.stringify({ fields: groupFields }))
       }
 
       const response = await axios.post(window.cccData.ajaxUrl, formData)
@@ -131,6 +185,11 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
             <option value="text-area">Textarea</option>
             <option value="image">Image</option>
             <option value="repeater">Repeater</option>
+            <option value="color">Color Picker</option>
+            <option value="wysiwyg">WYSIWYG Editor</option>
+            <option value="checkbox">Checkbox</option>
+            <option value="radio">Radio Buttons</option>
+            <option value="group">Field Group</option>
           </select>
         </div>
 
@@ -149,6 +208,114 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
             <p className="text-xs text-gray-500 mt-1">
               Choose whether to return just the image URL or complete image data including ID, alt text, etc.
             </p>
+          </div>
+        )}
+
+        {(type === "checkbox" || type === "radio") && (
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-2">Options</label>
+            {options.map((option, index) => (
+              <div key={index} className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={option.label}
+                  onChange={(e) => handleOptionChange(index, "label", e.target.value)}
+                  placeholder="Option Label"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSubmitting}
+                />
+                <input
+                  type="text"
+                  value={option.value}
+                  onChange={(e) => handleOptionChange(index, "value", e.target.value)}
+                  placeholder="Option Value"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSubmitting}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeOption(index)}
+                  className="px-2 py-1 text-red-600 hover:text-red-800"
+                  disabled={isSubmitting}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addOption}
+              className="mt-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+              disabled={isSubmitting}
+            >
+              Add Option
+            </button>
+          </div>
+        )}
+
+        {type === "group" && (
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-2">Group Fields</label>
+            {groupFields.map((field, index) => (
+              <div key={index} className="mb-4 p-3 border border-gray-200 rounded">
+                <div className="flex gap-2 mb-2">
+                  <select
+                    value={field.type}
+                    onChange={(e) => handleGroupFieldChange(index, "type", e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isSubmitting}
+                  >
+                    <option value="text">Text</option>
+                    <option value="text-area">Textarea</option>
+                    <option value="image">Image</option>
+                    <option value="color">Color Picker</option>
+                    <option value="wysiwyg">WYSIWYG Editor</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => removeGroupField(index)}
+                    className="px-2 py-1 text-red-600 hover:text-red-800"
+                    disabled={isSubmitting}
+                  >
+                    ×
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={field.label}
+                  onChange={(e) => handleGroupFieldChange(index, "label", e.target.value)}
+                  placeholder="Field Label"
+                  className="w-full mb-2 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSubmitting}
+                />
+                <input
+                  type="text"
+                  value={field.name}
+                  onChange={(e) => handleGroupFieldChange(index, "name", e.target.value)}
+                  placeholder="Field Name"
+                  className="w-full mb-2 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSubmitting}
+                />
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={field.required}
+                    onChange={(e) => handleGroupFieldChange(index, "required", e.target.checked)}
+                    className="mr-2"
+                    disabled={isSubmitting}
+                  />
+                  Required
+                </label>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addGroupField}
+              className="mt-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+              disabled={isSubmitting}
+            >
+              Add Field to Group
+            </button>
           </div>
         )}
 
@@ -173,18 +340,20 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
             <div className="mb-4">
               <label className="block text-gray-700 mb-2">Allowed Field Types</label>
               <div className="space-y-2">
-                {availableFieldTypes.map((fieldType) => (
-                  <label key={fieldType} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={allowedFields.includes(fieldType)}
-                      onChange={(e) => handleAllowedFieldChange(fieldType, e.target.checked)}
-                      className="mr-2"
-                      disabled={isSubmitting}
-                    />
-                    <span className="capitalize">{fieldType}</span>
-                  </label>
-                ))}
+                {availableFieldTypes
+                  .filter((t) => t !== "repeater" && t !== "group")
+                  .map((fieldType) => (
+                    <label key={fieldType} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={allowedFields.includes(fieldType)}
+                        onChange={(e) => handleAllowedFieldChange(fieldType, e.target.checked)}
+                        className="mr-2"
+                        disabled={isSubmitting}
+                      />
+                      <span className="capitalize">{fieldType.replace(/-/g, " ")}</span>
+                    </label>
+                  ))}
               </div>
               <p className="text-xs text-gray-500 mt-1">
                 Select which field types can be added inside this repeater field.

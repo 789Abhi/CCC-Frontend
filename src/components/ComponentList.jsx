@@ -275,6 +275,145 @@ const ComponentList = () => {
     }
   }
 
+  const renderFieldValue = (field) => {
+    switch (field.type) {
+      case "text":
+      case "text-area":
+        return field.value || "No value set"
+      case "image":
+        if (field.return_type === "array" && field.value) {
+          return field.value.url ? (
+            <div className="flex items-center gap-2">
+              <img src={field.value.url} alt={field.value.alt || ""} className="w-8 h-8 object-cover rounded" />
+              <span>{field.value.url}</span>
+            </div>
+          ) : (
+            "No image set"
+          )
+        }
+        return field.value ? (
+          <div className="flex items-center gap-2">
+            <img src={field.value} alt="" className="w-8 h-8 object-cover rounded" />
+            <span>{field.value}</span>
+          </div>
+        ) : (
+          "No image set"
+        )
+      case "repeater":
+        return field.value && field.value.length > 0 ? (
+          <div className="space-y-2">
+            {field.value.map((set, index) => (
+              <div key={index} className="pl-4 border-l-2 border-gray-200">
+                <div className="text-sm font-medium text-gray-600">Set {index + 1}</div>
+                {Object.entries(set).map(([key, value]) => (
+                  <div key={key} className="text-sm">
+                    <span className="font-medium">{key}:</span>{" "}
+                    {typeof value === "string" ? value : JSON.stringify(value)}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          "No items added"
+        )
+      case "color":
+        return field.value ? (
+          <div className="flex items-center gap-2">
+            <div
+              className="w-6 h-6 rounded border border-gray-300"
+              style={{ backgroundColor: field.value }}
+            />
+            <span>{field.value}</span>
+          </div>
+        ) : (
+          "No color set"
+        )
+      case "wysiwyg":
+        return field.value ? (
+          <div
+            className="prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: field.value }}
+          />
+        ) : (
+          "No content set"
+        )
+      case "checkbox":
+        if (!field.field_config?.options) return "No options configured"
+        return field.value ? (
+          <div className="space-y-1">
+            {field.field_config.options
+              .filter((opt) => field.value.includes(opt.value))
+              .map((opt) => (
+                <div key={opt.value} className="flex items-center gap-2">
+                  <input type="checkbox" checked readOnly className="cursor-default" />
+                  <span>{opt.label}</span>
+                </div>
+              ))}
+          </div>
+        ) : (
+          "No options selected"
+        )
+      case "radio":
+        if (!field.field_config?.options) return "No options configured"
+        const selectedOption = field.field_config.options.find((opt) => opt.value === field.value)
+        return selectedOption ? (
+          <div className="flex items-center gap-2">
+            <input type="radio" checked readOnly className="cursor-default" />
+            <span>{selectedOption.label}</span>
+          </div>
+        ) : (
+          "No option selected"
+        )
+      case "group":
+        if (!field.field_config?.fields) return "No fields configured"
+        return field.value ? (
+          <div className="space-y-2">
+            {field.field_config.fields.map((groupField) => (
+              <div key={groupField.name} className="pl-4 border-l-2 border-gray-200">
+                <div className="text-sm font-medium text-gray-600">{groupField.label}</div>
+                <div className="text-sm">
+                  {renderFieldValue({
+                    ...groupField,
+                    value: field.value[groupField.name],
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          "No group data set"
+        )
+      default:
+        return typeof field.value === "object" ? JSON.stringify(field.value) : field.value || "No value set"
+    }
+  }
+
+  const renderFieldType = (type) => {
+    switch (type) {
+      case "text":
+        return "Text"
+      case "text-area":
+        return "Textarea"
+      case "image":
+        return "Image"
+      case "repeater":
+        return "Repeater"
+      case "color":
+        return "Color Picker"
+      case "wysiwyg":
+        return "WYSIWYG Editor"
+      case "checkbox":
+        return "Checkbox"
+      case "radio":
+        return "Radio Buttons"
+      case "group":
+        return "Field Group"
+      default:
+        return type
+    }
+  }
+
   if (loading) {
     return <p className="text-gray-500">Loading components...</p>
   }
@@ -341,34 +480,22 @@ const ComponentList = () => {
                     <ul className="mt-2 space-y-2">
                       {comp.fields.map((field) => (
                         <li
-                          key={field.id}
-                          className="border-l-4 border-blue-500 pl-3 py-2 bg-gray-50 rounded flex justify-between items-center"
+                          key={field.name}
+                          className="border-b border-gray-200 last:border-b-0 py-3"
                         >
-                          <div>
-                            <span className="font-medium">{field.label}</span> <span className="text-gray-500">—</span>{" "}
-                            <code className="bg-gray-100 px-1 rounded">{field.name}</code>
-                            <span className="ml-2 text-gray-600 text-sm capitalize">
-                              ({field.type}
-                              {field.type === "repeater" && field.config?.nested_fields?.length > 0
-                                ? ` with ${field.config.nested_fields.length} nested fields`
-                                : ""}
-                              )
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => openFieldEditModal(comp, field)}
-                              className="text-yellow-600 hover:text-yellow-800 p-1 rounded-full hover:bg-yellow-50 transition-colors"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
+                          <div className="flex justify-between items-start mb-1">
+                            <div>
+                              <span className="font-medium text-gray-900">{field.label}</span>
+                              <span className="ml-2 text-sm text-gray-500">({renderFieldType(field.type)})</span>
+                            </div>
                             <button
                               onClick={() => handleDeleteField(field.id)}
-                              className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50 transition-colors"
+                              className="text-red-600 hover:text-red-800 text-sm"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              Delete
                             </button>
                           </div>
+                          <div className="text-sm text-gray-600">{renderFieldValue(field)}</div>
                         </li>
                       ))}
                     </ul>
