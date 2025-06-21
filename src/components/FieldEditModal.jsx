@@ -20,7 +20,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
   const [currentNestedField, setCurrentNestedField] = useState(null)
 
   const isEditing = !!field
-  const availableFieldTypes = ["text", "textarea", "image", "repeater", "color"] // ADDED: "color"
+  const availableFieldTypes = ["text", "textarea", "image", "repeater", "wysiwyg", "color"] // ADDED: "wysiwyg"
 
   useEffect(() => {
     if (field) {
@@ -234,14 +234,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                 <option value="textarea">Textarea</option>
                 <option value="image">Image</option>
                 <option value="repeater">Repeater</option>
-                <option value="color">Color</option> {/* ADDED: Color option */}
+                <option value="wysiwyg">WYSIWYG</option>
+                <option value="color">Color</option>
               </select>
               {isEditing && <p className="text-xs text-gray-500">Field type can be changed.</p>}
             </div>
 
             {/* Placeholder and Required for non-repeater and non-color fields */}
             {type !== "repeater" &&
-              type !== "color" && ( // MODIFIED: Exclude color from placeholder/required
+              type !== "color" && (
                 <>
                   <div className="space-y-2">
                     <label htmlFor="placeholder" className="block text-sm font-medium text-gray-700">
