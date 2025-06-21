@@ -15,7 +15,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState("")
 
-  const availableFieldTypes = ["text", "textarea", "image", "repeater"]
+  const availableFieldTypes = ["text", "textarea", "image", "repeater", "wysiwyg", "color"]
 
   const generateHandle = (inputLabel) => {
     return inputLabel
@@ -171,8 +171,10 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
               >
                 <option value="text">Text</option>
                 <option value="textarea">Textarea</option>
+                <option value="wysiwyg">WYSIWYG Editor</option>
                 <option value="image">Image</option>
                 <option value="repeater">Repeater</option>
+                <option value="color">Color</option>
               </select>
             </div>
 
