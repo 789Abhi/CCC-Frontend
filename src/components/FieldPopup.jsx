@@ -14,8 +14,9 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState("")
+  const [fieldOptions, setFieldOptions] = useState([])
 
-  const availableFieldTypes = ["text", "textarea", "image", "repeater", "wysiwyg", "color"]
+  const availableFieldTypes = ["text", "textarea", "image", "repeater", "wysiwyg", "color", "select", "checkbox", "radio"]
 
   const generateHandle = (inputLabel) => {
     return inputLabel
@@ -41,6 +42,18 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
     }
   }
 
+  const handleAddOption = () => {
+    setFieldOptions((prev) => [...prev, { label: "", value: "" }])
+  }
+
+  const handleUpdateOption = (index, field, value) => {
+    setFieldOptions((prev) => prev.map((option, i) => (i === index ? { ...option, [field]: value } : option)))
+  }
+
+  const handleDeleteOption = (index) => {
+    setFieldOptions((prev) => prev.filter((_, i) => i !== index))
+  }
+
   const handleSubmit = async () => {
     if (!label) {
       showMessage("Please enter a display label", "error")
@@ -54,6 +67,11 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
 
     if (type === "repeater" && allowedFields.length === 0) {
       showMessage("Please select at least one allowed field type for the repeater", "error")
+      return
+    }
+
+    if (["select", "checkbox", "radio"].includes(type) && fieldOptions.length === 0) {
+      showMessage("Please add at least one option for this field type", "error")
       return
     }
 
@@ -74,6 +92,15 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
         formData.append("allowed_fields", JSON.stringify(allowedFields))
       } else if (type === "image") {
         formData.append("return_type", imageReturnType)
+      } else if (["select", "checkbox", "radio"].includes(type)) {
+        // Convert options array to object format expected by backend
+        const optionsObject = {}
+        fieldOptions.forEach((option) => {
+          if (option.label && option.value) {
+            optionsObject[option.value] = option.label
+          }
+        })
+        formData.append("field_config", JSON.stringify({ options: optionsObject }))
       }
 
       const response = await axios.post(window.cccData.ajaxUrl, formData)
@@ -175,8 +202,90 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
                 <option value="image">Image</option>
                 <option value="repeater">Repeater</option>
                 <option value="color">Color</option>
+                <option value="select">Select</option>
+                <option value="checkbox">Checkbox</option>
+                <option value="radio">Radio</option>
               </select>
             </div>
+
+            {/* Options Configuration for Select, Checkbox, Radio */}
+            {["select", "checkbox", "radio"].includes(type) && (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">Field Options *</label>
+                <p className="text-xs text-gray-500">
+                  Define the options available for this {type} field.
+                </p>
+
+                {fieldOptions.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-lg">
+                    <p>No options defined yet.</p>
+                    <button
+                      type="button"
+                      onClick={handleAddOption}
+                      className="text-purple-600 hover:underline text-sm mt-2"
+                      disabled={isSubmitting}
+                    >
+                      Add your first option
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {fieldOptions.map((option, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={option.label}
+                          onChange={(e) => handleUpdateOption(index, "label", e.target.value)}
+                          placeholder="Option Label"
+                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                          disabled={isSubmitting}
+                        />
+                        <input
+                          type="text"
+                          value={option.value}
+                          onChange={(e) => handleUpdateOption(index, "value", e.target.value)}
+                          placeholder="Option Value"
+                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                          disabled={isSubmitting}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOption(index)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          disabled={isSubmitting}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleAddOption}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
+                  disabled={isSubmitting}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Add Option
+                </button>
+              </div>
+            )}
 
             {type === "image" && (
               <div className="space-y-2">
