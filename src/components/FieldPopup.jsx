@@ -15,6 +15,10 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState("")
   const [fieldOptions, setFieldOptions] = useState([])
+  const [nestedFieldDefinitions, setNestedFieldDefinitions] = useState([])
+  const [showNestedFieldModal, setShowNestedFieldModal] = useState(false)
+  const [editingNestedFieldIndex, setEditingNestedFieldIndex] = useState(null)
+  const [currentNestedField, setCurrentNestedField] = useState(null)
 
   const availableFieldTypes = ["text", "textarea", "image", "repeater", "wysiwyg", "color", "select", "checkbox", "radio"]
 
@@ -54,6 +58,25 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
     setFieldOptions((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const handleAddNestedField = (newField) => {
+    setNestedFieldDefinitions((prev) => [...prev, newField])
+    setShowNestedFieldModal(false)
+    setCurrentNestedField(null)
+  }
+
+  const handleUpdateNestedField = (updatedField) => {
+    setNestedFieldDefinitions((prev) => prev.map((f, i) => (i === editingNestedFieldIndex ? updatedField : f)))
+    setEditingNestedFieldIndex(null)
+    setShowNestedFieldModal(false)
+    setCurrentNestedField(null)
+  }
+
+  const handleDeleteNestedField = (indexToDelete) => {
+    if (window.confirm("Are you sure you want to delete this nested field?")) {
+      setNestedFieldDefinitions((prev) => prev.filter((_, i) => i !== indexToDelete))
+    }
+  }
+
   const handleSubmit = async () => {
     if (!label) {
       showMessage("Please enter a display label", "error")
@@ -75,6 +98,11 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
       return
     }
 
+    if (type === "repeater" && nestedFieldDefinitions.length === 0) {
+      showMessage("Please add at least one nested field for the repeater", "error")
+      return
+    }
+
     setIsSubmitting(true)
     setError("")
 
@@ -88,8 +116,11 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
       formData.append("component_id", componentId)
 
       if (type === "repeater") {
-        formData.append("max_sets", maxSets || "0")
-        formData.append("allowed_fields", JSON.stringify(allowedFields))
+        const config = {
+          max_sets: maxSets ? Number.parseInt(maxSets) : 0,
+          nested_fields: nestedFieldDefinitions,
+        }
+        formData.append("field_config", JSON.stringify(config))
       } else if (type === "image") {
         formData.append("return_type", imageReturnType)
       } else if (["select", "checkbox", "radio"].includes(type)) {
@@ -346,6 +377,55 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
                   </p>
                 </div>
               </>
+            )}
+
+            {/* Repeater Nested Fields UI */}
+            {type === "repeater" && (
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4 mt-4">
+                <h4 className="text-sm font-medium text-gray-700">Nested Fields</h4>
+                <p className="text-xs text-gray-600">Define the fields that will appear within each repeater item.</p>
+                {nestedFieldDefinitions.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-lg">
+                    <p>No nested fields defined yet.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCurrentNestedField(null)
+                        setEditingNestedFieldIndex(null)
+                        setShowNestedFieldModal(true)
+                      }}
+                      className="text-indigo-600 hover:underline text-sm mt-2"
+                      disabled={isSubmitting}
+                    >
+                      Add your first nested field
+                    </button>
+                  </div>
+                ) : (
+                  <ul className="space-y-1 mb-2">
+                    {nestedFieldDefinitions.map((nf, idx) => (
+                      <li key={nf.name + idx} className="flex items-center gap-2 text-xs text-indigo-900">
+                        <span className="font-medium">{nf.label}</span>
+                        <span className="bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-full">{nf.name}</span>
+                        <span className="capitalize text-indigo-700">({nf.type})</span>
+                        <button type="button" onClick={() => { setCurrentNestedField(nf); setEditingNestedFieldIndex(idx); setShowNestedFieldModal(true); }} className="ml-2 text-yellow-600 hover:underline">Edit</button>
+                        <button type="button" onClick={() => handleDeleteNestedField(idx)} className="ml-1 text-red-600 hover:underline">Delete</button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentNestedField(null)
+                    setEditingNestedFieldIndex(null)
+                    setShowNestedFieldModal(true)
+                  }}
+                  className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
+                  disabled={isSubmitting}
+                >
+                  Add Nested Field
+                </button>
+              </div>
             )}
           </div>
 

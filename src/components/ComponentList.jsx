@@ -687,6 +687,21 @@ const ComponentList = () => {
                                 />
                               </div>
                             </div>
+                            {/* Render nested fields for repeater */}
+                            {field.type === "repeater" && field.config?.nested_fields?.length > 0 && (
+                              <div className="ml-10 mb-3 mt-1 p-3 bg-orange-50 border-l-4 border-orange-300 rounded">
+                                <div className="font-semibold text-orange-800 text-sm mb-2">Nested Fields:</div>
+                                <ul className="space-y-1">
+                                  {field.config.nested_fields.map((nf, idx) => (
+                                    <li key={nf.name + idx} className="flex items-center gap-2 text-xs text-orange-900">
+                                      <span className="font-medium">{nf.label}</span>
+                                      <span className="bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full">{nf.name}</span>
+                                      <span className="capitalize text-orange-700">({nf.type})</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
