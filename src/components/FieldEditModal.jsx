@@ -194,11 +194,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
 
       // Handle different field type configurations
       if (type === "repeater") {
-        const config = {
-          max_sets: maxSets ? Number.parseInt(maxSets) : 0,
-          nested_fields: nestedFieldDefinitions,
-        }
-        formData.append("field_config", JSON.stringify(config))
+        formData.append("max_sets", maxSets ? Number.parseInt(maxSets) : 0)
+        formData.append("nested_field_definitions", JSON.stringify(nestedFieldDefinitions))
       } else if (type === "image") {
         const config = {
           return_type: "url",
@@ -217,14 +214,10 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
             optionsObject[option.value.trim()] = option.label.trim()
           }
         })
-
         const config = { options: optionsObject }
-
-        // Add multiple selection support for select fields
         if (type === "select") {
           config.multiple = false // Default to single selection, can be extended later
         }
-
         formData.append("field_config", JSON.stringify(config))
       }
 

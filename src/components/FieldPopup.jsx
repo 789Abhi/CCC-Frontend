@@ -116,11 +116,8 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
       formData.append("component_id", componentId)
 
       if (type === "repeater") {
-        const config = {
-          max_sets: maxSets ? Number.parseInt(maxSets) : 0,
-          nested_fields: nestedFieldDefinitions,
-        }
-        formData.append("field_config", JSON.stringify(config))
+        formData.append("max_sets", maxSets ? Number.parseInt(maxSets) : 0)
+        formData.append("nested_field_definitions", JSON.stringify(nestedFieldDefinitions))
       } else if (type === "image") {
         formData.append("return_type", imageReturnType)
       } else if (["select", "checkbox", "radio"].includes(type)) {
