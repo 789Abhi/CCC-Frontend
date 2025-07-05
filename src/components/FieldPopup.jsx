@@ -3,22 +3,27 @@
 import { useState } from "react"
 import axios from "axios"
 
-function FieldPopup({ componentId, onClose, onFieldAdded }) {
-  const [label, setLabel] = useState("")
-  const [name, setName] = useState("")
-  const [type, setType] = useState("text")
-  const [maxSets, setMaxSets] = useState("")
+function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }) {
+  const [label, setLabel] = useState(initialField?.label || "")
+  const [name, setName] = useState(initialField?.name || "")
+  const [type, setType] = useState(initialField?.type || "text")
+  const [maxSets, setMaxSets] = useState(initialField?.maxSets || "")
   const [allowedFields, setAllowedFields] = useState(["text", "textarea", "image"])
-  const [imageReturnType, setImageReturnType] = useState("url")
+  const [imageReturnType, setImageReturnType] = useState(initialField?.returnType || "url")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState("")
-  const [fieldOptions, setFieldOptions] = useState([])
-  const [nestedFieldDefinitions, setNestedFieldDefinitions] = useState([])
+  const [fieldOptions, setFieldOptions] = useState(initialField?.options || [])
+  const [nestedFieldDefinitions, setNestedFieldDefinitions] = useState(initialField?.nestedFieldDefinitions || [])
   const [showNestedFieldModal, setShowNestedFieldModal] = useState(false)
   const [editingNestedFieldIndex, setEditingNestedFieldIndex] = useState(null)
   const [currentNestedField, setCurrentNestedField] = useState(null)
+
+  // Recursive popup state
+  const [showRecursivePopup, setShowRecursivePopup] = useState(false)
+  const [recursivePopupInitialField, setRecursivePopupInitialField] = useState(null)
+  const [recursivePopupIndex, setRecursivePopupIndex] = useState(null)
 
   const availableFieldTypes = ["text", "textarea", "image", "repeater", "wysiwyg", "color", "select", "checkbox", "radio"]
 
@@ -76,6 +81,43 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
       setNestedFieldDefinitions((prev) => prev.filter((_, i) => i !== indexToDelete))
     }
   }
+
+  // Recursive: open popup for nested repeater field
+  const openRecursivePopup = (index = null) => {
+    setRecursivePopupIndex(index)
+    setRecursivePopupInitialField(index !== null ? nestedFieldDefinitions[index] : null)
+    setShowRecursivePopup(true)
+  }
+
+  // Recursive: save nested repeater field
+  const handleSaveRecursive = (nestedField) => {
+    setNestedFieldDefinitions((prev) => {
+      const arr = [...prev]
+      if (recursivePopupIndex !== null) {
+        arr[recursivePopupIndex] = nestedField
+      } else {
+        arr.push(nestedField)
+      }
+      return arr
+    })
+    setShowRecursivePopup(false)
+    setRecursivePopupIndex(null)
+    setRecursivePopupInitialField(null)
+  }
+
+  // Render nested fields list (with recursive popup for repeaters)
+  const renderNestedFields = () => (
+    <div className="space-y-2">
+      {nestedFieldDefinitions.map((nf, i) => (
+        <div key={i} className="flex items-center gap-2 border p-2 rounded">
+          <span>{nf.label} ({nf.type})</span>
+          <button className="text-blue-600 underline" onClick={() => openRecursivePopup(i)}>Edit</button>
+          <button className="text-red-600 underline" onClick={() => handleDeleteNestedField(i)}>Delete</button>
+        </div>
+      ))}
+      <button className="mt-2 px-3 py-1 bg-blue-500 text-white rounded" onClick={() => openRecursivePopup()}>Add Nested Field</button>
+    </div>
+  )
 
   const handleSubmit = async () => {
     if (!label) {
@@ -333,6 +375,8 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
               </div>
             )}
 
+            {type === "repeater" && renderNestedFields()}
+
             {type === "repeater" && (
               <>
                 <div className="space-y-2">
@@ -375,55 +419,6 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
                 </div>
               </>
             )}
-
-            {/* Repeater Nested Fields UI */}
-            {type === "repeater" && (
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4 mt-4">
-                <h4 className="text-sm font-medium text-gray-700">Nested Fields</h4>
-                <p className="text-xs text-gray-600">Define the fields that will appear within each repeater item.</p>
-                {nestedFieldDefinitions.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-lg">
-                    <p>No nested fields defined yet.</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCurrentNestedField(null)
-                        setEditingNestedFieldIndex(null)
-                        setShowNestedFieldModal(true)
-                      }}
-                      className="text-indigo-600 hover:underline text-sm mt-2"
-                      disabled={isSubmitting}
-                    >
-                      Add your first nested field
-                    </button>
-                  </div>
-                ) : (
-                  <ul className="space-y-1 mb-2">
-                    {nestedFieldDefinitions.map((nf, idx) => (
-                      <li key={nf.name + idx} className="flex items-center gap-2 text-xs text-indigo-900">
-                        <span className="font-medium">{nf.label}</span>
-                        <span className="bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-full">{nf.name}</span>
-                        <span className="capitalize text-indigo-700">({nf.type})</span>
-                        <button type="button" onClick={() => { setCurrentNestedField(nf); setEditingNestedFieldIndex(idx); setShowNestedFieldModal(true); }} className="ml-2 text-yellow-600 hover:underline">Edit</button>
-                        <button type="button" onClick={() => handleDeleteNestedField(idx)} className="ml-1 text-red-600 hover:underline">Delete</button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurrentNestedField(null)
-                    setEditingNestedFieldIndex(null)
-                    setShowNestedFieldModal(true)
-                  }}
-                  className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
-                  disabled={isSubmitting}
-                >
-                  Add Nested Field
-                </button>
-              </div>
-            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-5 bg-gray-50 p-6 rounded-b-2xl">
@@ -444,6 +439,14 @@ function FieldPopup({ componentId, onClose, onFieldAdded }) {
           </div>
         </div>
       </div>
+      {/* Recursive popup for nested repeater fields */}
+      {showRecursivePopup && (
+        <FieldPopup
+          initialField={recursivePopupInitialField}
+          onSave={handleSaveRecursive}
+          onClose={() => setShowRecursivePopup(false)}
+        />
+      )}
     </div>
   )
 }
