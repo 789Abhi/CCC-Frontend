@@ -84,6 +84,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
 
   // Recursive: open popup for nested repeater field
   const openRecursivePopup = (index = null) => {
+    console.log('CCC FieldPopup: Opening recursive popup', { index, existingFields: nestedFieldDefinitions })
     setRecursivePopupIndex(index)
     setRecursivePopupInitialField(index !== null ? nestedFieldDefinitions[index] : null)
     setShowRecursivePopup(true)
@@ -91,6 +92,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
 
   // Recursive: save nested repeater field
   const handleSaveRecursive = (nestedField) => {
+    console.log('CCC FieldPopup: Saving recursive field', { nestedField, recursivePopupIndex })
     setNestedFieldDefinitions((prev) => {
       const arr = [...prev]
       if (recursivePopupIndex !== null) {
@@ -98,6 +100,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       } else {
         arr.push(nestedField)
       }
+      console.log('CCC FieldPopup: Updated nested field definitions', arr)
       return arr
     })
     setShowRecursivePopup(false)
@@ -110,12 +113,38 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
     <div className="space-y-2">
       {nestedFieldDefinitions.map((nf, i) => (
         <div key={i} className="flex items-center gap-2 border p-2 rounded">
-          <span>{nf.label} ({nf.type})</span>
-          <button className="text-blue-600 underline" onClick={() => openRecursivePopup(i)}>Edit</button>
-          <button className="text-red-600 underline" onClick={() => handleDeleteNestedField(i)}>Delete</button>
+          <div className="flex-1">
+            <span className="font-medium">{nf.label}</span>
+            <span className="text-gray-500 ml-2">({nf.type})</span>
+            {nf.type === "repeater" && nf.nestedFieldDefinitions && (
+              <div className="text-xs text-gray-400 mt-1">
+                {nf.nestedFieldDefinitions.length} nested field{nf.nestedFieldDefinitions.length !== 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
+          <button 
+            className="text-blue-600 hover:text-blue-800 underline text-sm" 
+            onClick={() => openRecursivePopup(i)}
+          >
+            Edit
+          </button>
+          <button 
+            className="text-red-600 hover:text-red-800 underline text-sm" 
+            onClick={() => handleDeleteNestedField(i)}
+          >
+            Delete
+          </button>
         </div>
       ))}
-      <button className="mt-2 px-3 py-1 bg-blue-500 text-white rounded" onClick={() => openRecursivePopup()}>Add Nested Field</button>
+      <button 
+        className="mt-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200 flex items-center gap-2" 
+        onClick={() => openRecursivePopup()}
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Add Nested Field
+      </button>
     </div>
   )
 
@@ -145,6 +174,23 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       return
     }
 
+    // Validate nested field definitions for repeaters
+    if (type === "repeater") {
+      for (let i = 0; i < nestedFieldDefinitions.length; i++) {
+        const field = nestedFieldDefinitions[i]
+        if (!field.label || !field.name || !field.type) {
+          showMessage(`Nested field #${i + 1} is missing required information (label, name, or type)`, "error")
+          return
+        }
+        
+        // If it's a nested repeater, ensure it has nested field definitions
+        if (field.type === "repeater" && (!field.nestedFieldDefinitions || field.nestedFieldDefinitions.length === 0)) {
+          showMessage(`Nested repeater field "${field.label}" must have at least one nested field`, "error")
+          return
+        }
+      }
+    }
+
     setIsSubmitting(true)
     setError("")
 
@@ -159,7 +205,33 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
 
       if (type === "repeater") {
         formData.append("max_sets", maxSets ? Number.parseInt(maxSets) : 0)
-        formData.append("nested_field_definitions", JSON.stringify(nestedFieldDefinitions))
+        
+        // Process nested field definitions to ensure proper structure
+        const processedNestedFields = nestedFieldDefinitions.map(field => {
+          const processedField = {
+            label: field.label,
+            name: field.name,
+            type: field.type
+          }
+          
+          // Add config if it exists
+          if (field.config) {
+            processedField.config = field.config
+          }
+          
+          // For repeater fields, ensure nested field definitions are included
+          if (field.type === 'repeater' && field.nestedFieldDefinitions) {
+            if (!processedField.config) {
+              processedField.config = {}
+            }
+            processedField.config.nested_fields = field.nestedFieldDefinitions
+          }
+          
+          return processedField
+        })
+        
+        console.log('CCC FieldPopup: Sending nested field definitions', processedNestedFields)
+        formData.append("nested_field_definitions", JSON.stringify(processedNestedFields))
       } else if (type === "image") {
         formData.append("return_type", imageReturnType)
       } else if (["select", "checkbox", "radio"].includes(type)) {
@@ -442,9 +514,11 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       {/* Recursive popup for nested repeater fields */}
       {showRecursivePopup && (
         <FieldPopup
+          componentId={componentId}
           initialField={recursivePopupInitialField}
           onSave={handleSaveRecursive}
           onClose={() => setShowRecursivePopup(false)}
+          onFieldAdded={() => {}} // Empty function for recursive popup
         />
       )}
     </div>
