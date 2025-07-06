@@ -332,7 +332,7 @@ function FieldTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
       {/* Field Edit Popup */}
       {showFieldPopup && editingField && (
         <FieldPopup
-          componentId={null}
+          isOpen={showFieldPopup}
           initialField={editingField}
           onSave={handleFieldUpdate}
           onClose={() => {

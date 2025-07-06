@@ -28,8 +28,9 @@ import FilterIcon from "/Filter.svg"
 import dragDropIcon from "/drag-drop-icon.svg"
 import deleteIcon from "/delete.svg"
 import editIcon from "/Edit.svg"
-import { LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users, Palette, GripVertical } from "lucide-react"
+import { LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users, Palette, GripVertical, GitBranch } from "lucide-react"
 import ComponentEditNameModal from "./ComponentEditModal"
+import FieldVisualTreeModal from "./FieldVisualTreeModal"
 
 const ComponentList = () => {
   const [showNewComponentDialog, setShowNewComponentDialog] = useState(false)
@@ -54,6 +55,10 @@ const ComponentList = () => {
   const [copiedText, setCopiedText] = useState(null)
   const [showEditComponentNameModal, setShowEditComponentNameModal] = useState(false)
   const [componentToEditName, setComponentToEditName] = useState(null)
+  
+  // Tree modal state
+  const [showTreeModal, setShowTreeModal] = useState(false)
+  const [selectedComponentForTree, setSelectedComponentForTree] = useState(null)
 
   const generateHandle = (name) => {
     return name
@@ -500,6 +505,18 @@ const ComponentList = () => {
                 </span>
               )}
             </div>
+            {field.type === "repeater" && field.config?.nested_fields?.length > 0 && (
+              <button
+                onClick={() => {
+                  setSelectedComponentForTree(component)
+                  setShowTreeModal(true)
+                }}
+                className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                title="View field structure"
+              >
+                <GitBranch className="w-4 h-4" />
+              </button>
+            )}
             <img
               onClick={() => onEdit(component, field)}
               src={editIcon || "/placeholder.svg"}
@@ -1023,6 +1040,54 @@ const ComponentList = () => {
           component={componentToEditName}
           onClose={closeEditComponentNameModal}
           onSave={closeEditComponentNameModal}
+        />
+      )}
+
+      {/* Visual Tree Modal */}
+      {showTreeModal && selectedComponentForTree && (
+        <FieldVisualTreeModal
+          isOpen={showTreeModal}
+          fields={selectedComponentForTree.fields || []}
+          onClose={() => {
+            setShowTreeModal(false)
+            setSelectedComponentForTree(null)
+          }}
+          onFieldUpdate={(path, updatedField) => {
+            // Update the field in the component
+            const updateFieldInComponent = (fields, path, updatedField) => {
+              const [currentIndex, ...remainingPath] = path
+              
+              if (remainingPath.length === 0) {
+                return fields.map((f, i) => (i === currentIndex ? updatedField : f))
+              } else {
+                return fields.map((f, i) => {
+                  if (i === currentIndex && f.type === "repeater" && f.config?.nested_fields) {
+                    return {
+                      ...f,
+                      config: {
+                        ...f.config,
+                        nested_fields: updateFieldInComponent(f.config.nested_fields, remainingPath, updatedField)
+                      }
+                    }
+                  }
+                  return f
+                })
+              }
+            }
+            
+            // Update the component in the list
+            setComponents(prev => prev.map(comp => 
+              comp.id === selectedComponentForTree.id 
+                ? { ...comp, fields: updateFieldInComponent(comp.fields, path, updatedField) }
+                : comp
+            ))
+            
+            // Update the selected component
+            setSelectedComponentForTree(prev => ({
+              ...prev,
+              fields: updateFieldInComponent(prev.fields, path, updatedField)
+            }))
+          }}
         />
       )}
     </div>
