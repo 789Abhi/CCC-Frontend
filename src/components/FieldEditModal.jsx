@@ -786,19 +786,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                       <h4 className="text-sm font-medium text-gray-700">Nested Fields</h4>
                       <p className="text-xs text-gray-600">Define the fields that will appear within each repeater item.</p>
                     </div>
-                    {nestedFieldDefinitions.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setShowTreeModal(true)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-                        disabled={isSubmitting}
-                      >
-                        <Eye className="w-4 h-4" />
-                        View Tree Structure
-                      </button>
-                    )}
                   </div>
-
                   {nestedFieldDefinitions.length === 0 ? (
                     <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-lg">
                       <p>No nested fields defined yet.</p>
