@@ -693,7 +693,7 @@ const ComponentList = () => {
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <div className="text-gray-400 mb-4">
+                      <div className="text-gray-400 mb-3">
                         <Settings className="w-12 h-12 mx-auto" />
                       </div>
                       <p className="text-gray-500 mb-4">No fields added yet</p>

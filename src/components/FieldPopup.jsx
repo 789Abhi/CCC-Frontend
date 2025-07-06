@@ -1,24 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import axios from "axios"
 
 function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }) {
   const [label, setLabel] = useState(initialField?.label || "")
   const [name, setName] = useState(initialField?.name || "")
   const [type, setType] = useState(initialField?.type || "text")
-  const [maxSets, setMaxSets] = useState(initialField?.maxSets || "")
-  const [allowedFields, setAllowedFields] = useState(["text", "textarea", "image"])
-  const [imageReturnType, setImageReturnType] = useState(initialField?.returnType || "url")
+  const [maxSets, setMaxSets] = useState(initialField?.maxSets || initialField?.config?.max_sets || "")
+  const [allowedFields, setAllowedFields] = useState(initialField?.allowedFields || ["text", "textarea", "image"])
+  const [imageReturnType, setImageReturnType] = useState(initialField?.returnType || initialField?.config?.return_type || "url")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState("")
-  const [fieldOptions, setFieldOptions] = useState(initialField?.options || [])
-  const [nestedFieldDefinitions, setNestedFieldDefinitions] = useState(initialField?.nestedFieldDefinitions || [])
-  const [showNestedFieldModal, setShowNestedFieldModal] = useState(false)
+  const [fieldOptions, setFieldOptions] = useState(initialField?.options || initialField?.config?.options || [])
+  const [nestedFieldDefinitions, setNestedFieldDefinitions] = useState(initialField?.nestedFieldDefinitions || initialField?.config?.nested_fields || [])
   const [editingNestedFieldIndex, setEditingNestedFieldIndex] = useState(null)
-  const [currentNestedField, setCurrentNestedField] = useState(null)
 
   // Recursive popup state
   const [showRecursivePopup, setShowRecursivePopup] = useState(false)
@@ -26,6 +24,16 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
   const [recursivePopupIndex, setRecursivePopupIndex] = useState(null)
 
   const availableFieldTypes = ["text", "textarea", "image", "repeater", "wysiwyg", "color", "select", "checkbox", "radio"]
+
+  // Effect to handle state updates when type changes
+  useEffect(() => {
+    if (type === "repeater") {
+      // If switching to repeater and no allowed fields are set, set defaults
+      if (allowedFields.length === 0) {
+        setAllowedFields(["text", "textarea", "image"])
+      }
+    }
+  }, [type, allowedFields.length])
 
   const generateHandle = (inputLabel) => {
     return inputLabel
@@ -85,20 +93,70 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
   // Recursive: open popup for nested repeater field
   const openRecursivePopup = (index = null) => {
     console.log('CCC FieldPopup: Opening recursive popup', { index, existingFields: nestedFieldDefinitions })
+    
+    let initialFieldData = null
+    if (index !== null && nestedFieldDefinitions[index]) {
+      const field = nestedFieldDefinitions[index]
+      initialFieldData = {
+        label: field.label,
+        name: field.name,
+        type: field.type,
+        maxSets: field.config?.max_sets || field.maxSets || "",
+        allowedFields: field.allowedFields || ["text", "textarea", "image"],
+        imageReturnType: field.config?.return_type || field.imageReturnType || "url",
+        fieldOptions: field.config?.options ? Object.entries(field.config.options).map(([value, label]) => ({ value, label })) : field.fieldOptions || [],
+        nestedFieldDefinitions: field.config?.nested_fields || field.nestedFieldDefinitions || []
+      }
+      console.log('CCC FieldPopup: Initial field data for edit', initialFieldData)
+    }
+    
     setRecursivePopupIndex(index)
-    setRecursivePopupInitialField(index !== null ? nestedFieldDefinitions[index] : null)
+    setRecursivePopupInitialField(initialFieldData)
     setShowRecursivePopup(true)
   }
 
   // Recursive: save nested repeater field
   const handleSaveRecursive = (nestedField) => {
     console.log('CCC FieldPopup: Saving recursive field', { nestedField, recursivePopupIndex })
+    
+    // Process the nested field to ensure proper structure
+    const processedField = {
+      label: nestedField.label,
+      name: nestedField.name,
+      type: nestedField.type
+    }
+    
+    // Add config based on field type
+    if (nestedField.type === 'repeater') {
+      processedField.config = {
+        max_sets: nestedField.maxSets ? parseInt(nestedField.maxSets) : 0,
+        nested_fields: nestedField.nestedFieldDefinitions || []
+      }
+    } else if (nestedField.type === 'image') {
+      processedField.config = {
+        return_type: nestedField.imageReturnType || 'url'
+      }
+    } else if (['select', 'checkbox', 'radio'].includes(nestedField.type)) {
+      // Convert options array to object format
+      const optionsObject = {}
+      if (nestedField.fieldOptions) {
+        nestedField.fieldOptions.forEach((option) => {
+          if (option.label && option.value) {
+            optionsObject[option.value] = option.label
+          }
+        })
+      }
+      processedField.config = {
+        options: optionsObject
+      }
+    }
+    
     setNestedFieldDefinitions((prev) => {
       const arr = [...prev]
       if (recursivePopupIndex !== null) {
-        arr[recursivePopupIndex] = nestedField
+        arr[recursivePopupIndex] = processedField
       } else {
-        arr.push(nestedField)
+        arr.push(processedField)
       }
       console.log('CCC FieldPopup: Updated nested field definitions', arr)
       return arr
@@ -116,9 +174,9 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
           <div className="flex-1">
             <span className="font-medium">{nf.label}</span>
             <span className="text-gray-500 ml-2">({nf.type})</span>
-            {nf.type === "repeater" && nf.nestedFieldDefinitions && (
+            {nf.type === "repeater" && (nf.nestedFieldDefinitions || nf.config?.nested_fields) && (
               <div className="text-xs text-gray-400 mt-1">
-                {nf.nestedFieldDefinitions.length} nested field{nf.nestedFieldDefinitions.length !== 1 ? 's' : ''}
+                {(nf.nestedFieldDefinitions || nf.config?.nested_fields || []).length} nested field{(nf.nestedFieldDefinitions || nf.config?.nested_fields || []).length !== 1 ? 's' : ''}
               </div>
             )}
           </div>
@@ -189,6 +247,24 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
           return
         }
       }
+    }
+
+    // If this is a recursive popup (onSave is provided), save the field data and close
+    if (onSave) {
+      const fieldData = {
+        label,
+        name,
+        type,
+        maxSets,
+        allowedFields,
+        imageReturnType,
+        fieldOptions,
+        nestedFieldDefinitions
+      }
+      
+      console.log('CCC FieldPopup: Saving field data for recursive popup', fieldData)
+      onSave(fieldData)
+      return
     }
 
     setIsSubmitting(true)
@@ -267,7 +343,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 max-h-[90vh] overflow-y-auto">
         <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 rounded-t-2xl text-white">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold">Add New Field</h3>
+            <h3 className="text-xl font-bold">{onSave ? "Add Nested Field" : "Add New Field"}</h3>
             <button
               onClick={onClose}
               className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
@@ -506,7 +582,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
               disabled={isSubmitting}
               className={`bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? "Saving..." : "Save"}
+              {isSubmitting ? "Saving..." : (onSave ? "Add Field" : "Save")}
             </button>
           </div>
         </div>
