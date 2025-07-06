@@ -207,7 +207,60 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
       // Handle different field type configurations
       if (type === "repeater") {
         formData.append("max_sets", maxSets ? Number.parseInt(maxSets) : 0)
-        formData.append("nested_field_definitions", JSON.stringify(nestedFieldDefinitions))
+        
+        // Process nested field definitions recursively for unlimited nesting levels
+        const processNestedFieldsRecursively = (fields) => {
+          return fields.map(field => {
+            const processedField = {
+              label: field.label,
+              name: field.name,
+              type: field.type
+            }
+            
+            // Handle different field types
+            if (field.type === 'repeater') {
+              // For repeater fields, always use config.nested_fields structure
+              // This ensures consistency across all nesting levels
+              processedField.config = {
+                max_sets: field.config?.max_sets || field.maxSets || 0,
+                nested_fields: field.config?.nested_fields || field.nestedFieldDefinitions || []
+              }
+              
+              // Recursively process nested fields if they exist
+              if (processedField.config.nested_fields && processedField.config.nested_fields.length > 0) {
+                processedField.config.nested_fields = processNestedFieldsRecursively(processedField.config.nested_fields)
+              }
+              
+              console.log('FieldEditModal: Processed nested repeater field', field.label, processedField.config)
+            } else if (field.type === 'image') {
+              processedField.config = {
+                return_type: field.config?.return_type || field.imageReturnType || 'url'
+              }
+            } else if (['select', 'checkbox', 'radio'].includes(field.type)) {
+              // Handle options for select/checkbox/radio fields
+              let optionsObject = {}
+              if (field.config?.options) {
+                optionsObject = field.config.options
+              } else if (field.fieldOptions) {
+                field.fieldOptions.forEach((option) => {
+                  if (option.label && option.value) {
+                    optionsObject[option.value] = option.label
+                  }
+                })
+              }
+              processedField.config = {
+                options: optionsObject
+              }
+            }
+            
+            return processedField
+          })
+        }
+        
+        const processedNestedFields = processNestedFieldsRecursively(nestedFieldDefinitions)
+        
+        console.log('FieldEditModal: Sending nested field definitions', processedNestedFields)
+        formData.append("nested_field_definitions", JSON.stringify(processedNestedFields))
       } else if (type === "image") {
         const config = {
           return_type: "url",
