@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { X, Edit, GitBranch, GitCommit, ArrowRight } from "lucide-react"
 import FieldPopup from "./FieldPopup"
+import axios from "axios"
 
 function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
   const [processedFields, setProcessedFields] = useState([])
@@ -121,82 +122,138 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
       const processedUpdatedField = processUpdatedField(updatedField)
       console.log('CCC FieldVisualTreeModal: Processed updated field:', processedUpdatedField)
       
-      // Update the field in the processed fields structure
-      const updateFieldInStructure = (fields, path, updatedField) => {
+      // Find the original field to get the field ID
+      const findOriginalField = (fields, path) => {
+        if (path.length === 0) return null
+        
         const [currentIndex, ...remainingPath] = path
+        const currentField = fields[currentIndex]
         
         if (remainingPath.length === 0) {
-          // Update at current level - preserve tree-specific properties
-          return fields.map((f, i) => {
-            if (i === currentIndex) {
-              // Preserve tree-specific properties and update the field data
-              const updatedTreeField = {
-                ...f, // Keep tree-specific properties (treeId, level, path, children)
-                ...updatedField, // Update field data
-                // Ensure children are preserved for repeater fields
-                children: f.type === 'repeater' && updatedField.type === 'repeater' 
-                  ? (updatedField.config?.nested_fields || f.children || [])
-                  : f.children || []
-              }
+          return currentField
+        } else if (currentField.type === "repeater" && currentField.config?.nested_fields) {
+          return findOriginalField(currentField.config.nested_fields, remainingPath)
+        }
+        
+        return null
+      }
+      
+      const originalField = findOriginalField(fields, editingPath)
+      
+      if (!originalField || !originalField.id) {
+        console.error('CCC FieldVisualTreeModal: Could not find original field or field ID')
+        return
+      }
+      
+      // Send the update to the backend using the new endpoint
+      const updateFieldInBackend = async () => {
+        try {
+          const formData = new FormData()
+          formData.append("action", "ccc_update_field_from_hierarchy")
+          formData.append("field_id", originalField.id)
+          formData.append("label", processedUpdatedField.label)
+          formData.append("name", processedUpdatedField.name)
+          formData.append("type", processedUpdatedField.type)
+          formData.append("required", originalField.required || false)
+          formData.append("placeholder", originalField.placeholder || "")
+          formData.append("nonce", window.cccData.nonce)
+          
+          // Add config if it exists
+          if (processedUpdatedField.config) {
+            formData.append("config", JSON.stringify(processedUpdatedField.config))
+          }
+          
+          const response = await axios.post(window.cccData.ajaxUrl, formData)
+          
+          if (response.data.success) {
+            console.log('CCC FieldVisualTreeModal: Field updated successfully in backend')
+            
+            // Update the field in the processed fields structure
+            const updateFieldInStructure = (fields, path, updatedField) => {
+              const [currentIndex, ...remainingPath] = path
               
-              // If this is a repeater field, we need to reprocess the children
-              if (updatedTreeField.type === 'repeater' && updatedTreeField.config?.nested_fields) {
-                const processChildren = (fieldList, level, path) => {
-                  return fieldList.map((field, index) => {
-                    const currentPath = [...path, index]
-                    const processedField = {
-                      ...field,
-                      level,
-                      path: currentPath,
-                      treeId: `${field.name}-${level}-${index}`,
-                      children: []
+              if (remainingPath.length === 0) {
+                // Update at current level - preserve tree-specific properties
+                return fields.map((f, i) => {
+                  if (i === currentIndex) {
+                    // Preserve tree-specific properties and update the field data
+                    const updatedTreeField = {
+                      ...f, // Keep tree-specific properties (treeId, level, path, children)
+                      ...updatedField, // Update field data
+                      // Ensure children are preserved for repeater fields
+                      children: f.type === 'repeater' && updatedField.type === 'repeater' 
+                        ? (updatedField.config?.nested_fields || f.children || [])
+                        : f.children || []
                     }
+                    
+                    // If this is a repeater field, we need to reprocess the children
+                    if (updatedTreeField.type === 'repeater' && updatedTreeField.config?.nested_fields) {
+                      const processChildren = (fieldList, level, path) => {
+                        return fieldList.map((field, index) => {
+                          const currentPath = [...path, index]
+                          const processedField = {
+                            ...field,
+                            level,
+                            path: currentPath,
+                            treeId: `${field.name}-${level}-${index}`,
+                            children: []
+                          }
 
-                    // Add children for repeater fields
-                    if (field.type === "repeater" && field.config?.nested_fields) {
-                      processedField.children = processChildren(field.config.nested_fields, level + 1, currentPath)
+                          // Add children for repeater fields
+                          if (field.type === "repeater" && field.config?.nested_fields) {
+                            processedField.children = processChildren(field.config.nested_fields, level + 1, currentPath)
+                          }
+
+                          return processedField
+                        })
+                      }
+                      
+                      updatedTreeField.children = processChildren(updatedTreeField.config.nested_fields, updatedTreeField.level + 1, updatedTreeField.path)
                     }
-
-                    return processedField
-                  })
-                }
-                
-                updatedTreeField.children = processChildren(updatedTreeField.config.nested_fields, updatedTreeField.level + 1, updatedTreeField.path)
-              }
-              
-              return updatedTreeField
-            }
-            return f
-          })
-        } else {
-          // Navigate deeper
-          return fields.map((f, i) => {
-            if (i === currentIndex && f.type === "repeater" && f.config?.nested_fields) {
-              return {
-                ...f,
-                config: {
-                  ...f.config,
-                  nested_fields: updateFieldInStructure(f.config.nested_fields, remainingPath, updatedField)
-                }
+                    
+                    return updatedTreeField
+                  }
+                  return f
+                })
+              } else {
+                // Navigate deeper
+                return fields.map((f, i) => {
+                  if (i === currentIndex && f.type === "repeater" && f.config?.nested_fields) {
+                    return {
+                      ...f,
+                      config: {
+                        ...f.config,
+                        nested_fields: updateFieldInStructure(f.config.nested_fields, remainingPath, updatedField)
+                      }
+                    }
+                  }
+                  return f
+                })
               }
             }
-            return f
-          })
+            
+            setProcessedFields(prev => {
+              const updated = updateFieldInStructure(prev, editingPath, processedUpdatedField)
+              console.log('CCC FieldVisualTreeModal: Updated processed fields:', updated)
+              return updated
+            })
+            
+            // Call the parent update function to update the component state
+            onFieldUpdate(editingPath, processedUpdatedField)
+            
+            setShowFieldPopup(false)
+            setEditingField(null)
+            setEditingPath([])
+          } else {
+            console.error('CCC FieldVisualTreeModal: Failed to update field in backend:', response.data.message)
+          }
+        } catch (error) {
+          console.error('CCC FieldVisualTreeModal: Error updating field in backend:', error)
         }
       }
       
-      setProcessedFields(prev => {
-        const updated = updateFieldInStructure(prev, editingPath, processedUpdatedField)
-        console.log('CCC FieldVisualTreeModal: Updated processed fields:', updated)
-        return updated
-      })
+      updateFieldInBackend()
       
-      // Call the parent update function
-      onFieldUpdate(editingPath, processedUpdatedField)
-      
-      setShowFieldPopup(false)
-      setEditingField(null)
-      setEditingPath([])
     } catch (error) {
       console.error('CCC FieldVisualTreeModal: Error updating field:', error)
       // Don't close the popup on error, let the user try again
