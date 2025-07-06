@@ -146,7 +146,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
           )}
           
           {/* Field Card */}
-          <div className={`relative border-2 rounded-xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${getFieldColor(field.type)} backdrop-blur-sm`}>
+          <div className={`relative border-2 rounded-xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 ${getFieldColor(field.type)} backdrop-blur-sm`}>
             <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl pointer-events-none"></div>
             
             <div className="relative z-10">
@@ -170,7 +170,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
                 
                 <button
                   onClick={() => handleEditField(field)}
-                  className="opacity-0 group-hover:opacity-100 p-3 text-gray-700 hover:text-blue-600 hover:bg-white/60 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-110"
+                  className="opacity-0 group-hover:opacity-100 p-3 text-gray-700 hover:text-blue-600 hover:bg-white/60 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg"
                   title="Edit field"
                 >
                   <Edit className="w-5 h-5" />

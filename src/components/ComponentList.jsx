@@ -815,6 +815,14 @@ const ComponentList = () => {
                         src={editIcon || "/placeholder.svg"}
                         alt="edit Component"
                       />
+                      <GitBranch
+                        className="w-[25px] h-[25px] cursor-pointer text-emerald-600 hover:text-emerald-800 transition-colors duration-200"
+                        title="View Field Structure"
+                        onClick={() => {
+                          setSelectedComponentForTree(comp)
+                          setShowTreeModal(true)
+                        }}
+                      />
                       <img
                         onClick={() => handleDeleteComponent(comp.id)}
                         className="w-[25px] h-[25px] cursor-pointer"
