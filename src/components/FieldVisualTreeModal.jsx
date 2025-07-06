@@ -261,7 +261,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
                 </div>
                 <p className="text-sm text-emerald-700 leading-relaxed">
                   Hover over any field card and click the edit icon to modify it directly. 
-                  The visual structure shows the relationship between fields with professional styling.
+                  The visual structure shows the relationship between fields .
                 </p>
               </div>
               
