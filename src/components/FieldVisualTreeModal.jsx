@@ -20,7 +20,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
             ...field,
             level,
             path: currentPath,
-            id: `${field.name}-${level}-${index}`,
+            treeId: `${field.name}-${level}-${index}`,
             children: []
           }
 
@@ -38,7 +38,21 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
   }, [fields])
 
   const handleEditField = (field) => {
-    setEditingField(field)
+    // Extract the original field data without the processed tree properties
+    const originalField = {
+      id: field.id,
+      label: field.label,
+      name: field.name,
+      type: field.type,
+      config: field.config,
+      // Add any other properties that might be needed
+      maxSets: field.config?.max_sets,
+      returnType: field.config?.return_type,
+      options: field.config?.options,
+      nestedFieldDefinitions: field.config?.nested_fields
+    }
+    
+    setEditingField(originalField)
     setEditingPath(field.path)
     setShowFieldPopup(true)
   }
@@ -132,7 +146,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
     const hasChildren = field.children && field.children.length > 0
     
     return (
-      <div key={field.id} className="relative">
+      <div key={field.treeId} className="relative">
         {/* Field Box */}
         <div className={`relative group ${field.level > 0 ? 'ml-12' : ''}`}>
           {/* Connecting Line */}
@@ -204,7 +218,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
             
             <div className="space-y-6">
               {field.children.map((child, index) => (
-                <div key={child.id} className="relative">
+                <div key={child.treeId} className="relative">
                   {renderFieldNode(child, index === field.children.length - 1)}
                 </div>
               ))}
@@ -268,7 +282,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 border border-gray-200 shadow-lg">
                 <div className="space-y-8">
                   {processedFields.map((field, index) => (
-                    <div key={field.id}>
+                    <div key={field.treeId}>
                       {renderFieldNode(field, index === processedFields.length - 1)}
                     </div>
                   ))}

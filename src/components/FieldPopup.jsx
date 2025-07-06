@@ -172,8 +172,8 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
     const { active, over } = event
 
     if (active.id !== over.id) {
-      const oldIndex = nestedFieldDefinitions.findIndex(field => field.name + field.label === active.id)
-      const newIndex = nestedFieldDefinitions.findIndex(field => field.name + field.label === over.id)
+      const oldIndex = nestedFieldDefinitions.findIndex(field => (field.name || '') + (field.label || '') === active.id)
+      const newIndex = nestedFieldDefinitions.findIndex(field => (field.name || '') + (field.label || '') === over.id)
       
       const reorderedFields = arrayMove(nestedFieldDefinitions, oldIndex, newIndex)
       setNestedFieldDefinitions(reorderedFields)
@@ -189,7 +189,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       transform,
       transition,
       isDragging,
-    } = useSortable({ id: field.name + field.label })
+    } = useSortable({ id: (field.name || '') + (field.label || '') })
 
     const style = {
       transform: CSS.Transform.toString(transform),
@@ -216,16 +216,16 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
                 <GripVertical className="w-5 h-5 text-gray-400 hover:text-gray-600" />
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-gray-800 text-lg">{field.label}</span>
+                <span className="font-semibold text-gray-800 text-lg">{field.label || 'Unnamed Field'}</span>
                 <span className="text-gray-400">•</span>
                 <div className="relative">
                   <code 
                     className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
-                    onClick={() => handleCopy(field.name)}
+                    onClick={() => handleCopy(field.name || '')}
                   >
-                    {field.name}
+                    {field.name || 'unnamed'}
                   </code>
-                  {copiedText === field.name && (
+                  {copiedText === (field.name || '') && (
                     <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 shadow-lg">
                       Copied!
                     </span>
@@ -237,7 +237,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 mt-1">
               <span className="bg-blue-100 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
-                {field.type}
+                {field.type || 'unknown'}
               </span>
               {field.type === "repeater" && (field.config?.nested_fields || field.nestedFieldDefinitions || field.nested_fields || []).length > 0 && (
                 <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
@@ -406,13 +406,13 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
           onDragEnd={onDragEnd}
         >
           <SortableContext
-            items={nestedFieldDefinitions.map(field => field.name + field.label)}
+            items={nestedFieldDefinitions.map(field => (field.name || '') + (field.label || ''))}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-3">
               {nestedFieldDefinitions.map((nf, i) => (
                 <SortableNestedField
-                  key={nf.name + i}
+                  key={(nf.name || '') + i}
                   field={nf}
                   index={i}
                   onEdit={() => openRecursivePopup(i)}
