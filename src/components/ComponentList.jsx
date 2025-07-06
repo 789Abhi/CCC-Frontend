@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import axios from "axios"
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
 import FieldEditModal from "./FieldEditModal"
 
 import plusIcon from "/plus-Icon.svg"
@@ -10,7 +11,7 @@ import FilterIcon from "/Filter.svg"
 import dragDropIcon from "/drag-drop-icon.svg"
 import deleteIcon from "/delete.svg"
 import editIcon from "/Edit.svg"
-import { LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users, Palette } from "lucide-react" // ADDED: Palette icon
+import { LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users, Palette, GripVertical } from "lucide-react" // ADDED: GripVertical icon
 import ComponentEditNameModal from "./ComponentEditModal"
 
 const ComponentList = () => {
@@ -364,6 +365,53 @@ const ComponentList = () => {
     }
   }
 
+  const handleDragEnd = async (result, componentId) => {
+    if (!result.destination) return
+
+    const { source, destination } = result
+
+    // Don't do anything if dropped in the same position
+    if (source.droppableId === destination.droppableId && source.index === destination.index) {
+      return
+    }
+
+    // Update the local state immediately for smooth UX
+    const updatedComponents = components.map(comp => {
+      if (comp.id === componentId) {
+        const newFields = Array.from(comp.fields)
+        const [removed] = newFields.splice(source.index, 1)
+        newFields.splice(destination.index, 0, removed)
+        return { ...comp, fields: newFields }
+      }
+      return comp
+    })
+    setComponents(updatedComponents)
+
+    // Send the new order to the backend
+    try {
+      const formData = new FormData()
+      formData.append("action", "ccc_update_field_order")
+      formData.append("component_id", componentId)
+      formData.append("field_order", JSON.stringify(updatedComponents.find(c => c.id === componentId).fields.map(f => f.id)))
+      formData.append("nonce", window.cccData.nonce)
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData)
+      
+      if (!response.data.success) {
+        // Revert the change if the backend update failed
+        setComponents(components)
+        showMessage("Failed to update field order. Please try again.", "error")
+      } else {
+        showMessage("Field order updated successfully.", "success")
+      }
+    } catch (error) {
+      // Revert the change if the request failed
+      setComponents(components)
+      showMessage("Failed to update field order. Please try again.", "error")
+      console.error("Error updating field order:", error)
+    }
+  }
+
   const filteredComponents = components.filter((comp) => {
     const searchLower = searchTerm.toLowerCase()
     const matchesComponentName =
@@ -631,65 +679,89 @@ const ComponentList = () => {
                 <div className="py-6">
                   {comp.fields && comp.fields.length > 0 ? (
                     <div>
-                      <div className="space-y-3">
-                        {comp.fields.map((field) => (
-                          <div key={field.id} className="border border-bgPrimary rounded-custom">
-                            <div className="flex items-center justify-between p-3">
-                              <div className="flex items-center gap-3">
-                                <div className="flex items-center">
-                                  <img
-                                    className="w-[30px] h-[30px]"
-                                    src={dragDropIcon || "/placeholder.svg"}
-                                    alt="Drag and Drop"
-                                  />
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-gray-800 text-lg">{field.label}</span>
-                                    <span className="text-gray-400">•</span>
-                                    <div className="relative">
-                                      <code
-                                        className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
-                                        onClick={() => handleCopy(field.name)}
-                                      >
-                                        {field.name}
-                                      </code>
-                                      {copiedText === field.name && (
-                                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 shadow-lg">
-                                          Copied!
-                                        </span>
-                                      )}
+                      <DragDropContext onDragEnd={(result) => handleDragEnd(result, comp.id)}>
+                        <Droppable droppableId={`fields-${comp.id}`}>
+                          {(provided, snapshot) => (
+                            <div
+                              {...provided.droppableProps}
+                              ref={provided.innerRef}
+                              className={`space-y-3 transition-all duration-200 ${
+                                snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2' : ''
+                              }`}
+                            >
+                              {comp.fields.map((field, index) => (
+                                <Draggable key={field.id} draggableId={field.id.toString()} index={index}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      className={`border border-bgPrimary rounded-custom transition-all duration-200 ${
+                                        snapshot.isDragging ? 'shadow-2xl rotate-2 scale-105 z-50' : ''
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-between p-3">
+                                        <div className="flex items-center gap-3">
+                                          <div className="flex items-center">
+                                            <div
+                                              {...provided.dragHandleProps}
+                                              className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors"
+                                            >
+                                              <GripVertical className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-semibold text-gray-800 text-lg">{field.label}</span>
+                                              <span className="text-gray-400">•</span>
+                                              <div className="relative">
+                                                <code
+                                                  className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
+                                                  onClick={() => handleCopy(field.name)}
+                                                >
+                                                  {field.name}
+                                                </code>
+                                                {copiedText === field.name && (
+                                                  <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 shadow-lg">
+                                                    Copied!
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex items-center gap-2 mt-1">
+                                            <span className="bg-blue-100 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
+                                              {field.type}
+                                            </span>
+                                            {field.type === "repeater" && field.config?.nested_fields?.length > 0 && (
+                                              <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                {field.config.nested_fields.length} nested field
+                                                {field.config.nested_fields.length !== 1 ? "s" : ""}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <img
+                                            onClick={() => openFieldEditModal(comp, field)}
+                                            src={editIcon || "/placeholder.svg"}
+                                            className="h-[18px] w-[18px] cursor-pointer"
+                                            alt="edit-icon"
+                                          />
+                                          <img
+                                            onClick={() => handleDeleteField(field.id)}
+                                            className="h-[18px] w-[18px] cursor-pointer"
+                                            src={deleteIcon || "/placeholder.svg"}
+                                            alt="delete-icon"
+                                          />
+                                        </div>
+                                      </div>
                                     </div>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="bg-blue-100 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
-                                    {field.type}
-                                  </span>
-                                  {field.type === "repeater" && field.config?.nested_fields?.length > 0 && (
-                                    <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                                      {field.config.nested_fields.length} nested field
-                                      {field.config.nested_fields.length !== 1 ? "s" : ""}
-                                    </span>
                                   )}
-                                </div>
-                                <img
-                                  onClick={() => openFieldEditModal(comp, field)}
-                                  src={editIcon || "/placeholder.svg"}
-                                  className="h-[18px] w-[18px] cursor-pointer"
-                                  alt="edit-icon"
-                                />
-                                <img
-                                  onClick={() => handleDeleteField(field.id)}
-                                  className="h-[18px] w-[18px] cursor-pointer"
-                                  src={deleteIcon || "/placeholder.svg"}
-                                  alt="delete-icon"
-                                />
-                              </div>
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
                     </div>
                   ) : (
                     <div className="text-center py-8">
