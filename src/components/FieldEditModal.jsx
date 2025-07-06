@@ -98,7 +98,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
 
     setError("")
     setEditingNestedFieldIndex(null)
-    setShowNestedFieldModal(false)
+    setShowFieldPopup(false)
     setCurrentNestedField(null)
   }, [field, isOpen])
 
