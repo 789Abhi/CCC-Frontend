@@ -40,6 +40,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
   const [showRecursivePopup, setShowRecursivePopup] = useState(false)
   const [recursivePopupInitialField, setRecursivePopupInitialField] = useState(null)
   const [recursivePopupIndex, setRecursivePopupIndex] = useState(null)
+  const [copiedText, setCopiedText] = useState(null)
 
   const availableFieldTypes = ["text", "textarea", "image", "repeater", "wysiwyg", "color", "select", "checkbox", "radio"]
 
@@ -89,6 +90,53 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       setMessage("")
       setMessageType("")
     }, 5000)
+  }
+
+  const handleCopy = (text) => {
+    console.log("Attempting to copy text:", text)
+
+    const copyFallback = (textToCopy) => {
+      const textArea = document.createElement("textarea")
+      textArea.value = textToCopy
+      document.body.appendChild(textArea)
+      textArea.select()
+
+      try {
+        document.execCommand("copy")
+        console.log("Copy successful using fallback")
+        return true
+      } catch (err) {
+        console.error("Fallback copy failed:", err)
+        return false
+      } finally {
+        document.body.removeChild(textArea)
+      }
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          console.log("Text copied to clipboard:", text)
+          setCopiedText(text)
+          setTimeout(() => setCopiedText(null), 2000)
+        })
+        .catch((err) => {
+          console.error("Failed to copy text with clipboard API:", err)
+          const success = copyFallback(text)
+          if (success) {
+            setCopiedText(text)
+            setTimeout(() => setCopiedText(null), 2000)
+          }
+        })
+    } else {
+      console.warn("Clipboard API not supported, using fallback")
+      const success = copyFallback(text)
+      if (success) {
+        setCopiedText(text)
+        setTimeout(() => setCopiedText(null), 2000)
+      }
+    }
   }
 
   const handleAddOption = () => {
@@ -171,9 +219,17 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
                 <span className="font-semibold text-gray-800 text-lg">{field.label}</span>
                 <span className="text-gray-400">•</span>
                 <div className="relative">
-                  <code className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono">
+                  <code 
+                    className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
+                    onClick={() => handleCopy(field.name)}
+                  >
                     {field.name}
                   </code>
+                  {copiedText === field.name && (
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 shadow-lg">
+                      Copied!
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
