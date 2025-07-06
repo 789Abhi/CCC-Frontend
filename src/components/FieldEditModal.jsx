@@ -3,7 +3,24 @@
 import { useState, useEffect } from "react"
 import axios from "axios"
 import { Plus, X, GripVertical, Edit } from "lucide-react"
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import FieldPopup from "./FieldPopup"
 
 function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
@@ -137,14 +154,90 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
     }
   }
 
-  const onDragEnd = (result) => {
-    if (!result.destination) return
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
-    const reorderedFields = Array.from(nestedFieldDefinitions)
-    const [removed] = reorderedFields.splice(result.source.index, 1)
-    reorderedFields.splice(result.destination.index, 0, removed)
+  const onDragEnd = (event) => {
+    const { active, over } = event
 
-    setNestedFieldDefinitions(reorderedFields)
+    if (active.id !== over.id) {
+      const oldIndex = nestedFieldDefinitions.findIndex(field => field.name + field.label === active.id)
+      const newIndex = nestedFieldDefinitions.findIndex(field => field.name + field.label === over.id)
+      
+      const reorderedFields = arrayMove(nestedFieldDefinitions, oldIndex, newIndex)
+      setNestedFieldDefinitions(reorderedFields)
+    }
+  }
+
+  // Sortable Nested Field Component
+  const SortableNestedField = ({ field, index, onEdit, onDelete, isSubmitting }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: field.name + field.label })
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    }
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 ${
+          isDragging ? 'shadow-2xl scale-105 z-50' : ''
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors"
+          >
+            <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+          </div>
+          <span className="font-medium text-gray-800">{field.label}</span>
+          <span className="text-gray-500 mx-1">—</span>
+          <code className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">
+            {field.name}
+          </code>
+          <span className="ml-2 text-sm text-gray-600 capitalize">({field.type})</span>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="p-1 rounded-md text-yellow-600 hover:bg-yellow-50 transition-colors"
+            disabled={isSubmitting}
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="p-1 rounded-md text-red-600 hover:bg-red-50 transition-colors"
+            disabled={isSubmitting}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    )
   }
 
   const handleAddOption = () => {
@@ -603,62 +696,34 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                       </button>
                     </div>
                   ) : (
-                    <DragDropContext onDragEnd={onDragEnd}>
-                      <Droppable droppableId="nested-fields">
-                        {(provided) => (
-                          <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                            {nestedFieldDefinitions.map((nf, index) => (
-                              <Draggable key={nf.name + index} draggableId={nf.name + index} index={index}>
-                                {(provided) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <span {...provided.dragHandleProps}>
-                                        <GripVertical className="w-4 h-4 text-gray-400 cursor-grab" />
-                                      </span>
-                                      <span className="font-medium text-gray-800">{nf.label}</span>
-                                      <span className="text-gray-500 mx-1">—</span>
-                                      <code className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">
-                                        {nf.name}
-                                      </code>
-                                      <span className="ml-2 text-sm text-gray-600 capitalize">({nf.type})</span>
-                                    </div>
-
-                                    <div className="flex gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          console.log("FieldEditModal: Opening edit popup for nested field:", nf, "at index:", index)
-                                          setCurrentNestedField(nf)
-                                          setEditingNestedFieldIndex(index)
-                                          setShowFieldPopup(true)
-                                        }}
-                                        className="p-1 rounded-md text-yellow-600 hover:bg-yellow-50 transition-colors"
-                                        disabled={isSubmitting}
-                                      >
-                                        <Edit className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDeleteNestedField(index)}
-                                        className="p-1 rounded-md text-red-600 hover:bg-red-50 transition-colors"
-                                        disabled={isSubmitting}
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-                              </Draggable>
-                            ))}
-                            {provided.placeholder}
-                          </div>
-                        )}
-                      </Droppable>
-                    </DragDropContext>
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={onDragEnd}
+                    >
+                      <SortableContext
+                        items={nestedFieldDefinitions.map(field => field.name + field.label)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-2">
+                          {nestedFieldDefinitions.map((nf, index) => (
+                            <SortableNestedField
+                              key={nf.name + index}
+                              field={nf}
+                              index={index}
+                              onEdit={() => {
+                                console.log("FieldEditModal: Opening edit popup for nested field:", nf, "at index:", index)
+                                setCurrentNestedField(nf)
+                                setEditingNestedFieldIndex(index)
+                                setShowFieldPopup(true)
+                              }}
+                              onDelete={() => handleDeleteNestedField(index)}
+                              isSubmitting={isSubmitting}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                   )}
 
                   <button

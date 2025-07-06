@@ -2,7 +2,24 @@
 
 import { useState, useEffect } from "react"
 import axios from "axios"
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from "lucide-react"
 
 function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }) {
@@ -92,14 +109,109 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
     }
   }
 
-  const onDragEnd = (result) => {
-    if (!result.destination) return
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
-    const reorderedFields = Array.from(nestedFieldDefinitions)
-    const [removed] = reorderedFields.splice(result.source.index, 1)
-    reorderedFields.splice(result.destination.index, 0, removed)
+  const onDragEnd = (event) => {
+    const { active, over } = event
 
-    setNestedFieldDefinitions(reorderedFields)
+    if (active.id !== over.id) {
+      const oldIndex = nestedFieldDefinitions.findIndex(field => field.name + field.label === active.id)
+      const newIndex = nestedFieldDefinitions.findIndex(field => field.name + field.label === over.id)
+      
+      const reorderedFields = arrayMove(nestedFieldDefinitions, oldIndex, newIndex)
+      setNestedFieldDefinitions(reorderedFields)
+    }
+  }
+
+  // Sortable Nested Field Component with improved design
+  const SortableNestedField = ({ field, index, onEdit, onDelete }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: field.name + field.label })
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    }
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`bg-white border border-bgPrimary rounded-custom p-3 shadow-sm hover:shadow-md transition-all duration-200 group ${
+          isDragging ? 'shadow-2xl scale-105 z-50' : ''
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center">
+              <div
+                {...attributes}
+                {...listeners}
+                className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors mr-2"
+              >
+                <GripVertical className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-800 text-lg">{field.label}</span>
+                <span className="text-gray-400">•</span>
+                <div className="relative">
+                  <code className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono">
+                    {field.name}
+                  </code>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mt-1">
+              <span className="bg-blue-100 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
+                {field.type}
+              </span>
+              {field.type === "repeater" && (field.config?.nested_fields || field.nestedFieldDefinitions || field.nested_fields || []).length > 0 && (
+                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                  {(field.config?.nested_fields || field.nestedFieldDefinitions || field.nested_fields || []).length} nested field
+                  {(field.config?.nested_fields || field.nestedFieldDefinitions || field.nested_fields || []).length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+            <button 
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-105 opacity-0 group-hover:opacity-100" 
+              onClick={onEdit}
+              title="Edit field"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+            <button 
+              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-105 opacity-0 group-hover:opacity-100" 
+              onClick={onDelete}
+              title="Delete field"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Recursive: open popup for nested repeater field
@@ -232,88 +344,28 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
           <p className="text-xs mt-1 text-gray-400">Add fields that will appear within each repeater item</p>
         </div>
       ) : (
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="nested-fields-popup">
-            {(provided, snapshot) => (
-              <div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className={`space-y-3 transition-all duration-200 ${
-                  snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2' : ''
-                }`}
-              >
-                {nestedFieldDefinitions.map((nf, i) => (
-                  <Draggable key={nf.name + i} draggableId={nf.name + i} index={i}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        className={`bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 group ${
-                          snapshot.isDragging ? 'shadow-2xl rotate-2 scale-105 z-50' : ''
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              <div
-                                {...provided.dragHandleProps}
-                                className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors"
-                              >
-                                <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                              </div>
-                              <span className="font-semibold text-gray-800">{nf.label}</span>
-                              <span className="text-xs bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 px-2 py-1 rounded-full capitalize font-medium">
-                                {nf.type}
-                              </span>
-                            </div>
-                            
-                            {/* Show nested field count for repeater fields */}
-                            {nf.type === "repeater" && (
-                              <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
-                                <div className="w-4 h-4 bg-gray-200 rounded-full flex items-center justify-center">
-                                  <svg className="w-2 h-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                  </svg>
-                                </div>
-                                <span className="font-medium">
-                                  {(nf.config?.nested_fields || nf.nestedFieldDefinitions || nf.nested_fields || []).length} nested field{(nf.config?.nested_fields || nf.nestedFieldDefinitions || nf.nested_fields || []).length !== 1 ? 's' : ''}
-                                </span>
-                              </div>
-                            )}
-                            
-                            <code className="text-xs text-gray-500 mt-2 block bg-gray-50 px-2 py-1 rounded font-mono">{nf.name}</code>
-                          </div>
-                          
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                            <button 
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-105" 
-                              onClick={() => openRecursivePopup(i)}
-                              title="Edit field"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                            <button 
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-105" 
-                              onClick={() => handleDeleteNestedField(i)}
-                              title="Delete field"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+        >
+          <SortableContext
+            items={nestedFieldDefinitions.map(field => field.name + field.label)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3">
+              {nestedFieldDefinitions.map((nf, i) => (
+                <SortableNestedField
+                  key={nf.name + i}
+                  field={nf}
+                  index={i}
+                  onEdit={() => openRecursivePopup(i)}
+                  onDelete={() => handleDeleteNestedField(i)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
       
       <button 
