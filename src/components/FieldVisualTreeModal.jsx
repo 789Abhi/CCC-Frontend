@@ -38,26 +38,88 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
   }, [fields])
 
   const handleEditField = (field) => {
-    // Extract the original field data without the processed tree properties
-    const originalField = {
-      id: field.id,
-      label: field.label,
-      name: field.name,
-      type: field.type,
-      config: field.config,
-      // Add any other properties that might be needed
-      maxSets: field.config?.max_sets,
-      returnType: field.config?.return_type,
-      options: field.config?.options,
-      nestedFieldDefinitions: field.config?.nested_fields
+    // Find the original field data using the path
+    const findOriginalField = (fields, path) => {
+      if (path.length === 0) return null
+      
+      const [currentIndex, ...remainingPath] = path
+      const currentField = fields[currentIndex]
+      
+      if (remainingPath.length === 0) {
+        return currentField
+      } else if (currentField.type === "repeater" && currentField.config?.nested_fields) {
+        return findOriginalField(currentField.config.nested_fields, remainingPath)
+      }
+      
+      return null
     }
     
-    setEditingField(originalField)
-    setEditingPath(field.path)
-    setShowFieldPopup(true)
+    const originalField = findOriginalField(fields, field.path)
+    
+    if (originalField) {
+      console.log('CCC FieldVisualTreeModal: Original field found:', originalField)
+      
+      // Ensure the field data is properly formatted for FieldPopup
+      const formattedField = {
+        ...originalField,
+        // Ensure config is an object, not a string
+        config: typeof originalField.config === 'string' 
+          ? JSON.parse(originalField.config) 
+          : originalField.config || {}
+      }
+      
+      console.log('CCC FieldVisualTreeModal: Formatted field for editing:', formattedField)
+      
+      setEditingField(formattedField)
+      setEditingPath(field.path)
+      setShowFieldPopup(true)
+    } else {
+      console.error('Could not find original field data for path:', field.path)
+    }
   }
 
   const handleFieldUpdate = (updatedField) => {
+    console.log('CCC FieldVisualTreeModal: Field update received:', updatedField)
+    
+    // Process the updated field to ensure proper structure
+    const processUpdatedField = (field) => {
+      const processedField = {
+        label: field.label,
+        name: field.name,
+        type: field.type
+      }
+      
+      // Add config based on field type
+      if (field.type === 'repeater') {
+        processedField.config = {
+          max_sets: field.maxSets ? parseInt(field.maxSets) : 0,
+          nested_fields: field.nestedFieldDefinitions || []
+        }
+      } else if (field.type === 'image') {
+        processedField.config = {
+          return_type: field.imageReturnType || 'url'
+        }
+      } else if (['select', 'checkbox', 'radio'].includes(field.type)) {
+        // Convert options array to object format
+        const optionsObject = {}
+        if (field.fieldOptions) {
+          field.fieldOptions.forEach((option) => {
+            if (option.label && option.value) {
+              optionsObject[option.value] = option.label
+            }
+          })
+        }
+        processedField.config = {
+          options: optionsObject
+        }
+      }
+      
+      return processedField
+    }
+    
+    const processedUpdatedField = processUpdatedField(updatedField)
+    console.log('CCC FieldVisualTreeModal: Processed updated field:', processedUpdatedField)
+    
     // Update the field in the processed fields structure
     const updateFieldInStructure = (fields, path, updatedField) => {
       const [currentIndex, ...remainingPath] = path
@@ -82,10 +144,10 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
       }
     }
     
-    setProcessedFields(prev => updateFieldInStructure(prev, editingPath, updatedField))
+    setProcessedFields(prev => updateFieldInStructure(prev, editingPath, processedUpdatedField))
     
     // Call the parent update function
-    onFieldUpdate(editingPath, updatedField)
+    onFieldUpdate(editingPath, processedUpdatedField)
     
     setShowFieldPopup(false)
     setEditingField(null)
@@ -304,6 +366,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
       {/* Field Edit Popup */}
       {showFieldPopup && editingField && (
         <FieldPopup
+          componentId={null}
           isOpen={showFieldPopup}
           initialField={editingField}
           onSave={handleFieldUpdate}

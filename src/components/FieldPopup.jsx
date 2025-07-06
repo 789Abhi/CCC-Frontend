@@ -32,8 +32,8 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState("")
-  const [fieldOptions, setFieldOptions] = useState(initialField?.options || initialField?.config?.options || [])
-  const [nestedFieldDefinitions, setNestedFieldDefinitions] = useState(initialField?.nestedFieldDefinitions || initialField?.config?.nested_fields || [])
+  const [fieldOptions, setFieldOptions] = useState(Array.isArray(initialField?.options || initialField?.config?.options) ? (initialField?.options || initialField?.config?.options) : [])
+  const [nestedFieldDefinitions, setNestedFieldDefinitions] = useState(Array.isArray(initialField?.nestedFieldDefinitions || initialField?.config?.nested_fields) ? (initialField?.nestedFieldDefinitions || initialField?.config?.nested_fields) : [])
   const [editingNestedFieldIndex, setEditingNestedFieldIndex] = useState(null)
 
   // Recursive popup state
@@ -48,6 +48,13 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
   useEffect(() => {
     if (initialField) {
       console.log('CCC FieldPopup: Initial field data received', initialField)
+      console.log('CCC FieldPopup: Field config:', initialField.config)
+      
+      // Ensure we have valid field data
+      if (!initialField.label || !initialField.name || !initialField.type) {
+        console.error('CCC FieldPopup: Invalid field data - missing required properties', initialField)
+        return
+      }
       
       setLabel(initialField.label || "")
       setName(initialField.name || "")
@@ -58,10 +65,13 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       // Handle field options
       if (initialField.config?.options) {
         const options = Object.entries(initialField.config.options).map(([value, label]) => ({ value, label }))
-        setFieldOptions(options)
+        console.log('CCC FieldPopup: Processed field options:', options)
+        setFieldOptions(Array.isArray(options) ? options : [])
       } else if (initialField.fieldOptions) {
-        setFieldOptions(initialField.fieldOptions)
+        console.log('CCC FieldPopup: Using fieldOptions:', initialField.fieldOptions)
+        setFieldOptions(Array.isArray(initialField.fieldOptions) ? initialField.fieldOptions : [])
       } else {
+        console.log('CCC FieldPopup: No field options found')
         setFieldOptions([])
       }
       
@@ -69,10 +79,14 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       let nestedFields = []
       if (initialField.type === 'repeater') {
         nestedFields = initialField.config?.nested_fields || initialField.nestedFieldDefinitions || []
+        console.log('CCC FieldPopup: Found nested fields for repeater:', nestedFields)
       }
-      setNestedFieldDefinitions(nestedFields)
+      // Ensure nestedFields is always an array
+      setNestedFieldDefinitions(Array.isArray(nestedFields) ? nestedFields : [])
       
       console.log('CCC FieldPopup: Loaded nested field definitions', nestedFields)
+    } else {
+      console.log('CCC FieldPopup: No initial field data provided')
     }
   }, [initialField])
 
