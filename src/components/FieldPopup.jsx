@@ -142,7 +142,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
   const handleSaveRecursive = (nestedField) => {
     console.log('CCC FieldPopup: Saving recursive field', { nestedField, recursivePopupIndex })
     
-    // Process the nested field to ensure proper structure
+    // Process the nested field to ensure proper structure for unlimited nesting
     const processedField = {
       label: nestedField.label,
       name: nestedField.name,
@@ -151,10 +151,13 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
     
     // Add config based on field type
     if (nestedField.type === 'repeater') {
+      // For repeater fields, always store nested fields in config.nested_fields
+      // This ensures consistency across all nesting levels
       processedField.config = {
         max_sets: nestedField.maxSets ? parseInt(nestedField.maxSets) : 0,
         nested_fields: nestedField.nestedFieldDefinitions || []
       }
+      console.log('CCC FieldPopup: Processed repeater field with nested fields', processedField.config.nested_fields)
     } else if (nestedField.type === 'image') {
       processedField.config = {
         return_type: nestedField.imageReturnType || 'url'
@@ -221,13 +224,14 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
                   </div>
                   
                   {/* Show nested field count for repeater fields */}
-                  {nf.type === "repeater" && (nf.nestedFieldDefinitions || nf.config?.nested_fields) && (
+                  {nf.type === "repeater" && (
                     <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                       </svg>
                       <span>
-                        {(nf.nestedFieldDefinitions || nf.config?.nested_fields || []).length} nested field{(nf.nestedFieldDefinitions || nf.config?.nested_fields || []).length !== 1 ? 's' : ''}
+                        {/* Get nested field count from the correct location */}
+                        {(nf.config?.nested_fields || nf.nestedFieldDefinitions || nf.nested_fields || []).length} nested field{(nf.config?.nested_fields || nf.nestedFieldDefinitions || nf.nested_fields || []).length !== 1 ? 's' : ''}
                       </span>
                     </div>
                   )}
@@ -297,18 +301,33 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
 
     // Validate nested field definitions for repeaters
     if (type === "repeater") {
-      for (let i = 0; i < nestedFieldDefinitions.length; i++) {
-        const field = nestedFieldDefinitions[i]
-        if (!field.label || !field.name || !field.type) {
-          showMessage(`Nested field #${i + 1} is missing required information (label, name, or type)`, "error")
-          return
+      const validateNestedFieldsRecursively = (fields, level = 1) => {
+        for (let i = 0; i < fields.length; i++) {
+          const field = fields[i]
+          if (!field.label || !field.name || !field.type) {
+            showMessage(`Nested field #${i + 1} at level ${level} is missing required information (label, name, or type)`, "error")
+            return false
+          }
+          
+          // If it's a nested repeater, ensure it has nested field definitions
+          if (field.type === "repeater") {
+            const nestedFields = field.config?.nested_fields || field.nestedFieldDefinitions || []
+            if (nestedFields.length === 0) {
+              showMessage(`Nested repeater field "${field.label}" at level ${level} must have at least one nested field`, "error")
+              return false
+            }
+            
+            // Recursively validate nested fields
+            if (!validateNestedFieldsRecursively(nestedFields, level + 1)) {
+              return false
+            }
+          }
         }
-        
-        // If it's a nested repeater, ensure it has nested field definitions
-        if (field.type === "repeater" && (!field.nestedFieldDefinitions || field.nestedFieldDefinitions.length === 0)) {
-          showMessage(`Nested repeater field "${field.label}" must have at least one nested field`, "error")
-          return
-        }
+        return true
+      }
+      
+      if (!validateNestedFieldsRecursively(nestedFieldDefinitions)) {
+        return
       }
     }
 
@@ -344,29 +363,56 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       if (type === "repeater") {
         formData.append("max_sets", maxSets ? Number.parseInt(maxSets) : 0)
         
-        // Process nested field definitions to ensure proper structure
-        const processedNestedFields = nestedFieldDefinitions.map(field => {
-          const processedField = {
-            label: field.label,
-            name: field.name,
-            type: field.type
-          }
-          
-          // Add config if it exists
-          if (field.config) {
-            processedField.config = field.config
-          }
-          
-          // For repeater fields, ensure nested field definitions are included
-          if (field.type === 'repeater' && field.nestedFieldDefinitions) {
-            if (!processedField.config) {
-              processedField.config = {}
+        // Process nested field definitions recursively for unlimited nesting levels
+        const processNestedFieldsRecursively = (fields) => {
+          return fields.map(field => {
+            const processedField = {
+              label: field.label,
+              name: field.name,
+              type: field.type
             }
-            processedField.config.nested_fields = field.nestedFieldDefinitions
-          }
-          
-          return processedField
-        })
+            
+            // Handle different field types
+            if (field.type === 'repeater') {
+              // For repeater fields, always use config.nested_fields structure
+              // This ensures consistency across all nesting levels
+              processedField.config = {
+                max_sets: field.config?.max_sets || field.maxSets || 0,
+                nested_fields: field.config?.nested_fields || field.nestedFieldDefinitions || []
+              }
+              
+              // Recursively process nested fields if they exist
+              if (processedField.config.nested_fields && processedField.config.nested_fields.length > 0) {
+                processedField.config.nested_fields = processNestedFieldsRecursively(processedField.config.nested_fields)
+              }
+              
+              console.log('CCC FieldPopup: Processed nested repeater field', field.label, processedField.config)
+            } else if (field.type === 'image') {
+              processedField.config = {
+                return_type: field.config?.return_type || field.imageReturnType || 'url'
+              }
+            } else if (['select', 'checkbox', 'radio'].includes(field.type)) {
+              // Handle options for select/checkbox/radio fields
+              let optionsObject = {}
+              if (field.config?.options) {
+                optionsObject = field.config.options
+              } else if (field.fieldOptions) {
+                field.fieldOptions.forEach((option) => {
+                  if (option.label && option.value) {
+                    optionsObject[option.value] = option.label
+                  }
+                })
+              }
+              processedField.config = {
+                options: optionsObject
+              }
+            }
+            
+            return processedField
+          })
+        }
+        
+        const processedNestedFields = processNestedFieldsRecursively(nestedFieldDefinitions)
         
         console.log('CCC FieldPopup: Sending nested field definitions', processedNestedFields)
         formData.append("nested_field_definitions", JSON.stringify(processedNestedFields))
