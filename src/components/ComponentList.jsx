@@ -1117,16 +1117,13 @@ const ComponentList = () => {
                 fields: updatedFields
               }))
               
-              // Save to database
-              const success = await handleUpdateComponentFields(selectedComponentForTree.id, updatedFields)
-              if (!success) {
-                console.error('CCC ComponentList: Failed to save field update to database')
-                // Don't call fetchComponents() here as it causes the screen to go blank
-                // Instead, show an error message and let the user try again
-              }
+              // Note: We don't need to call handleUpdateComponentFields here because
+              // the individual field has already been updated in the backend through
+              // the ccc_update_field_from_hierarchy endpoint in FieldVisualTreeModal
+              console.log('CCC ComponentList: Field updated successfully in component state')
+              
             } catch (error) {
               console.error('CCC ComponentList: Error in onFieldUpdate:', error)
-              // Don't call fetchComponents() here as it causes the screen to go blank
             }
           }}
         />
