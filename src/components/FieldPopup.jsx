@@ -24,6 +24,38 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
 
   const availableFieldTypes = ["text", "textarea", "image", "repeater", "wysiwyg", "color", "select", "checkbox", "radio"]
 
+  // Effect to handle initial field data changes
+  useEffect(() => {
+    if (initialField) {
+      console.log('CCC FieldPopup: Initial field data received', initialField)
+      
+      setLabel(initialField.label || "")
+      setName(initialField.name || "")
+      setType(initialField.type || "text")
+      setMaxSets(initialField.maxSets || initialField.config?.max_sets || "")
+      setImageReturnType(initialField.returnType || initialField.config?.return_type || "url")
+      
+      // Handle field options
+      if (initialField.config?.options) {
+        const options = Object.entries(initialField.config.options).map(([value, label]) => ({ value, label }))
+        setFieldOptions(options)
+      } else if (initialField.fieldOptions) {
+        setFieldOptions(initialField.fieldOptions)
+      } else {
+        setFieldOptions([])
+      }
+      
+      // Handle nested field definitions
+      let nestedFields = []
+      if (initialField.type === 'repeater') {
+        nestedFields = initialField.config?.nested_fields || initialField.nestedFieldDefinitions || []
+      }
+      setNestedFieldDefinitions(nestedFields)
+      
+      console.log('CCC FieldPopup: Loaded nested field definitions', nestedFields)
+    }
+  }, [initialField])
+
   const generateHandle = (inputLabel) => {
     return inputLabel
       .toLowerCase()
@@ -65,6 +97,16 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
     let initialFieldData = null
     if (index !== null && nestedFieldDefinitions[index]) {
       const field = nestedFieldDefinitions[index]
+      console.log('CCC FieldPopup: Field to edit', field)
+      
+      // Extract nested field definitions properly
+      let nestedFields = []
+      if (field.type === 'repeater') {
+        // For repeater fields, get nested fields from config.nested_fields
+        nestedFields = field.config?.nested_fields || field.nestedFieldDefinitions || []
+        console.log('CCC FieldPopup: Found nested fields in repeater', nestedFields)
+      }
+      
       initialFieldData = {
         label: field.label,
         name: field.name,
@@ -72,9 +114,10 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
         maxSets: field.config?.max_sets || field.maxSets || "",
         imageReturnType: field.config?.return_type || field.imageReturnType || "url",
         fieldOptions: field.config?.options ? Object.entries(field.config.options).map(([value, label]) => ({ value, label })) : field.fieldOptions || [],
-        nestedFieldDefinitions: field.config?.nested_fields || field.nestedFieldDefinitions || []
+        nestedFieldDefinitions: nestedFields
       }
       console.log('CCC FieldPopup: Initial field data for edit', initialFieldData)
+      console.log('CCC FieldPopup: Extracted nested fields', nestedFields)
     }
     
     setRecursivePopupIndex(index)
