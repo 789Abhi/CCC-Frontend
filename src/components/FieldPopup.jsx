@@ -8,7 +8,6 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
   const [name, setName] = useState(initialField?.name || "")
   const [type, setType] = useState(initialField?.type || "text")
   const [maxSets, setMaxSets] = useState(initialField?.maxSets || initialField?.config?.max_sets || "")
-  const [allowedFields, setAllowedFields] = useState(initialField?.allowedFields || ["text", "textarea", "image"])
   const [imageReturnType, setImageReturnType] = useState(initialField?.returnType || initialField?.config?.return_type || "url")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
@@ -24,16 +23,6 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
   const [recursivePopupIndex, setRecursivePopupIndex] = useState(null)
 
   const availableFieldTypes = ["text", "textarea", "image", "repeater", "wysiwyg", "color", "select", "checkbox", "radio"]
-
-  // Effect to handle state updates when type changes
-  useEffect(() => {
-    if (type === "repeater") {
-      // If switching to repeater and no allowed fields are set, set defaults
-      if (allowedFields.length === 0) {
-        setAllowedFields(["text", "textarea", "image"])
-      }
-    }
-  }, [type, allowedFields.length])
 
   const generateHandle = (inputLabel) => {
     return inputLabel
@@ -51,14 +40,6 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
     }, 5000)
   }
 
-  const handleAllowedFieldChange = (fieldType, checked) => {
-    if (checked) {
-      setAllowedFields([...allowedFields, fieldType])
-    } else {
-      setAllowedFields(allowedFields.filter((f) => f !== fieldType))
-    }
-  }
-
   const handleAddOption = () => {
     setFieldOptions((prev) => [...prev, { label: "", value: "" }])
   }
@@ -69,19 +50,6 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
 
   const handleDeleteOption = (index) => {
     setFieldOptions((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  const handleAddNestedField = (newField) => {
-    setNestedFieldDefinitions((prev) => [...prev, newField])
-    setShowNestedFieldModal(false)
-    setCurrentNestedField(null)
-  }
-
-  const handleUpdateNestedField = (updatedField) => {
-    setNestedFieldDefinitions((prev) => prev.map((f, i) => (i === editingNestedFieldIndex ? updatedField : f)))
-    setEditingNestedFieldIndex(null)
-    setShowNestedFieldModal(false)
-    setCurrentNestedField(null)
   }
 
   const handleDeleteNestedField = (indexToDelete) => {
@@ -102,7 +70,6 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
         name: field.name,
         type: field.type,
         maxSets: field.config?.max_sets || field.maxSets || "",
-        allowedFields: field.allowedFields || ["text", "textarea", "image"],
         imageReturnType: field.config?.return_type || field.imageReturnType || "url",
         fieldOptions: field.config?.options ? Object.entries(field.config.options).map(([value, label]) => ({ value, label })) : field.fieldOptions || [],
         nestedFieldDefinitions: field.config?.nested_fields || field.nestedFieldDefinitions || []
@@ -166,39 +133,84 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
     setRecursivePopupInitialField(null)
   }
 
-  // Render nested fields list (with recursive popup for repeaters)
+  // Render nested fields list with better visual hierarchy
   const renderNestedFields = () => (
-    <div className="space-y-2">
-      {nestedFieldDefinitions.map((nf, i) => (
-        <div key={i} className="flex items-center gap-2 border p-2 rounded">
-          <div className="flex-1">
-            <span className="font-medium">{nf.label}</span>
-            <span className="text-gray-500 ml-2">({nf.type})</span>
-            {nf.type === "repeater" && (nf.nestedFieldDefinitions || nf.config?.nested_fields) && (
-              <div className="text-xs text-gray-400 mt-1">
-                {(nf.nestedFieldDefinitions || nf.config?.nested_fields || []).length} nested field{(nf.nestedFieldDefinitions || nf.config?.nested_fields || []).length !== 1 ? 's' : ''}
-              </div>
-            )}
-          </div>
-          <button 
-            className="text-blue-600 hover:text-blue-800 underline text-sm" 
-            onClick={() => openRecursivePopup(i)}
-          >
-            Edit
-          </button>
-          <button 
-            className="text-red-600 hover:text-red-800 underline text-sm" 
-            onClick={() => handleDeleteNestedField(i)}
-          >
-            Delete
-          </button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-medium text-gray-700">Nested Fields</h4>
+        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+          {nestedFieldDefinitions.length} field{nestedFieldDefinitions.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      
+      {nestedFieldDefinitions.length === 0 ? (
+        <div className="text-center py-6 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+          <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          <p className="text-sm">No nested fields defined yet</p>
+          <p className="text-xs mt-1">Add fields that will appear within each repeater item</p>
         </div>
-      ))}
+      ) : (
+        <div className="space-y-2">
+          {nestedFieldDefinitions.map((nf, i) => (
+            <div key={i} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-800">{nf.label}</span>
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full capitalize">
+                      {nf.type}
+                    </span>
+                  </div>
+                  
+                  {/* Show nested field count for repeater fields */}
+                  {nf.type === "repeater" && (nf.nestedFieldDefinitions || nf.config?.nested_fields) && (
+                    <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      <span>
+                        {(nf.nestedFieldDefinitions || nf.config?.nested_fields || []).length} nested field{(nf.nestedFieldDefinitions || nf.config?.nested_fields || []).length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <code className="text-xs text-gray-500 mt-1 block">{nf.name}</code>
+                </div>
+                
+                <div className="flex gap-1">
+                  <button 
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors" 
+                    onClick={() => openRecursivePopup(i)}
+                    title="Edit field"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button 
+                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors" 
+                    onClick={() => handleDeleteNestedField(i)}
+                    title="Delete field"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      
       <button 
-        className="mt-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200 flex items-center gap-2" 
+        className="w-full mt-4 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg font-medium" 
         onClick={() => openRecursivePopup()}
+        disabled={isSubmitting}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
         </svg>
         Add Nested Field
@@ -214,11 +226,6 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
 
     if (!name) {
       showMessage("Please enter a field name", "error")
-      return
-    }
-
-    if (type === "repeater" && allowedFields.length === 0) {
-      showMessage("Please select at least one allowed field type for the repeater", "error")
       return
     }
 
@@ -256,7 +263,6 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
         name,
         type,
         maxSets,
-        allowedFields,
         imageReturnType,
         fieldOptions,
         nestedFieldDefinitions
@@ -526,46 +532,23 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
             {type === "repeater" && renderNestedFields()}
 
             {type === "repeater" && (
-              <>
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Maximum Sets (leave empty for unlimited)
-                  </label>
-                  <input
-                    type="number"
-                    value={maxSets}
-                    onChange={(e) => setMaxSets(e.target.value)}
-                    placeholder="Unlimited (leave blank for no limit)"
-                    min="0"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
-                    disabled={isSubmitting}
-                  />
-                  <p className="text-xs text-gray-500">
-                    Limit how many items can be added to this repeater field.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Allowed Field Types</label>
-                  <div className="space-y-3">
-                    {availableFieldTypes.map((fieldType) => (
-                      <label key={fieldType} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={allowedFields.includes(fieldType)}
-                          onChange={(e) => handleAllowedFieldChange(fieldType, e.target.checked)}
-                          className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 disabled:opacity-50"
-                          disabled={isSubmitting}
-                        />
-                        <span className="ml-2 text-sm capitalize text-gray-700">{fieldType}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Select which field types can be added inside this repeater field.
-                  </p>
-                </div>
-              </>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Maximum Items (optional)
+                </label>
+                <input
+                  type="number"
+                  value={maxSets}
+                  onChange={(e) => setMaxSets(e.target.value)}
+                  placeholder="Leave empty for unlimited"
+                  min="0"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+                  disabled={isSubmitting}
+                />
+                <p className="text-xs text-gray-500">
+                  Limit how many items can be added to this repeater field. Leave empty for unlimited.
+                </p>
+              </div>
             )}
           </div>
 
