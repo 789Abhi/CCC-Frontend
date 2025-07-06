@@ -196,52 +196,62 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
   const renderNestedFields = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium text-gray-700">Nested Fields</h4>
-        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <h4 className="text-sm font-semibold text-gray-700">Nested Fields</h4>
+        </div>
+        <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-medium">
           {nestedFieldDefinitions.length} field{nestedFieldDefinitions.length !== 1 ? 's' : ''}
         </span>
       </div>
       
       {nestedFieldDefinitions.length === 0 ? (
-        <div className="text-center py-6 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
-          <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          <p className="text-sm">No nested fields defined yet</p>
-          <p className="text-xs mt-1">Add fields that will appear within each repeater item</p>
+        <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium">No nested fields defined yet</p>
+          <p className="text-xs mt-1 text-gray-400">Add fields that will appear within each repeater item</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {nestedFieldDefinitions.map((nf, i) => (
-            <div key={i} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+            <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 group">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-800">{nf.label}</span>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full capitalize">
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-gray-800">{nf.label}</span>
+                    <span className="text-xs bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 px-2 py-1 rounded-full capitalize font-medium">
                       {nf.type}
                     </span>
                   </div>
                   
                   {/* Show nested field count for repeater fields */}
                   {nf.type === "repeater" && (
-                    <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
-                      <span>
-                        {/* Get nested field count from the correct location */}
+                    <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                      <div className="w-4 h-4 bg-gray-200 rounded-full flex items-center justify-center">
+                        <svg className="w-2 h-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                      </div>
+                      <span className="font-medium">
                         {(nf.config?.nested_fields || nf.nestedFieldDefinitions || nf.nested_fields || []).length} nested field{(nf.config?.nested_fields || nf.nestedFieldDefinitions || nf.nested_fields || []).length !== 1 ? 's' : ''}
                       </span>
                     </div>
                   )}
                   
-                  <code className="text-xs text-gray-500 mt-1 block">{nf.name}</code>
+                  <code className="text-xs text-gray-500 mt-2 block bg-gray-50 px-2 py-1 rounded font-mono">{nf.name}</code>
                 </div>
                 
-                <div className="flex gap-1">
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <button 
-                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors" 
+                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-105" 
                     onClick={() => openRecursivePopup(i)}
                     title="Edit field"
                   >
@@ -250,7 +260,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
                     </svg>
                   </button>
                   <button 
-                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors" 
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-105" 
                     onClick={() => handleDeleteNestedField(i)}
                     title="Delete field"
                   >
@@ -266,11 +276,11 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       )}
       
       <button 
-        className="w-full mt-4 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg font-medium" 
+        className="w-full mt-4 px-4 py-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl font-medium group" 
         onClick={() => openRecursivePopup()}
         disabled={isSubmitting}
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
         </svg>
         Add Nested Field
@@ -447,23 +457,41 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 max-h-[90vh] overflow-y-auto">
-        <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 rounded-t-2xl text-white">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold">{onSave ? "Add Nested Field" : "Add New Field"}</h3>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 max-h-[90vh] overflow-y-auto border border-gray-100">
+        {/* Enhanced Header with better design */}
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-6 rounded-t-2xl text-white relative overflow-hidden">
+          {/* Background pattern for visual appeal */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -mr-16 -mt-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full -ml-12 -mb-12"></div>
+          </div>
+          
+          <div className="flex justify-between items-center relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">
+                  {onSave ? (initialField ? "Edit Nested Field" : "Add Nested Field") : "Add New Field"}
+                </h3>
+                {onSave && initialField && (
+                  <p className="text-sm text-white/80 mt-1">
+                    Editing: {initialField.label || "Nested Field"}
+                  </p>
+                )}
+              </div>
+            </div>
             <button
               onClick={onClose}
-              className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/20 transition-all duration-200"
+              className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/20 transition-all duration-200 group"
               disabled={isSubmitting}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
+              <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
@@ -472,19 +500,34 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
         <div className="p-6 space-y-6">
           {(error || message) && (
             <div
-              className={`mb-4 p-3 rounded-lg border-l-4 ${
+              className={`mb-4 p-4 rounded-xl border-l-4 shadow-sm ${
                 error || messageType === "error"
                   ? "bg-red-50 border-red-400 text-red-800"
                   : "bg-green-50 border-green-400 text-green-800"
               }`}
             >
-              <p className="font-medium">{error || message}</p>
+              <div className="flex items-center gap-2">
+                {error || messageType === "error" ? (
+                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                <p className="font-medium">{error || message}</p>
+              </div>
             </div>
           )}
 
-          <div className="space-y-5">
+          <div className="space-y-6">
+            {/* Enhanced form fields with better styling */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Display Label *</label>
+              <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                Display Label *
+              </label>
               <input
                 type="text"
                 value={label}
@@ -496,30 +539,41 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
                     setName(generateHandle(value))
                   }
                 }}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-50 shadow-sm"
                 disabled={isSubmitting}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Handle *</label>
+              <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                Handle *
+              </label>
               <input
                 type="text"
                 value={name}
                 placeholder="Enter handle (e.g., title)"
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-50 shadow-sm"
                 disabled={isSubmitting}
               />
-              <p className="text-xs text-gray-500">This will be used in code. Must be unique.</p>
+              <p className="text-xs text-gray-500 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                This will be used in code. Must be unique.
+              </p>
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Field Type</label>
+              <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+                Field Type
+              </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-50 shadow-sm"
                 disabled={isSubmitting}
               >
                 <option value="text">Text</option>
@@ -654,10 +708,10 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
             )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-5 bg-gray-50 p-6 rounded-b-2xl">
+          <div className="flex justify-end gap-3 pt-5 bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-b-2xl border-t border-gray-200">
             <button
               onClick={onClose}
-              className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all duration-200 font-medium disabled:bg-gray-200 disabled:cursor-not-allowed"
+              className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl hover:bg-white hover:border-gray-300 transition-all duration-200 font-medium disabled:bg-gray-200 disabled:cursor-not-allowed shadow-sm"
               disabled={isSubmitting}
             >
               Cancel
@@ -665,9 +719,40 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className={`bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed`}
+              className={`bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium disabled:from-gray-400 disabled:via-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed flex items-center gap-2`}
             >
-              {isSubmitting ? "Saving..." : (onSave ? "Add Field" : "Save")}
+              {isSubmitting ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </>
+              ) : onSave ? (
+                initialField ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Update Field
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Field
+                  </>
+                )
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Save
+                </>
+              )}
             </button>
           </div>
         </div>
