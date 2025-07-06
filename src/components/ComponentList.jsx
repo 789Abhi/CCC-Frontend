@@ -530,18 +530,7 @@ const ComponentList = () => {
                 </span>
               )}
             </div>
-            {field.type === "repeater" && field.config?.nested_fields?.length > 0 && (
-              <button
-                onClick={() => {
-                  setSelectedComponentForTree(component)
-                  setShowTreeModal(true)
-                }}
-                className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                title="View field structure"
-              >
-                <GitBranch className="w-4 h-4" />
-              </button>
-            )}
+      
             <img
               onClick={() => onEdit(component, field)}
               src={editIcon || "/placeholder.svg"}
