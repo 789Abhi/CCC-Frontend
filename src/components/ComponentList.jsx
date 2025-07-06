@@ -279,7 +279,6 @@ const ComponentList = () => {
 
       if (response.data.success) {
         showMessage("Component fields updated successfully.", "success")
-        fetchComponents() // Refresh the components list
         return true
       } else {
         showMessage(response.data.message || "Failed to update component fields.", "error")
@@ -1076,49 +1075,58 @@ const ComponentList = () => {
             setSelectedComponentForTree(null)
           }}
           onFieldUpdate={async (path, updatedField) => {
-            // Update the field in the component
-            const updateFieldInComponent = (fields, path, updatedField) => {
-              const [currentIndex, ...remainingPath] = path
+            try {
+              console.log('CCC ComponentList: Updating field at path:', path, 'with data:', updatedField)
               
-              if (remainingPath.length === 0) {
-                return fields.map((f, i) => (i === currentIndex ? updatedField : f))
-              } else {
-                return fields.map((f, i) => {
-                  if (i === currentIndex && f.type === "repeater" && f.config?.nested_fields) {
-                    return {
-                      ...f,
-                      config: {
-                        ...f.config,
-                        nested_fields: updateFieldInComponent(f.config.nested_fields, remainingPath, updatedField)
+              // Update the field in the component
+              const updateFieldInComponent = (fields, path, updatedField) => {
+                const [currentIndex, ...remainingPath] = path
+                
+                if (remainingPath.length === 0) {
+                  return fields.map((f, i) => (i === currentIndex ? updatedField : f))
+                } else {
+                  return fields.map((f, i) => {
+                    if (i === currentIndex && f.type === "repeater" && f.config?.nested_fields) {
+                      return {
+                        ...f,
+                        config: {
+                          ...f.config,
+                          nested_fields: updateFieldInComponent(f.config.nested_fields, remainingPath, updatedField)
+                        }
                       }
                     }
-                  }
-                  return f
-                })
+                    return f
+                  })
+                }
               }
-            }
-            
-            // Get the updated fields
-            const updatedFields = updateFieldInComponent(selectedComponentForTree.fields, path, updatedField)
-            
-            // Update the component in the list
-            setComponents(prev => prev.map(comp => 
-              comp.id === selectedComponentForTree.id 
-                ? { ...comp, fields: updatedFields }
-                : comp
-            ))
-            
-            // Update the selected component
-            setSelectedComponentForTree(prev => ({
-              ...prev,
-              fields: updatedFields
-            }))
-            
-            // Save to database
-            const success = await handleUpdateComponentFields(selectedComponentForTree.id, updatedFields)
-            if (!success) {
-              // Revert changes if save failed
-              fetchComponents()
+              
+              // Get the updated fields
+              const updatedFields = updateFieldInComponent(selectedComponentForTree.fields, path, updatedField)
+              console.log('CCC ComponentList: Updated fields:', updatedFields)
+              
+              // Update the component in the list
+              setComponents(prev => prev.map(comp => 
+                comp.id === selectedComponentForTree.id 
+                  ? { ...comp, fields: updatedFields }
+                  : comp
+              ))
+              
+              // Update the selected component
+              setSelectedComponentForTree(prev => ({
+                ...prev,
+                fields: updatedFields
+              }))
+              
+              // Save to database
+              const success = await handleUpdateComponentFields(selectedComponentForTree.id, updatedFields)
+              if (!success) {
+                console.error('CCC ComponentList: Failed to save field update to database')
+                // Don't call fetchComponents() here as it causes the screen to go blank
+                // Instead, show an error message and let the user try again
+              }
+            } catch (error) {
+              console.error('CCC ComponentList: Error in onFieldUpdate:', error)
+              // Don't call fetchComponents() here as it causes the screen to go blank
             }
           }}
         />

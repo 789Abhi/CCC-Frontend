@@ -81,77 +81,126 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
   const handleFieldUpdate = (updatedField) => {
     console.log('CCC FieldVisualTreeModal: Field update received:', updatedField)
     
-    // Process the updated field to ensure proper structure
-    const processUpdatedField = (field) => {
-      const processedField = {
-        label: field.label,
-        name: field.name,
-        type: field.type
+    try {
+      // Process the updated field to ensure proper structure
+      const processUpdatedField = (field) => {
+        const processedField = {
+          label: field.label,
+          name: field.name,
+          type: field.type
+        }
+        
+        // Add config based on field type
+        if (field.type === 'repeater') {
+          processedField.config = {
+            max_sets: field.maxSets ? parseInt(field.maxSets) : 0,
+            nested_fields: field.nestedFieldDefinitions || []
+          }
+        } else if (field.type === 'image') {
+          processedField.config = {
+            return_type: field.imageReturnType || 'url'
+          }
+        } else if (['select', 'checkbox', 'radio'].includes(field.type)) {
+          // Convert options array to object format
+          const optionsObject = {}
+          if (field.fieldOptions) {
+            field.fieldOptions.forEach((option) => {
+              if (option.label && option.value) {
+                optionsObject[option.value] = option.label
+              }
+            })
+          }
+          processedField.config = {
+            options: optionsObject
+          }
+        }
+        
+        return processedField
       }
       
-      // Add config based on field type
-      if (field.type === 'repeater') {
-        processedField.config = {
-          max_sets: field.maxSets ? parseInt(field.maxSets) : 0,
-          nested_fields: field.nestedFieldDefinitions || []
-        }
-      } else if (field.type === 'image') {
-        processedField.config = {
-          return_type: field.imageReturnType || 'url'
-        }
-      } else if (['select', 'checkbox', 'radio'].includes(field.type)) {
-        // Convert options array to object format
-        const optionsObject = {}
-        if (field.fieldOptions) {
-          field.fieldOptions.forEach((option) => {
-            if (option.label && option.value) {
-              optionsObject[option.value] = option.label
+      const processedUpdatedField = processUpdatedField(updatedField)
+      console.log('CCC FieldVisualTreeModal: Processed updated field:', processedUpdatedField)
+      
+      // Update the field in the processed fields structure
+      const updateFieldInStructure = (fields, path, updatedField) => {
+        const [currentIndex, ...remainingPath] = path
+        
+        if (remainingPath.length === 0) {
+          // Update at current level - preserve tree-specific properties
+          return fields.map((f, i) => {
+            if (i === currentIndex) {
+              // Preserve tree-specific properties and update the field data
+              const updatedTreeField = {
+                ...f, // Keep tree-specific properties (treeId, level, path, children)
+                ...updatedField, // Update field data
+                // Ensure children are preserved for repeater fields
+                children: f.type === 'repeater' && updatedField.type === 'repeater' 
+                  ? (updatedField.config?.nested_fields || f.children || [])
+                  : f.children || []
+              }
+              
+              // If this is a repeater field, we need to reprocess the children
+              if (updatedTreeField.type === 'repeater' && updatedTreeField.config?.nested_fields) {
+                const processChildren = (fieldList, level, path) => {
+                  return fieldList.map((field, index) => {
+                    const currentPath = [...path, index]
+                    const processedField = {
+                      ...field,
+                      level,
+                      path: currentPath,
+                      treeId: `${field.name}-${level}-${index}`,
+                      children: []
+                    }
+
+                    // Add children for repeater fields
+                    if (field.type === "repeater" && field.config?.nested_fields) {
+                      processedField.children = processChildren(field.config.nested_fields, level + 1, currentPath)
+                    }
+
+                    return processedField
+                  })
+                }
+                
+                updatedTreeField.children = processChildren(updatedTreeField.config.nested_fields, updatedTreeField.level + 1, updatedTreeField.path)
+              }
+              
+              return updatedTreeField
             }
+            return f
           })
-        }
-        processedField.config = {
-          options: optionsObject
-        }
-      }
-      
-      return processedField
-    }
-    
-    const processedUpdatedField = processUpdatedField(updatedField)
-    console.log('CCC FieldVisualTreeModal: Processed updated field:', processedUpdatedField)
-    
-    // Update the field in the processed fields structure
-    const updateFieldInStructure = (fields, path, updatedField) => {
-      const [currentIndex, ...remainingPath] = path
-      
-      if (remainingPath.length === 0) {
-        // Update at current level
-        return fields.map((f, i) => (i === currentIndex ? { ...f, ...updatedField } : f))
-      } else {
-        // Navigate deeper
-        return fields.map((f, i) => {
-          if (i === currentIndex && f.type === "repeater" && f.config?.nested_fields) {
-            return {
-              ...f,
-              config: {
-                ...f.config,
-                nested_fields: updateFieldInStructure(f.config.nested_fields, remainingPath, updatedField)
+        } else {
+          // Navigate deeper
+          return fields.map((f, i) => {
+            if (i === currentIndex && f.type === "repeater" && f.config?.nested_fields) {
+              return {
+                ...f,
+                config: {
+                  ...f.config,
+                  nested_fields: updateFieldInStructure(f.config.nested_fields, remainingPath, updatedField)
+                }
               }
             }
-          }
-          return f
-        })
+            return f
+          })
+        }
       }
+      
+      setProcessedFields(prev => {
+        const updated = updateFieldInStructure(prev, editingPath, processedUpdatedField)
+        console.log('CCC FieldVisualTreeModal: Updated processed fields:', updated)
+        return updated
+      })
+      
+      // Call the parent update function
+      onFieldUpdate(editingPath, processedUpdatedField)
+      
+      setShowFieldPopup(false)
+      setEditingField(null)
+      setEditingPath([])
+    } catch (error) {
+      console.error('CCC FieldVisualTreeModal: Error updating field:', error)
+      // Don't close the popup on error, let the user try again
     }
-    
-    setProcessedFields(prev => updateFieldInStructure(prev, editingPath, processedUpdatedField))
-    
-    // Call the parent update function
-    onFieldUpdate(editingPath, processedUpdatedField)
-    
-    setShowFieldPopup(false)
-    setEditingField(null)
-    setEditingPath([])
   }
 
   const getFieldIcon = (type) => {
@@ -205,14 +254,20 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
   }
 
   const renderFieldNode = (field, isLast = false) => {
-    const hasChildren = field.children && field.children.length > 0
+    // Add comprehensive null checks
+    if (!field || typeof field !== 'object') {
+      console.error('CCC FieldVisualTreeModal: Invalid field data:', field)
+      return null
+    }
+    
+    const hasChildren = field.children && Array.isArray(field.children) && field.children.length > 0
     
     return (
-      <div key={field.treeId} className="relative">
+      <div key={field.treeId || `field-${Math.random()}`} className="relative">
         {/* Field Box */}
-        <div className={`relative group ${field.level > 0 ? 'ml-12' : ''}`}>
+        <div className={`relative group ${(field.level || 0) > 0 ? 'ml-12' : ''}`}>
           {/* Connecting Line */}
-          {field.level > 0 && (
+          {(field.level || 0) > 0 && (
             <div className="absolute left-0 top-1/2 w-8 h-0.5 bg-gradient-to-r from-gray-400 to-gray-300 transform -translate-y-1/2 rounded-full shadow-sm"></div>
           )}
           
@@ -222,23 +277,23 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
           )}
           
           {/* Field Card */}
-          <div className={`relative border-2 rounded-xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 ${getFieldColor(field.type)} backdrop-blur-sm`}>
+          <div className={`relative border-2 rounded-xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 ${getFieldColor(field.type || 'text')} backdrop-blur-sm`}>
             <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl pointer-events-none"></div>
             
             <div className="relative z-10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-white/30 rounded-xl flex items-center justify-center shadow-inner">
-                    <span className="text-2xl">{getFieldIcon(field.type)}</span>
+                    <span className="text-2xl">{getFieldIcon(field.type || 'text')}</span>
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-900 text-lg mb-1">{field.label}</h4>
+                    <h4 className="font-bold text-gray-900 text-lg mb-1">{field.label || 'Unnamed Field'}</h4>
                     <div className="flex items-center gap-2">
                       <code className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-mono font-semibold shadow-sm">
-                        {field.name}
+                        {field.name || 'unnamed'}
                       </code>
                       <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-semibold capitalize shadow-sm">
-                        {field.type}
+                        {field.type || 'text'}
                       </span>
                     </div>
                   </div>
@@ -261,7 +316,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
                       <GitBranch className="w-4 h-4" />
                     </div>
                     <span className="text-gray-800">
-                      Contains {field.children?.length || 0} nested field{field.children?.length !== 1 ? 's' : ''}
+                      Contains {(field.children && Array.isArray(field.children) ? field.children.length : 0)} nested field{(field.children && Array.isArray(field.children) && field.children.length !== 1) ? 's' : ''}
                     </span>
                   </div>
                 </div>
@@ -280,7 +335,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
             
             <div className="space-y-6">
               {field.children.map((child, index) => (
-                <div key={child.treeId} className="relative">
+                <div key={child.treeId || `child-${index}-${Math.random()}`} className="relative">
                   {renderFieldNode(child, index === field.children.length - 1)}
                 </div>
               ))}
@@ -343,11 +398,17 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
               
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 border border-gray-200 shadow-lg">
                 <div className="space-y-8">
-                  {processedFields.map((field, index) => (
-                    <div key={field.treeId}>
-                      {renderFieldNode(field, index === processedFields.length - 1)}
-                    </div>
-                  ))}
+                  {Array.isArray(processedFields) && processedFields.map((field, index) => {
+                    if (!field || typeof field !== 'object') {
+                      console.error('CCC FieldVisualTreeModal: Invalid field in processedFields:', field)
+                      return null
+                    }
+                    return (
+                      <div key={field.treeId || `processed-field-${index}-${Math.random()}`}>
+                        {renderFieldNode(field, index === processedFields.length - 1)}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>
