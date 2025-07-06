@@ -551,7 +551,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 max-h-[90vh] overflow-y-auto border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl transform transition-all duration-300 max-h-[90vh] overflow-y-auto border border-gray-100">
         {/* Enhanced Header with better design */}
         <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-6 rounded-t-2xl text-white relative overflow-hidden">
           {/* Background pattern for visual appeal */}

@@ -424,8 +424,6 @@ const ComponentList = () => {
           // Revert the change if the backend update failed
           setComponents(components)
           showMessage("Failed to update field order. Please try again.", "error")
-        } else {
-          showMessage("Field order updated successfully.", "success")
         }
       } catch (error) {
         // Revert the change if the request failed

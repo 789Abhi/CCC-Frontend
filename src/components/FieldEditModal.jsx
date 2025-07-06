@@ -177,7 +177,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
     }
   }
 
-  // Sortable Nested Field Component
+  // Sortable Nested Field Component with external field design
   const SortableNestedField = ({ field, index, onEdit, onDelete, isSubmitting }) => {
     const {
       attributes,
@@ -198,43 +198,58 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
       <div
         ref={setNodeRef}
         style={style}
-        className={`flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 ${
+        className={`border border-bgPrimary rounded-custom transition-all duration-200 ${
           isDragging ? 'shadow-2xl scale-105 z-50' : ''
         }`}
       >
-        <div className="flex items-center gap-2">
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors"
-          >
-            <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+        <div className="flex items-center justify-between p-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center">
+              <div
+                {...attributes}
+                {...listeners}
+                className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors mr-2"
+              >
+                <GripVertical className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-800 text-lg">{field.label}</span>
+                <span className="text-gray-400">•</span>
+                <div className="relative">
+                  <code className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono">
+                    {field.name}
+                  </code>
+                </div>
+              </div>
+            </div>
           </div>
-          <span className="font-medium text-gray-800">{field.label}</span>
-          <span className="text-gray-500 mx-1">—</span>
-          <code className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">
-            {field.name}
-          </code>
-          <span className="ml-2 text-sm text-gray-600 capitalize">({field.type})</span>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onEdit}
-            className="p-1 rounded-md text-yellow-600 hover:bg-yellow-50 transition-colors"
-            disabled={isSubmitting}
-          >
-            <Edit className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            className="p-1 rounded-md text-red-600 hover:bg-red-50 transition-colors"
-            disabled={isSubmitting}
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mt-1">
+              <span className="bg-blue-100 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
+                {field.type}
+              </span>
+              {field.type === "repeater" && (field.config?.nested_fields || field.nestedFieldDefinitions || field.nested_fields || []).length > 0 && (
+                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                  {(field.config?.nested_fields || field.nestedFieldDefinitions || field.nested_fields || []).length} nested field
+                  {(field.config?.nested_fields || field.nestedFieldDefinitions || field.nested_fields || []).length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={onEdit}
+              className="p-1 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
+              disabled={isSubmitting}
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="p-1 rounded-md text-red-600 hover:bg-red-50 transition-colors"
+              disabled={isSubmitting}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -402,7 +417,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-gray-200">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-200">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-gray-50 rounded-t-xl">
           <h3 className="text-xl font-semibold text-gray-800">{isEditing ? "Edit Field" : "Add New Field"}</h3>
