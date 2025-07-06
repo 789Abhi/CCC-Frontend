@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 import { Plus, X, GripVertical, Edit } from "lucide-react"
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
+import FieldPopup from "./FieldPopup"
 
 function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
   // Add debugging
@@ -19,7 +20,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
   const [maxSets, setMaxSets] = useState("")
   const [nestedFieldDefinitions, setNestedFieldDefinitions] = useState([])
   const [editingNestedFieldIndex, setEditingNestedFieldIndex] = useState(null)
-  const [showNestedFieldModal, setShowNestedFieldModal] = useState(false)
   const [currentNestedField, setCurrentNestedField] = useState(null)
   const [fieldOptions, setFieldOptions] = useState([])
   const [wysiwygSettings, setWysiwygSettings] = useState({
@@ -27,6 +27,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
     teeny: false,
     textarea_rows: 10,
   })
+
+  // FieldPopup state for nested fields
+  const [showFieldPopup, setShowFieldPopup] = useState(false)
 
   const isEditing = !!field
 
@@ -108,14 +111,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
 
   const handleAddNestedField = (newField) => {
     setNestedFieldDefinitions((prev) => [...prev, newField])
-    setShowNestedFieldModal(false)
+    setShowFieldPopup(false)
     setCurrentNestedField(null)
   }
 
   const handleUpdateNestedField = (updatedField) => {
     setNestedFieldDefinitions((prev) => prev.map((f, i) => (i === editingNestedFieldIndex ? updatedField : f)))
     setEditingNestedFieldIndex(null)
-    setShowNestedFieldModal(false)
+    setShowFieldPopup(false)
     setCurrentNestedField(null)
   }
 
@@ -529,7 +532,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                         onClick={() => {
                           setCurrentNestedField(null)
                           setEditingNestedFieldIndex(null)
-                          setShowNestedFieldModal(true)
+                          setShowFieldPopup(true)
                         }}
                         className="text-indigo-600 hover:underline text-sm mt-2"
                         disabled={isSubmitting}
@@ -568,7 +571,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                                         onClick={() => {
                                           setCurrentNestedField(nf)
                                           setEditingNestedFieldIndex(index)
-                                          setShowNestedFieldModal(true)
+                                          setShowFieldPopup(true)
                                         }}
                                         className="p-1 rounded-md text-yellow-600 hover:bg-yellow-50 transition-colors"
                                         disabled={isSubmitting}
@@ -600,7 +603,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                     onClick={() => {
                       setCurrentNestedField(null)
                       setEditingNestedFieldIndex(null)
-                      setShowNestedFieldModal(true)
+                      setShowFieldPopup(true)
                     }}
                     className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
                     disabled={isSubmitting}
@@ -636,274 +639,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
         </div>
       </div>
 
-      {showNestedFieldModal && (
-        <NestedFieldModal
-          isOpen={showNestedFieldModal}
+      {showFieldPopup && (
+        <FieldPopup
+          isOpen={showFieldPopup}
           field={currentNestedField}
-          onClose={() => setShowNestedFieldModal(false)}
+          onClose={() => setShowFieldPopup(false)}
           onSave={editingNestedFieldIndex !== null ? handleUpdateNestedField : handleAddNestedField}
           availableFieldTypes={availableFieldTypes}
         />
       )}
-    </div>
-  )
-}
-
-function NestedFieldModal({ isOpen, field, onClose, onSave, availableFieldTypes }) {
-  const [label, setLabel] = useState("")
-  const [name, setName] = useState("")
-  const [type, setType] = useState("text")
-  const [error, setError] = useState("")
-  const [fieldOptions, setFieldOptions] = useState([])
-
-  const isEditing = !!field
-
-  useEffect(() => {
-    if (field) {
-      setLabel(field.label || "")
-      setName(field.name || "")
-      setType(field.type || "text")
-
-      // Load options for select, checkbox, radio fields
-      if (["select", "checkbox", "radio"].includes(field.type) && field.config) {
-        const config = typeof field.config === "string" ? JSON.parse(field.config) : field.config
-        setFieldOptions(
-          config.options ? Object.entries(config.options).map(([value, label]) => ({ value, label })) : [],
-        )
-      } else {
-        setFieldOptions([])
-      }
-    } else {
-      setLabel("")
-      setName("")
-      setType("text")
-      setFieldOptions([])
-    }
-    setError("")
-  }, [field])
-
-  const generateHandle = (inputLabel) => {
-    return inputLabel
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^\w_]+/g, "")
-  }
-
-  const handleAddOption = () => {
-    setFieldOptions((prev) => [...prev, { label: "", value: "" }])
-  }
-
-  const handleUpdateOption = (index, field, value) => {
-    setFieldOptions((prev) => prev.map((option, i) => (i === index ? { ...option, [field]: value } : option)))
-  }
-
-  const handleDeleteOption = (index) => {
-    setFieldOptions((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-
-    if (!label.trim()) {
-      setError("Label is required.")
-      return
-    }
-
-    if (!name.trim()) {
-      setError("Name is required.")
-      return
-    }
-
-    if (["select", "checkbox", "radio"].includes(type) && fieldOptions.length === 0) {
-      setError("Please add at least one option for this field type.")
-      return
-    }
-
-    const newFieldData = { label: label.trim(), name: name.trim(), type }
-
-    if (type === "image") {
-      newFieldData.config = { return_type: "url" }
-    } else if (["select", "checkbox", "radio"].includes(type)) {
-      const optionsObject = {}
-      fieldOptions.forEach((option) => {
-        if (option.label && option.value) {
-          optionsObject[option.value] = option.label
-        }
-      })
-      newFieldData.config = { options: optionsObject }
-    }
-
-    onSave(newFieldData)
-    onClose()
-  }
-
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-gray-200">
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-gray-50 rounded-t-xl">
-          <h3 className="text-xl font-semibold text-gray-800">
-            {isEditing ? "Edit Nested Field" : "Add Nested Field"}
-          </h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 px-4 py-2 rounded-lg bg-red-50 text-red-800 border border-red-200 flex items-center gap-2">
-              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Label */}
-            <div className="space-y-2">
-              <label htmlFor="nestedLabel" className="block text-sm font-medium text-gray-700">
-                Label <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="nestedLabel"
-                type="text"
-                value={label}
-                onChange={(e) => {
-                  const value = e.target.value
-                  setLabel(value)
-                  if (!isEditing && (!name || name === generateHandle(label))) {
-                    setName(generateHandle(value))
-                  }
-                }}
-                placeholder="e.g., Item Title"
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              />
-            </div>
-
-            {/* Name */}
-            <div className="space-y-2">
-              <label htmlFor="nestedName" className="block text-sm font-medium text-gray-700">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="nestedName"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., item_title"
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              />
-              <p className="text-xs text-gray-500">Used in code. Must be unique within this repeater.</p>
-            </div>
-
-            {/* Type */}
-            <div className="space-y-2">
-              <label htmlFor="nestedType" className="block text-sm font-medium text-gray-700">
-                Type
-              </label>
-              <select
-                id="nestedType"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              >
-                {availableFieldTypes.map((ft) => (
-                  <option key={ft} value={ft}>
-                    {ft.charAt(0).toUpperCase() + ft.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Options Configuration for Select, Checkbox, Radio */}
-            {["select", "checkbox", "radio"].includes(type) && (
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
-                <h4 className="text-sm font-medium text-gray-700">Field Options</h4>
-                <p className="text-xs text-gray-600">Define the options available for this {type} field.</p>
-
-                {fieldOptions.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-lg">
-                    <p>No options defined yet.</p>
-                    <button
-                      type="button"
-                      onClick={handleAddOption}
-                      className="text-indigo-600 hover:underline text-sm mt-2"
-                    >
-                      Add your first option
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {fieldOptions.map((option, index) => (
-                      <div key={index} className="flex gap-2 items-center">
-                        <input
-                          type="text"
-                          value={option.label}
-                          onChange={(e) => handleUpdateOption(index, "label", e.target.value)}
-                          placeholder="Option Label"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                        />
-                        <input
-                          type="text"
-                          value={option.value}
-                          onChange={(e) => handleUpdateOption(index, "value", e.target.value)}
-                          placeholder="Option Value"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteOption(index)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleAddOption}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
-                >
-                  <Plus className="w-5 h-5" />
-                  Add Option
-                </button>
-              </div>
-            )}
-
-            {/* Form Actions */}
-            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
-              >
-                {isEditing ? "Update Field" : "Add Field"}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
     </div>
   )
 }

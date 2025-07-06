@@ -346,7 +346,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
             <h3 className="text-xl font-bold">{onSave ? "Add Nested Field" : "Add New Field"}</h3>
             <button
               onClick={onClose}
-              className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
+              className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/20 transition-all duration-200"
               disabled={isSubmitting}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
