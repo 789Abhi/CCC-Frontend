@@ -99,12 +99,25 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       const field = nestedFieldDefinitions[index]
       console.log('CCC FieldPopup: Field to edit', field)
       
-      // Extract nested field definitions properly
+      // Extract nested field definitions properly - handle both data structures
       let nestedFields = []
       if (field.type === 'repeater') {
-        // For repeater fields, get nested fields from config.nested_fields
-        nestedFields = field.config?.nested_fields || field.nestedFieldDefinitions || []
+        // Check multiple possible locations for nested fields
+        nestedFields = field.config?.nested_fields || 
+                      field.nestedFieldDefinitions || 
+                      field.nested_fields || 
+                      []
         console.log('CCC FieldPopup: Found nested fields in repeater', nestedFields)
+      }
+      
+      // Extract field options properly
+      let fieldOpts = []
+      if (['select', 'checkbox', 'radio'].includes(field.type)) {
+        if (field.config?.options) {
+          fieldOpts = Object.entries(field.config.options).map(([value, label]) => ({ value, label }))
+        } else if (field.fieldOptions) {
+          fieldOpts = field.fieldOptions
+        }
       }
       
       initialFieldData = {
@@ -113,7 +126,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
         type: field.type,
         maxSets: field.config?.max_sets || field.maxSets || "",
         imageReturnType: field.config?.return_type || field.imageReturnType || "url",
-        fieldOptions: field.config?.options ? Object.entries(field.config.options).map(([value, label]) => ({ value, label })) : field.fieldOptions || [],
+        fieldOptions: fieldOpts,
         nestedFieldDefinitions: nestedFields
       }
       console.log('CCC FieldPopup: Initial field data for edit', initialFieldData)
