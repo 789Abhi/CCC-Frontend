@@ -267,6 +267,31 @@ const ComponentList = () => {
     }
   }
 
+  const handleUpdateComponentFields = async (componentId, updatedFields) => {
+    try {
+      const formData = new FormData()
+      formData.append("action", "ccc_update_component_fields")
+      formData.append("component_id", componentId)
+      formData.append("fields", JSON.stringify(updatedFields))
+      formData.append("nonce", window.cccData.nonce)
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData)
+
+      if (response.data.success) {
+        showMessage("Component fields updated successfully.", "success")
+        fetchComponents() // Refresh the components list
+        return true
+      } else {
+        showMessage(response.data.message || "Failed to update component fields.", "error")
+        return false
+      }
+    } catch (error) {
+      console.error("Error updating component fields:", error)
+      showMessage("Error connecting to server. Please try again.", "error")
+      return false
+    }
+  }
+
   const handleSaveAssignments = async () => {
     try {
       const assignments = {}
@@ -1052,7 +1077,7 @@ const ComponentList = () => {
             setShowTreeModal(false)
             setSelectedComponentForTree(null)
           }}
-          onFieldUpdate={(path, updatedField) => {
+          onFieldUpdate={async (path, updatedField) => {
             // Update the field in the component
             const updateFieldInComponent = (fields, path, updatedField) => {
               const [currentIndex, ...remainingPath] = path
@@ -1075,18 +1100,28 @@ const ComponentList = () => {
               }
             }
             
+            // Get the updated fields
+            const updatedFields = updateFieldInComponent(selectedComponentForTree.fields, path, updatedField)
+            
             // Update the component in the list
             setComponents(prev => prev.map(comp => 
               comp.id === selectedComponentForTree.id 
-                ? { ...comp, fields: updateFieldInComponent(comp.fields, path, updatedField) }
+                ? { ...comp, fields: updatedFields }
                 : comp
             ))
             
             // Update the selected component
             setSelectedComponentForTree(prev => ({
               ...prev,
-              fields: updateFieldInComponent(prev.fields, path, updatedField)
+              fields: updatedFields
             }))
+            
+            // Save to database
+            const success = await handleUpdateComponentFields(selectedComponentForTree.id, updatedFields)
+            if (!success) {
+              // Revert changes if save failed
+              fetchComponents()
+            }
           }}
         />
       )}

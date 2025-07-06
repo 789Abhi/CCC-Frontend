@@ -106,25 +106,25 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
   const getFieldColor = (type) => {
     switch (type) {
       case "text":
-        return "bg-blue-50 border-blue-200 text-blue-800"
+        return "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300 shadow-blue-100"
       case "textarea":
-        return "bg-green-50 border-green-200 text-green-800"
+        return "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-300 shadow-emerald-100"
       case "image":
-        return "bg-purple-50 border-purple-200 text-purple-800"
+        return "bg-gradient-to-br from-purple-50 to-purple-100 border-purple-300 shadow-purple-100"
       case "repeater":
-        return "bg-orange-50 border-orange-200 text-orange-800"
+        return "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-300 shadow-orange-100"
       case "wysiwyg":
-        return "bg-indigo-50 border-indigo-200 text-indigo-800"
+        return "bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-300 shadow-indigo-100"
       case "color":
-        return "bg-pink-50 border-pink-200 text-pink-800"
+        return "bg-gradient-to-br from-pink-50 to-pink-100 border-pink-300 shadow-pink-100"
       case "select":
-        return "bg-teal-50 border-teal-200 text-teal-800"
+        return "bg-gradient-to-br from-teal-50 to-teal-100 border-teal-300 shadow-teal-100"
       case "checkbox":
-        return "bg-yellow-50 border-yellow-200 text-yellow-800"
+        return "bg-gradient-to-br from-amber-50 to-amber-100 border-amber-300 shadow-amber-100"
       case "radio":
-        return "bg-red-50 border-red-200 text-red-800"
+        return "bg-gradient-to-br from-red-50 to-red-100 border-red-300 shadow-red-100"
       default:
-        return "bg-gray-50 border-gray-200 text-gray-800"
+        return "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-300 shadow-gray-100"
     }
   }
 
@@ -134,61 +134,75 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
     return (
       <div key={field.id} className="relative">
         {/* Field Box */}
-        <div className={`relative group ${field.level > 0 ? 'ml-8' : ''}`}>
+        <div className={`relative group ${field.level > 0 ? 'ml-12' : ''}`}>
           {/* Connecting Line */}
           {field.level > 0 && (
-            <div className="absolute left-0 top-1/2 w-6 h-px bg-gray-300 transform -translate-y-1/2"></div>
+            <div className="absolute left-0 top-1/2 w-8 h-0.5 bg-gradient-to-r from-gray-400 to-gray-300 transform -translate-y-1/2 rounded-full shadow-sm"></div>
           )}
           
           {/* Vertical Line for Children */}
           {hasChildren && (
-            <div className="absolute left-6 top-full w-px h-4 bg-gray-300"></div>
+            <div className="absolute left-8 top-full w-0.5 h-6 bg-gradient-to-b from-gray-400 to-gray-300 rounded-full shadow-sm"></div>
           )}
           
           {/* Field Card */}
-          <div className={`relative border-2 rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200 ${getFieldColor(field.type)}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{getFieldIcon(field.type)}</span>
-                <div>
-                  <h4 className="font-semibold text-gray-900">{field.label}</h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <code className="bg-white/50 px-2 py-1 rounded text-xs font-mono">{field.name}</code>
-                    <span className="bg-white/50 px-2 py-1 rounded text-xs capitalize">{field.type}</span>
+          <div className={`relative border-2 rounded-xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${getFieldColor(field.type)} backdrop-blur-sm`}>
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl pointer-events-none"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/30 rounded-xl flex items-center justify-center shadow-inner">
+                    <span className="text-2xl">{getFieldIcon(field.type)}</span>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-lg mb-1">{field.label}</h4>
+                    <div className="flex items-center gap-2">
+                      <code className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-mono font-semibold shadow-sm">
+                        {field.name}
+                      </code>
+                      <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-semibold capitalize shadow-sm">
+                        {field.type}
+                      </span>
+                    </div>
                   </div>
                 </div>
+                
+                <button
+                  onClick={() => handleEditField(field)}
+                  className="opacity-0 group-hover:opacity-100 p-3 text-gray-700 hover:text-blue-600 hover:bg-white/60 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-110"
+                  title="Edit field"
+                >
+                  <Edit className="w-5 h-5" />
+                </button>
               </div>
               
-              <button
-                onClick={() => handleEditField(field)}
-                className="opacity-0 group-hover:opacity-100 p-2 text-gray-600 hover:text-blue-600 hover:bg-white/50 rounded-lg transition-all duration-200"
-                title="Edit field"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-            </div>
-            
-            {/* Repeater Indicator */}
-            {field.type === "repeater" && (
-              <div className="mt-3 pt-3 border-t border-current/20">
-                <div className="flex items-center gap-2 text-sm">
-                  <GitBranch className="w-4 h-4" />
-                  <span>Contains {field.children?.length || 0} nested fields</span>
+              {/* Repeater Indicator */}
+              {field.type === "repeater" && (
+                <div className="mt-4 pt-4 border-t border-white/30">
+                  <div className="flex items-center gap-3 text-sm font-medium">
+                    <div className="w-8 h-8 bg-white/40 rounded-lg flex items-center justify-center">
+                      <GitBranch className="w-4 h-4" />
+                    </div>
+                    <span className="text-gray-800">
+                      Contains {field.children?.length || 0} nested field{field.children?.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
         
         {/* Children */}
         {hasChildren && (
-          <div className="mt-4 relative">
+          <div className="mt-6 relative">
             {/* Horizontal Line for Multiple Children */}
             {field.children.length > 1 && (
-              <div className="absolute left-6 top-0 w-px h-4 bg-gray-300"></div>
+              <div className="absolute left-8 top-0 w-0.5 h-6 bg-gradient-to-b from-gray-400 to-gray-300 rounded-full shadow-sm"></div>
             )}
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               {field.children.map((child, index) => (
                 <div key={child.id} className="relative">
                   {renderFieldNode(child, index === field.children.length - 1)}
@@ -235,19 +249,24 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
         </div>
 
         {/* Visual Tree Content */}
-        <div className="p-6 h-[calc(90vh-120px)] overflow-y-auto">
+        <div className="p-8 h-[calc(90vh-120px)] overflow-y-auto">
           {processedFields.length > 0 ? (
-            <div className="space-y-6">
-              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg p-4 border border-emerald-200">
-                <h4 className="text-sm font-medium text-emerald-800 mb-2">Field Hierarchy</h4>
-                <p className="text-xs text-emerald-700">
+            <div className="space-y-8">
+              <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 rounded-2xl p-6 border border-emerald-200 shadow-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <GitBranch className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <h4 className="text-lg font-bold text-emerald-800">Field Hierarchy</h4>
+                </div>
+                <p className="text-sm text-emerald-700 leading-relaxed">
                   Hover over any field card and click the edit icon to modify it directly. 
-                  The visual structure shows the relationship between fields.
+                  The visual structure shows the relationship between fields with professional styling.
                 </p>
               </div>
               
-              <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                <div className="space-y-6">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 border border-gray-200 shadow-lg">
+                <div className="space-y-8">
                   {processedFields.map((field, index) => (
                     <div key={field.id}>
                       {renderFieldNode(field, index === processedFields.length - 1)}
