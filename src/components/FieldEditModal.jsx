@@ -64,7 +64,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
 
           if (field.type === "repeater") {
             setMaxSets(config.max_sets || "")
-            setNestedFieldDefinitions(config.nested_fields || [])
+            const nestedFields = config.nested_fields || []
+            console.log("Loading nested field definitions:", nestedFields)
+            setNestedFieldDefinitions(nestedFields)
           } else if (["select", "checkbox", "radio"].includes(field.type)) {
             const options = config.options || {}
             setFieldOptions(Object.entries(options).map(([value, label]) => ({ value, label })))
@@ -77,6 +79,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
           }
         } catch (e) {
           console.error("Error parsing field config:", e)
+        }
+      } else {
+        console.log("No field config found")
+        if (field.type === "repeater") {
+          setNestedFieldDefinitions([])
         }
       }
     } else {
@@ -110,12 +117,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
   }
 
   const handleAddNestedField = (newField) => {
+    console.log("FieldEditModal: Adding new nested field:", newField)
     setNestedFieldDefinitions((prev) => [...prev, newField])
     setShowFieldPopup(false)
     setCurrentNestedField(null)
   }
 
   const handleUpdateNestedField = (updatedField) => {
+    console.log("FieldEditModal: Updating nested field at index:", editingNestedFieldIndex, "with data:", updatedField)
     setNestedFieldDefinitions((prev) => prev.map((f, i) => (i === editingNestedFieldIndex ? updatedField : f)))
     setEditingNestedFieldIndex(null)
     setShowFieldPopup(false)
@@ -569,6 +578,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                                       <button
                                         type="button"
                                         onClick={() => {
+                                          console.log("FieldEditModal: Opening edit popup for nested field:", nf, "at index:", index)
                                           setCurrentNestedField(nf)
                                           setEditingNestedFieldIndex(index)
                                           setShowFieldPopup(true)
@@ -642,7 +652,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
       {showFieldPopup && (
         <FieldPopup
           isOpen={showFieldPopup}
-          field={currentNestedField}
+          initialField={currentNestedField}
           onClose={() => setShowFieldPopup(false)}
           onSave={editingNestedFieldIndex !== null ? handleUpdateNestedField : handleAddNestedField}
           availableFieldTypes={availableFieldTypes}
