@@ -49,43 +49,45 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
     }
   }, [fields])
 
-  // Helper: Find the path to a field by ID (returns array of IDs)
-  const getPathById = (fields, targetId, path = []) => {
+  // Helper: Find the path to a field by ID or name (returns array of keys)
+  const getPathByKey = (fields, targetField, path = []) => {
     for (let i = 0; i < fields.length; i++) {
       const field = fields[i]
-      if (field.id === targetId) return [...path, field.id]
+      const key = field.id || field.name
+      const targetKey = targetField.id || targetField.name
+      if (key === targetKey) return [...path, key]
       if (field.type === 'repeater' && field.config?.nested_fields) {
-        const childPath = getPathById(field.config.nested_fields, targetId, [...path, field.id])
+        const childPath = getPathByKey(field.config.nested_fields, targetField, [...path, key])
         if (childPath) return childPath
       }
     }
     return null
   }
 
-  // Helper: Find a field by ID path
-  const findFieldByIdPath = (fields, idPath) => {
-    if (!Array.isArray(idPath) || idPath.length === 0) return null
-    const [currentId, ...rest] = idPath
-    const field = fields.find(f => f.id === currentId)
+  // Helper: Find a field by key path (id or name)
+  const findFieldByKeyPath = (fields, keyPath) => {
+    if (!Array.isArray(keyPath) || keyPath.length === 0) return null
+    const [currentKey, ...rest] = keyPath
+    const field = fields.find(f => (f.id || f.name) === currentKey)
     if (!field) return null
     if (rest.length === 0) return field
     if (field.type === 'repeater' && field.config?.nested_fields) {
-      return findFieldByIdPath(field.config.nested_fields, rest)
+      return findFieldByKeyPath(field.config.nested_fields, rest)
     }
     return null
   }
 
-  // Update handleEditField to use ID path
+  // Update handleEditField to use key path
   const handleEditField = (field) => {
-    // Find the ID path to this field
-    const idPath = getPathById(fields, field.id)
-    if (!idPath) {
-      console.error('Could not find ID path for field:', field)
+    // Find the key path to this field
+    const keyPath = getPathByKey(fields, field)
+    if (!keyPath) {
+      console.error('Could not find key path for field:', field)
       return
     }
-    const originalField = findFieldByIdPath(fields, idPath)
+    const originalField = findFieldByKeyPath(fields, keyPath)
     if (!originalField) {
-      console.error('Could not find original field data for ID path:', idPath, fields)
+      console.error('Could not find original field data for key path:', keyPath, fields)
     }
     // Ensure the field data is properly formatted for FieldPopup
     const formattedField = {
@@ -95,11 +97,11 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
         : originalField.config || {}
     }
     setEditingField(formattedField)
-    setEditingPath(idPath)
+    setEditingPath(keyPath)
     setShowFieldPopup(true)
   }
 
-  // Update handleFieldUpdate to use ID path
+  // Update handleFieldUpdate to use key path
   const handleFieldUpdate = (updatedField) => {
     console.log('CCC FieldVisualTreeModal: Field update received:', updatedField)
     try {
@@ -161,10 +163,10 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
       console.log('CCC FieldVisualTreeModal: Processed updated field:', processedUpdatedField)
       
       // Find the original field to get the field ID
-      const originalField = findFieldByIdPath(fields, editingPath)
+      const originalField = findFieldByKeyPath(fields, editingPath)
       
-      if (!originalField || !originalField.id) {
-        console.error('CCC FieldVisualTreeModal: Could not find original field or field ID', { editingPath, fields, originalField })
+      if (!originalField || !(originalField.id || originalField.name)) {
+        console.error('CCC FieldVisualTreeModal: Could not find original field or field ID/name', { editingPath, fields, originalField })
         return
       }
       
@@ -173,7 +175,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
         try {
           const formData = new FormData()
           formData.append("action", "ccc_update_field_from_hierarchy")
-          formData.append("field_id", originalField.id)
+          formData.append("field_id", originalField.id || originalField.name)
           formData.append("label", processedUpdatedField.label)
           formData.append("name", processedUpdatedField.name)
           formData.append("type", processedUpdatedField.type)
