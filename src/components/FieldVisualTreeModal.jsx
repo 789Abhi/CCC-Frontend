@@ -167,127 +167,182 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
         return
       }
       
-      // Send the update to the backend using the new endpoint
-      const updateFieldInBackend = async () => {
-        try {
-          const formData = new FormData()
-          formData.append("action", "ccc_update_field_from_hierarchy")
-          formData.append("field_id", originalField.id || originalField.name)
-          formData.append("label", processedUpdatedField.label)
-          formData.append("name", processedUpdatedField.name)
-          formData.append("type", processedUpdatedField.type)
-          formData.append("required", originalField.required || false)
-          formData.append("placeholder", originalField.placeholder || "")
-          formData.append("nonce", window.cccData.nonce)
-          
-          // Add config if it exists
-          if (processedUpdatedField.config) {
-            formData.append("config", JSON.stringify(processedUpdatedField.config))
-          }
-          
-          const response = await axios.post(window.cccData.ajaxUrl, formData)
-          
-          if (response.data.success) {
-            console.log('CCC FieldVisualTreeModal: Field updated successfully in backend')
+      // If the field has a real id, update as before
+      if (originalField.id && typeof originalField.id === 'number') {
+        // Send the update to the backend using the new endpoint
+        const updateFieldInBackend = async () => {
+          try {
+            const formData = new FormData()
+            formData.append("action", "ccc_update_field_from_hierarchy")
+            formData.append("field_id", originalField.id || originalField.name)
+            formData.append("label", processedUpdatedField.label)
+            formData.append("name", processedUpdatedField.name)
+            formData.append("type", processedUpdatedField.type)
+            formData.append("required", originalField.required || false)
+            formData.append("placeholder", originalField.placeholder || "")
+            formData.append("nonce", window.cccData.nonce)
             
-            // Update the field in the processed fields structure
-            const updateFieldInStructure = (fields, path, updatedField) => {
-              if (!Array.isArray(fields) || !Array.isArray(path) || !updatedField) {
-                console.error('CCC FieldVisualTreeModal: Invalid parameters for updateFieldInStructure:', { fields, path, updatedField })
-                return fields
-              }
-              
-              const [currentIndex, ...remainingPath] = path
-              
-              if (remainingPath.length === 0) {
-                // Update at current level - preserve tree-specific properties
-                return fields.map((f, i) => {
-                  if (i === currentIndex) {
-                    // Preserve tree-specific properties and update the field data
-                    const updatedTreeField = {
-                      ...f, // Keep tree-specific properties (treeId, level, path, children)
-                      ...updatedField, // Update field data
-                      // Ensure children are preserved for repeater fields
-                      children: f.type === 'repeater' && updatedField.type === 'repeater' 
-                        ? (Array.isArray(updatedField.config?.nested_fields) ? updatedField.config.nested_fields : f.children || [])
-                        : f.children || []
-                    }
-                    
-                    // If this is a repeater field, we need to reprocess the children
-                    if (updatedTreeField.type === 'repeater' && Array.isArray(updatedTreeField.config?.nested_fields)) {
-                      const processChildren = (fieldList, level, path) => {
-                        if (!Array.isArray(fieldList)) return []
-                        
-                        return fieldList.map((field, index) => {
-                          if (!field || typeof field !== 'object') {
-                            console.error('CCC FieldVisualTreeModal: Invalid field in processChildren:', field)
-                            return null
-                          }
-                          
-                          const currentPath = [...path, index]
-                          const processedField = {
-                            ...field,
-                            level,
-                            path: currentPath,
-                            treeId: `${field.name || 'field'}-${level}-${index}`,
-                            children: []
-                          }
-
-                          // Add children for repeater fields
-                          if (field.type === "repeater" && field.config?.nested_fields && Array.isArray(field.config.nested_fields)) {
-                            processedField.children = processChildren(field.config.nested_fields, level + 1, currentPath).filter(Boolean)
-                          }
-
-                          return processedField
-                        }).filter(Boolean)
-                      }
-                      
-                      updatedTreeField.children = processChildren(updatedTreeField.config.nested_fields, updatedTreeField.level + 1, updatedTreeField.path)
-                    }
-                    
-                    return updatedTreeField
-                  }
-                  return f
-                })
-              } else {
-                // Navigate deeper
-                return fields.map((f, i) => {
-                  if (i === currentIndex && f.type === "repeater" && f.config?.nested_fields && Array.isArray(f.config.nested_fields)) {
-                    return {
-                      ...f,
-                      config: {
-                        ...f.config,
-                        nested_fields: updateFieldInStructure(f.config.nested_fields, remainingPath, updatedField)
-                      }
-                    }
-                  }
-                  return f
-                })
-              }
+            // Add config if it exists
+            if (processedUpdatedField.config) {
+              formData.append("config", JSON.stringify(processedUpdatedField.config))
             }
             
-            setProcessedFields(prev => {
-              const updated = updateFieldInStructure(prev, editingPath, processedUpdatedField)
-              console.log('CCC FieldVisualTreeModal: Updated processed fields:', updated)
-              return updated
-            })
+            const response = await axios.post(window.cccData.ajaxUrl, formData)
             
-            // Call the parent update function to update the component state
-            onFieldUpdate(editingPath, processedUpdatedField)
-            
-            setShowFieldPopup(false)
-            setEditingField(null)
-            setEditingPath([])
-          } else {
-            console.error('CCC FieldVisualTreeModal: Failed to update field in backend:', response.data.message)
+            if (response.data.success) {
+              console.log('CCC FieldVisualTreeModal: Field updated successfully in backend')
+              
+              // Update the field in the processed fields structure
+              const updateFieldInStructure = (fields, path, updatedField) => {
+                if (!Array.isArray(fields) || !Array.isArray(path) || !updatedField) {
+                  console.error('CCC FieldVisualTreeModal: Invalid parameters for updateFieldInStructure:', { fields, path, updatedField })
+                  return fields
+                }
+                
+                const [currentIndex, ...remainingPath] = path
+                
+                if (remainingPath.length === 0) {
+                  // Update at current level - preserve tree-specific properties
+                  return fields.map((f, i) => {
+                    if (i === currentIndex) {
+                      // Preserve tree-specific properties and update the field data
+                      const updatedTreeField = {
+                        ...f, // Keep tree-specific properties (treeId, level, path, children)
+                        ...updatedField, // Update field data
+                        // Ensure children are preserved for repeater fields
+                        children: f.type === 'repeater' && updatedField.type === 'repeater' 
+                          ? (Array.isArray(updatedField.config?.nested_fields) ? updatedField.config.nested_fields : f.children || [])
+                          : f.children || []
+                      }
+                      
+                      // If this is a repeater field, we need to reprocess the children
+                      if (updatedTreeField.type === 'repeater' && Array.isArray(updatedTreeField.config?.nested_fields)) {
+                        const processChildren = (fieldList, level, path) => {
+                          if (!Array.isArray(fieldList)) return []
+                          
+                          return fieldList.map((field, index) => {
+                            if (!field || typeof field !== 'object') {
+                              console.error('CCC FieldVisualTreeModal: Invalid field in processChildren:', field)
+                              return null
+                            }
+                            
+                            const currentPath = [...path, index]
+                            const processedField = {
+                              ...field,
+                              level,
+                              path: currentPath,
+                              treeId: `${field.name || 'field'}-${level}-${index}`,
+                              children: []
+                            }
+
+                            // Add children for repeater fields
+                            if (field.type === "repeater" && field.config?.nested_fields && Array.isArray(field.config.nested_fields)) {
+                              processedField.children = processChildren(field.config.nested_fields, level + 1, currentPath).filter(Boolean)
+                            }
+
+                            return processedField
+                          }).filter(Boolean)
+                        }
+                        
+                        updatedTreeField.children = processChildren(updatedTreeField.config.nested_fields, updatedTreeField.level + 1, updatedTreeField.path)
+                      }
+                      
+                      return updatedTreeField
+                    }
+                    return f
+                  })
+                } else {
+                  // Navigate deeper
+                  return fields.map((f, i) => {
+                    if (i === currentIndex && f.type === "repeater" && f.config?.nested_fields && Array.isArray(f.config.nested_fields)) {
+                      return {
+                        ...f,
+                        config: {
+                          ...f.config,
+                          nested_fields: updateFieldInStructure(f.config.nested_fields, remainingPath, updatedField)
+                        }
+                      }
+                    }
+                    return f
+                  })
+                }
+              }
+              
+              setProcessedFields(prev => {
+                const updated = updateFieldInStructure(prev, editingPath, processedUpdatedField)
+                console.log('CCC FieldVisualTreeModal: Updated processed fields:', updated)
+                return updated
+              })
+              
+              // Call the parent update function to update the component state
+              onFieldUpdate(editingPath, processedUpdatedField)
+              
+              setShowFieldPopup(false)
+              setEditingField(null)
+              setEditingPath([])
+            } else {
+              console.error('CCC FieldVisualTreeModal: Failed to update field in backend:', response.data.message)
+            }
+          } catch (error) {
+            console.error('CCC FieldVisualTreeModal: Error updating field in backend:', error)
           }
-        } catch (error) {
-          console.error('CCC FieldVisualTreeModal: Error updating field in backend:', error)
         }
+        
+        updateFieldInBackend()
+      } else {
+        // Nested field: update parent repeater's nested_fields and send the whole repeater to backend
+        // Find parent path (all but last key)
+        const parentPath = editingPath.slice(0, -1)
+        const parentRepeater = findFieldByKeyPath(fields, parentPath)
+        if (!parentRepeater || parentRepeater.type !== 'repeater') {
+          console.error('CCC FieldVisualTreeModal: Could not find parent repeater for nested field update', { parentPath, parentRepeater })
+          return
+        }
+        // Update the nested_fields array in the parent repeater
+        const nestedKey = editingPath[editingPath.length - 1]
+        const updatedNestedFields = (parentRepeater.config.nested_fields || []).map(nf => {
+          const key = nf.id || nf.name
+          if (key === nestedKey) {
+            return { ...nf, ...updatedField }
+          }
+          return nf
+        })
+        // Prepare updated parent repeater
+        const updatedRepeater = {
+          ...parentRepeater,
+          config: {
+            ...parentRepeater.config,
+            nested_fields: updatedNestedFields
+          }
+        }
+        // Send the updated repeater to the backend using the repeater update endpoint
+        const updateRepeaterInBackend = async () => {
+          try {
+            const formData = new FormData()
+            formData.append("action", "ccc_update_field_from_hierarchy")
+            formData.append("field_id", parentRepeater.id || parentRepeater.name)
+            formData.append("label", updatedRepeater.label)
+            formData.append("name", updatedRepeater.name)
+            formData.append("type", updatedRepeater.type)
+            formData.append("required", updatedRepeater.required || false)
+            formData.append("placeholder", updatedRepeater.placeholder || "")
+            formData.append("nonce", window.cccData.nonce)
+            formData.append("config", JSON.stringify(updatedRepeater.config))
+            const response = await axios.post(window.cccData.ajaxUrl, formData)
+            if (response.data.success) {
+              console.log('CCC FieldVisualTreeModal: Parent repeater updated successfully in backend')
+              setShowFieldPopup(false)
+              setEditingField(null)
+              setEditingPath([])
+            } else {
+              console.error('CCC FieldVisualTreeModal: Failed to update parent repeater in backend:', response.data.message)
+            }
+          } catch (error) {
+            console.error('CCC FieldVisualTreeModal: Error updating parent repeater in backend:', error)
+          }
+        }
+        updateRepeaterInBackend()
       }
-      
-      updateFieldInBackend()
-      
     } catch (error) {
       console.error('CCC FieldVisualTreeModal: Error updating field:', error)
       // Don't close the popup on error, let the user try again
