@@ -5,7 +5,7 @@ import { X, Edit, GitBranch, GitCommit, ArrowRight } from "lucide-react"
 import FieldPopup from "./FieldPopup"
 import axios from "axios"
 
-function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
+function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldUpdateSuccess }) {
   const [processedFields, setProcessedFields] = useState([])
   const [showFieldPopup, setShowFieldPopup] = useState(false)
   const [editingField, setEditingField] = useState(null)
@@ -280,11 +280,14 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
               setShowFieldPopup(false)
               setEditingField(null)
               setEditingPath([])
+              if (typeof onFieldUpdateSuccess === 'function') onFieldUpdateSuccess()
             } else {
               console.error('CCC FieldVisualTreeModal: Failed to update field in backend:', response.data.message)
+              alert('Failed to update field: ' + (response.data.message || 'Unknown error'))
             }
           } catch (error) {
             console.error('CCC FieldVisualTreeModal: Error updating field in backend:', error)
+            alert('Error updating field: ' + error.message)
           }
         }
         
@@ -296,6 +299,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
         const parentRepeater = findFieldByKeyPath(fields, parentPath)
         if (!parentRepeater || parentRepeater.type !== 'repeater') {
           console.error('CCC FieldVisualTreeModal: Could not find parent repeater for nested field update', { parentPath, parentRepeater })
+          alert('Could not find parent repeater for nested field update.')
           return
         }
         // Update the nested_fields array in the parent repeater
@@ -315,6 +319,8 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
             nested_fields: updatedNestedFields
           }
         }
+        // Log the payload for debugging
+        console.log('CCC FieldVisualTreeModal: Sending updated repeater to backend:', updatedRepeater)
         // Send the updated repeater to the backend using the repeater update endpoint
         const updateRepeaterInBackend = async () => {
           try {
@@ -334,11 +340,14 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
               setShowFieldPopup(false)
               setEditingField(null)
               setEditingPath([])
+              if (typeof onFieldUpdateSuccess === 'function') onFieldUpdateSuccess()
             } else {
               console.error('CCC FieldVisualTreeModal: Failed to update parent repeater in backend:', response.data.message)
+              alert('Failed to update nested field: ' + (response.data.message || 'Unknown error'))
             }
           } catch (error) {
             console.error('CCC FieldVisualTreeModal: Error updating parent repeater in backend:', error)
+            alert('Error updating nested field: ' + error.message)
           }
         }
         updateRepeaterInBackend()
