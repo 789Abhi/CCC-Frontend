@@ -381,6 +381,9 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
     }
     
     const hasChildren = safeField.children.length > 0
+    if (safeField.type === 'repeater') {
+      console.log('CCC FieldVisualTreeModal: Rendering repeater field', safeField.name, 'with children:', safeField.children)
+    }
     
     return (
       <div key={safeField.treeId} className="relative">
@@ -430,15 +433,18 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
               
               {/* Repeater Indicator */}
               {safeField.type === "repeater" && (
-                <div className="mt-4 pt-4 border-t border-white/30">
-                  <div className="flex items-center gap-3 text-sm font-medium">
-                    <div className="w-8 h-8 bg-white/40 rounded-lg flex items-center justify-center">
-                      <GitBranch className="w-4 h-4" />
-                    </div>
-                    <span className="text-gray-800">
-                      Contains {safeField.children.length} nested field{safeField.children.length !== 1 ? 's' : ''}
-                    </span>
+                <div className="mt-4 pt-4 border-t border-white/30 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-white/40 rounded-lg flex items-center justify-center">
+                    <GitBranch className="w-4 h-4" />
                   </div>
+                  <span className="text-gray-800">
+                    Contains {safeField.children.length} nested field{safeField.children.length !== 1 ? 's' : ''}
+                  </span>
+                  {safeField.children.length > 0 && (
+                    <span className="ml-2 px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">
+                      {safeField.children.length} nested
+                    </span>
+                  )}
                 </div>
               )}
             </div>
