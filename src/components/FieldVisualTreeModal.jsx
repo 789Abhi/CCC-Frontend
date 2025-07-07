@@ -14,33 +14,32 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
   // Process fields into visual tree structure
   useEffect(() => {
     if (fields && Array.isArray(fields) && fields.length > 0) {
-      const processFields = (fieldList, level = 0, path = []) => {
+      const processFields = (fieldList, level = 0, path = [], keyPath = []) => {
         return fieldList.map((field, index) => {
           // Validate field data
           if (!field || typeof field !== 'object') {
             console.error('CCC FieldVisualTreeModal: Invalid field data:', field)
             return null
           }
-          
           const currentPath = [...path, index]
+          const key = field.id || field.name
+          const currentKeyPath = [...keyPath, key]
           const processedField = {
             ...field,
             id: field.id || `${field.name || 'field'}-${level}-${index}`,
             level,
             path: currentPath,
+            keyPath: currentKeyPath,
             treeId: `${field.name || 'field'}-${level}-${index}`,
             children: []
           }
-
-          // Add children for repeater fields
+          // Recursively add children for repeater fields
           if (field.type === "repeater" && field.config && Array.isArray(field.config.nested_fields)) {
-            processedField.children = processFields(field.config.nested_fields, level + 1, currentPath).filter(Boolean)
+            processedField.children = processFields(field.config.nested_fields, level + 1, currentPath, currentKeyPath).filter(Boolean)
           }
-
           return processedField
         }).filter(Boolean) // Remove any null entries
       }
-
       const processed = processFields(fields)
       console.log('CCC FieldVisualTreeModal: Processed fields:', processed)
       setProcessedFields(processed)
@@ -77,17 +76,15 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
     return null
   }
 
-  // Update handleEditField to use key path
+  // Update handleEditField to use keyPath from the processed field
   const handleEditField = (field) => {
-    // Find the key path to this field
-    const keyPath = getPathByKey(fields, field)
-    if (!keyPath) {
-      console.error('Could not find key path for field:', field)
+    if (!field.keyPath) {
+      console.error('No keyPath found for field:', field)
       return
     }
-    const originalField = findFieldByKeyPath(fields, keyPath)
+    const originalField = findFieldByKeyPath(fields, field.keyPath)
     if (!originalField) {
-      console.error('Could not find original field data for key path:', keyPath, fields)
+      console.error('Could not find original field data for key path:', field.keyPath, fields)
     }
     // Ensure the field data is properly formatted for FieldPopup
     const formattedField = {
@@ -97,7 +94,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
         : originalField.config || {}
     }
     setEditingField(formattedField)
-    setEditingPath(keyPath)
+    setEditingPath(field.keyPath)
     setShowFieldPopup(true)
   }
 
