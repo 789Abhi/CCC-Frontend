@@ -167,8 +167,8 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
         return
       }
       
-      // If the field has a real id, update as before
-      if (originalField.id && typeof originalField.id === 'number') {
+      // If the field is a top-level field (editingPath.length === 1), update as before
+      if (editingPath.length === 1) {
         // Send the update to the backend using the new endpoint
         const updateFieldInBackend = async () => {
           try {
