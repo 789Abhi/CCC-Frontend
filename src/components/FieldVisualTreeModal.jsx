@@ -49,69 +49,68 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
     }
   }, [fields])
 
-  const handleEditField = (field) => {
-    // Find the original field data using the path
-    const findOriginalField = (fields, path) => {
-      if (!Array.isArray(fields) || !Array.isArray(path) || path.length === 0) {
-        console.error('findOriginalField: Invalid fields or path', { fields, path })
-        return null
+  // Helper: Find the path to a field by ID (returns array of IDs)
+  const getPathById = (fields, targetId, path = []) => {
+    for (let i = 0; i < fields.length; i++) {
+      const field = fields[i]
+      if (field.id === targetId) return [...path, field.id]
+      if (field.type === 'repeater' && field.config?.nested_fields) {
+        const childPath = getPathById(field.config.nested_fields, targetId, [...path, field.id])
+        if (childPath) return childPath
       }
-      const [currentIndex, ...remainingPath] = path
-      const currentField = fields[currentIndex]
-      if (!currentField) {
-        console.error('findOriginalField: No field at index', { currentIndex, fields, path })
-        return null
-      }
-      if (remainingPath.length === 0) {
-        return currentField
-      } else if (currentField.type === "repeater" && currentField.config?.nested_fields) {
-        return findOriginalField(currentField.config.nested_fields, remainingPath)
-      }
-      return null
     }
-    
-    const originalField = findOriginalField(fields, field.path)
-    if (!originalField) {
-      console.error('Could not find original field data for path:', field.path, fields)
-    }
-    
-    if (originalField) {
-      console.log('CCC FieldVisualTreeModal: Original field found:', originalField)
-      
-      // Ensure the field data is properly formatted for FieldPopup
-      const formattedField = {
-        ...originalField,
-        // Ensure config is an object, not a string
-        config: typeof originalField.config === 'string' 
-          ? JSON.parse(originalField.config) 
-          : originalField.config || {}
-      }
-      
-      console.log('CCC FieldVisualTreeModal: Formatted field for editing:', formattedField)
-      
-      setEditingField(formattedField)
-      setEditingPath(field.path)
-      setShowFieldPopup(true)
-    } else {
-      console.error('Could not find original field data for path:', field.path)
-    }
+    return null
   }
 
+  // Helper: Find a field by ID path
+  const findFieldByIdPath = (fields, idPath) => {
+    if (!Array.isArray(idPath) || idPath.length === 0) return null
+    const [currentId, ...rest] = idPath
+    const field = fields.find(f => f.id === currentId)
+    if (!field) return null
+    if (rest.length === 0) return field
+    if (field.type === 'repeater' && field.config?.nested_fields) {
+      return findFieldByIdPath(field.config.nested_fields, rest)
+    }
+    return null
+  }
+
+  // Update handleEditField to use ID path
+  const handleEditField = (field) => {
+    // Find the ID path to this field
+    const idPath = getPathById(fields, field.id)
+    if (!idPath) {
+      console.error('Could not find ID path for field:', field)
+      return
+    }
+    const originalField = findFieldByIdPath(fields, idPath)
+    if (!originalField) {
+      console.error('Could not find original field data for ID path:', idPath, fields)
+    }
+    // Ensure the field data is properly formatted for FieldPopup
+    const formattedField = {
+      ...originalField,
+      config: typeof originalField.config === 'string' 
+        ? JSON.parse(originalField.config) 
+        : originalField.config || {}
+    }
+    setEditingField(formattedField)
+    setEditingPath(idPath)
+    setShowFieldPopup(true)
+  }
+
+  // Update handleFieldUpdate to use ID path
   const handleFieldUpdate = (updatedField) => {
     console.log('CCC FieldVisualTreeModal: Field update received:', updatedField)
-    
     try {
-      // Validate input data
       if (!updatedField || typeof updatedField !== 'object') {
         console.error('CCC FieldVisualTreeModal: Invalid updatedField data:', updatedField)
         return
       }
-      
       if (!Array.isArray(editingPath) || editingPath.length === 0) {
         console.error('CCC FieldVisualTreeModal: Invalid editingPath:', editingPath)
         return
       }
-      
       // Process the updated field to ensure proper structure
       const processUpdatedField = (field) => {
         if (!field || typeof field !== 'object') {
@@ -162,25 +161,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
       console.log('CCC FieldVisualTreeModal: Processed updated field:', processedUpdatedField)
       
       // Find the original field to get the field ID
-      const findOriginalField = (fields, path) => {
-        if (!Array.isArray(path) || path.length === 0) return null
-        if (!Array.isArray(fields) || fields.length === 0) return null
-        
-        const [currentIndex, ...remainingPath] = path
-        const currentField = fields[currentIndex]
-        
-        if (!currentField || typeof currentField !== 'object') return null
-        
-        if (remainingPath.length === 0) {
-          return currentField
-        } else if (currentField.type === "repeater" && currentField.config?.nested_fields && Array.isArray(currentField.config.nested_fields)) {
-          return findOriginalField(currentField.config.nested_fields, remainingPath)
-        }
-        
-        return null
-      }
-      
-      const originalField = findOriginalField(fields, editingPath)
+      const originalField = findFieldByIdPath(fields, editingPath)
       
       if (!originalField || !originalField.id) {
         console.error('CCC FieldVisualTreeModal: Could not find original field or field ID', { editingPath, fields, originalField })
