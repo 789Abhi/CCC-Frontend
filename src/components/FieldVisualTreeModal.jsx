@@ -25,6 +25,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
           const currentPath = [...path, index]
           const processedField = {
             ...field,
+            id: field.id || `${field.name || 'field'}-${level}-${index}`,
             level,
             path: currentPath,
             treeId: `${field.name || 'field'}-${level}-${index}`,
@@ -32,7 +33,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
           }
 
           // Add children for repeater fields
-          if (field.type === "repeater" && field.config?.nested_fields && Array.isArray(field.config.nested_fields)) {
+          if (field.type === "repeater" && field.config && Array.isArray(field.config.nested_fields)) {
             processedField.children = processFields(field.config.nested_fields, level + 1, currentPath).filter(Boolean)
           }
 
