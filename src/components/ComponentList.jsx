@@ -1081,9 +1081,21 @@ const ComponentList = () => {
               // Update the field in the component
               const updateFieldInComponent = (fields, path, updatedField) => {
                 const [currentIndex, ...remainingPath] = path
+                if (!Array.isArray(fields) || typeof currentIndex !== 'number') return fields
                 
                 if (remainingPath.length === 0) {
-                  return fields.map((f, i) => (i === currentIndex ? updatedField : f))
+                  return fields.map((f, i) => {
+                    if (i === currentIndex) {
+                      // Merge, don't replace. Always preserve id and config.
+                      return {
+                        ...f,
+                        ...updatedField,
+                        id: f.id,
+                        config: updatedField.config || f.config || {},
+                      }
+                    }
+                    return f
+                  })
                 } else {
                   return fields.map((f, i) => {
                     if (i === currentIndex && f.type === "repeater" && f.config?.nested_fields) {

@@ -51,21 +51,28 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
   const handleEditField = (field) => {
     // Find the original field data using the path
     const findOriginalField = (fields, path) => {
-      if (path.length === 0) return null
-      
+      if (!Array.isArray(fields) || !Array.isArray(path) || path.length === 0) {
+        console.error('findOriginalField: Invalid fields or path', { fields, path })
+        return null
+      }
       const [currentIndex, ...remainingPath] = path
       const currentField = fields[currentIndex]
-      
+      if (!currentField) {
+        console.error('findOriginalField: No field at index', { currentIndex, fields, path })
+        return null
+      }
       if (remainingPath.length === 0) {
         return currentField
       } else if (currentField.type === "repeater" && currentField.config?.nested_fields) {
         return findOriginalField(currentField.config.nested_fields, remainingPath)
       }
-      
       return null
     }
     
     const originalField = findOriginalField(fields, field.path)
+    if (!originalField) {
+      console.error('Could not find original field data for path:', field.path, fields)
+    }
     
     if (originalField) {
       console.log('CCC FieldVisualTreeModal: Original field found:', originalField)
@@ -175,7 +182,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
       const originalField = findOriginalField(fields, editingPath)
       
       if (!originalField || !originalField.id) {
-        console.error('CCC FieldVisualTreeModal: Could not find original field or field ID')
+        console.error('CCC FieldVisualTreeModal: Could not find original field or field ID', { editingPath, fields, originalField })
         return
       }
       
@@ -445,11 +452,10 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
             {safeField.children.length > 1 && (
               <div className="absolute left-8 top-0 w-0.5 h-6 bg-gradient-to-b from-gray-400 to-gray-300 rounded-full shadow-sm"></div>
             )}
-            
             <div className="space-y-6">
               {safeField.children.map((child, index) => {
-                if (!child || typeof child !== 'object') {
-                  console.error('CCC FieldVisualTreeModal: Invalid child field:', child)
+                if (!child || typeof child !== 'object' || !('id' in child)) {
+                  console.error('CCC FieldVisualTreeModal: Invalid child field in children map:', child)
                   return null
                 }
                 return (
