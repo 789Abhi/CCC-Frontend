@@ -14,28 +14,31 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
   // Process fields into visual tree structure
   useEffect(() => {
     if (fields && Array.isArray(fields) && fields.length > 0) {
-      const processFields = (fieldList, level = 0, path = [], keyPath = []) => {
+      const processFields = (fieldList, level = 0, path = [], idPath = []) => {
         return fieldList.map((field, index) => {
           // Validate field data
           if (!field || typeof field !== 'object') {
             console.error('CCC FieldVisualTreeModal: Invalid field data:', field)
             return null
           }
+          if (!field.id) {
+            console.error('CCC FieldVisualTreeModal: Field missing real DB id:', field)
+            return null
+          }
           const currentPath = [...path, index]
-          const key = field.id || field.name
-          const currentKeyPath = [...keyPath, key]
+          const currentIdPath = [...idPath, field.id] // Use only real DB id
           const processedField = {
             ...field,
-            id: field.id || `${field.name || 'field'}-${level}-${index}`,
+            id: field.id, // must be a real DB id
             level,
             path: currentPath,
-            keyPath: currentKeyPath,
+            keyPath: currentIdPath, // now an array of ids
             treeId: `${field.name || 'field'}-${level}-${index}`,
             children: []
           }
           // Recursively add children for repeater fields
-          if (field.type === "repeater" && field.config && Array.isArray(field.config.nested_fields)) {
-            processedField.children = processFields(field.config.nested_fields, level + 1, currentPath, currentKeyPath).filter(Boolean)
+          if (field.type === "repeater" && Array.isArray(field.children)) {
+            processedField.children = processFields(field.children, level + 1, currentPath, currentIdPath).filter(Boolean)
           }
           return processedField
         }).filter(Boolean) // Remove any null entries
