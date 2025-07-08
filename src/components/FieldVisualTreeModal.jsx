@@ -63,28 +63,33 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
     return null
   }
 
-  // Helper: Find a field by key path (id or name)
-  const findFieldByKeyPath = (fields, keyPath) => {
-    if (!Array.isArray(keyPath) || keyPath.length === 0) return null
-    const [currentKey, ...rest] = keyPath
-    const field = fields.find(f => (f.id || f.name) === currentKey)
-    if (!field) return null
+  // Helper: Find a field by id path (array of real DB IDs)
+  const findFieldByIdPath = (fields, idPath) => {
+    if (!Array.isArray(idPath) || idPath.length === 0) return null
+    const [currentId, ...rest] = idPath
+    const field = fields.find(f => f.id === currentId)
+    if (!field) {
+      console.error('findFieldByIdPath: No field with id', currentId, 'in', fields)
+      return null
+    }
     if (rest.length === 0) return field
-    if (field.type === 'repeater' && field.config?.nested_fields) {
-      return findFieldByKeyPath(field.config.nested_fields, rest)
+    if (field.type === 'repeater' && Array.isArray(field.children)) {
+      return findFieldByIdPath(field.children, rest)
     }
     return null
   }
 
-  // Update handleEditField to use keyPath from the processed field
+  // Update handleEditField to use idPath from the processed field
   const handleEditField = (field) => {
     if (!field.keyPath) {
       console.error('No keyPath found for field:', field)
       return
     }
-    const originalField = findFieldByKeyPath(fields, field.keyPath)
+    // Convert keyPath to idPath (array of real DB IDs)
+    const idPath = field.keyPath
+    const originalField = findFieldByIdPath(fields, idPath)
     if (!originalField) {
-      console.error('Could not find original field data for key path:', field.keyPath, fields)
+      console.error('Could not find original field data for id path:', idPath, fields)
     }
     // Ensure the field data is properly formatted for FieldPopup
     const formattedField = {
@@ -94,11 +99,11 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
         : originalField.config || {}
     }
     setEditingField(formattedField)
-    setEditingPath(field.keyPath)
+    setEditingPath(idPath)
     setShowFieldPopup(true)
   }
 
-  // Update handleFieldUpdate to use key path
+  // Update handleFieldUpdate to use idPath
   const handleFieldUpdate = (updatedField) => {
     console.log('CCC FieldVisualTreeModal: Field update received:', updatedField)
     try {
@@ -110,8 +115,8 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
         console.error('CCC FieldVisualTreeModal: Invalid editingPath:', editingPath)
         return
       }
-      // Find the original field by id (using your recursive find function)
-      const originalField = findFieldByKeyPath(fields, editingPath)
+      // Find the original field by id
+      const originalField = findFieldByIdPath(fields, editingPath)
       if (!originalField || !originalField.id) {
         console.error('CCC FieldVisualTreeModal: Could not find original field or field ID', { editingPath, fields, originalField })
         return
