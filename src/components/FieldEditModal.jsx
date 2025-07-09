@@ -86,7 +86,10 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
 
           if (field.type === "repeater") {
             setMaxSets(config.max_sets || "")
-            const nestedFields = config.nested_fields || []
+            // Prefer DB children if available, fallback to config.nested_fields
+            const nestedFields = (Array.isArray(field.children) && field.children.length > 0)
+              ? field.children
+              : (config.nested_fields || [])
             console.log("Loading nested field definitions:", nestedFields)
             setNestedFieldDefinitions(nestedFields)
           } else if (["select", "checkbox", "radio"].includes(field.type)) {
