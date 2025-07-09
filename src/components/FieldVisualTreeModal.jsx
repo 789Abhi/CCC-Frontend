@@ -37,8 +37,15 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
             children: []
           }
           // Recursively add children for repeater fields
-          if (field.type === "repeater" && Array.isArray(field.children)) {
-            processedField.children = processFields(field.children, level + 1, currentPath, currentIdPath).filter(Boolean)
+          if (field.type === "repeater") {
+            let children = Array.isArray(field.children) ? field.children : [];
+            // Fallback: if children is empty but config.nested_fields exists, use it
+            if ((!children || children.length === 0) && field.config && Array.isArray(field.config.nested_fields)) {
+              children = field.config.nested_fields;
+            }
+            if (Array.isArray(children)) {
+              processedField.children = processFields(children, level + 1, currentPath, currentIdPath).filter(Boolean)
+            }
           }
           return processedField
         }).filter(Boolean) // Remove any null entries
