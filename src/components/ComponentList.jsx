@@ -1138,6 +1138,12 @@ const ComponentList = () => {
               console.error('CCC ComponentList: Error in onFieldUpdate:', error)
             }
           }}
+          onFieldUpdateSuccess={async () => {
+            // Re-fetch components and update the selected component for the tree
+            await fetchComponents();
+            const latest = components.find(c => c.id === selectedComponentForTree.id);
+            if (latest) setSelectedComponentForTree(latest);
+          }}
         />
       )}
     </div>

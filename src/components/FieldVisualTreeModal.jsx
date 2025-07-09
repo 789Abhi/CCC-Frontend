@@ -58,8 +58,8 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
       const key = field.id || field.name
       const targetKey = targetField.id || targetField.name
       if (key === targetKey) return [...path, key]
-      if (field.type === 'repeater' && field.config?.nested_fields) {
-        const childPath = getPathByKey(field.config.nested_fields, targetField, [...path, key])
+      if (field.type === 'repeater' && Array.isArray(field.children)) {
+        const childPath = getPathByKey(field.children, targetField, [...path, key])
         if (childPath) return childPath
       }
     }
