@@ -371,8 +371,14 @@ const ComponentList = () => {
   }, [postType])
 
   const openFieldEditModal = (component, field = null) => {
-    setSelectedComponentForField(component)
-    setEditingField(field)
+    // Always use the latest field data from the current components state
+    const latestComponent = components.find(c => c.id === component.id)
+    let latestField = field
+    if (latestComponent && field) {
+      latestField = latestComponent.fields.find(f => f.id === field.id)
+    }
+    setSelectedComponentForField(latestComponent || component)
+    setEditingField(latestField)
     setShowFieldEditModal(true)
   }
 
