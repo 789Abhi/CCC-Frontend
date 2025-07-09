@@ -1150,12 +1150,11 @@ const ComponentList = () => {
           }}
           onFieldUpdateSuccess={async () => {
             // Await fetchComponents and update selectedComponentForTree with the latest data
-            await fetchComponents();
-            setComponents((prev) => {
-              const latest = prev.find(c => c.id === selectedComponentForTree.id);
+            const latestComponents = await fetchComponents();
+            if (selectedComponentForTree) {
+              const latest = latestComponents.find(c => c.id === selectedComponentForTree.id);
               if (latest) setSelectedComponentForTree(latest);
-              return prev;
-            });
+            }
           }}
         />
       )}
