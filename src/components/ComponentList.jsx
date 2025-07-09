@@ -139,14 +139,17 @@ const ComponentList = () => {
       if (response.data.success && Array.isArray(response.data.data?.components)) {
         setComponents(response.data.data.components)
         setError("")
+        return response.data.data.components // <-- return latest data
       } else {
         setComponents([])
         setError("Failed to fetch components. Invalid response format.")
         console.error("Invalid response format:", response.data)
+        return []
       }
     } catch (err) {
       setError("Failed to connect to server. Please refresh and try again.")
       console.error("Failed to fetch components", err)
+      return []
     } finally {
       setLoading(false)
     }
@@ -372,8 +375,8 @@ const ComponentList = () => {
 
   const openFieldEditModal = async (component, field = null) => {
     // Always fetch the latest components before opening the modal
-    await fetchComponents();
-    const latestComponent = components.find(c => c.id === component.id)
+    const latestComponents = await fetchComponents();
+    const latestComponent = latestComponents.find(c => c.id === component.id)
     let latestField = field
     if (latestComponent && field) {
       latestField = latestComponent.fields.find(f => f.id === field.id)
