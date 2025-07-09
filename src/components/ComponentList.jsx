@@ -370,8 +370,9 @@ const ComponentList = () => {
     setSelectAllPosts(false)
   }, [postType])
 
-  const openFieldEditModal = (component, field = null) => {
-    // Always use the latest field data from the current components state
+  const openFieldEditModal = async (component, field = null) => {
+    // Always fetch the latest components before opening the modal
+    await fetchComponents();
     const latestComponent = components.find(c => c.id === component.id)
     let latestField = field
     if (latestComponent && field) {
@@ -1145,6 +1146,7 @@ const ComponentList = () => {
             }
           }}
           onFieldUpdateSuccess={async () => {
+            // Await fetchComponents and update selectedComponentForTree with the latest data
             await fetchComponents();
             setComponents((prev) => {
               const latest = prev.find(c => c.id === selectedComponentForTree.id);
