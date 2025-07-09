@@ -330,16 +330,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
                   >
                     <Edit className="w-5 h-5" />
                   </button>
-                  {/* Add Field button for repeaters */}
-                  {safeField.type === 'repeater' && (
-                    <button
-                      onClick={() => handleAddNestedField(safeField)}
-                      className="opacity-0 group-hover:opacity-100 p-3 text-green-700 hover:text-green-900 hover:bg-green-100 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg ml-2"
-                      title="Add nested field"
-                    >
-                      + Add Field
-                    </button>
-                  )}
+                  {/* Add Field button for repeaters removed */}
                 </div>
               </div>
               
