@@ -10,6 +10,8 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
   const [showFieldPopup, setShowFieldPopup] = useState(false)
   const [editingField, setEditingField] = useState(null)
   const [editingPath, setEditingPath] = useState([])
+  // Add state for adding a nested field to a repeater
+  const [addingToRepeaterId, setAddingToRepeaterId] = useState(null)
 
   // Process fields into visual tree structure
   useEffect(() => {
@@ -164,6 +166,48 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
     }
   }
 
+  // Handler to open add field popup for a repeater
+  const handleAddNestedField = (repeaterField) => {
+    setEditingField({
+      parent_field_id: repeaterField.id,
+      component_id: repeaterField.component_id,
+      type: 'text', // default type
+      config: {},
+    })
+    setAddingToRepeaterId(repeaterField.id)
+    setShowFieldPopup(true)
+  }
+
+  // Handler to actually add the nested field
+  const handleSaveNewNestedField = async (newField) => {
+    try {
+      const formData = new FormData()
+      formData.append('action', 'ccc_add_field')
+      formData.append('component_id', newField.component_id)
+      formData.append('parent_field_id', newField.parent_field_id)
+      formData.append('label', newField.label)
+      formData.append('name', newField.name)
+      formData.append('type', newField.type)
+      formData.append('required', newField.required || false)
+      formData.append('placeholder', newField.placeholder || '')
+      formData.append('nonce', window.cccData.nonce)
+      if (newField.config) {
+        formData.append('config', JSON.stringify(newField.config))
+      }
+      const response = await axios.post(window.cccData.ajaxUrl, formData)
+      if (response.data.success) {
+        setShowFieldPopup(false)
+        setEditingField(null)
+        setAddingToRepeaterId(null)
+        if (typeof onFieldUpdateSuccess === 'function') onFieldUpdateSuccess()
+      } else {
+        alert('Failed to add nested field: ' + (response.data.message || 'Unknown error'))
+      }
+    } catch (error) {
+      alert('Error adding nested field: ' + error.message)
+    }
+  }
+
   const getFieldIcon = (type) => {
     switch (type) {
       case "text":
@@ -273,13 +317,25 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
                   </div>
                 </div>
                 
-                <button
-                  onClick={() => handleEditField(field)}
-                  className="opacity-0 group-hover:opacity-100 p-3 text-gray-700 hover:text-blue-600 hover:bg-white/60 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg"
-                  title="Edit field"
-                >
-                  <Edit className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleEditField(field)}
+                    className="opacity-0 group-hover:opacity-100 p-3 text-gray-700 hover:text-blue-600 hover:bg-white/60 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg"
+                    title="Edit field"
+                  >
+                    <Edit className="w-5 h-5" />
+                  </button>
+                  {/* Add Field button for repeaters */}
+                  {safeField.type === 'repeater' && (
+                    <button
+                      onClick={() => handleAddNestedField(safeField)}
+                      className="opacity-0 group-hover:opacity-100 p-3 text-green-700 hover:text-green-900 hover:bg-green-100 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg ml-2"
+                      title="Add nested field"
+                    >
+                      + Add Field
+                    </button>
+                  )}
+                </div>
               </div>
               
               {/* Repeater Indicator */}
@@ -476,6 +532,20 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
             }
           })()}
         </div>
+      )}
+
+      {/* Render FieldPopup for adding a nested field */}
+      {showFieldPopup && addingToRepeaterId && (
+        <FieldPopup
+          isOpen={showFieldPopup}
+          field={editingField}
+          onClose={() => {
+            setShowFieldPopup(false)
+            setEditingField(null)
+            setAddingToRepeaterId(null)
+          }}
+          onSave={handleSaveNewNestedField}
+        />
       )}
     </div>
   )
