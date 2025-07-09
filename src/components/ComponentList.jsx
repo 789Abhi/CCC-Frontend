@@ -1139,10 +1139,12 @@ const ComponentList = () => {
             }
           }}
           onFieldUpdateSuccess={async () => {
-            // Re-fetch components and update the selected component for the tree
             await fetchComponents();
-            const latest = components.find(c => c.id === selectedComponentForTree.id);
-            if (latest) setSelectedComponentForTree(latest);
+            setComponents((prev) => {
+              const latest = prev.find(c => c.id === selectedComponentForTree.id);
+              if (latest) setSelectedComponentForTree(latest);
+              return prev;
+            });
           }}
         />
       )}
