@@ -104,11 +104,16 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
       console.error('Could not find original field data for id path:', idPath, fields)
     }
     // Ensure the field data is properly formatted for FieldPopup
+    let config = typeof originalField.config === 'string' 
+      ? JSON.parse(originalField.config) 
+      : originalField.config || {}
+    // If this is a repeater, always set config.nested_fields to the latest children
+    if (originalField.type === 'repeater') {
+      config = { ...config, nested_fields: Array.isArray(originalField.children) ? originalField.children : [] }
+    }
     const formattedField = {
       ...originalField,
-      config: typeof originalField.config === 'string' 
-        ? JSON.parse(originalField.config) 
-        : originalField.config || {}
+      config
     }
     setEditingField(formattedField)
     setEditingPath(idPath)
