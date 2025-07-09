@@ -526,16 +526,22 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
 
     try {
       const formData = new FormData()
-      formData.append("action", "ccc_add_field")
       formData.append("nonce", window.cccData.nonce)
       formData.append("label", label)
       formData.append("name", name)
       formData.append("type", type)
       formData.append("component_id", componentId)
 
+      // If editing an existing field (update)
+      if (initialField && initialField.id) {
+        formData.append("action", "ccc_update_field")
+        formData.append("field_id", initialField.id)
+      } else {
+        formData.append("action", "ccc_add_field")
+      }
+
       if (type === "repeater") {
         formData.append("max_sets", maxSets ? Number.parseInt(maxSets) : 0)
-        
         // Process nested field definitions recursively for unlimited nesting levels
         const processNestedFieldsRecursively = (fields) => {
           return fields.map(field => {
@@ -544,28 +550,19 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
               name: field.name,
               type: field.type
             }
-            
-            // Handle different field types
             if (field.type === 'repeater') {
-              // For repeater fields, always use config.nested_fields structure
-              // This ensures consistency across all nesting levels
               processedField.config = {
                 max_sets: field.config?.max_sets || field.maxSets || 0,
                 nested_fields: field.config?.nested_fields || field.nestedFieldDefinitions || []
               }
-              
-              // Recursively process nested fields if they exist
               if (processedField.config.nested_fields && processedField.config.nested_fields.length > 0) {
                 processedField.config.nested_fields = processNestedFieldsRecursively(processedField.config.nested_fields)
               }
-              
-              console.log('CCC FieldPopup: Processed nested repeater field', field.label, processedField.config)
             } else if (field.type === 'image') {
               processedField.config = {
                 return_type: field.config?.return_type || field.imageReturnType || 'url'
               }
-            } else if (['select', 'checkbox', 'radio'].includes(field.type)) {
-              // Handle options for select/checkbox/radio fields
+            } else if (["select", "checkbox", "radio"].includes(field.type)) {
               let optionsObject = {}
               if (field.config?.options) {
                 optionsObject = field.config.options
@@ -580,19 +577,14 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
                 options: optionsObject
               }
             }
-            
             return processedField
           })
         }
-        
         const processedNestedFields = processNestedFieldsRecursively(nestedFieldDefinitions)
-        
-        console.log('CCC FieldPopup: Sending nested field definitions', processedNestedFields)
         formData.append("nested_field_definitions", JSON.stringify(processedNestedFields))
       } else if (type === "image") {
         formData.append("return_type", imageReturnType)
       } else if (["select", "checkbox", "radio"].includes(type)) {
-        // Convert options array to object format expected by backend
         const optionsObject = {}
         fieldOptions.forEach((option) => {
           if (option.label && option.value) {
@@ -605,14 +597,14 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       const response = await axios.post(window.cccData.ajaxUrl, formData)
 
       if (response.data.success) {
-        showMessage("Field added successfully", "success")
-        onFieldAdded()
+        showMessage(initialField && initialField.id ? "Field updated successfully" : "Field added successfully", "success")
+        if (onFieldAdded) onFieldAdded()
         onClose()
       } else {
-        showMessage(response.data.message || "Failed to add field", "error")
+        showMessage(response.data.message || (initialField && initialField.id ? "Failed to update field" : "Failed to add field"), "error")
       }
     } catch (error) {
-      console.error("Error adding field:", error)
+      console.error("Error saving field:", error)
       showMessage("Failed to connect to server. Please try again.", "error")
     } finally {
       setIsSubmitting(false)
