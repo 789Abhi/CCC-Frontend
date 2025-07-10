@@ -241,15 +241,15 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
               configObj = {}
             }
           }
-          const updatedConfig = {
-            ...configObj,
-            nested_fields: children
-          }
-          console.debug('FieldVisualTreeModal: handleSaveNewNestedField sending config', { updatedConfig, parentRepeater, children })
+          // --- THE CRITICAL FIX ---
+          // Always assign nested_fields to a deep copy of children
+          configObj.nested_fields = JSON.parse(JSON.stringify(children));
+          // --- END FIX ---
+          console.debug('FieldVisualTreeModal: handleSaveNewNestedField sending config', { configObj, parentRepeater, children });
           handleFieldUpdate({
             ...parentRepeater,
-            config: updatedConfig
-          })
+            config: configObj
+          });
         } else {
           console.debug('FieldVisualTreeModal: parentRepeater not found', { latestFields, newField })
         }
