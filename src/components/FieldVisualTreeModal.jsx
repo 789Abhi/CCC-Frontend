@@ -229,8 +229,17 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
         if (parentRepeater) {
           // Use the latest children from the backend
           let children = Array.isArray(parentRepeater.children) ? parentRepeater.children : []
+          // Defensive: always parse config if it's a string
+          let configObj = parentRepeater.config
+          if (typeof configObj === 'string') {
+            try {
+              configObj = JSON.parse(configObj)
+            } catch (e) {
+              configObj = {}
+            }
+          }
           const updatedConfig = {
-            ...parentRepeater.config,
+            ...configObj,
             nested_fields: children
           }
           console.log('CCC FieldVisualTreeModal: handleSaveNewNestedField sending config:', updatedConfig)
