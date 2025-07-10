@@ -379,11 +379,11 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
         arr.push(processedField)
       }
       console.log('CCC FieldPopup: Updated nested field definitions', arr)
-      // --- ADDED: Immediately save after updating nested fields ---
-      setTimeout(() => {
-        handleSubmit()
-      }, 0)
-      // --- END ADDED ---
+      // --- REMOVED: Immediately save after updating nested fields ---
+      // setTimeout(() => {
+      //   handleSubmit()
+      // }, 0)
+      // --- END REMOVED ---
       return arr
     })
     setShowRecursivePopup(false)
