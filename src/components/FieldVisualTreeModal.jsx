@@ -153,9 +153,10 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
           formData.append("required", updatedField.required || false)
           formData.append("placeholder", updatedField.placeholder || "")
           formData.append("nonce", window.cccData.nonce)
-          if (updatedField.config) {
-            formData.append("config", JSON.stringify(updatedField.config))
-          }
+          // Always send config as a valid object
+          const configToSend = typeof updatedField.config === 'object' && updatedField.config !== null ? updatedField.config : {}
+          formData.append("config", JSON.stringify(configToSend))
+          console.log('CCC FieldVisualTreeModal: handleFieldUpdate sending config:', configToSend)
           const response = await axios.post(window.cccData.ajaxUrl, formData)
           if (response.data.success) {
             setShowFieldPopup(false)
