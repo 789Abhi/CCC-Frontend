@@ -1154,7 +1154,9 @@ const ComponentList = () => {
             if (selectedComponentForTree) {
               const latest = latestComponents.find(c => c.id === selectedComponentForTree.id);
               if (latest) setSelectedComponentForTree(latest);
+              return latest ? latest.fields : [];
             }
+            return [];
           }}
         />
       )}

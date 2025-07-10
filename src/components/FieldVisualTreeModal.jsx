@@ -212,11 +212,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
         // --- NEW: Fetch latest fields and update parent repeater's config.nested_fields ---
         let latestFields = fields
         if (typeof onFieldUpdateSuccess === 'function') {
-          await onFieldUpdateSuccess(); // This should refresh the fields prop
-          // Try to get the latest fields from the DOM (if available)
-          if (window.cccLatestFields) {
-            latestFields = window.cccLatestFields
-          }
+          latestFields = await onFieldUpdateSuccess(); // <-- get latest fields directly
         }
         // Find the parent repeater in the latest fields
         const parentRepeater = latestFields.find(f => f.id === newField.parent_field_id)
