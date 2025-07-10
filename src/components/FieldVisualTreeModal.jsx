@@ -226,17 +226,25 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
           ) {
             children = parentRepeater.config.nested_fields
           }
-          // Add the new field to the children array if not already present
-          if (!children.some(f => f.name === newField.name)) {
-            children = [...children, {
-              ...newField,
-              id: undefined // Let the backend assign the real DB id
-            }]
+          // Defensive: ensure nested_fields is always a real array
+          let nestedFieldsArray = children
+          if (typeof nestedFieldsArray === 'string') {
+            try {
+              nestedFieldsArray = JSON.parse(nestedFieldsArray)
+            } catch (e) {
+              nestedFieldsArray = []
+            }
+          }
+          if (!Array.isArray(nestedFieldsArray)) nestedFieldsArray = []
+          // Add the new field if not present
+          if (!nestedFieldsArray.some(f => f.name === newField.name)) {
+            nestedFieldsArray = [...nestedFieldsArray, { ...newField, id: undefined }]
           }
           const updatedConfig = {
             ...parentRepeater.config,
-            nested_fields: children
+            nested_fields: nestedFieldsArray
           }
+          console.log('CCC FieldVisualTreeModal: Sending updated config to backend:', updatedConfig)
           handleFieldUpdate({
             ...parentRepeater,
             config: updatedConfig
