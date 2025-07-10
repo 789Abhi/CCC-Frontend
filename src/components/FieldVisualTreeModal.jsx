@@ -215,12 +215,28 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
         // Find the parent repeater in the latest fields
         const parentRepeater = fields.find(f => f.id === newField.parent_field_id)
         if (parentRepeater) {
-          // Update config.nested_fields with the latest children
+          // Always fetch the latest children from the DB (not just from the old fields array)
+          // If children is missing, fallback to an empty array
+          let children = []
+          if (Array.isArray(parentRepeater.children)) {
+            children = parentRepeater.children
+          } else if (
+            parentRepeater.config &&
+            Array.isArray(parentRepeater.config.nested_fields)
+          ) {
+            children = parentRepeater.config.nested_fields
+          }
+          // Add the new field to the children array if not already present
+          if (!children.some(f => f.name === newField.name)) {
+            children = [...children, {
+              ...newField,
+              id: undefined // Let the backend assign the real DB id
+            }]
+          }
           const updatedConfig = {
             ...parentRepeater.config,
-            nested_fields: Array.isArray(parentRepeater.children) ? parentRepeater.children : []
+            nested_fields: children
           }
-          // Call handleFieldUpdate to persist the new nested_fields array
           handleFieldUpdate({
             ...parentRepeater,
             config: updatedConfig
