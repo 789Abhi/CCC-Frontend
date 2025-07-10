@@ -210,42 +210,24 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
         setEditingField(null)
         setAddingToRepeaterId(null)
         // --- NEW: Fetch latest fields and update parent repeater's config.nested_fields ---
+        let latestFields = fields
         if (typeof onFieldUpdateSuccess === 'function') {
           await onFieldUpdateSuccess(); // This should refresh the fields prop
+          // Try to get the latest fields from the DOM (if available)
+          if (window.cccLatestFields) {
+            latestFields = window.cccLatestFields
+          }
         }
         // Find the parent repeater in the latest fields
-        const parentRepeater = fields.find(f => f.id === newField.parent_field_id)
+        const parentRepeater = latestFields.find(f => f.id === newField.parent_field_id)
         if (parentRepeater) {
-          // Always fetch the latest children from the DB (not just from the old fields array)
-          // If children is missing, fallback to an empty array
-          let children = []
-          if (Array.isArray(parentRepeater.children)) {
-            children = parentRepeater.children
-          } else if (
-            parentRepeater.config &&
-            Array.isArray(parentRepeater.config.nested_fields)
-          ) {
-            children = parentRepeater.config.nested_fields
-          }
-          // Defensive: ensure nested_fields is always a real array
-          let nestedFieldsArray = children
-          if (typeof nestedFieldsArray === 'string') {
-            try {
-              nestedFieldsArray = JSON.parse(nestedFieldsArray)
-            } catch (e) {
-              nestedFieldsArray = []
-            }
-          }
-          if (!Array.isArray(nestedFieldsArray)) nestedFieldsArray = []
-          // Add the new field if not present
-          if (!nestedFieldsArray.some(f => f.name === newField.name)) {
-            nestedFieldsArray = [...nestedFieldsArray, { ...newField, id: undefined }]
-          }
+          // Use the latest children from the backend
+          let children = Array.isArray(parentRepeater.children) ? parentRepeater.children : []
           const updatedConfig = {
             ...parentRepeater.config,
-            nested_fields: nestedFieldsArray
+            nested_fields: children
           }
-          console.log('CCC FieldVisualTreeModal: Sending updated config to backend:', updatedConfig)
+          console.log('CCC FieldVisualTreeModal: handleSaveNewNestedField sending config:', updatedConfig)
           handleFieldUpdate({
             ...parentRepeater,
             config: updatedConfig
