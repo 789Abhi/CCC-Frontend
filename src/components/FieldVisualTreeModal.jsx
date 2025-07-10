@@ -93,6 +93,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
 
   // Update handleEditField to use idPath from the processed field
   const handleEditField = (field) => {
+    console.debug('FieldVisualTreeModal: handleEditField called', { field })
     if (!field.keyPath) {
       console.error('No keyPath found for field:', field)
       return
@@ -126,7 +127,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
 
   // Update handleFieldUpdate to use idPath
   const handleFieldUpdate = (updatedField) => {
-    console.log('CCC FieldVisualTreeModal: Field update received:', updatedField)
+    console.debug('FieldVisualTreeModal: handleFieldUpdate called', { updatedField, editingPath })
     try {
       if (!updatedField || typeof updatedField !== 'object') {
         console.error('CCC FieldVisualTreeModal: Invalid updatedField data:', updatedField)
@@ -190,6 +191,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
 
   // Handler to actually add the nested field
   const handleSaveNewNestedField = async (newField) => {
+    console.debug('FieldVisualTreeModal: handleSaveNewNestedField called', { newField, fields })
     try {
       const formData = new FormData()
       formData.append('action', 'ccc_add_field')
@@ -227,6 +229,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
         }
         const parentRepeater = findFieldById(latestFields, newField.parent_field_id)
         if (parentRepeater) {
+          console.debug('FieldVisualTreeModal: Found parentRepeater', { parentRepeater })
           // Use the latest children from the backend
           let children = Array.isArray(parentRepeater.children) ? parentRepeater.children : []
           // Defensive: always parse config if it's a string
@@ -242,11 +245,13 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
             ...configObj,
             nested_fields: children
           }
-          console.log('CCC FieldVisualTreeModal: handleSaveNewNestedField sending config:', updatedConfig)
+          console.debug('FieldVisualTreeModal: handleSaveNewNestedField sending config', { updatedConfig, parentRepeater, children })
           handleFieldUpdate({
             ...parentRepeater,
             config: updatedConfig
           })
+        } else {
+          console.debug('FieldVisualTreeModal: parentRepeater not found', { latestFields, newField })
         }
         // --- END NEW ---
       } else {
