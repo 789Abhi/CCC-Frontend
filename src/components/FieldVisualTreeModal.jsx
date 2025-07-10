@@ -208,7 +208,25 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
         setShowFieldPopup(false)
         setEditingField(null)
         setAddingToRepeaterId(null)
-        if (typeof onFieldUpdateSuccess === 'function') onFieldUpdateSuccess()
+        // --- NEW: Fetch latest fields and update parent repeater's config.nested_fields ---
+        if (typeof onFieldUpdateSuccess === 'function') {
+          await onFieldUpdateSuccess(); // This should refresh the fields prop
+        }
+        // Find the parent repeater in the latest fields
+        const parentRepeater = fields.find(f => f.id === newField.parent_field_id)
+        if (parentRepeater) {
+          // Update config.nested_fields with the latest children
+          const updatedConfig = {
+            ...parentRepeater.config,
+            nested_fields: Array.isArray(parentRepeater.children) ? parentRepeater.children : []
+          }
+          // Call handleFieldUpdate to persist the new nested_fields array
+          handleFieldUpdate({
+            ...parentRepeater,
+            config: updatedConfig
+          })
+        }
+        // --- END NEW ---
       } else {
         alert('Failed to add nested field: ' + (response.data.message || 'Unknown error'))
       }
