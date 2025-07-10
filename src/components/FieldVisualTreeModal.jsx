@@ -214,8 +214,18 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
         if (typeof onFieldUpdateSuccess === 'function') {
           latestFields = await onFieldUpdateSuccess(); // <-- get latest fields directly
         }
-        // Find the parent repeater in the latest fields
-        const parentRepeater = latestFields.find(f => f.id === newField.parent_field_id)
+        // Find the parent repeater in the latest fields (search recursively)
+        function findFieldById(fieldsArr, id) {
+          for (const f of fieldsArr) {
+            if (f.id === id) return f
+            if (Array.isArray(f.children) && f.children.length > 0) {
+              const found = findFieldById(f.children, id)
+              if (found) return found
+            }
+          }
+          return null
+        }
+        const parentRepeater = findFieldById(latestFields, newField.parent_field_id)
         if (parentRepeater) {
           // Use the latest children from the backend
           let children = Array.isArray(parentRepeater.children) ? parentRepeater.children : []
