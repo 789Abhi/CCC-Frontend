@@ -349,7 +349,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
             
             <div className="relative z-10">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-5">
                   <div className="w-12 h-12 bg-white/30 rounded-xl flex items-center justify-center shadow-inner">
                     <span className="text-2xl">{getFieldIcon(safeField.type)}</span>
                   </div>
