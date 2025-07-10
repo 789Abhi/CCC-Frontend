@@ -107,13 +107,17 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
     let config = typeof originalField.config === 'string' 
       ? JSON.parse(originalField.config) 
       : originalField.config || {}
-    // If this is a repeater, always set config.nested_fields to the latest children
+    // If this is a repeater, always set config.nested_fields and nestedFieldDefinitions to the latest children
+    let nestedFieldDefinitions = [];
     if (originalField.type === 'repeater') {
-      config = { ...config, nested_fields: Array.isArray(originalField.children) ? originalField.children : [] }
+      const children = Array.isArray(originalField.children) ? originalField.children : [];
+      config = { ...config, nested_fields: children };
+      nestedFieldDefinitions = children;
     }
     const formattedField = {
       ...originalField,
-      config
+      config,
+      ...(originalField.type === 'repeater' ? { nestedFieldDefinitions } : {})
     }
     setEditingField(formattedField)
     setEditingPath(idPath)
