@@ -143,19 +143,19 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
         console.error('CCC FieldVisualTreeModal: Could not find original field or field ID', { editingPath, fields, originalField })
         return
       }
-      // Defensive: always parse config if it's a string
-      let configObj = updatedField.config
+      // Defensive: always parse config if it's a string, and default to object if undefined
+      let configObj = updatedField.config || {};
       if (typeof configObj === 'string') {
         try {
-          configObj = JSON.parse(configObj)
+          configObj = JSON.parse(configObj);
         } catch (e) {
-          configObj = {}
+          configObj = {};
         }
       }
       // If this is a repeater, always send the full, up-to-date children as nested_fields
       if (updatedField.type === 'repeater') {
-        let children = Array.isArray(updatedField.children) ? updatedField.children : []
-        configObj.nested_fields = JSON.parse(JSON.stringify(children))
+        let children = Array.isArray(updatedField.children) ? updatedField.children : [];
+        configObj.nested_fields = JSON.parse(JSON.stringify(children));
       }
       console.debug('FieldVisualTreeModal: handleFieldUpdate sending config:', configObj)
       const updateFieldInBackend = async () => {
