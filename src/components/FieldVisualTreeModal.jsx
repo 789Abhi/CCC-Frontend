@@ -126,7 +126,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
   }
 
   // Update handleFieldUpdate to use idPath
-  const handleFieldUpdate = (updatedField) => {
+  const handleFieldUpdate = async (updatedField) => {
     console.debug('FieldVisualTreeModal: handleFieldUpdate called', { updatedField, editingPath })
     try {
       if (!updatedField || typeof updatedField !== 'object') {
@@ -152,9 +152,25 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
           configObj = {};
         }
       }
-      // If this is a repeater, always send the full, up-to-date children as nested_fields
+      // If this is a repeater, always fetch the latest children from the backend
       if (updatedField.type === 'repeater') {
-        let children = Array.isArray(updatedField.children) ? updatedField.children : [];
+        let latestFields = fields;
+        if (typeof onFieldUpdateSuccess === 'function') {
+          latestFields = await onFieldUpdateSuccess();
+        }
+        // Find the repeater in the latest fields (search recursively)
+        function findFieldById(fieldsArr, id) {
+          for (const f of fieldsArr) {
+            if (f.id === id) return f;
+            if (Array.isArray(f.children) && f.children.length > 0) {
+              const found = findFieldById(f.children, id);
+              if (found) return found;
+            }
+          }
+          return null;
+        }
+        const backendRepeater = findFieldById(latestFields, updatedField.id);
+        let children = Array.isArray(backendRepeater?.children) ? backendRepeater.children : [];
         configObj.nested_fields = JSON.parse(JSON.stringify(children));
       }
       console.debug('FieldVisualTreeModal: handleFieldUpdate sending config:', configObj)
