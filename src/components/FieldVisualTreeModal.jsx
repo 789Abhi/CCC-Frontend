@@ -143,6 +143,21 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
         console.error('CCC FieldVisualTreeModal: Could not find original field or field ID', { editingPath, fields, originalField })
         return
       }
+      // Defensive: always parse config if it's a string
+      let configObj = updatedField.config
+      if (typeof configObj === 'string') {
+        try {
+          configObj = JSON.parse(configObj)
+        } catch (e) {
+          configObj = {}
+        }
+      }
+      // If this is a repeater, always send the full, up-to-date children as nested_fields
+      if (updatedField.type === 'repeater') {
+        let children = Array.isArray(updatedField.children) ? updatedField.children : []
+        configObj.nested_fields = JSON.parse(JSON.stringify(children))
+      }
+      console.debug('FieldVisualTreeModal: handleFieldUpdate sending config:', configObj)
       const updateFieldInBackend = async () => {
         try {
           const formData = new FormData()
@@ -154,10 +169,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
           formData.append("required", updatedField.required || false)
           formData.append("placeholder", updatedField.placeholder || "")
           formData.append("nonce", window.cccData.nonce)
-          // Always send config as a valid object
-          const configToSend = typeof updatedField.config === 'object' && updatedField.config !== null ? updatedField.config : {}
-          formData.append("config", JSON.stringify(configToSend))
-          console.log('CCC FieldVisualTreeModal: handleFieldUpdate sending config:', configToSend)
+          formData.append("config", JSON.stringify(configObj))
           const response = await axios.post(window.cccData.ajaxUrl, formData)
           if (response.data.success) {
             setShowFieldPopup(false)
