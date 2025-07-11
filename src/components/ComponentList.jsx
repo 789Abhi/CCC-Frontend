@@ -532,10 +532,10 @@ const ComponentList = () => {
               <span className="bg-blue-100 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
                 {field.type}
               </span>
-              {field.type === "repeater" && field.config?.nested_fields?.length > 0 && (
+              {field.type === "repeater" && Array.isArray(field.children) && field.children.length > 0 && (
                 <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                  {field.config.nested_fields.length} nested field
-                  {field.config.nested_fields.length !== 1 ? "s" : ""}
+                  {field.children.length} nested field
+                  {field.children.length !== 1 ? "s" : ""}
                 </span>
               )}
             </div>
