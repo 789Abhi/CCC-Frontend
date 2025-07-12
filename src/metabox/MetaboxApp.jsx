@@ -3,7 +3,7 @@ import ComponentList from './components/ComponentList';
 import ComponentSelector from './components/ComponentSelector';
 
 function MetaboxApp() {
-  const [components, setComponents] = useState([]); // Only user-added components
+  const [components, setComponents] = useState([]); // Components assigned to this page
   const [isLoading, setIsLoading] = useState(true);
   const [showSelector, setShowSelector] = useState(false);
   const [availableComponents, setAvailableComponents] = useState([]);
@@ -44,9 +44,44 @@ function MetaboxApp() {
     }
   };
 
+  // Load assigned components for this post from backend
+  const loadAssignedComponents = async () => {
+    try {
+      setIsLoading(true);
+      const postId = getPostId();
+      if (!postId) {
+        setComponents([]);
+        setIsLoading(false);
+        return;
+      }
+      const response = await fetch(cccData.ajaxUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          action: 'ccc_get_posts_with_components',
+          nonce: cccData.nonce,
+          post_id: postId
+        })
+      });
+      const data = await response.json();
+      if (data.success && Array.isArray(data.data?.components)) {
+        // Add isHidden property for UI
+        setComponents(data.data.components.map(c => ({ ...c, isHidden: false })));
+      } else {
+        setComponents([]);
+      }
+    } catch (error) {
+      setComponents([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    setIsLoading(false);
     loadAvailableComponents();
+    loadAssignedComponents();
   }, []);
 
   // Add a new component (from selector)
@@ -54,12 +89,35 @@ function MetaboxApp() {
     if (!component || !component.id) return;
     const newComponent = {
       ...component,
-      instance_id: `instance_${Date.now()}`,
-      order: components.length
+      instance_id: `instance_${Date.now()}_${Math.floor(Math.random()*10000)}`,
+      order: components.length,
+      isHidden: false
     };
     setComponents(prev => [...prev, newComponent]);
     setShowSelector(false);
   };
+
+  // Remove a component
+  const removeComponent = (instance_id) => {
+    setComponents(prev => prev.filter(c => c.instance_id !== instance_id));
+  };
+
+  // Toggle hide/show for a component (UI only)
+  const toggleHideComponent = (instance_id) => {
+    setComponents(prev => prev.map(c =>
+      c.instance_id === instance_id ? { ...c, isHidden: !c.isHidden } : c
+    ));
+  };
+
+  // Update hidden input for backend save
+  useEffect(() => {
+    const input = document.getElementById('ccc_components_data');
+    if (input) {
+      // Save all component data except isHidden (which is UI only)
+      const toSave = components.map(({ isHidden, ...rest }) => rest);
+      input.value = JSON.stringify(toSave);
+    }
+  }, [components]);
 
   if (isLoading) {
     return (
@@ -72,10 +130,14 @@ function MetaboxApp() {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-0">
-      <ComponentList 
+      {/* Hidden input for backend save */}
+      <input type="hidden" id="ccc_components_data" name="ccc_components_data" />
+      <ComponentList
         components={components}
         isReadOnly={false}
         onAdd={() => setShowSelector(true)}
+        onRemove={removeComponent}
+        onToggleHide={toggleHideComponent}
       />
       {showSelector && (
         <ComponentSelector

@@ -1,7 +1,7 @@
 import React from 'react';
 import ComponentItem from './ComponentItem';
 
-function ComponentList({ components, isReadOnly = false, onAdd }) {
+function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onToggleHide }) {
   return (
     <div>
       {/* Header with Add Button */}
@@ -45,6 +45,8 @@ function ComponentList({ components, isReadOnly = false, onAdd }) {
                 index={index}
                 isReadOnly={isReadOnly}
                 totalComponents={components.length}
+                onRemove={() => onRemove(component.instance_id)}
+                onToggleHide={() => onToggleHide(component.instance_id)}
               />
             ))}
           </div>
