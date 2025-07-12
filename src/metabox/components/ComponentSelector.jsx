@@ -22,13 +22,9 @@ function ComponentSelector({ onSelect, onClose }) {
       const data = await response.json();
       
       // Ensure we always have an array
-      if (data.success && Array.isArray(data.data?.components)) {
-        setComponents(data.data.components);
-      } else if (data.success && Array.isArray(data.data)) {
-        // Fallback for direct array response
+      if (data.success && Array.isArray(data.data)) {
         setComponents(data.data);
       } else {
-        console.warn('CCC Metabox: Components data is not an array:', data);
         setComponents([]);
       }
     } catch (error) {
