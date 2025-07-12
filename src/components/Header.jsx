@@ -8,6 +8,7 @@ import logo from "/CCC-Logo.svg"
 function Header() {
   // Get current page from WordPress
   const getCurrentPage = () => {
+    console.log('CCC: Checking for cccData:', typeof cccData, cccData);
     if (typeof cccData !== 'undefined' && cccData.currentPage) {
       console.log('CCC: Current page from WordPress:', cccData.currentPage);
       return cccData.currentPage;
