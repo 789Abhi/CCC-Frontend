@@ -9,8 +9,10 @@ function Header() {
   // Get current page from WordPress
   const getCurrentPage = () => {
     if (typeof cccData !== 'undefined' && cccData.currentPage) {
+      console.log('CCC: Current page from WordPress:', cccData.currentPage);
       return cccData.currentPage;
     }
+    console.log('CCC: No page data from WordPress, defaulting to components');
     return 'custom-craft-component'; // Default to components
   }
 
@@ -20,14 +22,17 @@ function Header() {
       'custom-craft-component': 'components',
       'custom-craft-posttypes': 'post-types',
       'custom-craft-taxonomies': 'taxonomies',
-      'custom-craft-importexport': 'import-export'
+      'custom-craft-importexport': 'import-export',
+      'custom-craft-settings': 'components' // Settings redirects to components for now
     };
     return pageToTabMap[page] || 'components';
   }
 
   const [activeTab, setActiveTab] = useState(() => {
     const currentPage = getCurrentPage();
-    return getTabFromPage(currentPage);
+    const tab = getTabFromPage(currentPage);
+    console.log('CCC: Setting initial active tab:', tab, 'from page:', currentPage);
+    return tab;
   });
 
   // Update active tab when page changes (for deep linking)
