@@ -136,10 +136,10 @@ const ComponentList = () => {
 
       const response = await axios.post(window.cccData.ajaxUrl, formData)
 
-      if (response.data.success && Array.isArray(response.data.data?.components)) {
-        setComponents(response.data.data.components)
+      if (response.data.success && Array.isArray(response.data.data)) {
+        setComponents(response.data.data)
         setError("")
-        return response.data.data.components // <-- return latest data
+        return response.data.data // <-- return latest data
       } else {
         setComponents([])
         setError("Failed to fetch components. Invalid response format.")

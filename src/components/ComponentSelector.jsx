@@ -22,15 +22,15 @@ const ComponentSelector = () => {
 
       const response = await axios.post(window.cccData.ajaxUrl, formData);
 
-      if (response.data.success && Array.isArray(response.data.data?.components)) {
-        setComponents(response.data.data.components);
+      if (response.data.success && Array.isArray(response.data.data)) {
+        setComponents(response.data.data);
         setError('');
 
         const savedComponents = wp.data.select('core/editor')?.getEditedPostAttribute('meta')?._ccc_components || [];
         setSelectedComponents(savedComponents);
 
         const initialFieldValues = {};
-        response.data.data.components.forEach((comp) => {
+        response.data.data.forEach((comp) => {
           comp.fields.forEach((field) => {
             field.values.forEach((value) => {
               if (value.post_id === postId) {
