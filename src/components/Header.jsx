@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import PostTypes from "./PostTypes"
 import ImportExport from "./ImportExport"
 import ComponentList from "./ComponentList"
@@ -6,7 +6,38 @@ import Taxonomies from "./Taxonomies"
 import logo from "/CCC-Logo.svg"
 
 function Header() {
-  const [activeTab, setActiveTab] = useState("components")
+  // Get current page from WordPress
+  const getCurrentPage = () => {
+    if (typeof cccData !== 'undefined' && cccData.currentPage) {
+      return cccData.currentPage;
+    }
+    return 'custom-craft-component'; // Default to components
+  }
+
+  // Map WordPress page slugs to tab IDs
+  const getTabFromPage = (page) => {
+    const pageToTabMap = {
+      'custom-craft-component': 'components',
+      'custom-craft-posttypes': 'post-types',
+      'custom-craft-taxonomies': 'taxonomies',
+      'custom-craft-importexport': 'import-export'
+    };
+    return pageToTabMap[page] || 'components';
+  }
+
+  const [activeTab, setActiveTab] = useState(() => {
+    const currentPage = getCurrentPage();
+    return getTabFromPage(currentPage);
+  });
+
+  // Update active tab when page changes (for deep linking)
+  useEffect(() => {
+    const currentPage = getCurrentPage();
+    const newTab = getTabFromPage(currentPage);
+    if (newTab !== activeTab) {
+      setActiveTab(newTab);
+    }
+  }, []);
 
   const tabs = [
     {
