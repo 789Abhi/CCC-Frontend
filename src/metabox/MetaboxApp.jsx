@@ -102,9 +102,16 @@ function MetaboxApp() {
     }
   };
 
-  // Remove a component
+  // Remove a component (but prevent removing all components)
   const removeComponent = (index) => {
     const updatedComponents = components.filter((_, i) => i !== index);
+    
+    // Prevent removing all components - at least one must remain
+    if (updatedComponents.length === 0) {
+      alert('Cannot remove all components. At least one component must remain assigned to this page.');
+      return;
+    }
+    
     setComponents(updatedComponents);
     saveComponents(updatedComponents);
   };

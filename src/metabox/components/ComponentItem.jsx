@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-function ComponentItem({ component, index, onRemove }) {
+function ComponentItem({ component, index, onRemove, totalComponents }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -86,10 +86,15 @@ function ComponentItem({ component, index, onRemove }) {
           </button>
           {/* Remove Button */}
           <button
-            className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-600"
-            onClick={onRemove}
+            className={`p-1 rounded ${
+              totalComponents <= 1 
+                ? 'text-gray-200 cursor-not-allowed' 
+                : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+            }`}
+            onClick={totalComponents <= 1 ? undefined : onRemove}
             type="button"
-            title="Remove component"
+            title={totalComponents <= 1 ? 'Cannot remove the last component' : 'Remove component'}
+            disabled={totalComponents <= 1}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
               <polyline points="3,6 5,6 21,6"></polyline>

@@ -71,6 +71,7 @@ function ComponentList({ components, onRemove, onReorder, onAdd }) {
                   component={component}
                   index={index}
                   onRemove={() => onRemove(index)}
+                  totalComponents={components.length}
                 />
               ))}
             </SortableContext>
