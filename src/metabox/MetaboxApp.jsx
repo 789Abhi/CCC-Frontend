@@ -82,7 +82,6 @@ function MetaboxApp() {
           availableComponents={availableComponents}
           onSelect={addComponent}
           onClose={() => setShowSelector(false)}
-          alreadyAdded={components}
         />
       )}
     </div>

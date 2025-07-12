@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
-function ComponentSelector({ availableComponents = [], onSelect, onClose, alreadyAdded = [] }) {
+function ComponentSelector({ availableComponents = [], onSelect, onClose }) {
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Exclude already added components
+  // Show all components, allow adding duplicates
   const filteredComponents = Array.isArray(availableComponents)
     ? availableComponents.filter(component =>
         component &&
         component.name &&
         component.handle_name &&
-        !alreadyAdded.some(added => added.id === component.id) &&
         (component.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
          component.handle_name.toLowerCase().includes(searchTerm.toLowerCase()))
       )
@@ -72,7 +71,7 @@ function ComponentSelector({ availableComponents = [], onSelect, onClose, alread
             <div>
               {filteredComponents.map((component) => (
                 <button
-                  key={component.id}
+                  key={component.id + '-' + Math.random()}
                   className="w-full flex items-center gap-2 px-3 py-2 mb-2 rounded bg-white border border-pink-200 hover:bg-pink-50 transition text-left shadow-sm"
                   onClick={() => handleSelect(component)}
                   type="button"
