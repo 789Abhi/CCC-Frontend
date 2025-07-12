@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import ComponentList from './components/ComponentList';
-import ComponentSelector from './components/ComponentSelector';
 
 function MetaboxApp() {
   const [components, setComponents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showSelector, setShowSelector] = useState(false);
 
   // Get post ID from WordPress
   const getPostId = () => {
@@ -63,69 +61,6 @@ function MetaboxApp() {
     }
   };
 
-  // Add a new component
-  const addComponent = (component) => {
-    if (!component || !component.id) {
-      console.error('CCC Metabox: Invalid component data:', component);
-      return;
-    }
-
-    const newComponent = {
-      ...component,
-      instance_id: `instance_${Date.now()}`,
-      order: components.length
-    };
-    
-    setComponents(prev => [...prev, newComponent]);
-    setShowSelector(false);
-    saveComponents([...components, newComponent]);
-  };
-
-  // Save components to backend
-  const saveComponents = async (componentsToSave) => {
-    try {
-      const postId = getPostId();
-      await fetch(cccData.ajaxUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          action: 'ccc_save_component_assignments',
-          nonce: cccData.nonce,
-          post_id: postId,
-          components: JSON.stringify(componentsToSave)
-        })
-      });
-    } catch (error) {
-      console.error('CCC Metabox: Error saving components:', error);
-    }
-  };
-
-  // Remove a component (but prevent removing all components)
-  const removeComponent = (index) => {
-    const updatedComponents = components.filter((_, i) => i !== index);
-    
-    // Prevent removing all components - at least one must remain
-    if (updatedComponents.length === 0) {
-      alert('Cannot remove all components. At least one component must remain assigned to this page.');
-      return;
-    }
-    
-    setComponents(updatedComponents);
-    saveComponents(updatedComponents);
-  };
-
-  // Reorder components (for drag and drop)
-  const reorderComponents = (newOrder) => {
-    const reorderedComponents = newOrder.map((id, index) => {
-      const component = components.find(c => c.instance_id === id);
-      return { ...component, order: index };
-    });
-    setComponents(reorderedComponents);
-    saveComponents(reorderedComponents);
-  };
-
   useEffect(() => {
     loadAssignedComponents();
   }, []);
@@ -143,16 +78,8 @@ function MetaboxApp() {
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-0">
       <ComponentList 
         components={components}
-        onRemove={removeComponent}
-        onReorder={reorderComponents}
-        onAdd={() => setShowSelector(true)}
+        isReadOnly={true}
       />
-      {showSelector && (
-        <ComponentSelector
-          onSelect={addComponent}
-          onClose={() => setShowSelector(false)}
-        />
-      )}
     </div>
   );
 }
