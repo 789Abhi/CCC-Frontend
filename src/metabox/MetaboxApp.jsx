@@ -48,12 +48,15 @@ function MetaboxApp() {
 
       const data = await response.json();
       
-      if (data.success && data.data.components) {
+      // Ensure we always have an array
+      if (data.success && Array.isArray(data.data?.components)) {
         setComponents(data.data.components);
       } else {
+        console.warn('CCC Metabox: Components data is not an array:', data);
         setComponents([]);
       }
     } catch (error) {
+      console.error('CCC Metabox: Error loading components:', error);
       setComponents([]);
     } finally {
       setIsLoading(false);
@@ -62,6 +65,11 @@ function MetaboxApp() {
 
   // Add a new component
   const addComponent = (component) => {
+    if (!component || !component.id) {
+      console.error('CCC Metabox: Invalid component data:', component);
+      return;
+    }
+
     const newComponent = {
       ...component,
       instance_id: `instance_${Date.now()}`,
@@ -89,7 +97,9 @@ function MetaboxApp() {
           components: JSON.stringify(componentsToSave)
         })
       });
-    } catch (error) {}
+    } catch (error) {
+      console.error('CCC Metabox: Error saving components:', error);
+    }
   };
 
   // Remove a component

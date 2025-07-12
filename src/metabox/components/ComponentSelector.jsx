@@ -20,30 +20,45 @@ function ComponentSelector({ onSelect, onClose }) {
         })
       });
       const data = await response.json();
-      if (data.success && data.data) {
+      
+      // Ensure we always have an array
+      if (data.success && Array.isArray(data.data)) {
         setComponents(data.data);
       } else {
+        console.warn('CCC Metabox: Components data is not an array:', data);
         setComponents([]);
       }
     } catch (error) {
+      console.error('CCC Metabox: Error loading components:', error);
       setComponents([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const filteredComponents = components.filter(component =>
-    component.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    component.handle_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter components based on search - ensure components is always an array
+  const filteredComponents = Array.isArray(components) 
+    ? components.filter(component =>
+        component && 
+        component.name && 
+        component.handle_name &&
+        (component.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         component.handle_name.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    : [];
 
   const handleSelect = (component) => {
     onSelect(component);
   };
 
-  useEffect(() => { loadComponents(); }, []);
+  useEffect(() => { 
+    loadComponents(); 
+  }, []);
+  
   useEffect(() => {
-    const handleEscape = (e) => { if (e.key === 'Escape') onClose(); };
+    const handleEscape = (e) => { 
+      if (e.key === 'Escape') onClose(); 
+    };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
