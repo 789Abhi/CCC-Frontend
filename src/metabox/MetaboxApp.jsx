@@ -1,69 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import ComponentList from './components/ComponentList';
+import ComponentSelector from './components/ComponentSelector';
 
 function MetaboxApp() {
-  const [components, setComponents] = useState([]);
+  const [components, setComponents] = useState([]); // Only user-added components
   const [isLoading, setIsLoading] = useState(true);
+  const [showSelector, setShowSelector] = useState(false);
+  const [availableComponents, setAvailableComponents] = useState([]);
 
   // Get post ID from WordPress
   const getPostId = () => {
-    // Try to get from cccData first
     if (typeof cccData !== 'undefined' && cccData.postId) {
       return cccData.postId;
     }
-    
-    // Try to get from data attribute
     const metaboxRoot = document.getElementById('ccc-metabox-root');
     if (metaboxRoot && metaboxRoot.dataset.postId) {
       return parseInt(metaboxRoot.dataset.postId);
     }
-    
     return 0;
   };
 
-  // Load assigned components for this post
-  const loadAssignedComponents = async () => {
+  // Load all available components from the plugin (not assigned, but all created)
+  const loadAvailableComponents = async () => {
     try {
-      setIsLoading(true);
-      const postId = getPostId();
-      
-      if (!postId) {
-        setComponents([]);
-        return;
-      }
-
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          action: 'ccc_get_posts_with_components',
-          nonce: cccData.nonce,
-          post_id: postId
+          action: 'ccc_get_components',
+          nonce: cccData.nonce
         })
       });
-
       const data = await response.json();
-      
-      // Ensure we always have an array
-      if (data.success && Array.isArray(data.data?.components)) {
-        setComponents(data.data.components);
+      if (data.success && Array.isArray(data.data)) {
+        setAvailableComponents(data.data);
       } else {
-        console.warn('CCC Metabox: Components data is not an array:', data);
-        setComponents([]);
+        setAvailableComponents([]);
       }
     } catch (error) {
-      console.error('CCC Metabox: Error loading components:', error);
-      setComponents([]);
-    } finally {
-      setIsLoading(false);
+      setAvailableComponents([]);
     }
   };
 
   useEffect(() => {
-    loadAssignedComponents();
+    setIsLoading(false);
+    loadAvailableComponents();
   }, []);
+
+  // Add a new component (from selector)
+  const addComponent = (component) => {
+    if (!component || !component.id) return;
+    const newComponent = {
+      ...component,
+      instance_id: `instance_${Date.now()}`,
+      order: components.length
+    };
+    setComponents(prev => [...prev, newComponent]);
+    setShowSelector(false);
+  };
 
   if (isLoading) {
     return (
@@ -78,8 +74,17 @@ function MetaboxApp() {
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-0">
       <ComponentList 
         components={components}
-        isReadOnly={true}
+        isReadOnly={false}
+        onAdd={() => setShowSelector(true)}
       />
+      {showSelector && (
+        <ComponentSelector
+          availableComponents={availableComponents}
+          onSelect={addComponent}
+          onClose={() => setShowSelector(false)}
+          alreadyAdded={components}
+        />
+      )}
     </div>
   );
 }

@@ -1,16 +1,24 @@
 import React from 'react';
 import ComponentItem from './ComponentItem';
 
-function ComponentList({ components, isReadOnly = false }) {
+function ComponentList({ components, isReadOnly = false, onAdd }) {
   return (
     <div>
-      {/* Header */}
+      {/* Header with Add Button */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
         <h3 className="text-lg font-semibold text-gray-800">Custom Components</h3>
-        {isReadOnly && (
-          <div className="text-sm text-gray-500 italic">
-            Manage components from the main plugin interface
-          </div>
+        {!isReadOnly && (
+          <button 
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            onClick={onAdd}
+            type="button"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Component
+          </button>
         )}
       </div>
 
@@ -25,8 +33,8 @@ function ComponentList({ components, isReadOnly = false }) {
                 <polyline points="21,15 16,10 5,21"></polyline>
               </svg>
             </div>
-            <p className="font-medium text-gray-700 mb-1">No components assigned</p>
-            <p className="text-sm text-gray-400">Components can be assigned from the main plugin interface</p>
+            <p className="font-medium text-gray-700 mb-1">No components added yet</p>
+            <p className="text-sm text-gray-400">Click "Add Component" to get started</p>
           </div>
         ) : (
           <div>
