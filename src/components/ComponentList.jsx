@@ -192,7 +192,6 @@ const ComponentList = () => {
         
         console.log('CCC: Fetched posts:', response.data.data.posts)
         console.log('CCC: Initially selected posts (main interface only):', initiallySelected)
-        console.log('CCC: Posts with components:', postsWithComponents.length, 'of', response.data.data.posts.length)
         
         // DEBUG: Log detailed information for each post
         response.data.data.posts.forEach(post => {
