@@ -19,6 +19,7 @@
     "lucide-react": "^0.511.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.5.2",
     "react-treebeard": "^3.2.4"
   },
   "devDependencies": {

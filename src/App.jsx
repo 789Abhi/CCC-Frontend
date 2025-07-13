@@ -2,7 +2,7 @@ import React from 'react'
 import Header from './components/Header'
 import MetaboxApp from './metabox/MetaboxApp'
 import ErrorBoundary from './ErrorBoundary'
-
+import { Toaster } from 'react-hot-toast'
 
 function App() {
   // Check if we're in a metabox context
@@ -12,6 +12,7 @@ function App() {
     return (
       <ErrorBoundary>
         <MetaboxApp />
+        <Toaster position="top-center" />
       </ErrorBoundary>
     );
   }
@@ -22,6 +23,7 @@ function App() {
       <div className='container mx-auto'>
        <ErrorBoundary>
        <Header/>
+       <Toaster position="top-center" />
        </ErrorBoundary>
       </div>
     </section>

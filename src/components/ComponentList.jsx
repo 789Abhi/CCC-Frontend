@@ -166,18 +166,36 @@ const ComponentList = () => {
 
       if (response.data.success && Array.isArray(response.data.data?.posts)) {
         setPosts(response.data.data.posts)
-        const initiallySelected = response.data.data.posts.filter((post) => post.has_components).map((post) => post.id)
+        
+        // Fix: Properly determine which posts should be selected
+        // A post should be selected if it has components assigned
+        const initiallySelected = response.data.data.posts
+          .filter((post) => post.has_components)
+          .map((post) => post.id)
+        
         setSelectedPosts(initiallySelected)
 
-        if (initiallySelected.length > 0 && initiallySelected.length === response.data.data.posts.length) {
+        // Check if all posts have components (for "select all" functionality)
+        const postsWithComponents = response.data.data.posts.filter((post) => post.has_components)
+        
+        if (postsWithComponents.length > 0 && postsWithComponents.length === response.data.data.posts.length) {
+          // All posts have components
           if (type === "page") setSelectAllPages(true)
           if (type === "post") setSelectAllPosts(true)
         } else {
+          // Not all posts have components
           if (type === "page") setSelectAllPages(false)
           if (type === "post") setSelectAllPosts(false)
         }
+        
+        console.log('CCC: Fetched posts:', response.data.data.posts)
+        console.log('CCC: Initially selected posts:', initiallySelected)
+        console.log('CCC: Posts with components:', postsWithComponents.length, 'of', response.data.data.posts.length)
       } else {
         setPosts([])
+        setSelectedPosts([])
+        setSelectAllPages(false)
+        setSelectAllPosts(false)
         setError("Failed to fetch posts.")
       }
     } catch (err) {
