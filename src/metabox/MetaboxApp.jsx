@@ -110,6 +110,7 @@ function MetaboxApp() {
       const data = await response.json();
       if (data.success) {
         console.log('CCC Metabox: Components saved successfully');
+        console.log('CCC DEBUG Metabox: Save response data:', data);
         return true;
       } else {
         console.error('CCC Metabox: Failed to save components:', data.message);

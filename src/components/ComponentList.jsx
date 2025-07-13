@@ -193,6 +193,16 @@ const ComponentList = () => {
         console.log('CCC: Fetched posts:', response.data.data.posts)
         console.log('CCC: Initially selected posts (main interface only):', initiallySelected)
         console.log('CCC: Posts with components:', postsWithComponents.length, 'of', response.data.data.posts.length)
+        
+        // DEBUG: Log detailed information for each post
+        response.data.data.posts.forEach(post => {
+          console.log(`CCC DEBUG Post ${post.id} (${post.title}):`, {
+            has_components: post.has_components,
+            assigned_via_main_interface: post.assigned_via_main_interface,
+            will_be_selected: post.has_components && post.assigned_via_main_interface,
+            component_count: post.assigned_components ? post.assigned_components.length : 0
+          });
+        });
       } else {
         setPosts([])
         setSelectedPosts([])
