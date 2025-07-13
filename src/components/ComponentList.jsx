@@ -169,23 +169,23 @@ const ComponentList = () => {
       if (response.data.success && Array.isArray(response.data.data?.posts)) {
         setPosts(response.data.data.posts)
         
-        // IMPORTANT: Only show posts as selected if they have components AND were assigned via main interface
-        // This prevents metabox changes from affecting the main interface selection
+        // IMPORTANT: Show posts as selected if they were assigned via main interface, regardless of current component count
+        // This ensures metabox changes don't affect main interface selection
         const initiallySelected = response.data.data.posts
-          .filter((post) => post.has_components && post.assigned_via_main_interface)
+          .filter((post) => post.assigned_via_main_interface)
           .map((post) => post.id)
         
         setSelectedPosts(initiallySelected)
 
-        // Check if all posts have components (for "select all" functionality)
-        const postsWithComponents = response.data.data.posts.filter((post) => post.has_components)
+        // Check if all posts are assigned via main interface (for "select all" functionality)
+        const postsAssignedViaMain = response.data.data.posts.filter((post) => post.assigned_via_main_interface)
         
-        if (postsWithComponents.length > 0 && postsWithComponents.length === response.data.data.posts.length) {
-          // All posts have components
+        if (postsAssignedViaMain.length > 0 && postsAssignedViaMain.length === response.data.data.posts.length) {
+          // All posts are assigned via main interface
           if (type === "page") setSelectAllPages(true)
           if (type === "post") setSelectAllPosts(true)
         } else {
-          // Not all posts have components
+          // Not all posts are assigned via main interface
           if (type === "page") setSelectAllPages(false)
           if (type === "post") setSelectAllPosts(false)
         }
@@ -199,7 +199,7 @@ const ComponentList = () => {
           console.log(`CCC DEBUG Post ${post.id} (${post.title}):`, {
             has_components: post.has_components,
             assigned_via_main_interface: post.assigned_via_main_interface,
-            will_be_selected: post.has_components && post.assigned_via_main_interface,
+            will_be_selected: post.assigned_via_main_interface, // Changed: only depends on main interface flag
             component_count: post.assigned_components ? post.assigned_components.length : 0
           });
         });
