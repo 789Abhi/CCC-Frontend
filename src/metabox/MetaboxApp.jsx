@@ -109,15 +109,7 @@ function MetaboxApp() {
     ));
   };
 
-  // Update hidden input for backend save
-  useEffect(() => {
-    const input = document.getElementById('ccc_components_data');
-    if (input) {
-      // Save all component data except isHidden (which is UI only)
-      const toSave = components.map(({ isHidden, ...rest }) => rest);
-      input.value = JSON.stringify(toSave);
-    }
-  }, [components]);
+  // Metabox is read-only - no need to update hidden inputs
 
   if (isLoading) {
     return (
@@ -130,22 +122,14 @@ function MetaboxApp() {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-0">
-      {/* Hidden input for backend save */}
-      <input type="hidden" id="ccc_components_data" name="ccc_components_data" />
       <ComponentList
         components={components}
-        isReadOnly={false}
-        onAdd={() => setShowSelector(true)}
-        onRemove={removeComponent}
-        onToggleHide={toggleHideComponent}
+        isReadOnly={true}
+        onAdd={() => {}} // Disabled
+        onRemove={() => {}} // Disabled
+        onToggleHide={() => {}} // Disabled
       />
-      {showSelector && (
-        <ComponentSelector
-          availableComponents={availableComponents}
-          onSelect={addComponent}
-          onClose={() => setShowSelector(false)}
-        />
-      )}
+      {/* Component selector is disabled in read-only mode */}
     </div>
   );
 }

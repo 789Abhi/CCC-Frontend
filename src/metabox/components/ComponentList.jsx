@@ -7,7 +7,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onTogg
       {/* Header with Add Button */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
         <h3 className="text-lg font-semibold text-gray-800">Custom Components</h3>
-        {!isReadOnly && (
+        {!isReadOnly ? (
           <button 
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
             onClick={onAdd}
@@ -19,6 +19,10 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onTogg
             </svg>
             Add Component
           </button>
+        ) : (
+          <div className="text-sm text-gray-500 italic">
+            Component management is disabled from the page metabox. Please use the main plugin interface to manage components.
+          </div>
         )}
       </div>
 
