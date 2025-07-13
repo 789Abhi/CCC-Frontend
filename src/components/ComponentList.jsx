@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import axios from "axios"
+import toast from "react-hot-toast"
 import {
   DndContext,
   closestCenter,
@@ -68,12 +69,13 @@ const ComponentList = () => {
   }
 
   const showMessage = (msg, type) => {
-    setMessage(msg)
-    setMessageType(type)
-    setTimeout(() => {
-      setMessage("")
-      setMessageType("")
-    }, 5000)
+    if (type === 'success') {
+      toast.success(msg)
+    } else if (type === 'error') {
+      toast.error(msg)
+    } else {
+      toast(msg)
+    }
   }
 
   const handleCopy = (text) => {
@@ -112,7 +114,7 @@ const ComponentList = () => {
             setCopiedText(text)
             setTimeout(() => setCopiedText(null), 2000)
           } else {
-            showMessage("Failed to copy text.", "error")
+            toast.error("Failed to copy text.")
           }
         })
     } else {
@@ -122,7 +124,7 @@ const ComponentList = () => {
         setCopiedText(text)
         setTimeout(() => setCopiedText(null), 2000)
       } else {
-        showMessage("Failed to copy text.", "error")
+        toast.error("Failed to copy text.")
       }
     }
   }
@@ -167,10 +169,10 @@ const ComponentList = () => {
       if (response.data.success && Array.isArray(response.data.data?.posts)) {
         setPosts(response.data.data.posts)
         
-        // Fix: Properly determine which posts should be selected
-        // A post should be selected if it has components assigned
+        // IMPORTANT: Only show posts as selected if they have components AND were assigned via main interface
+        // This prevents metabox changes from affecting the main interface selection
         const initiallySelected = response.data.data.posts
-          .filter((post) => post.has_components)
+          .filter((post) => post.has_components && post.assigned_via_main_interface)
           .map((post) => post.id)
         
         setSelectedPosts(initiallySelected)
@@ -189,7 +191,7 @@ const ComponentList = () => {
         }
         
         console.log('CCC: Fetched posts:', response.data.data.posts)
-        console.log('CCC: Initially selected posts:', initiallySelected)
+        console.log('CCC: Initially selected posts (main interface only):', initiallySelected)
         console.log('CCC: Posts with components:', postsWithComponents.length, 'of', response.data.data.posts.length)
       } else {
         setPosts([])

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ComponentList from './components/ComponentList';
 import ComponentSelector from './components/ComponentSelector';
+import toast from 'react-hot-toast';
 
 function MetaboxApp() {
   const [components, setComponents] = useState([]); // Components assigned to this page
@@ -112,10 +113,12 @@ function MetaboxApp() {
         return true;
       } else {
         console.error('CCC Metabox: Failed to save components:', data.message);
+        toast.error('Failed to save components: ' + (data.message || 'Unknown error'));
         return false;
       }
     } catch (error) {
       console.error('CCC Metabox: Error saving components:', error);
+      toast.error('Error saving components: ' + error.message);
       return false;
     } finally {
       setIsSaving(false);
@@ -127,9 +130,20 @@ function MetaboxApp() {
     loadAssignedComponents();
   }, []);
 
-  // Add a new component (from selector)
+  // Add a new component (from selector) - ONLY via explicit selection
   const addComponent = async (component) => {
-    if (!component || !component.id) return;
+    if (!component || !component.id) {
+      toast.error('Invalid component selected');
+      return;
+    }
+    
+    // Check if component is already added
+    const existingComponent = components.find(c => c.id === component.id);
+    if (existingComponent) {
+      toast.error('This component is already added to this page');
+      return;
+    }
+    
     const newComponent = {
       ...component,
       instance_id: `instance_${Date.now()}_${Math.floor(Math.random()*10000)}`,
@@ -141,11 +155,15 @@ function MetaboxApp() {
     setShowSelector(false);
     
     // Save immediately
-    await saveComponents(newComponents);
+    const success = await saveComponents(newComponents);
+    if (success) {
+      toast.success(`Component "${component.name}" added successfully`);
+    }
   };
 
   // Remove a component
   const removeComponent = async (instance_id) => {
+    const componentToRemove = components.find(c => c.instance_id === instance_id);
     const newComponents = components.filter(c => c.instance_id !== instance_id);
     setComponents(newComponents);
     
@@ -153,7 +171,10 @@ function MetaboxApp() {
     console.log('CCC Metabox: Removed component with instance_id:', instance_id);
     
     // Save immediately
-    await saveComponents(newComponents);
+    const success = await saveComponents(newComponents);
+    if (success && componentToRemove) {
+      toast.success(`Component "${componentToRemove.name}" removed successfully`);
+    }
   };
 
   // Toggle hide/show for a component (UI only)

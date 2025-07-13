@@ -10,23 +10,115 @@ function App() {
 
   if (isMetabox) {
     return (
-      <ErrorBoundary>
-        <MetaboxApp />
-        <Toaster position="top-center" />
-      </ErrorBoundary>
+      <>
+        <ErrorBoundary>
+          <MetaboxApp />
+        </ErrorBoundary>
+        <Toaster 
+          position="top-center" 
+          containerStyle={{
+            top: 20,
+            left: 50,
+            bottom: 20,
+            right: 50,
+          }}
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+              zIndex: 999999,
+              position: 'fixed',
+              top: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+            },
+            success: {
+              duration: 4000,
+              style: {
+                background: '#10B981',
+                color: '#fff',
+                zIndex: 999999,
+                position: 'fixed',
+                top: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+              },
+            },
+            error: {
+              duration: 4000,
+              style: {
+                background: '#EF4444',
+                color: '#fff',
+                zIndex: 999999,
+                position: 'fixed',
+                top: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+              },
+            },
+          }}
+        />
+      </>
     );
   }
 
   // Main admin app
   return (
-    <section className='bg-custom-gradient h-full -ml-5'>
-      <div className='container mx-auto'>
-       <ErrorBoundary>
-       <Header/>
-       <Toaster position="top-center" />
-       </ErrorBoundary>
-      </div>
-    </section>
+    <>
+      <section className='bg-custom-gradient h-full -ml-5'>
+        <div className='container mx-auto'>
+         <ErrorBoundary>
+         <Header/>
+         </ErrorBoundary>
+        </div>
+      </section>
+      <Toaster 
+        position="top-center" 
+        containerStyle={{
+          top: 20,
+          left: 50,
+          bottom: 20,
+          right: 50,
+        }}
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+            zIndex: 999999,
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          },
+          success: {
+            duration: 4000,
+            style: {
+              background: '#10B981',
+              color: '#fff',
+              zIndex: 999999,
+              position: 'fixed',
+              top: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+            },
+          },
+          error: {
+            duration: 4000,
+            style: {
+              background: '#EF4444',
+              color: '#fff',
+              zIndex: 999999,
+              position: 'fixed',
+              top: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+            },
+          },
+        }}
+      />
+    </>
   )
 }
 
