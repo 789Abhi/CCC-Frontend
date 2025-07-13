@@ -100,6 +100,9 @@ function MetaboxApp() {
   // Remove a component
   const removeComponent = (instance_id) => {
     setComponents(prev => prev.filter(c => c.instance_id !== instance_id));
+    
+    // Log the removal for debugging
+    console.log('CCC Metabox: Removed component with instance_id:', instance_id);
   };
 
   // Toggle hide/show for a component (UI only)
@@ -109,7 +112,7 @@ function MetaboxApp() {
     ));
   };
 
-  // Update hidden input for backend save
+  // Update hidden input for backend save - but don't trigger automatic save
   useEffect(() => {
     const input = document.getElementById('ccc_components_data');
     if (input) {
@@ -119,6 +122,9 @@ function MetaboxApp() {
       
       // Log for debugging
       console.log('CCC Metabox: Updated hidden input with', toSave.length, 'components for post', getPostId());
+      
+      // Don't trigger automatic save - let user explicitly save the page
+      // This prevents the metabox from disappearing when components are removed
     }
   }, [components]);
 
