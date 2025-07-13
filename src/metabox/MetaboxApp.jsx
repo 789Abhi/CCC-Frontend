@@ -109,7 +109,18 @@ function MetaboxApp() {
     ));
   };
 
-  // Metabox is read-only - no need to update hidden inputs
+  // Update hidden input for backend save
+  useEffect(() => {
+    const input = document.getElementById('ccc_components_data');
+    if (input) {
+      // Save all component data except isHidden (which is UI only)
+      const toSave = components.map(({ isHidden, ...rest }) => rest);
+      input.value = JSON.stringify(toSave);
+      
+      // Log for debugging
+      console.log('CCC Metabox: Updated hidden input with', toSave.length, 'components for post', getPostId());
+    }
+  }, [components]);
 
   if (isLoading) {
     return (
@@ -122,14 +133,22 @@ function MetaboxApp() {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-0">
+      {/* Hidden input for backend save */}
+      <input type="hidden" id="ccc_components_data" name="ccc_components_data" />
       <ComponentList
         components={components}
-        isReadOnly={true}
-        onAdd={() => {}} // Disabled
-        onRemove={() => {}} // Disabled
-        onToggleHide={() => {}} // Disabled
+        isReadOnly={false}
+        onAdd={() => setShowSelector(true)}
+        onRemove={removeComponent}
+        onToggleHide={toggleHideComponent}
       />
-      {/* Component selector is disabled in read-only mode */}
+      {showSelector && (
+        <ComponentSelector
+          availableComponents={availableComponents}
+          onSelect={addComponent}
+          onClose={() => setShowSelector(false)}
+        />
+      )}
     </div>
   );
 }
