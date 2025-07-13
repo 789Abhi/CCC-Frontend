@@ -7,6 +7,7 @@ function MetaboxApp() {
   const [isLoading, setIsLoading] = useState(true);
   const [showSelector, setShowSelector] = useState(false);
   const [availableComponents, setAvailableComponents] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Get post ID from WordPress
   const getPostId = () => {
@@ -79,13 +80,55 @@ function MetaboxApp() {
     }
   };
 
+  // Save components via Ajax
+  const saveComponents = async (componentsToSave) => {
+    try {
+      setIsSaving(true);
+      const postId = getPostId();
+      if (!postId) {
+        console.error('CCC Metabox: No post ID available for saving');
+        return false;
+      }
+
+      // Prepare components data (remove UI-only properties)
+      const componentsData = componentsToSave.map(({ isHidden, ...rest }) => rest);
+
+      const response = await fetch(cccData.ajaxUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          action: 'ccc_save_metabox_components',
+          nonce: cccData.nonce,
+          post_id: postId,
+          components: JSON.stringify(componentsData)
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        console.log('CCC Metabox: Components saved successfully');
+        return true;
+      } else {
+        console.error('CCC Metabox: Failed to save components:', data.message);
+        return false;
+      }
+    } catch (error) {
+      console.error('CCC Metabox: Error saving components:', error);
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   useEffect(() => {
     loadAvailableComponents();
     loadAssignedComponents();
   }, []);
 
   // Add a new component (from selector)
-  const addComponent = (component) => {
+  const addComponent = async (component) => {
     if (!component || !component.id) return;
     const newComponent = {
       ...component,
@@ -93,16 +136,24 @@ function MetaboxApp() {
       order: components.length,
       isHidden: false
     };
-    setComponents(prev => [...prev, newComponent]);
+    const newComponents = [...components, newComponent];
+    setComponents(newComponents);
     setShowSelector(false);
+    
+    // Save immediately
+    await saveComponents(newComponents);
   };
 
   // Remove a component
-  const removeComponent = (instance_id) => {
-    setComponents(prev => prev.filter(c => c.instance_id !== instance_id));
+  const removeComponent = async (instance_id) => {
+    const newComponents = components.filter(c => c.instance_id !== instance_id);
+    setComponents(newComponents);
     
     // Log the removal for debugging
     console.log('CCC Metabox: Removed component with instance_id:', instance_id);
+    
+    // Save immediately
+    await saveComponents(newComponents);
   };
 
   // Toggle hide/show for a component (UI only)
@@ -122,9 +173,6 @@ function MetaboxApp() {
       
       // Log for debugging
       console.log('CCC Metabox: Updated hidden input with', toSave.length, 'components for post', getPostId());
-      
-      // Don't trigger automatic save - let user explicitly save the page
-      // This prevents the metabox from disappearing when components are removed
     }
   }, [components]);
 
@@ -141,6 +189,11 @@ function MetaboxApp() {
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-0">
       {/* Hidden input for backend save */}
       <input type="hidden" id="ccc_components_data" name="ccc_components_data" />
+      {isSaving && (
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-700">
+          Saving changes...
+        </div>
+      )}
       <ComponentList
         components={components}
         isReadOnly={false}
