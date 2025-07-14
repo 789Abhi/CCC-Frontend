@@ -325,35 +325,24 @@ const ComponentList = () => {
   const handleSaveAssignments = async () => {
     try {
       const assignments = {}
-      // const allComponentObjects = components.map((comp) => ({
-      //   id: comp.id,
-      //   name: comp.name,
-      //   handle_name: comp.handle_name,
-      // }))
-
       posts.forEach((post) => {
         const isSelected =
           (postType === "page" && selectAllPages) ||
           (postType === "post" && selectAllPosts) ||
           selectedPosts.includes(post.id)
-
         if (isSelected) {
-          assignments[post.id] = [] // No components assigned by default!
+          assignments[post.id] = null; // Mark as assigned, but no components yet
         } else {
-          assignments[post.id] = []
+          assignments[post.id] = [];
         }
       })
-
       console.log('CCC: Assignments payload:', assignments);
-
       const formData = new FormData()
       formData.append("action", "ccc_save_component_assignments")
       formData.append("nonce", window.cccData.nonce)
       formData.append("assignments", JSON.stringify(assignments))
-
       const response = await axios.post(window.cccData.ajaxUrl, formData)
       console.log('CCC: Save assignments response:', response.data);
-
       if (response.data.success) {
         showMessage(response.data.message || "Assignments saved successfully.", "success")
         fetchPosts(postType)
