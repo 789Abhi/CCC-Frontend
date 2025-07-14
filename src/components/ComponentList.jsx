@@ -163,9 +163,8 @@ const ComponentList = () => {
       formData.append("action", "ccc_get_posts_with_components")
       formData.append("post_type", type)
       formData.append("nonce", window.cccData.nonce)
-
       const response = await axios.post(window.cccData.ajaxUrl, formData)
-
+      console.log('CCC: fetchPosts response:', response.data);
       if (response.data.success && Array.isArray(response.data.data?.posts)) {
         setPosts(response.data.data.posts)
         
@@ -353,6 +352,7 @@ const ComponentList = () => {
       formData.append("assignments", JSON.stringify(assignments))
 
       const response = await axios.post(window.cccData.ajaxUrl, formData)
+      console.log('CCC: Save assignments response:', response.data);
 
       if (response.data.success) {
         showMessage(response.data.message || "Assignments saved successfully.", "success")
@@ -367,6 +367,7 @@ const ComponentList = () => {
   }
 
   const handlePostSelectionChange = (postId, isChecked) => {
+    console.log('CCC: handlePostSelectionChange', { postId, isChecked, selectedPosts });
     setSelectedPosts((prev) => {
       if (isChecked) {
         return [...prev, postId]
