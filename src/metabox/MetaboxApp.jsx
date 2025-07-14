@@ -4,11 +4,12 @@ import ComponentSelector from './components/ComponentSelector';
 import toast from 'react-hot-toast';
 
 function MetaboxApp() {
-  const [components, setComponents] = useState([]); // Components assigned to this page
+  const [components, setComponents] = useState([]); // { ...component, isHidden, isPendingDelete }
   const [isLoading, setIsLoading] = useState(true);
   const [showSelector, setShowSelector] = useState(false);
   const [availableComponents, setAvailableComponents] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Get post ID from WordPress
   const getPostId = () => {
@@ -69,8 +70,8 @@ function MetaboxApp() {
       });
       const data = await response.json();
       if (data.success && Array.isArray(data.data?.components)) {
-        // Add isHidden property for UI
-        setComponents(data.data.components.map(c => ({ ...c, isHidden: false })));
+        // Add isHidden and isPendingDelete property for UI
+        setComponents(data.data.components.map(c => ({ ...c, isHidden: false, isPendingDelete: false })));
       } else {
         setComponents([]);
       }
@@ -81,7 +82,7 @@ function MetaboxApp() {
     }
   };
 
-  // Save components via Ajax
+  // Save components via Ajax (called only on page update)
   const saveComponents = async (componentsToSave) => {
     try {
       setIsSaving(true);
@@ -90,10 +91,10 @@ function MetaboxApp() {
         console.error('CCC Metabox: No post ID available for saving');
         return false;
       }
-
-      // Prepare components data (remove UI-only properties)
-      const componentsData = componentsToSave.map(({ isHidden, ...rest }) => rest);
-
+      // Prepare components data (remove UI-only properties and pending deletes)
+      const componentsData = componentsToSave
+        .filter(c => !c.isPendingDelete)
+        .map(({ isHidden, isPendingDelete, ...rest }) => rest);
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: {
@@ -106,19 +107,16 @@ function MetaboxApp() {
           components: JSON.stringify(componentsData)
         })
       });
-
       const data = await response.json();
       if (data.success) {
-        console.log('CCC Metabox: Components saved successfully');
-        console.log('CCC DEBUG Metabox: Save response data:', data);
+        setHasUnsavedChanges(false);
+        toast.success('Components saved successfully');
         return true;
       } else {
-        console.error('CCC Metabox: Failed to save components:', data.message);
         toast.error('Failed to save components: ' + (data.message || 'Unknown error'));
         return false;
       }
     } catch (error) {
-      console.error('CCC Metabox: Error saving components:', error);
       toast.error('Error saving components: ' + error.message);
       return false;
     } finally {
@@ -131,70 +129,73 @@ function MetaboxApp() {
     loadAssignedComponents();
   }, []);
 
-  // Add a new component (from selector) - ONLY via explicit selection
-  const addComponent = async (component) => {
-    if (!component || !component.id) {
-      toast.error('Invalid component selected');
+  // Add new components (from selector, can be array)
+  const addComponent = (selectedComponents) => {
+    let toAdd = Array.isArray(selectedComponents) ? selectedComponents : [selectedComponents];
+    // Filter out already added
+    toAdd = toAdd.filter(comp => !components.some(c => c.id === comp.id && !c.isPendingDelete));
+    if (toAdd.length === 0) {
+      toast.error('All selected components are already added to this page');
       return;
     }
-    
-    // Check if component is already added
-    const existingComponent = components.find(c => c.id === component.id);
-    if (existingComponent) {
-      toast.error('This component is already added to this page');
-      return;
-    }
-    
-    const newComponent = {
-      ...component,
-      instance_id: `instance_${Date.now()}_${Math.floor(Math.random()*10000)}`,
-      order: components.length,
-      isHidden: false
-    };
-    const newComponents = [...components, newComponent];
+    const newComponents = [
+      ...components,
+      ...toAdd.map((component, idx) => ({
+        ...component,
+        instance_id: `instance_${Date.now()}_${Math.floor(Math.random()*10000)}_${idx}`,
+        order: components.length + idx,
+        isHidden: false,
+        isPendingDelete: false
+      }))
+    ];
     setComponents(newComponents);
     setShowSelector(false);
-    
-    // Save immediately
-    const success = await saveComponents(newComponents);
-    if (success) {
-      toast.success(`Component "${component.name}" added successfully`);
-    }
+    setHasUnsavedChanges(true);
   };
 
-  // Remove a component
-  const removeComponent = async (instance_id) => {
-    const componentToRemove = components.find(c => c.instance_id === instance_id);
-    const newComponents = components.filter(c => c.instance_id !== instance_id);
-    setComponents(newComponents);
-    
-    // Log the removal for debugging
-    console.log('CCC Metabox: Removed component with instance_id:', instance_id);
-    
-    // Save immediately
-    const success = await saveComponents(newComponents);
-    if (success && componentToRemove) {
-      toast.success(`Component "${componentToRemove.name}" removed successfully`);
-    }
-  };
-
-  // Toggle hide/show for a component (UI only)
-  const toggleHideComponent = (instance_id) => {
+  // Mark a component for deletion (deferred)
+  const markComponentForDelete = (instance_id) => {
     setComponents(prev => prev.map(c =>
-      c.instance_id === instance_id ? { ...c, isHidden: !c.isHidden } : c
+      c.instance_id === instance_id ? { ...c, isPendingDelete: true } : c
     ));
+    setHasUnsavedChanges(true);
   };
+
+  // Undo delete
+  const undoDelete = (instance_id) => {
+    setComponents(prev => prev.map(c =>
+      c.instance_id === instance_id ? { ...c, isPendingDelete: false } : c
+    ));
+    setHasUnsavedChanges(true);
+  };
+
+  // Drag-and-drop reorder handler
+  const reorderComponents = (newOrder) => {
+    setComponents(newOrder);
+    setHasUnsavedChanges(true);
+  };
+
+  // Save on page update (WordPress save)
+  useEffect(() => {
+    const form = document.querySelector('form#post');
+    if (!form) return;
+    const handleSubmit = (e) => {
+      // Save only if there are unsaved changes
+      if (hasUnsavedChanges) {
+        saveComponents(components);
+      }
+    };
+    form.addEventListener('submit', handleSubmit);
+    return () => form.removeEventListener('submit', handleSubmit);
+  }, [components, hasUnsavedChanges]);
 
   // Update hidden input for backend save - but don't trigger automatic save
   useEffect(() => {
     const input = document.getElementById('ccc_components_data');
     if (input) {
-      // Save all component data except isHidden (which is UI only)
-      const toSave = components.map(({ isHidden, ...rest }) => rest);
+      // Save all component data except isHidden/isPendingDelete (which are UI only)
+      const toSave = components.filter(c => !c.isPendingDelete).map(({ isHidden, isPendingDelete, ...rest }) => rest);
       input.value = JSON.stringify(toSave);
-      
-      // Log for debugging
-      console.log('CCC Metabox: Updated hidden input with', toSave.length, 'components for post', getPostId());
     }
   }, [components]);
 
@@ -220,8 +221,15 @@ function MetaboxApp() {
         components={components}
         isReadOnly={false}
         onAdd={() => setShowSelector(true)}
-        onRemove={removeComponent}
-        onToggleHide={toggleHideComponent}
+        onRemove={markComponentForDelete}
+        onUndoDelete={undoDelete}
+        onToggleHide={(instance_id) => {
+          setComponents(prev => prev.map(c =>
+            c.instance_id === instance_id ? { ...c, isHidden: !c.isHidden } : c
+          ));
+          setHasUnsavedChanges(true);
+        }}
+        onReorder={reorderComponents}
       />
       {showSelector && (
         <ComponentSelector

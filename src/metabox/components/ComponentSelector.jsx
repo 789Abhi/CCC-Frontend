@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 function ComponentSelector({ availableComponents = [], onSelect, onClose }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedIds, setSelectedIds] = useState([]);
 
-  // Show all components, allow adding duplicates
   const filteredComponents = Array.isArray(availableComponents)
     ? availableComponents.filter(component =>
         component &&
@@ -14,8 +14,20 @@ function ComponentSelector({ availableComponents = [], onSelect, onClose }) {
       )
     : [];
 
-  const handleSelect = (component) => {
-    onSelect(component);
+  const handleToggle = (component) => {
+    setSelectedIds((prev) =>
+      prev.includes(component.id)
+        ? prev.filter(id => id !== component.id)
+        : [...prev, component.id]
+    );
+  };
+
+  const handleAddSelected = () => {
+    const selectedComponents = filteredComponents.filter(c => selectedIds.includes(c.id));
+    if (selectedComponents.length > 0) {
+      onSelect(selectedComponents);
+    }
+    onClose();
   };
 
   useEffect(() => {
@@ -35,7 +47,7 @@ function ComponentSelector({ availableComponents = [], onSelect, onClose }) {
       >
         {/* Header */}
         <div className="flex items-center px-3 py-2 border-b border-pink-300 bg-white">
-          <span className="font-semibold text-gray-800 text-base flex-1">Search Component</span>
+          <span className="font-semibold text-gray-800 text-base flex-1">Select Components</span>
           <button className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700" onClick={onClose} type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
               <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -70,23 +82,32 @@ function ComponentSelector({ availableComponents = [], onSelect, onClose }) {
           ) : (
             <div>
               {filteredComponents.map((component) => (
-                <button
-                  key={component.id + '-' + Math.random()}
-                  className="w-full flex items-center gap-2 px-3 py-2 mb-2 rounded bg-white border border-pink-200 hover:bg-pink-50 transition text-left shadow-sm"
-                  onClick={() => handleSelect(component)}
-                  type="button"
+                <label
+                  key={component.id}
+                  className={`w-full flex items-center gap-2 px-3 py-2 mb-2 rounded bg-white border border-pink-200 hover:bg-pink-50 transition text-left shadow-sm cursor-pointer ${selectedIds.includes(component.id) ? 'bg-pink-50 border-pink-400' : ''}`}
                 >
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full border border-pink-400 bg-white text-pink-500 mr-2">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                  </span>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(component.id)}
+                    onChange={() => handleToggle(component)}
+                    className="accent-pink-500"
+                  />
                   <span className="flex-1 min-w-0 text-gray-800 font-medium truncate">{component.name}</span>
-                </button>
+                </label>
               ))}
             </div>
           )}
+        </div>
+        {/* Add Selected Button */}
+        <div className="px-3 py-2 border-t border-pink-200 bg-white flex justify-end">
+          <button
+            className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 disabled:opacity-50"
+            onClick={handleAddSelected}
+            disabled={selectedIds.length === 0}
+            type="button"
+          >
+            Add Selected
+          </button>
         </div>
       </div>
     </div>
