@@ -326,11 +326,11 @@ const ComponentList = () => {
   const handleSaveAssignments = async () => {
     try {
       const assignments = {}
-      const allComponentObjects = components.map((comp) => ({
-        id: comp.id,
-        name: comp.name,
-        handle_name: comp.handle_name,
-      }))
+      // const allComponentObjects = components.map((comp) => ({
+      //   id: comp.id,
+      //   name: comp.name,
+      //   handle_name: comp.handle_name,
+      // }))
 
       posts.forEach((post) => {
         const isSelected =
@@ -339,7 +339,7 @@ const ComponentList = () => {
           selectedPosts.includes(post.id)
 
         if (isSelected) {
-          assignments[post.id] = allComponentObjects
+          assignments[post.id] = [] // No components assigned by default!
         } else {
           assignments[post.id] = []
         }
