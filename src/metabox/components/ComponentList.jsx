@@ -2,6 +2,7 @@ import React from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import logo from "/drag-drop-icon.svg"
 
 function ComponentItem({ component, index, isReadOnly, totalComponents, onRemove, onUndoDelete, onToggleHide, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand }) {
   return (
@@ -32,11 +33,7 @@ function ComponentItem({ component, index, isReadOnly, totalComponents, onRemove
             )}
           </button>
           <div {...attributes} {...listeners} className="ccc-drag-handle cursor-grab active:cursor-grabbing p-1 hover:bg-pink-100 rounded transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 mr-2" style={{ background: '#f9fafb' }}>
-            <svg className="w-5 h-5 text-pink-400 group-hover:text-pink-600 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="8" y1="12" x2="16" y2="12" />
-              <line x1="12" y1="8" x2="12" y2="16" />
-            </svg>
+           <img className='w-5 h-5 object-contain' src={logo} alt="" />
           </div>
           <div>
             <div className="font-semibold text-gray-800 text-lg flex items-center gap-2">
@@ -135,9 +132,9 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
       {/* Header with Add Dropdown */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-blue-50 relative">
         <h3 className="text-lg font-semibold text-gray-800">Custom Components</h3>
-        <div className="relative">
+        <div className="relative w-[200px]">
           <button
-            className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition shadow focus:outline-none focus:ring-2 focus:ring-pink-400"
+            className="flex items-center w-full text-base font-semibold gap-2 px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition shadow focus:outline-none focus:ring-2 focus:ring-pink-400"
             onClick={onAdd}
             type="button"
           >
@@ -148,7 +145,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
             Add Component
           </button>
           {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-white border border-pink-200 rounded-lg shadow-lg z-20 animate-fade-in">
+            <div className="absolute right-0 mt-2 w-[200px] bg-white border border-pink-200 rounded-lg shadow-lg z-20 animate-fade-in">
               <ul className="max-h-60 overflow-y-auto py-2">
                 {availableComponents.length === 0 ? (
                   <li className="px-4 py-2 text-gray-400">No components available</li>
