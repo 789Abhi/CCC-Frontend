@@ -160,7 +160,9 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
 
   const handleAddSelected = () => {
     const selectedComponents = availableComponents.filter(c => selectedIds.includes(c.id));
-    selectedComponents.forEach(comp => addComponent(comp));
+    if (selectedComponents.length > 0) {
+      addComponent(selectedComponents);
+    }
     setDropdownOpen(false);
   };
 

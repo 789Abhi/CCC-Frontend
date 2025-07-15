@@ -131,19 +131,18 @@ function MetaboxApp() {
     loadAssignedComponents();
   }, []);
 
-  // Add new component (from dropdown)
-  const addComponent = (component) => {
-    if (!component) return;
-    const newComponent = {
+  // Add new component(s) (from dropdown)
+  const addComponent = (componentOrArray) => {
+    const toAdd = Array.isArray(componentOrArray) ? componentOrArray : [componentOrArray];
+    const newComponents = toAdd.map((component, idx) => ({
       ...component,
-      instance_id: `instance_${Date.now()}_${Math.floor(Math.random()*10000)}`,
-      order: components.length,
+      instance_id: `instance_${Date.now()}_${Math.floor(Math.random()*10000)}_${idx}`,
+      order: components.length + idx,
       isHidden: false, // ensure visible by default
       isPendingDelete: false
-    };
-    setComponents([...components, newComponent]);
+    }));
+    setComponents([...components, ...newComponents]);
     setHasUnsavedChanges(true);
-    // Do NOT expand by default
     setDropdownOpen(false);
   };
 
