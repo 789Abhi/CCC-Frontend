@@ -167,7 +167,12 @@ function MetaboxApp() {
 
   // Drag-and-drop reorder handler
   const reorderComponents = (newOrder) => {
-    setComponents(newOrder);
+    // Update the order property to match the new array order
+    const reordered = newOrder.map((c, idx) => ({
+      ...c,
+      order: idx
+    }));
+    setComponents(reordered);
     setHasUnsavedChanges(true);
   };
 
