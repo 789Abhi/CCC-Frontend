@@ -6,12 +6,11 @@ import toast from 'react-hot-toast';
 function MetaboxApp() {
   const [components, setComponents] = useState([]); // { ...component, isHidden, isPendingDelete }
   const [isLoading, setIsLoading] = useState(true);
-  const [showSelector, setShowSelector] = useState(false);
   const [availableComponents, setAvailableComponents] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [expandedComponentIds, setExpandedComponentIds] = useState([]); // for expand/collapse
-  const [activeComponentId, setActiveComponentId] = useState(null); // for active/inactive
+  const [dropdownOpen, setDropdownOpen] = useState(false); // for add dropdown
 
   // Get post ID from WordPress
   const getPostId = () => {
@@ -131,29 +130,20 @@ function MetaboxApp() {
     loadAssignedComponents();
   }, []);
 
-  // Add new components (from selector, can be array)
-  const addComponent = (selectedComponents) => {
-    let toAdd = Array.isArray(selectedComponents) ? selectedComponents : [selectedComponents];
-    // Allow adding same component multiple times (no filter by id)
-    const newComponents = [
-      ...components,
-      ...toAdd.map((component, idx) => ({
-        ...component,
-        instance_id: `instance_${Date.now()}_${Math.floor(Math.random()*10000)}_${idx}`,
-        order: components.length + idx,
-        isHidden: false,
-        isPendingDelete: false
-      }))
-    ];
-    setComponents(newComponents);
-    setShowSelector(false);
+  // Add new component (from dropdown)
+  const addComponent = (component) => {
+    if (!component) return;
+    const newComponent = {
+      ...component,
+      instance_id: `instance_${Date.now()}_${Math.floor(Math.random()*10000)}`,
+      order: components.length,
+      isHidden: false,
+      isPendingDelete: false
+    };
+    setComponents([...components, newComponent]);
     setHasUnsavedChanges(true);
-    // Optionally expand and activate the last added component
-    if (toAdd.length > 0) {
-      const lastInstanceId = `instance_${Date.now()}_${Math.floor(Math.random()*10000)}_${toAdd.length-1}`;
-      setExpandedComponentIds(prev => [...prev, lastInstanceId]);
-      setActiveComponentId(lastInstanceId);
-    }
+    setExpandedComponentIds(prev => [...prev, newComponent.instance_id]);
+    setDropdownOpen(false);
   };
 
   // Mark a component for deletion (deferred)
@@ -164,7 +154,6 @@ function MetaboxApp() {
     setHasUnsavedChanges(true);
     // Remove from expanded/active if deleted
     setExpandedComponentIds(prev => prev.filter(id => id !== instance_id));
-    if (activeComponentId === instance_id) setActiveComponentId(null);
   };
 
   // Undo delete
@@ -191,7 +180,7 @@ function MetaboxApp() {
   };
   // Set active handler
   const setActive = (instance_id) => {
-    setActiveComponentId(instance_id);
+    // This function is no longer needed as there's no active component state
   };
 
   // Save on page update (WordPress save)
@@ -239,7 +228,7 @@ function MetaboxApp() {
       <ComponentList
         components={components}
         isReadOnly={false}
-        onAdd={() => setShowSelector(true)}
+        onAdd={() => setDropdownOpen((open) => !open)}
         onRemove={markComponentForDelete}
         onUndoDelete={undoDelete}
         onToggleHide={(instance_id) => {
@@ -251,16 +240,11 @@ function MetaboxApp() {
         onReorder={reorderComponents}
         expandedComponentIds={expandedComponentIds}
         onToggleExpand={toggleExpand}
-        activeComponentId={activeComponentId}
-        onSetActive={setActive}
+        dropdownOpen={dropdownOpen}
+        setDropdownOpen={setDropdownOpen}
+        availableComponents={availableComponents}
+        addComponent={addComponent}
       />
-      {showSelector && (
-        <ComponentSelector
-          availableComponents={availableComponents}
-          onSelect={addComponent}
-          onClose={() => setShowSelector(false)}
-        />
-      )}
     </div>
   );
 }

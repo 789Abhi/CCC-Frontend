@@ -3,13 +3,18 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-function ComponentItem({ component, index, isReadOnly, totalComponents, onRemove, onUndoDelete, onToggleHide, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, isActive, onSetActive }) {
+function ComponentItem({ component, index, isReadOnly, totalComponents, onRemove, onUndoDelete, onToggleHide, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand }) {
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col border-b border-gray-100 bg-white transition-all duration-200 ${component.isPendingDelete ? 'opacity-50 bg-red-50' : ''} ${isActive ? 'ring-2 ring-pink-400 z-10' : ''}`}
-      onClick={() => onSetActive(component.instance_id)}
+      className={`flex flex-col border-b border-gray-100 bg-white transition-all duration-200 ${component.isPendingDelete ? 'opacity-50 bg-red-50' : ''}`}
+      onClick={e => {
+        // Only toggle expand if not clicking drag handle or action buttons
+        if (!e.target.closest('.ccc-drag-handle') && !e.target.closest('.ccc-action-btn')) {
+          onToggleExpand(component.instance_id);
+        }
+      }}
     >
       <div className="flex items-center justify-between px-6 py-4 group cursor-pointer">
         <div className="flex items-center gap-3 flex-1">
@@ -26,8 +31,8 @@ function ComponentItem({ component, index, isReadOnly, totalComponents, onRemove
               <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="8 6 12 10 8 14" /></svg>
             )}
           </button>
-          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors">
-            <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div {...attributes} {...listeners} className="ccc-drag-handle cursor-grab active:cursor-grabbing p-1 hover:bg-pink-100 rounded transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 mr-2" style={{ background: '#f9fafb' }}>
+            <svg className="w-5 h-5 text-pink-400 group-hover:text-pink-600 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
               <line x1="8" y1="12" x2="16" y2="12" />
               <line x1="12" y1="8" x2="12" y2="16" />
@@ -36,27 +41,28 @@ function ComponentItem({ component, index, isReadOnly, totalComponents, onRemove
           <div>
             <div className="font-semibold text-gray-800 text-lg flex items-center gap-2">
               {component.name}
-              {isActive && <span className="ml-2 px-2 py-0.5 text-xs rounded bg-pink-100 text-pink-700 font-semibold">Active</span>}
             </div>
             <div className="text-xs text-gray-400">@{component.handle_name}</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
-            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 ccc-action-btn"
             onClick={e => { e.stopPropagation(); onToggleHide(); }}
             type="button"
             title={component.isHidden ? 'Show' : 'Hide'}
           >
             {component.isHidden ? (
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3.5" /><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /></svg>
+              // Eye icon for show
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12C1 12 5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
             ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3.5" /><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /></svg>
+              // Eye-off icon for hide
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.77 21.77 0 0 1 5.06-6.06M1 1l22 22"/><circle cx="12" cy="12" r="3"/></svg>
             )}
           </button>
           {component.isPendingDelete ? (
             <button
-              className="p-1 rounded hover:bg-green-100 text-green-600 hover:text-green-800"
+              className="p-1 rounded hover:bg-green-100 text-green-600 hover:text-green-800 ccc-action-btn"
               onClick={e => { e.stopPropagation(); onUndoDelete(); }}
               type="button"
               title="Undo Delete"
@@ -65,7 +71,7 @@ function ComponentItem({ component, index, isReadOnly, totalComponents, onRemove
             </button>
           ) : (
             <button
-              className="p-1 rounded hover:bg-red-100 text-red-600 hover:text-red-800"
+              className="p-1 rounded hover:bg-red-100 text-red-600 hover:text-red-800 ccc-action-btn"
               onClick={e => { e.stopPropagation(); onRemove(); }}
               type="button"
               title="Delete"
@@ -80,7 +86,6 @@ function ComponentItem({ component, index, isReadOnly, totalComponents, onRemove
         <div className="px-8 pb-4 pt-2 bg-gray-50 border-t border-gray-100 text-sm text-gray-700 animate-fade-in">
           <div><span className="font-semibold">Component Handle:</span> @{component.handle_name}</div>
           <div><span className="font-semibold">Order:</span> {index + 1} of {totalComponents}</div>
-          {/* Add more details here as needed */}
         </div>
       )}
     </div>
@@ -96,19 +101,21 @@ function SortableComponentItem(props) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: component.instance_id });
+  } = useSortable({ id: component.instance_id, transition: { duration: 200, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' } });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.7 : 1,
     zIndex: isDragging ? 100 : 'auto',
+    boxShadow: isDragging ? '0 8px 24px 0 rgba(236, 72, 153, 0.15)' : undefined,
+    scale: isDragging ? 1.03 : 1,
   };
   return <ComponentItem {...rest} component={component} listeners={listeners} attributes={attributes} setNodeRef={setNodeRef} style={style} />;
 }
 
-function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndoDelete, onToggleHide, onReorder, expandedComponentIds = [], onToggleExpand, activeComponentId, onSetActive }) {
+function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndoDelete, onToggleHide, onReorder, expandedComponentIds = [], onToggleExpand, dropdownOpen, setDropdownOpen, availableComponents, addComponent }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 2 } })
   );
 
   const handleDragEnd = (event) => {
@@ -125,20 +132,41 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
 
   return (
     <div>
-      {/* Header with Add Button */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-blue-50">
+      {/* Header with Add Dropdown */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-blue-50 relative">
         <h3 className="text-lg font-semibold text-gray-800">Custom Components</h3>
-        <button 
-          className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition shadow focus:outline-none focus:ring-2 focus:ring-pink-400"
-          onClick={onAdd}
-          type="button"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          Add Component
-        </button>
+        <div className="relative">
+          <button
+            className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition shadow focus:outline-none focus:ring-2 focus:ring-pink-400"
+            onClick={onAdd}
+            type="button"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Component
+          </button>
+          {dropdownOpen && (
+            <div className="absolute right-0 mt-2 w-64 bg-white border border-pink-200 rounded-lg shadow-lg z-20 animate-fade-in">
+              <ul className="max-h-60 overflow-y-auto py-2">
+                {availableComponents.length === 0 ? (
+                  <li className="px-4 py-2 text-gray-400">No components available</li>
+                ) : (
+                  availableComponents.map((component) => (
+                    <li
+                      key={component.id}
+                      className="px-4 py-2 hover:bg-pink-50 cursor-pointer text-gray-800"
+                      onClick={() => addComponent(component)}
+                    >
+                      {component.name}
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
       {/* Components List */}
       <div className="min-h-[80px]">
@@ -169,8 +197,6 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                   onToggleHide={() => onToggleHide(component.instance_id)}
                   isExpanded={expandedComponentIds.includes(component.instance_id)}
                   onToggleExpand={onToggleExpand}
-                  isActive={activeComponentId === component.instance_id}
-                  onSetActive={onSetActive}
                 />
               ))}
             </SortableContext>
