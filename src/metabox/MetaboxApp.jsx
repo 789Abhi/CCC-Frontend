@@ -183,6 +183,12 @@ function MetaboxApp() {
     // This function is no longer needed as there's no active component state
   };
 
+  // Remove component from UI immediately, only delete from DB on save
+  const removeComponent = (instance_id) => {
+    setComponents(prev => prev.filter(c => c.instance_id !== instance_id));
+    setHasUnsavedChanges(true);
+  };
+
   // Save on page update (WordPress save)
   useEffect(() => {
     const form = document.querySelector('form#post');
@@ -229,7 +235,7 @@ function MetaboxApp() {
         components={components}
         isReadOnly={false}
         onAdd={() => setDropdownOpen((open) => !open)}
-        onRemove={markComponentForDelete}
+        onRemove={removeComponent}
         onUndoDelete={undoDelete}
         onToggleHide={(instance_id) => {
           setComponents(prev => prev.map(c =>

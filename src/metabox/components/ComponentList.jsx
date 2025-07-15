@@ -137,8 +137,12 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
   // Multi-select state for dropdown
   const [selectedIds, setSelectedIds] = React.useState([]);
   const [searchTerm, setSearchTerm] = React.useState('');
+  const searchInputRef = React.useRef(null);
   React.useEffect(() => {
     if (!dropdownOpen) setSelectedIds([]);
+    if (dropdownOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
   }, [dropdownOpen]);
 
   const filteredComponents = availableComponents.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -159,6 +163,11 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
     const selectedComponents = availableComponents.filter(c => selectedIds.includes(c.id));
     selectedComponents.forEach(comp => addComponent(comp));
     setDropdownOpen(false);
+  };
+
+  // Remove component from UI immediately
+  const handleRemove = (instance_id) => {
+    onRemove(instance_id);
   };
 
   const handleDragEnd = (event) => {
@@ -193,6 +202,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
           {dropdownOpen && (
             <div className="absolute right-0 mt-2 w-[300px] bg-white border-2 border-pink-400 rounded-lg shadow-lg z-20 animate-fade-in p-2">
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search Component"
                 value={searchTerm}
@@ -255,7 +265,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                   index={index}
                   isReadOnly={isReadOnly}
                   totalComponents={components.length}
-                  onRemove={() => onRemove(component.instance_id)}
+                  onRemove={() => handleRemove(component.instance_id)}
                   onUndoDelete={() => onUndoDelete(component.instance_id)}
                   onToggleHide={() => onToggleHide(component.instance_id)}
                   isExpanded={expandedComponentIds.includes(component.instance_id)}
