@@ -124,7 +124,6 @@ function SortableComponentItem(props) {
     opacity: isDragging ? 0.7 : 1,
     zIndex: isDragging ? 100 : 'auto',
     boxShadow: isDragging ? '0 8px 24px 0 rgba(236, 72, 153, 0.15)' : undefined,
-    scale: isDragging ? 1.03 : 1,
   };
   return <ComponentItem {...rest} component={component} listeners={listeners} attributes={attributes} setNodeRef={setNodeRef} style={style} />;
 }

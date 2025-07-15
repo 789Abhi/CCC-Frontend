@@ -92,10 +92,10 @@ function MetaboxApp() {
         console.error('CCC Metabox: No post ID available for saving');
         return false;
       }
-      // Prepare components data (remove UI-only properties and pending deletes)
+      // Prepare components data (remove only isPendingDelete, keep isHidden and order)
       const componentsData = componentsToSave
         .filter(c => !c.isPendingDelete)
-        .map(({ isHidden, isPendingDelete, ...rest }) => rest);
+        .map(({ isPendingDelete, ...rest }) => rest);
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: {
@@ -207,8 +207,8 @@ function MetaboxApp() {
   useEffect(() => {
     const input = document.getElementById('ccc_components_data');
     if (input) {
-      // Save all component data except isHidden/isPendingDelete (which are UI only)
-      const toSave = components.filter(c => !c.isPendingDelete).map(({ isHidden, isPendingDelete, ...rest }) => rest);
+      // Save all component data except isPendingDelete (which is UI only)
+      const toSave = components.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
       input.value = JSON.stringify(toSave);
     }
   }, [components]);
