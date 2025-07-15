@@ -115,6 +115,30 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
     useSensor(PointerSensor, { activationConstraint: { distance: 2 } })
   );
 
+  // Multi-select state for dropdown
+  const [selectedIds, setSelectedIds] = React.useState([]);
+  React.useEffect(() => {
+    if (!dropdownOpen) setSelectedIds([]);
+  }, [dropdownOpen]);
+
+  const handleDropdownToggle = () => {
+    setDropdownOpen((open) => !open);
+  };
+
+  const handleDropdownSelect = (component) => {
+    setSelectedIds((prev) =>
+      prev.includes(component.id)
+        ? prev.filter(id => id !== component.id)
+        : [...prev, component.id]
+    );
+  };
+
+  const handleAddSelected = () => {
+    const selectedComponents = availableComponents.filter(c => selectedIds.includes(c.id));
+    selectedComponents.forEach(comp => addComponent(comp));
+    setDropdownOpen(false);
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
@@ -135,7 +159,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
         <div className="relative w-[200px]">
           <button
             className="flex items-center w-full text-base font-semibold gap-2 px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition shadow focus:outline-none focus:ring-2 focus:ring-pink-400"
-            onClick={onAdd}
+            onClick={handleDropdownToggle}
             type="button"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -151,16 +175,28 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                   <li className="px-4 py-2 text-gray-400">No components available</li>
                 ) : (
                   availableComponents.map((component) => (
-                    <li
-                      key={component.id}
-                      className="px-4 py-2 hover:bg-pink-50 cursor-pointer text-gray-800"
-                      onClick={() => addComponent(component)}
-                    >
-                      {component.name}
+                    <li key={component.id} className="px-4 py-2 hover:bg-pink-50 cursor-pointer text-gray-800 flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(component.id)}
+                        onChange={() => handleDropdownSelect(component)}
+                        className="accent-pink-500"
+                      />
+                      <span className="flex-1 min-w-0 text-gray-800 font-medium truncate text-base">{component.name}</span>
                     </li>
                   ))
                 )}
               </ul>
+              <div className="px-4 py-2 border-t border-pink-100 bg-white flex justify-end">
+                <button
+                  className="px-3 py-1.5 bg-pink-500 text-white rounded hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm font-semibold shadow disabled:opacity-50"
+                  onClick={handleAddSelected}
+                  disabled={selectedIds.length === 0}
+                  type="button"
+                >
+                  Add Selected
+                </button>
+              </div>
             </div>
           )}
         </div>

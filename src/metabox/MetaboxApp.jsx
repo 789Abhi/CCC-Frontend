@@ -137,12 +137,12 @@ function MetaboxApp() {
       ...component,
       instance_id: `instance_${Date.now()}_${Math.floor(Math.random()*10000)}`,
       order: components.length,
-      isHidden: false,
+      isHidden: false, // ensure visible by default
       isPendingDelete: false
     };
     setComponents([...components, newComponent]);
     setHasUnsavedChanges(true);
-    setExpandedComponentIds(prev => [...prev, newComponent.instance_id]);
+    // Do NOT expand by default
     setDropdownOpen(false);
   };
 
