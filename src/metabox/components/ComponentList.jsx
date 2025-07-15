@@ -1,86 +1,105 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import logo from "/drag-drop-icon.svg"
+import logo from "/drag-drop-icon.svg";
+
+function ToggleSwitch({ checked, onChange }) {
+  return (
+    <button
+      type="button"
+      className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors duration-200 focus:outline-none border-2 border-pink-400 ${checked ? 'bg-green-400' : 'bg-gray-200'}`}
+      onClick={onChange}
+      aria-pressed={checked}
+    >
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-6' : 'translate-x-1'}`}
+      />
+    </button>
+  );
+}
+
+function DotMenu({ onDelete }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef();
+  React.useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        className="ccc-action-btn p-1 rounded hover:bg-gray-200 text-gray-500 focus:outline-none"
+        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+        type="button"
+        aria-label="More actions"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <circle cx="5" cy="12" r="2" />
+          <circle cx="12" cy="12" r="2" />
+          <circle cx="19" cy="12" r="2" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-2 w-32 bg-white border border-pink-200 rounded shadow-lg z-30 animate-fade-in">
+          <button
+            className="w-full text-left px-4 py-2 text-red-600 hover:bg-pink-50 font-semibold"
+            onClick={e => { e.stopPropagation(); setOpen(false); onDelete(); }}
+            type="button"
+          >
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ComponentItem({ component, index, isReadOnly, totalComponents, onRemove, onUndoDelete, onToggleHide, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand }) {
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col border-b border-gray-100 bg-white transition-all duration-200 ${component.isPendingDelete ? 'opacity-50 bg-red-50' : ''}`}
+      className={`flex flex-col border-2 border-pink-400 rounded-lg mb-4 bg-gray-100 transition-all duration-200 ${component.isPendingDelete ? 'opacity-50 bg-red-50' : ''}`}
       onClick={e => {
-        // Only toggle expand if not clicking drag handle or action buttons
-        if (!e.target.closest('.ccc-drag-handle') && !e.target.closest('.ccc-action-btn')) {
+        if (!e.target.closest('.ccc-drag-handle') && !e.target.closest('.ccc-action-btn') && !e.target.closest('.ccc-dot-menu')) {
           onToggleExpand(component.instance_id);
         }
       }}
     >
-      <div className="flex items-center justify-between px-6 py-4 group cursor-pointer">
-        <div className="flex items-center gap-3 flex-1">
+      <div className="flex items-center px-4 py-3">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button
-            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 mr-2"
+            className="p-1 rounded hover:bg-gray-200 text-gray-500 focus:outline-none"
             onClick={e => { e.stopPropagation(); onToggleExpand(component.instance_id); }}
             tabIndex={0}
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
             type="button"
           >
             {isExpanded ? (
-              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 8 10 12 14 8" /></svg>
+              <svg className="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 8 10 12 14 8" /></svg>
             ) : (
-              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="8 6 12 10 8 14" /></svg>
+              <svg className="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="8 6 12 10 8 14" /></svg>
             )}
           </button>
-          <div {...attributes} {...listeners} className="ccc-drag-handle cursor-grab active:cursor-grabbing p-1 hover:bg-pink-100 rounded transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 mr-2" style={{ background: '#f9fafb' }}>
-           <img className='w-5 h-5 object-contain' src={logo} alt="" />
-          </div>
-          <div>
-            <div className="font-semibold text-gray-800 text-lg flex items-center gap-2">
-              {component.name}
-            </div>
-            <div className="text-xs text-gray-400">@{component.handle_name}</div>
+          <div {...attributes} {...listeners} className="ccc-drag-handle cursor-grab active:cursor-grabbing p-1 rounded focus:outline-none focus:ring-2 focus:ring-pink-400" style={{ background: '#fff' }}>
+            <img className='w-6 h-6 object-contain' src={logo} alt="Drag" />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 ccc-action-btn"
-            onClick={e => { e.stopPropagation(); onToggleHide(); }}
-            type="button"
-            title={component.isHidden ? 'Show' : 'Hide'}
-          >
-            {component.isHidden ? (
-              // Eye icon for show
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12C1 12 5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-            ) : (
-              // Eye-off icon for hide
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.77 21.77 0 0 1 5.06-6.06M1 1l22 22"/><circle cx="12" cy="12" r="3"/></svg>
-            )}
-          </button>
-          {component.isPendingDelete ? (
-            <button
-              className="p-1 rounded hover:bg-green-100 text-green-600 hover:text-green-800 ccc-action-btn"
-              onClick={e => { e.stopPropagation(); onUndoDelete(); }}
-              type="button"
-              title="Undo Delete"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 14l-4-4 4-4" /><path d="M5 10h12a4 4 0 1 1 0 8h-1" /></svg>
-            </button>
-          ) : (
-            <button
-              className="p-1 rounded hover:bg-red-100 text-red-600 hover:text-red-800 ccc-action-btn"
-              onClick={e => { e.stopPropagation(); onRemove(); }}
-              type="button"
-              title="Delete"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
-            </button>
-          )}
+        <div className="flex-1 ml-4">
+          <div className="font-semibold text-gray-800 text-lg">{component.name}</div>
+          <div className="text-xs text-gray-500">@{component.handle_name}</div>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <ToggleSwitch checked={!component.isHidden} onChange={e => { e.stopPropagation(); onToggleHide(); }} />
+          <DotMenu onDelete={onRemove} />
         </div>
       </div>
-      {/* Expanded details */}
       {isExpanded && (
-        <div className="px-8 pb-4 pt-2 bg-gray-50 border-t border-gray-100 text-sm text-gray-700 animate-fade-in">
+        <div className="px-8 pb-4 pt-2 bg-gray-50 border-t border-pink-100 text-sm text-gray-700 animate-fade-in">
           <div><span className="font-semibold">Component Handle:</span> @{component.handle_name}</div>
           <div><span className="font-semibold">Order:</span> {index + 1} of {totalComponents}</div>
         </div>
@@ -117,9 +136,12 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
 
   // Multi-select state for dropdown
   const [selectedIds, setSelectedIds] = React.useState([]);
+  const [searchTerm, setSearchTerm] = React.useState('');
   React.useEffect(() => {
     if (!dropdownOpen) setSelectedIds([]);
   }, [dropdownOpen]);
+
+  const filteredComponents = availableComponents.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const handleDropdownToggle = () => {
     setDropdownOpen((open) => !open);
@@ -156,9 +178,9 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
       {/* Header with Add Dropdown */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-blue-50 relative">
         <h3 className="text-lg font-semibold text-gray-800">Custom Components</h3>
-        <div className="relative w-[200px]">
+        <div className="relative w-[300px]">
           <button
-            className="flex items-center w-full text-base font-semibold gap-2 px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition shadow focus:outline-none focus:ring-2 focus:ring-pink-400"
+            className="flex items-center w-full text-base font-semibold gap-2 px-4 py-2 bg-white border-2 border-pink-400 text-pink-600 rounded-md hover:bg-pink-50 transition shadow focus:outline-none focus:ring-2 focus:ring-pink-400"
             onClick={handleDropdownToggle}
             type="button"
           >
@@ -169,13 +191,21 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
             Add Component
           </button>
           {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-[200px] bg-white border border-pink-200 rounded-lg shadow-lg z-20 animate-fade-in">
-              <ul className="max-h-60 overflow-y-auto py-2">
-                {availableComponents.length === 0 ? (
+            <div className="absolute right-0 mt-2 w-[300px] bg-white border-2 border-pink-400 rounded-lg shadow-lg z-20 animate-fade-in p-2">
+              <input
+                type="text"
+                placeholder="Search Component"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full mb-2 px-3 py-2 border border-pink-300 rounded focus:outline-none focus:ring-2 focus:ring-pink-400 text-base"
+              />
+              <ul className="max-h-60 overflow-y-auto">
+                {filteredComponents.length === 0 ? (
                   <li className="px-4 py-2 text-gray-400">No components available</li>
                 ) : (
-                  availableComponents.map((component) => (
-                    <li key={component.id} className="px-4 py-2 hover:bg-pink-50 cursor-pointer text-gray-800 flex items-center gap-2">
+                  filteredComponents.map((component) => (
+                    <li key={component.id} className="flex items-center gap-2 px-3 py-2 mb-2 rounded bg-gray-100 border border-pink-200 hover:bg-pink-50 transition text-left shadow-sm cursor-pointer">
+                      <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(component.id)}
@@ -187,9 +217,9 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                   ))
                 )}
               </ul>
-              <div className="px-4 py-2 border-t border-pink-100 bg-white flex justify-end">
+              <div className="px-2 pt-2 flex justify-end">
                 <button
-                  className="px-3 py-1.5 bg-pink-500 text-white rounded hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm font-semibold shadow disabled:opacity-50"
+                  className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400 text-base font-semibold shadow disabled:opacity-50"
                   onClick={handleAddSelected}
                   disabled={selectedIds.length === 0}
                   type="button"
@@ -202,7 +232,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
         </div>
       </div>
       {/* Components List */}
-      <div className="min-h-[80px]">
+      <div className="min-h-[80px] mt-6">
         {components.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center text-gray-500">
             <div className="w-12 h-12 text-gray-300 mb-3">
