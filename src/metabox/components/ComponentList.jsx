@@ -187,17 +187,14 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
     <div>
       {/* Header with Add Dropdown */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-blue-50 relative">
-        <h3 className="text-lg font-semibold text-gray-800">Custom Components</h3>
+        <h3 className="text-lg font-bold text-gray-800">Components</h3>
         <div className="relative w-[300px]">
           <button
             className="flex items-center w-full text-base font-semibold gap-2 px-4 py-2 bg-white border-2 border-pink-400 text-pink-600 rounded-md hover:bg-pink-50 transition shadow focus:outline-none focus:ring-2 focus:ring-pink-400"
             onClick={handleDropdownToggle}
             type="button"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
+          <svg class="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
             Add Component
           </button>
           {dropdownOpen && (
@@ -216,7 +213,6 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                 ) : (
                   filteredComponents.map((component) => (
                     <li key={component.id} className="flex items-center gap-2 px-3 py-2 mb-2 rounded bg-gray-100 border border-pink-200 hover:bg-pink-50 transition text-left shadow-sm cursor-pointer">
-                      <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(component.id)}
