@@ -1,7 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import TextField from '../fields/Text';
 
-function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide }) {
+function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [fields, setFields] = useState([]);
+  const [loadingFields, setLoadingFields] = useState(false);
+
+  useEffect(() => {
+    if (isExpanded && fields.length === 0 && component.id && component.instance_id) {
+      setLoadingFields(true);
+      fetch(cccData.ajaxUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          action: 'ccc_get_component_fields',
+          nonce: cccData.nonce,
+          component_id: component.id,
+          post_id: cccData.postId,
+          instance_id: component.instance_id
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && Array.isArray(data.data)) {
+            setFields(data.data);
+          } else {
+            setFields([]);
+          }
+        })
+        .catch(() => setFields([]))
+        .finally(() => setLoadingFields(false));
+    }
+  }, [isExpanded, component.id, component.instance_id]);
+
+  const handleFieldChange = (fieldName, value) => {
+    if (onFieldChange) {
+      onFieldChange(component.instance_id, fieldName, value);
+    }
+  };
 
   const toggleExpanded = () => setIsExpanded(!isExpanded);
 
@@ -67,9 +103,29 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
       {/* Component Content (Expandable) */}
       {isExpanded && (
         <div className="border-t border-gray-100 bg-gray-50 px-6 py-4">
-          <div className="text-center text-gray-400 italic">
-            Component fields will be rendered here
-          </div>
+          {loadingFields ? (
+            <div className="text-center text-gray-400 italic">Loading fields...</div>
+          ) : fields.length === 0 ? (
+            <div className="text-center text-gray-400 italic">No fields for this component</div>
+          ) : (
+            <div>
+              {fields.map(field => {
+                if (field.type === 'text') {
+                  return (
+                    <TextField
+                      key={field.name}
+                      label={field.label}
+                      value={fieldValues?.[field.name] || ''}
+                      onChange={val => handleFieldChange(field.name, val)}
+                      placeholder={field.placeholder}
+                    />
+                  );
+                }
+                // Add more field types here as needed
+                return null;
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

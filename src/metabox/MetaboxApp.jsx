@@ -11,6 +11,7 @@ function MetaboxApp() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [expandedComponentIds, setExpandedComponentIds] = useState([]); // for expand/collapse
   const [dropdownOpen, setDropdownOpen] = useState(false); // for add dropdown
+  const [fieldValuesByInstance, setFieldValuesByInstance] = useState({});
 
   // Get post ID from WordPress
   const getPostId = () => {
@@ -194,6 +195,42 @@ function MetaboxApp() {
     setHasUnsavedChanges(true);
   };
 
+  // Load field values for assigned components
+  const loadFieldValues = async (components) => {
+    const postId = getPostId();
+    if (!postId || !components.length) return;
+    const result = {};
+    for (const comp of components) {
+      // Fetch all fields for this component instance
+      const response = await fetch(cccData.ajaxUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          action: 'ccc_get_component_fields',
+          nonce: cccData.nonce,
+          component_id: comp.id,
+          post_id: postId,
+          instance_id: comp.instance_id
+        })
+      });
+      const data = await response.json();
+      if (data.success && Array.isArray(data.data)) {
+        result[comp.instance_id] = {};
+        data.data.forEach(field => {
+          result[comp.instance_id][field.name] = field.value || '';
+        });
+      }
+    }
+    setFieldValuesByInstance(result);
+  };
+
+  // After loading assigned components, load their field values
+  useEffect(() => {
+    if (components.length > 0) {
+      loadFieldValues(components);
+    }
+  }, [components]);
+
   // Save on page update (WordPress save)
   useEffect(() => {
     const form = document.querySelector('form#post');
@@ -202,11 +239,25 @@ function MetaboxApp() {
       // Save only if there are unsaved changes
       if (hasUnsavedChanges) {
         saveComponents(components);
+        // Save field values
+        const postId = getPostId();
+        if (postId && Object.keys(fieldValuesByInstance).length > 0) {
+          fetch(cccData.ajaxUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              action: 'ccc_save_field_values',
+              nonce: cccData.nonce,
+              post_id: postId,
+              ccc_field_values: JSON.stringify(fieldValuesByInstance)
+            })
+          });
+        }
       }
     };
     form.addEventListener('submit', handleSubmit);
     return () => form.removeEventListener('submit', handleSubmit);
-  }, [components, hasUnsavedChanges]);
+  }, [components, hasUnsavedChanges, fieldValuesByInstance]);
 
   // Update hidden input for backend save - but don't trigger automatic save
   useEffect(() => {
@@ -255,6 +306,8 @@ function MetaboxApp() {
         setDropdownOpen={setDropdownOpen}
         availableComponents={availableComponents}
         addComponent={addComponent}
+        onFieldValuesChange={setFieldValuesByInstance}
+        fieldValuesByInstance={fieldValuesByInstance}
       />
     </div>
   );

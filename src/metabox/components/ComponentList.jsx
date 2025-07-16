@@ -128,7 +128,7 @@ function SortableComponentItem(props) {
   return <ComponentItem {...rest} component={component} listeners={listeners} attributes={attributes} setNodeRef={setNodeRef} style={style} />;
 }
 
-function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndoDelete, onToggleHide, onReorder, expandedComponentIds = [], onToggleExpand, dropdownOpen, setDropdownOpen, availableComponents, addComponent }) {
+function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndoDelete, onToggleHide, onReorder, expandedComponentIds = [], onToggleExpand, dropdownOpen, setDropdownOpen, availableComponents, addComponent, onFieldValuesChange, fieldValuesByInstance }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 2 } })
   );
@@ -181,6 +181,19 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
         onReorder(newOrder);
       }
     }
+  };
+
+  // Field values state
+  const [fieldValues, setFieldValues] = useState({}); // { [instance_id]: { [field_name]: value } }
+
+  const handleFieldChange = (instance_id, field_name, value) => {
+    setFieldValues(prev => {
+      const updated = { ...prev };
+      if (!updated[instance_id]) updated[instance_id] = {};
+      updated[instance_id][field_name] = value;
+      if (onFieldValuesChange) onFieldValuesChange(updated);
+      return updated;
+    });
   };
 
   return (
@@ -272,6 +285,8 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                   onToggleHide={() => onToggleHide(component.instance_id)}
                   isExpanded={expandedComponentIds.includes(component.instance_id)}
                   onToggleExpand={onToggleExpand}
+                  onFieldChange={handleFieldChange}
+                  fieldValues={fieldValues[component.instance_id] || {}}
                 />
               ))}
             </SortableContext>
