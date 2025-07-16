@@ -228,6 +228,8 @@ function MetaboxApp() {
   useEffect(() => {
     if (components.length > 0) {
       loadFieldValues(components);
+      // Expand the first component by default
+      setExpandedComponentIds([components[0].instance_id]);
     }
   }, [components]);
 
