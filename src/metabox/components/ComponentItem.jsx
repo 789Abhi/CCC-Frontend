@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
+import TextField from '../fields/Textfield';
 
 function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -46,7 +46,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
       className={`border-b border-gray-100 transition bg-white ${component.isHidden ? 'opacity-50' : ''}`}
     >
       {/* Component Header */}
-      <div className="flex items-center gap-3 px-6 py-4">
+      <div className="flex items-center gap-3 px-6 py-5">
         {/* Component Info */}
         <div className="flex-1 min-w-0">
           <h4 className="text-base font-semibold text-gray-800 truncate">{component.name}</h4>
@@ -109,6 +109,21 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
             <div className="text-center text-gray-400 italic">No fields for this component</div>
           ) : (
             <div>
+              {fields.map(field => {
+                if (field.type === 'text') {
+                  return (
+                    <TextField
+                      key={field.name}
+                      label={field.label}
+                      value={fieldValues?.[field.name] || ''}
+                      onChange={val => handleFieldChange(field.name, val)}
+                      placeholder={field.placeholder}
+                    />
+                  );
+                }
+                // Add more field types here as needed
+                return null;
+              })}
             </div>
           )}
         </div>
