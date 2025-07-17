@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import TextField from '../fields/Text';
+
 
 function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -75,7 +75,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
           </button>
           {/* Delete Button */}
           <button
-            className="p-2 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
+            className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
             onClick={onRemove}
             type="button"
             title="Remove component"
@@ -109,21 +109,6 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
             <div className="text-center text-gray-400 italic">No fields for this component</div>
           ) : (
             <div>
-              {fields.map(field => {
-                if (field.type === 'text') {
-                  return (
-                    <TextField
-                      key={field.name}
-                      label={field.label}
-                      value={fieldValues?.[field.name] || ''}
-                      onChange={val => handleFieldChange(field.name, val)}
-                      placeholder={field.placeholder}
-                    />
-                  );
-                }
-                // Add more field types here as needed
-                return null;
-              })}
             </div>
           )}
         </div>
