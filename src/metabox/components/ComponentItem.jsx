@@ -1,8 +1,62 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TextField from '../fields/Textfield';
+import logo from '/drag-drop-icon.svg';
 
-function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+function ToggleSwitch({ checked, onChange }) {
+  return (
+    <button
+      type="button"
+      className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors duration-200 focus:outline-none border-2 border-pink-400 ${checked ? 'bg-green-400' : 'bg-gray-200'}`}
+      onClick={onChange}
+      aria-pressed={checked}
+    >
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-6' : 'translate-x-1'}`}
+      />
+    </button>
+  );
+}
+
+function DotMenu({ onDelete }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef();
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        className="ccc-action-btn p-1 rounded hover:bg-gray-200 text-gray-500 focus:outline-none"
+        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+        type="button"
+        aria-label="More actions"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <circle cx="5" cy="12" r="2" />
+          <circle cx="12" cy="12" r="2" />
+          <circle cx="19" cy="12" r="2" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-2 w-32 bg-white border border-pink-200 rounded shadow-lg z-30 animate-fade-in">
+          <button
+            className="w-full text-left px-4 py-2 text-red-600 hover:bg-pink-50 font-semibold"
+            onClick={e => { e.stopPropagation(); setOpen(false); onDelete(); }}
+            type="button"
+          >
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand }) {
   const [fields, setFields] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
 
@@ -36,70 +90,48 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
     }
   };
 
-  const toggleExpanded = () => setIsExpanded(!isExpanded);
-
   return (
     <div
-      className={`border-b border-gray-100 transition bg-white ${component.isHidden ? 'opacity-50' : ''}`}
+      ref={setNodeRef}
+      style={style}
+      className={`flex flex-col border-2 border-pink-400 rounded-lg mb-4 bg-gray-100 transition-all duration-200 ${component.isPendingDelete ? 'opacity-50 bg-red-50' : ''}`}
     >
-      {/* Component Header */}
-      <div className="flex items-center gap-3 px-6 py-4">
-        {/* Component Info */}
-        <div className="flex-1 min-w-0">
-          <h4 className="text-base font-semibold text-gray-800 truncate">{component.name}</h4>
-          <span className="text-xs text-gray-500 font-mono">@{component.handle_name}</span>
-        </div>
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          {/* Hide/Show Toggle */}
+      <div className="flex items-center px-4 py-3" onClick={e => {
+        if (!e.target.closest('.ccc-drag-handle') && !e.target.closest('.ccc-action-btn') && !e.target.closest('.ccc-dot-menu')) {
+          onToggleExpand(component.instance_id);
+        }
+      }}>
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button
-            className={`p-1 rounded hover:bg-gray-100 ${component.isHidden ? 'text-gray-400' : 'text-blue-600'}`}
-            onClick={onToggleHide}
+            className="p-1 rounded hover:bg-gray-200 text-gray-500 focus:outline-none"
+            onClick={e => { e.stopPropagation(); onToggleExpand(component.instance_id); }}
+            tabIndex={0}
+            aria-label={isExpanded ? 'Collapse' : 'Expand'}
             type="button"
-            title={component.isHidden ? 'Show component' : 'Hide component'}
           >
-            {component.isHidden ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                <line x1="1" y1="1" x2="23" y2="23"></line>
-              </svg>
+            {isExpanded ? (
+              <svg className="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 8 10 12 14 8" /></svg>
             ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
+              <svg className="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="8 6 12 10 8 14" /></svg>
             )}
           </button>
-          {/* Delete Button */}
-          <button
-            className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
-            onClick={onRemove}
-            type="button"
-            title="Remove component"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-              <polyline points="3,6 5,6 21,6"></polyline>
-              <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
-              <line x1="10" y1="11" x2="10" y2="17"></line>
-              <line x1="14" y1="11" x2="14" y2="17"></line>
-            </svg>
-          </button>
-          {/* Expand/Collapse Toggle - Always show */}
-          <button
-            className={`p-1 rounded hover:bg-gray-100 ${isExpanded ? 'text-blue-600' : 'text-gray-400'}`}
-            onClick={toggleExpanded}
-            type="button"
-            title={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-              <polyline points="6,9 12,15 18,9"></polyline>
-            </svg>
-          </button>
+          <div {...attributes} {...listeners} className="ccc-drag-handle cursor-grab active:cursor-grabbing p-1 rounded focus:outline-none focus:ring-2 focus:ring-pink-400" style={{ background: '#fff' }}>
+            <img className='w-6 h-6 object-contain' src={logo} alt="Drag" />
+          </div>
+        </div>
+        <div className="flex-1 ml-4">
+          <div className="font-semibold text-gray-800 text-lg">{component.name}</div>
+          <div className="text-xs text-gray-500">@{component.handle_name}</div>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <ToggleSwitch checked={!component.isHidden} onChange={e => { e.stopPropagation(); onToggleHide(); }} />
+          <DotMenu onDelete={onRemove} />
         </div>
       </div>
-      {/* Component Content (Expandable) */}
       {isExpanded && (
-        <div className="border-t border-gray-100 bg-gray-50 px-6 py-5">
+        <div className="px-8 pb-4 pt-2 bg-gray-50 border-t border-pink-100 text-sm text-gray-700 animate-fade-in">
+          <div><span className="font-semibold">Component Handle:</span> @{component.handle_name}</div>
+          <div><span className="font-semibold">Order:</span> {index + 1} of {totalComponents}</div>
           {loadingFields ? (
             <div className="text-center text-gray-400 italic">Loading fields...</div>
           ) : fields.length === 0 ? (
