@@ -3,6 +3,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import logo from "/drag-drop-icon.svg";
+import Textfield from '../fields/Textfield';
 
 function ToggleSwitch({ checked, onChange }) {
   return (
@@ -102,6 +103,7 @@ function ComponentItem({ component, index, isReadOnly, totalComponents, onRemove
         <div className="px-8 pb-4 pt-2 bg-gray-50 border-t border-pink-100 text-sm text-gray-700 animate-fade-in">
           <div><span className="font-semibold">Component Handle:</span> @{component.handle_name}</div>
           <div><span className="font-semibold">Order:</span> {index + 1} of {totalComponents}</div>
+          <Textfield/>
         </div>
       )}
     </div>
