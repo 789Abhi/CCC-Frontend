@@ -102,7 +102,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
       </div>
       {/* Component Content (Expandable) */}
       {isExpanded && (
-        <div className="border-t border-gray-100 bg-gray-50 px-6 py-4">
+        <div className="border-t border-gray-100 bg-gray-50 px-6 py-5">
           {loadingFields ? (
             <div className="text-center text-gray-400 italic">Loading fields...</div>
           ) : fields.length === 0 ? (
