@@ -43,7 +43,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
       className={`border-b border-gray-100 transition bg-white ${component.isHidden ? 'opacity-50' : ''}`}
     >
       {/* Component Header */}
-      <div className="flex items-center gap-3 px-6 py-5">
+      <div className="flex items-center gap-3 px-6 py-4">
         {/* Component Info */}
         <div className="flex-1 min-w-0">
           <h4 className="text-base font-semibold text-gray-800 truncate">{component.name}</h4>
