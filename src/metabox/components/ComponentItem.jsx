@@ -75,7 +75,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
           </button>
           {/* Delete Button */}
           <button
-            className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
+            className="p-2 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
             onClick={onRemove}
             type="button"
             title="Remove component"
