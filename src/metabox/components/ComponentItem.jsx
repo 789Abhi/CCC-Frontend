@@ -22,11 +22,8 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
       })
         .then(res => res.json())
         .then(data => {
-          if (data.success && Array.isArray(data.data)) {
-            setFields(data.data);
-          } else {
-            setFields([]);
-          }
+          const fieldArr = data.fields || data.data || [];
+          setFields(Array.isArray(fieldArr) ? fieldArr : []);
         })
         .catch(() => setFields([]))
         .finally(() => setLoadingFields(false));

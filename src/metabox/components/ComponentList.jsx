@@ -4,6 +4,7 @@ import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } 
 import { CSS } from '@dnd-kit/utilities';
 import logo from "/drag-drop-icon.svg";
 import Textfield from '../fields/Textfield';
+import ComponentItem from './ComponentItem';
 
 function ToggleSwitch({ checked, onChange }) {
   return (
@@ -53,56 +54,6 @@ function DotMenu({ onDelete }) {
           >
             Delete
           </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ComponentItem({ component, index, isReadOnly, totalComponents, onRemove, onUndoDelete, onToggleHide, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand }) {
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`flex flex-col border-2 border-pink-400 rounded-lg mb-4 bg-gray-100 transition-all duration-200 ${component.isPendingDelete ? 'opacity-50 bg-red-50' : ''}`}
-    >
-      <div className="flex items-center px-4 py-3" onClick={e => {
-        if (!e.target.closest('.ccc-drag-handle') && !e.target.closest('.ccc-action-btn') && !e.target.closest('.ccc-dot-menu')) {
-          onToggleExpand(component.instance_id);
-        }
-      }}>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            className="p-1 rounded hover:bg-gray-200 text-gray-500 focus:outline-none"
-            onClick={e => { e.stopPropagation(); onToggleExpand(component.instance_id); }}
-            tabIndex={0}
-            aria-label={isExpanded ? 'Collapse' : 'Expand'}
-            type="button"
-          >
-            {isExpanded ? (
-              <svg className="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 8 10 12 14 8" /></svg>
-            ) : (
-              <svg className="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="8 6 12 10 8 14" /></svg>
-            )}
-          </button>
-          <div {...attributes} {...listeners} className="ccc-drag-handle cursor-grab active:cursor-grabbing p-1 rounded focus:outline-none focus:ring-2 focus:ring-pink-400" style={{ background: '#fff' }}>
-            <img className='w-6 h-6 object-contain' src={logo} alt="Drag" />
-          </div>
-        </div>
-        <div className="flex-1 ml-4">
-          <div className="font-semibold text-gray-800 text-lg">{component.name}</div>
-          <div className="text-xs text-gray-500">@{component.handle_name}</div>
-        </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <ToggleSwitch checked={!component.isHidden} onChange={e => { e.stopPropagation(); onToggleHide(); }} />
-          <DotMenu onDelete={onRemove} />
-        </div>
-      </div>
-      {isExpanded && (
-        <div className="px-8 pb-4 pt-2 bg-gray-50 border-t border-pink-100 text-sm text-gray-700 animate-fade-in">
-          <div><span className="font-semibold">Component Handle:</span> @{component.handle_name}</div>
-          <div><span className="font-semibold">Order:</span> {index + 1} of {totalComponents}</div>
-          <Textfield/>
         </div>
       )}
     </div>
