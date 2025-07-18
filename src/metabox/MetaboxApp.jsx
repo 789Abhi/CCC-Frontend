@@ -4,6 +4,7 @@ import ComponentSelector from './components/ComponentSelector';
 import toast from 'react-hot-toast';
 
 function MetaboxApp() {
+  console.log('CCC DEBUG: MetaboxApp function running');
   const [components, setComponents] = useState([]); // { ...component, isHidden, isPendingDelete }
   const [isLoading, setIsLoading] = useState(true);
   const [availableComponents, setAvailableComponents] = useState([]);
