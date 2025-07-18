@@ -156,7 +156,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                     <TextField
                       key={field.name}
                       label={field.label}
-                      value={fieldValues?.[field.name] ?? field.value ?? ''}
+                      value={fieldValues?.[component.id]?.[component.instance_id]?.[field.name] ?? field.value ?? ''}
                       onChange={val => handleFieldChange(field.name, val)}
                       placeholder={field.placeholder}
                     />
