@@ -240,6 +240,7 @@ function MetaboxApp() {
     console.log('CCC DEBUG: useEffect for form submit, form:', form);
     if (!form) return;
     const handleSubmit = (e) => {
+      console.log('CCC DEBUG: handleSubmit called', { hasUnsavedChanges, fieldValuesByInstance });
       // Save only if there are unsaved changes
       if (hasUnsavedChanges) {
         saveComponents(components);
