@@ -141,8 +141,11 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
   const handleFieldChange = (instance_id, field_name, value) => {
     setFieldValues(prev => {
       const updated = { ...prev };
-      if (!updated[instance_id]) updated[instance_id] = {};
-      updated[instance_id][field_name] = value;
+      const componentId = components.find(c => c.instance_id === instance_id)?.id;
+      if (!componentId) return prev;
+      if (!updated[componentId]) updated[componentId] = {};
+      if (!updated[componentId][instance_id]) updated[componentId][instance_id] = {};
+      updated[componentId][instance_id][field_name] = value;
       if (onFieldValuesChange) onFieldValuesChange(updated);
       return updated;
     });
