@@ -95,6 +95,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
   }, [isExpanded, component.id, component.instance_id]);
 
   const handleFieldChange = (fieldName, value) => {
+    console.log('CCC DEBUG: handleFieldChange', { instance_id: component.instance_id, fieldName, value });
     if (onFieldChange) {
       onFieldChange(component.instance_id, fieldName, value);
     }
