@@ -236,8 +236,7 @@ function MetaboxApp() {
 
   // Save on page update (WordPress save)
   useEffect(() => {
-    console.log('CCC DEBUG: All forms on page:', document.querySelectorAll('form'));
-    const form = document.querySelector('form');
+    const form = document.querySelector('form#post');
     console.log('CCC DEBUG: useEffect for form submit, form:', form);
     if (!form) return;
     const handleSubmit = (e) => {
