@@ -244,6 +244,7 @@ function MetaboxApp() {
         // Save field values
         const postId = getPostId();
         if (postId && Object.keys(fieldValuesByInstance).length > 0) {
+          console.log('CCC DEBUG: Saving field values payload:', fieldValuesByInstance);
           fetch(cccData.ajaxUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
