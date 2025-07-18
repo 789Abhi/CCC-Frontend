@@ -76,9 +76,16 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
       })
         .then(res => res.json())
         .then(data => {
-          const fieldArr = data.fields || data.data || [];
+          let fieldArr = [];
+          if (Array.isArray(data.fields)) {
+            fieldArr = data.fields;
+          } else if (data.fields && Array.isArray(data.fields.fields)) {
+            fieldArr = data.fields.fields;
+          } else if (Array.isArray(data.data)) {
+            fieldArr = data.data;
+          }
           console.log('CCC DEBUG: Loaded fields:', fieldArr);
-          setFields(Array.isArray(fieldArr) ? fieldArr : []);
+          setFields(fieldArr);
         })
         .catch(() => setFields([]))
         .finally(() => setLoadingFields(false));
