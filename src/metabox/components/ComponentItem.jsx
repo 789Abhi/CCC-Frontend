@@ -142,8 +142,6 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
       </div>
       {isExpanded && (
         <div className="px-8 pb-4 pt-2 bg-gray-50 border-t border-pink-100 text-sm text-gray-700 animate-fade-in">
-          <div><span className="font-semibold">Component Handle:</span> @{component.handle_name}</div>
-          <div><span className="font-semibold">Order:</span> {index + 1} of {totalComponents}</div>
           {loadingFields ? (
             <div className="text-center text-gray-400 italic">Loading fields...</div>
           ) : fields.length === 0 ? (
