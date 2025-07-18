@@ -83,6 +83,8 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
             fieldArr = data.fields.fields;
           } else if (Array.isArray(data.data)) {
             fieldArr = data.data;
+          } else if (data.data && Array.isArray(data.data.fields)) {
+            fieldArr = data.data.fields;
           }
           console.log('CCC DEBUG: Loaded fields:', fieldArr);
           setFields(fieldArr);
