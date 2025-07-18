@@ -107,8 +107,6 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
       style={style}
       className={`flex flex-col border-2 border-pink-400 rounded-lg mb-4 bg-gray-100 transition-all duration-200 ${component.isPendingDelete ? 'opacity-50 bg-red-50' : ''}`}
     >
-      {/* Debug log before rendering fields */}
-      {console.log('CCC DEBUG: Rendering fields:', fields)}
       <div className="flex items-center px-4 py-3" onClick={e => {
         if (!e.target.closest('.ccc-drag-handle') && !e.target.closest('.ccc-action-btn') && !e.target.closest('.ccc-dot-menu')) {
           onToggleExpand(component.instance_id);

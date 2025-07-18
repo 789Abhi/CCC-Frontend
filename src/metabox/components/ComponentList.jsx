@@ -139,7 +139,6 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
   const [fieldValues, setFieldValues] = useState({}); // { [instance_id]: { [field_name]: value } }
 
   const handleFieldChange = (instance_id, field_name, value) => {
-    console.log('CCC DEBUG: ComponentList handleFieldChange', { instance_id, field_name, value });
     setFieldValues(prev => {
       const updated = { ...prev };
       const componentId = components.find(c => c.instance_id === instance_id)?.id;
@@ -242,7 +241,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                   isExpanded={expandedComponentIds.includes(component.instance_id)}
                   onToggleExpand={onToggleExpand}
                   onFieldChange={handleFieldChange}
-                  fieldValues={fieldValues[component.instance_id] || {}}
+                  fieldValues={fieldValues}
                 />
               ))}
             </SortableContext>
