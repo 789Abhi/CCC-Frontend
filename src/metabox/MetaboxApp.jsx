@@ -14,6 +14,12 @@ function MetaboxApp() {
   const [dropdownOpen, setDropdownOpen] = useState(false); // for add dropdown
   const [fieldValuesByInstance, setFieldValuesByInstance] = useState({});
 
+  // Ensure unsaved changes are tracked when a field value changes
+  const handleFieldValuesChange = (values) => {
+    setFieldValuesByInstance(values);
+    setHasUnsavedChanges(true);
+  };
+
   // Get post ID from WordPress
   const getPostId = () => {
     if (typeof cccData !== 'undefined' && cccData.postId) {
@@ -312,7 +318,7 @@ function MetaboxApp() {
         setDropdownOpen={setDropdownOpen}
         availableComponents={availableComponents}
         addComponent={addComponent}
-        onFieldValuesChange={setFieldValuesByInstance}
+        onFieldValuesChange={handleFieldValuesChange}
         fieldValuesByInstance={fieldValuesByInstance}
       />
     </div>
