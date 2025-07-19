@@ -242,6 +242,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                   onToggleExpand={onToggleExpand}
                   onFieldChange={handleFieldChange}
                   fieldValues={fieldValues}
+                  availableComponents={availableComponents}
                 />
               ))}
             </SortableContext>

@@ -240,13 +240,55 @@ function MetaboxApp() {
     }
   }, [components]);
 
+  // Load expanded state from localStorage on mount
+  useEffect(() => {
+    const postId = getPostId();
+    const stored = localStorage.getItem(`ccc_expanded_${postId}`);
+    if (stored) {
+      try {
+        setExpandedComponentIds(JSON.parse(stored));
+      } catch {}
+    }
+  }, []);
+
+  // Persist expanded state to localStorage on change
+  useEffect(() => {
+    const postId = getPostId();
+    localStorage.setItem(`ccc_expanded_${postId}`, JSON.stringify(expandedComponentIds));
+  }, [expandedComponentIds]);
+
   // Save on page update (WordPress save)
   useEffect(() => {
     const form = document.querySelector('form#post');
-    console.log('CCC DEBUG: useEffect for form submit, form:', form);
     if (!form) return;
     const handleSubmit = (e) => {
-      console.log('CCC DEBUG: handleSubmit called', { hasUnsavedChanges, fieldValuesByInstance });
+      // Validate required fields before save
+      let hasError = false;
+      const requiredFields = [];
+      components.forEach(comp => {
+        if (!expandedComponentIds.includes(comp.instance_id)) return; // Only validate expanded
+        const instanceFields = fieldValuesByInstance[comp.instance_id] || {};
+        // Find required fields for this component
+        const compFields = availableComponents.find(c => c.id === comp.id)?.fields || [];
+        compFields.forEach(field => {
+          if (field.required) {
+            requiredFields.push({
+              instance_id: comp.instance_id,
+              field_name: field.name,
+              label: field.label,
+              value: instanceFields[field.name] || ''
+            });
+          }
+        });
+      });
+      const missing = requiredFields.filter(f => !f.value.trim());
+      if (missing.length > 0) {
+        hasError = true;
+        toast.error('Please fill all required fields before saving.');
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
       // Save only if there are unsaved changes
       if (hasUnsavedChanges) {
         saveComponents(components);
@@ -269,7 +311,7 @@ function MetaboxApp() {
     };
     form.addEventListener('submit', handleSubmit);
     return () => form.removeEventListener('submit', handleSubmit);
-  }, [components, hasUnsavedChanges, fieldValuesByInstance]);
+  }, [components, hasUnsavedChanges, fieldValuesByInstance, expandedComponentIds, availableComponents]);
 
   // Update hidden input for backend save - but don't trigger automatic save
   useEffect(() => {

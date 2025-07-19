@@ -56,9 +56,12 @@ function DotMenu({ onDelete }) {
   );
 }
 
-function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand }) {
+function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents }) {
   const [fields, setFields] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
+
+  // Find required info for fields
+  const compDef = availableComponents?.find(c => c.id === component.id);
 
   useEffect(() => {
     if (isExpanded && fields.length === 0 && component.id && component.instance_id) {
@@ -86,7 +89,6 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
           } else if (data.data && Array.isArray(data.data.fields)) {
             fieldArr = data.data.fields;
           }
-          console.log('CCC DEBUG: Loaded fields:', fieldArr);
           setFields(fieldArr);
         })
         .catch(() => setFields([]))
@@ -95,7 +97,6 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
   }, [isExpanded, component.id, component.instance_id]);
 
   const handleFieldChange = (fieldName, value) => {
-    console.log('CCC DEBUG: handleFieldChange', { instance_id: component.instance_id, fieldName, value });
     if (onFieldChange) {
       onFieldChange(component.instance_id, fieldName, value);
     }
@@ -149,13 +150,17 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
             <div>
               {fields.map(field => {
                 if (field.type === 'text') {
+                  const isRequired = compDef?.fields?.find(f => f.name === field.name)?.required;
+                  const value = fieldValues?.[component.id]?.[component.instance_id]?.[field.name] ?? field.value ?? '';
                   return (
                     <TextField
                       key={field.name}
                       label={field.label}
-                      value={fieldValues?.[component.id]?.[component.instance_id]?.[field.name] ?? field.value ?? ''}
+                      value={value}
                       onChange={val => handleFieldChange(field.name, val)}
                       placeholder={field.placeholder}
+                      required={isRequired}
+                      error={isRequired && !value.trim()}
                     />
                   );
                 }
