@@ -168,6 +168,11 @@ function MetaboxApp() {
       isHidden: false, // ensure visible by default
       isPendingDelete: false
     }));
+    
+    // Auto-expand newly added components
+    const newInstanceIds = newComponents.map(c => c.instance_id);
+    setExpandedComponentIds(prev => [...prev, ...newInstanceIds]);
+    
     setComponents([...components, ...newComponents]);
     setHasUnsavedChanges(true);
     setDropdownOpen(false);
@@ -221,50 +226,88 @@ function MetaboxApp() {
   useEffect(() => {
     const form = document.querySelector('form#post');
     if (!form) return;
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
       // Validate required fields before save
       let hasError = false;
       const requiredFields = [];
-      components.forEach(comp => {
+      
+      // Check each component for required fields
+      for (const comp of components) {
+        if (comp.isPendingDelete) continue; // Skip deleted components
+        
+        // Get field values for this component instance
         const instanceFields = fieldValuesByInstance[comp.instance_id] || {};
-        // Find required fields for this component
-        const compFields = availableComponents.find(c => c.id === comp.id)?.fields || [];
-        compFields.forEach(field => {
-          if (field.required) {
-            requiredFields.push({
-              instance_id: comp.instance_id,
-              field_name: field.name,
-              label: field.label,
-              value: instanceFields[field.name] || ''
+        
+        // We need to fetch the actual fields for this component to check required status
+        try {
+          const response = await fetch(cccData.ajaxUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              action: 'ccc_get_component_fields',
+              nonce: cccData.nonce,
+              component_id: comp.id,
+              post_id: getPostId(),
+              instance_id: comp.instance_id
+            })
+          });
+          const data = await response.json();
+          
+          if (data.success && Array.isArray(data.fields)) {
+            data.fields.forEach(field => {
+              if (field.required) {
+                const value = instanceFields[field.name] || field.value || '';
+                requiredFields.push({
+                  instance_id: comp.instance_id,
+                  field_name: field.name,
+                  label: field.label,
+                  value: value
+                });
+              }
             });
           }
-        });
-      });
+        } catch (error) {
+          console.error('CCC: Error fetching fields for validation:', error);
+        }
+      }
+      
       const missing = requiredFields.filter(f => !f.value.trim());
       if (missing.length > 0) {
         hasError = true;
-        toast.error('Please fill all required fields before saving.');
+        const missingLabels = missing.map(f => f.label).join(', ');
+        toast.error(`Please fill all required fields before saving: ${missingLabels}`);
         e.preventDefault();
         e.stopPropagation();
         return false;
       }
+      
       // Save only if there are unsaved changes
       if (hasUnsavedChanges) {
-        saveComponents(components);
-        // Save field values
-        const postId = getPostId();
-        if (postId && Object.keys(fieldValuesByInstance).length > 0) {
-          console.log('CCC DEBUG: Saving field values payload:', fieldValuesByInstance);
-          fetch(cccData.ajaxUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              action: 'ccc_save_field_values',
-              nonce: cccData.nonce,
-              post_id: postId,
-              ccc_field_values: JSON.stringify(fieldValuesByInstance)
-            })
-          });
+        const saveSuccess = await saveComponents(components);
+        if (saveSuccess) {
+          // Save field values
+          const postId = getPostId();
+          if (postId && Object.keys(fieldValuesByInstance).length > 0) {
+            console.log('CCC DEBUG: Saving field values payload:', fieldValuesByInstance);
+            try {
+              const fieldResponse = await fetch(cccData.ajaxUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                  action: 'ccc_save_field_values',
+                  nonce: cccData.nonce,
+                  post_id: postId,
+                  ccc_field_values: JSON.stringify(fieldValuesByInstance)
+                })
+              });
+              const fieldData = await fieldResponse.json();
+              if (!fieldData.success) {
+                console.error('CCC: Failed to save field values:', fieldData.message);
+              }
+            } catch (error) {
+              console.error('CCC: Error saving field values:', error);
+            }
+          }
         }
       }
     };
