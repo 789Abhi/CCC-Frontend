@@ -96,7 +96,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
     }
   }, [dropdownOpen]);
 
-  const filteredComponents = availableComponents.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredComponents = (availableComponents || []).filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const handleDropdownToggle = () => {
     setDropdownOpen((open) => !open);
@@ -111,7 +111,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
   };
 
   const handleAddSelected = () => {
-    const selectedComponents = availableComponents.filter(c => selectedIds.includes(c.id));
+    const selectedComponents = (availableComponents || []).filter(c => selectedIds.includes(c.id));
     if (selectedComponents.length > 0) {
       addComponent(selectedComponents);
     }
@@ -137,7 +137,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
 
   // Use the fieldValuesByInstance passed from parent instead of local state
   const handleFieldChange = (instance_id, field_name, value) => {
-    const updated = { ...fieldValuesByInstance };
+    const updated = { ...(fieldValuesByInstance || {}) };
     if (!updated[instance_id]) updated[instance_id] = {};
     updated[instance_id][field_name] = value;
     if (onFieldValuesChange) onFieldValuesChange(updated);
