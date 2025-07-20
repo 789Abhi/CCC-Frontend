@@ -207,13 +207,10 @@ function MetaboxApp() {
     setDropdownOpen(false);
   };
 
-  // Mark a component for deletion (deferred)
+  // Remove component from UI immediately, only delete from DB on save
   const markComponentForDelete = (instance_id) => {
-    setComponents(prev => prev.map(c =>
-      c.instance_id === instance_id ? { ...c, isPendingDelete: true } : c
-    ));
+    setComponents(prev => prev.filter(c => c.instance_id !== instance_id));
     setHasUnsavedChanges(true);
-    // Remove from expanded/active if deleted
     setExpandedComponentIds(prev => prev.filter(id => id !== instance_id));
   };
 
@@ -319,117 +316,70 @@ function MetaboxApp() {
         hasError = true;
         const missingLabels = missing.map(f => f.label).join(', ');
         toast.error(`Please fill all required fields before saving: ${missingLabels}`);
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
       }
       
-      // Save only if there are unsaved changes
-      if (hasUnsavedChanges) {
-        const saveSuccess = await saveComponents(components);
-        if (saveSuccess) {
+      if (hasError) {
+        e.preventDefault(); // Prevent form submission
+      } else {
+        // If no errors, proceed with saving
+        const form = document.querySelector('form#post');
+        if (form) {
+          const input = document.getElementById('ccc_components_data');
+          if (input) {
+            const toSave = components.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
+            input.value = JSON.stringify(toSave);
+          }
           // Save field values
-          const postId = getPostId();
-          if (postId && Object.keys(fieldValuesByInstance).length > 0) {
-            console.log('CCC DEBUG: Saving field values payload:', fieldValuesByInstance);
-            
-            // Transform the data structure to match backend expectations
-            // From: { [instance_id]: { [field_name]: value } }
-            // To: { [component_id]: { [instance_id]: { [field_name]: value } } }
-            const transformedFieldValues = {};
-            components.forEach(comp => {
-              if (!comp.isPendingDelete && fieldValuesByInstance[comp.instance_id]) {
-                transformedFieldValues[comp.id] = {
-                  [comp.instance_id]: fieldValuesByInstance[comp.instance_id]
-                };
-              }
-            });
-            
-            console.log('CCC DEBUG: Transformed field values:', transformedFieldValues);
-            
-            try {
-              const fieldResponse = await saveFieldValues(transformedFieldValues);
-              if (!fieldResponse) {
-                console.error('CCC: Failed to save field values after saveComponents');
-              } else {
-                console.log('CCC DEBUG: Field values saved successfully after saveComponents');
-              }
-            } catch (error) {
-              console.error('CCC: Error saving field values after saveComponents:', error);
-            }
+          const fieldValuesInput = document.getElementById('ccc_field_values_data');
+          if (fieldValuesInput) {
+            const fieldValuesToSave = Object.entries(fieldValuesByInstance).map(([instance_id, values]) => ({
+              instance_id,
+              field_values: JSON.stringify(values)
+            }));
+            fieldValuesInput.value = JSON.stringify(fieldValuesToSave);
+          }
+          // Trigger the save action
+          const saveButton = document.querySelector('button[type="submit"]');
+          if (saveButton) {
+            saveButton.click();
           }
         }
       }
     };
     form.addEventListener('submit', handleSubmit);
     return () => form.removeEventListener('submit', handleSubmit);
-  }, [components, hasUnsavedChanges, fieldValuesByInstance, expandedComponentIds, availableComponents]);
-
-  // Update hidden input for backend save - but don't trigger automatic save
-  useEffect(() => {
-    const input = document.getElementById('ccc_components_data');
-    if (input) {
-      // Save all component data except isPendingDelete (which is UI only)
-      const toSave = components.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
-      input.value = JSON.stringify(toSave);
-    }
-  }, [components]);
-
-  if (isLoading) {
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-8">
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="relative">
-            <div className="w-12 h-12 border-4 border-gray-200 border-t-pink-500 rounded-full animate-spin mb-6"></div>
-            <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-r-blue-500 rounded-full animate-spin" style={{ animationDelay: '-0.5s' }}></div>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">Loading Components</h3>
-          <p className="text-gray-600 text-sm">Please wait while we load your page components...</p>
-          <div className="mt-4 flex space-x-1">
-            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  }, [components, fieldValuesByInstance]);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-0">
-      {/* Hidden input for backend save */}
-      <input type="hidden" id="ccc_components_data" name="ccc_components_data" />
-      {isSaving && (
-        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-700 flex items-center">
-          <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mr-2"></div>
-          Saving changes...
-        </div>
-      )}
-      <ComponentList
-        components={components}
-        isReadOnly={false}
-        onAdd={() => setDropdownOpen((open) => !open)}
-        onRemove={markComponentForDelete}
-        onUndoDelete={undoDelete}
-        onToggleHide={(instance_id) => {
-          setComponents(prev => prev.map(c =>
-            c.instance_id === instance_id ? { ...c, isHidden: !c.isHidden } : c
-          ));
-          setHasUnsavedChanges(true);
-        }}
-        onReorder={reorderComponents}
-        expandedComponentIds={expandedComponentIds}
-        onToggleExpand={toggleExpand}
-        dropdownOpen={dropdownOpen}
-        setDropdownOpen={setDropdownOpen}
+    <div className="ccc-metabox-app">
+      <h2>Component Manager</h2>
+      <ComponentSelector
         availableComponents={availableComponents}
-        addComponent={addComponent}
+        onAddComponent={addComponent}
+        isLoading={isLoading}
+        isSaving={isSaving}
+        hasUnsavedChanges={hasUnsavedChanges}
+        onSave={saveComponents}
         onFieldValuesChange={handleFieldValuesChange}
         fieldValuesByInstance={fieldValuesByInstance}
-        postId={getPostId()}
+      />
+      <ComponentList
+        components={components}
+        isLoading={isLoading}
+        isSaving={isSaving}
+        hasUnsavedChanges={hasUnsavedChanges}
+        onSave={saveComponents}
+        onFieldValuesChange={handleFieldValuesChange}
+        fieldValuesByInstance={fieldValuesByInstance}
+        expandedComponentIds={expandedComponentIds}
+        onToggleExpand={toggleExpand}
+        onMarkForDelete={markComponentForDelete}
+        onUndoDelete={undoDelete}
+        onReorder={reorderComponents}
+        onRemoveComponent={removeComponent}
       />
     </div>
   );
 }
 
-export default MetaboxApp; 
+export default MetaboxApp;
