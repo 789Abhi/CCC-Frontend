@@ -66,6 +66,8 @@ const ComponentList = () => {
   const [loadingRevisions, setLoadingRevisions] = useState(false)
   const [selectedPostForRevisions, setSelectedPostForRevisions] = useState('')
   const [showRevisionsSection, setShowRevisionsSection] = useState(false)
+  const [previewData, setPreviewData] = useState(null)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
 
   const generateHandle = (name) => {
     return name
@@ -550,6 +552,29 @@ const ComponentList = () => {
       loadRevisions(postId);
     } else {
       setRevisions([]);
+    }
+  };
+
+  const previewRevision = async (revisionId, postId) => {
+    if (!postId || !revisionId) return;
+    
+    try {
+      const formData = new FormData();
+      formData.append("action", "ccc_get_revision_preview");
+      formData.append("nonce", window.cccData.nonce);
+      formData.append("revision_id", revisionId);
+      formData.append("post_id", postId);
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData);
+      
+      if (response.data.success) {
+        setPreviewData(response.data.data.preview);
+        setShowPreviewModal(true);
+      } else {
+        toast.error('Failed to load preview: ' + response.data.message);
+      }
+    } catch (error) {
+      toast.error('Error loading preview: ' + error.message);
     }
   };
 
@@ -1175,13 +1200,18 @@ const ComponentList = () => {
                 ) : (
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {revisions.map((revision) => (
-                      <div key={revision.id} className="border border-gray-200 rounded-lg p-4">
+                      <div key={revision.id} className={`border rounded-lg p-4 ${revision.is_active ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               <span className="text-sm font-medium text-gray-700">
                                 Revision #{revision.id}
                               </span>
+                              {revision.is_active && (
+                                <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-full">
+                                  Active
+                                </span>
+                              )}
                               <span className="text-xs text-gray-500">
                                 {revision.created_at_formatted}
                               </span>
@@ -1196,6 +1226,12 @@ const ComponentList = () => {
                             )}
                           </div>
                           <div className="flex gap-2">
+                            <button
+                              onClick={() => previewRevision(revision.id, selectedPostForRevisions)}
+                              className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                            >
+                              Preview
+                            </button>
                             <button
                               onClick={() => restoreRevision(revision.id, selectedPostForRevisions)}
                               className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -1352,75 +1388,198 @@ const ComponentList = () => {
               
               // Update the field in the component
               const updateFieldInComponent = (fields, path, updatedField) => {
-                const [currentIndex, ...remainingPath] = path
-                if (!Array.isArray(fields) || typeof currentIndex !== 'number') return fields
-                
-                if (remainingPath.length === 0) {
-                  return fields.map((f, i) => {
-                    if (i === currentIndex) {
-                      // Merge, don't replace. Always preserve id and config.
-                      return {
-                        ...f,
-                        ...updatedField,
-                        id: f.id,
-                        config: updatedField.config || f.config || {},
-                      }
-                    }
-                    return f
-                  })
+                const [index, ...rest] = path
+                if (rest.length === 0) {
+                  const newFields = [...fields]
+                  newFields[index] = { ...newFields[index], ...updatedField }
+                  return newFields
                 } else {
-                  return fields.map((f, i) => {
-                    if (i === currentIndex && f.type === "repeater" && f.config?.nested_fields) {
-                      return {
-                        ...f,
-                        config: {
-                          ...f.config,
-                          nested_fields: updateFieldInComponent(f.config.nested_fields, remainingPath, updatedField)
-                        }
-                      }
-                    }
-                    return f
-                  })
+                  const newFields = [...fields]
+                  newFields[index] = {
+                    ...newFields[index],
+                    children: updateFieldInComponent(newFields[index].children || [], rest, updatedField)
+                  }
+                  return newFields
                 }
               }
-              
-              // Get the updated fields
+
               const updatedFields = updateFieldInComponent(selectedComponentForTree.fields, path, updatedField)
-              console.log('CCC ComponentList: Updated fields:', updatedFields)
               
               // Update the component in the list
-              setComponents(prev => prev.map(comp => 
-                comp.id === selectedComponentForTree.id 
-                  ? { ...comp, fields: updatedFields }
-                  : comp
-              ))
+              setComponents(prevComponents => 
+                prevComponents.map(comp => 
+                  comp.id === selectedComponentForTree.id 
+                    ? { ...comp, fields: updatedFields }
+                    : comp
+                )
+              )
+
+              // Send update to backend
+              await handleUpdateComponentFields(selectedComponentForTree.id, updatedFields)
               
-              // Update the selected component
-              setSelectedComponentForTree(prev => ({
-                ...prev,
-                fields: updatedFields
-              }))
-              
-              // Note: We don't need to call handleUpdateComponentFields here because
-              // the individual field has already been updated in the backend through
-              // the ccc_update_field_from_hierarchy endpoint in FieldVisualTreeModal
-              console.log('CCC ComponentList: Field updated successfully in component state')
-              
+              toast.success('Field updated successfully!')
             } catch (error) {
-              console.error('CCC ComponentList: Error in onFieldUpdate:', error)
+              console.error('Error updating field:', error)
+              toast.error('Failed to update field')
             }
-          }}
-          onFieldUpdateSuccess={async () => {
-            // Await fetchComponents and update selectedComponentForTree with the latest data
-            const latestComponents = await fetchComponents();
-            if (selectedComponentForTree) {
-              const latest = latestComponents.find(c => c.id === selectedComponentForTree.id);
-              if (latest) setSelectedComponentForTree(latest);
-              return latest ? latest.fields : [];
-            }
-            return [];
           }}
         />
+      )}
+
+      {/* Preview Modal */}
+      {showPreviewModal && previewData && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 text-white">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold">Revision Preview</h3>
+                <button
+                  onClick={() => {
+                    setShowPreviewModal(false)
+                    setPreviewData(null)
+                  }}
+                  className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="mb-6">
+                <h4 className="text-lg font-semibold text-gray-800 mb-2">Revision Information</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-600">Revision ID:</span> {previewData.revision.id}
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">Created:</span> {previewData.revision.created_at_formatted}
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">Created by:</span> {previewData.revision.created_by_name}
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">Note:</span> {previewData.revision.revision_note || 'No note'}
+                  </div>
+                </div>
+              </div>
+
+              {previewData.changes.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <p>No changes detected between current state and this revision.</p>
+                </div>
+              ) : (
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4">Changes Preview</h4>
+                  <div className="space-y-4">
+                    {previewData.changes.map((change, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          {change.type === 'added' && (
+                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                              Added
+                            </span>
+                          )}
+                          {change.type === 'removed' && (
+                            <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full font-medium">
+                              Removed
+                            </span>
+                          )}
+                          {change.type === 'changed' && (
+                            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium">
+                              Changed
+                            </span>
+                          )}
+                          <span className="text-sm font-medium text-gray-700">
+                            Field ID: {change.field_id}
+                          </span>
+                        </div>
+                        
+                        {change.type === 'added' && (
+                          <div className="grid grid-cols-1 gap-2">
+                            <div>
+                              <span className="text-sm font-medium text-gray-600">New Value:</span>
+                              <div className="mt-1 p-2 bg-green-50 border border-green-200 rounded text-sm">
+                                {change.revision_value || '(empty)'}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {change.type === 'removed' && (
+                          <div className="grid grid-cols-1 gap-2">
+                            <div>
+                              <span className="text-sm font-medium text-gray-600">Current Value (will be removed):</span>
+                              <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded text-sm">
+                                {change.current_value || '(empty)'}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {change.type === 'changed' && (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <span className="text-sm font-medium text-gray-600">Current Value:</span>
+                              <div className="mt-1 p-2 bg-gray-50 border border-gray-200 rounded text-sm">
+                                {change.current_value || '(empty)'}
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-sm font-medium text-gray-600">Revision Value:</span>
+                              <div className="mt-1 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                                {change.revision_value || '(empty)'}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 p-6 bg-gray-50">
+              <button
+                onClick={() => {
+                  setShowPreviewModal(false)
+                  setPreviewData(null)
+                }}
+                className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl transition-all duration-200 font-medium"
+              >
+                Close
+              </button>
+              {previewData.changes.length > 0 && (
+                <>
+                  <button
+                    onClick={() => {
+                      setShowPreviewModal(false)
+                      setPreviewData(null)
+                      restoreRevision(previewData.revision.id, selectedPostForRevisions)
+                    }}
+                    className="px-6 py-3 bg-blue-500 text-white rounded-xl transition-all duration-200 font-medium hover:bg-blue-600"
+                  >
+                    Restore This Revision
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowPreviewModal(false)
+                      setPreviewData(null)
+                      restoreRevisionHard(previewData.revision.id, selectedPostForRevisions)
+                    }}
+                    className="px-6 py-3 bg-purple-500 text-white rounded-xl transition-all duration-200 font-medium hover:bg-purple-600"
+                  >
+                    Hard Restore
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
