@@ -80,7 +80,7 @@ function SortableComponentItem(props) {
   return <ComponentItem {...rest} component={component} listeners={listeners} attributes={attributes} setNodeRef={setNodeRef} style={style} />;
 }
 
-function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndoDelete, onToggleHide, onReorder, expandedComponentIds = [], onToggleExpand, dropdownOpen, setDropdownOpen, availableComponents, addComponent, onFieldValuesChange, fieldValuesByInstance }) {
+function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndoDelete, onToggleHide, onReorder, expandedComponentIds = [], onToggleExpand, dropdownOpen, setDropdownOpen, availableComponents, addComponent, onFieldValuesChange, fieldValuesByInstance, fieldCache }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 2 } })
   );
@@ -185,7 +185,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                       className="flex items-center gap-2 px-3 py-2 mb-2 rounded bg-gray-100 border border-pink-200 hover:bg-pink-50 transition text-left shadow-sm cursor-pointer"
                       onClick={() => handleDropdownSelect(component)}
                     >
-                      <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
+                      <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /></svg>
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(component.id)}
@@ -243,6 +243,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                   onFieldChange={handleFieldChange}
                   fieldValues={fieldValues}
                   availableComponents={availableComponents}
+                  fieldCache={fieldCache}
                 />
               ))}
             </SortableContext>

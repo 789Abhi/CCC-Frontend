@@ -13,6 +13,7 @@ function MetaboxApp() {
   const [expandedComponentIds, setExpandedComponentIds] = useState([]); // for expand/collapse
   const [dropdownOpen, setDropdownOpen] = useState(false); // for add dropdown
   const [fieldValuesByInstance, setFieldValuesByInstance] = useState({});
+  const [fieldCache, setFieldCache] = useState({}); // Cache for field data
 
   // Ensure unsaved changes are tracked when a field value changes
   const handleFieldValuesChange = (values) => {
@@ -31,6 +32,25 @@ function MetaboxApp() {
     }
     return 0;
   };
+
+  // Load expanded state from localStorage on mount
+  useEffect(() => {
+    const postId = getPostId();
+    const stored = localStorage.getItem(`ccc_expanded_${postId}`);
+    if (stored) {
+      try {
+        setExpandedComponentIds(JSON.parse(stored));
+      } catch (e) {
+        console.error('CCC: Failed to parse stored expanded state:', e);
+      }
+    }
+  }, []);
+
+  // Persist expanded state to localStorage on change
+  useEffect(() => {
+    const postId = getPostId();
+    localStorage.setItem(`ccc_expanded_${postId}`, JSON.stringify(expandedComponentIds));
+  }, [expandedComponentIds]);
 
   // Load all available components from the plugin (not assigned, but all created)
   const loadAvailableComponents = async () => {
@@ -92,6 +112,73 @@ function MetaboxApp() {
     }
   };
 
+  // Preload all field data for components to eliminate loading states
+  const preloadFieldData = async (components) => {
+    const postId = getPostId();
+    if (!postId || !components.length) return;
+
+    const cacheKey = `${postId}_${components.map(c => `${c.id}_${c.instance_id}`).join('_')}`;
+    
+    // Check if we have cached data for this exact combination
+    const cached = sessionStorage.getItem(`ccc_field_cache_${cacheKey}`);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setFieldCache(parsed.fieldCache);
+        setFieldValuesByInstance(parsed.fieldValues);
+        return;
+      } catch (e) {
+        console.error('CCC: Failed to parse cached field data:', e);
+      }
+    }
+
+    // Load all field data in parallel
+    const fieldPromises = components.map(async (comp) => {
+      const response = await fetch(cccData.ajaxUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          action: 'ccc_get_component_fields',
+          nonce: cccData.nonce,
+          component_id: comp.id,
+          post_id: postId,
+          instance_id: comp.instance_id
+        })
+      });
+      const data = await response.json();
+      return {
+        componentId: comp.id,
+        instanceId: comp.instance_id,
+        data: data.success ? data.fields : []
+      };
+    });
+
+    const results = await Promise.all(fieldPromises);
+    
+    // Build cache and field values
+    const newFieldCache = {};
+    const newFieldValues = {};
+    
+    results.forEach(result => {
+      newFieldCache[`${result.componentId}_${result.instanceId}`] = result.data;
+      if (Array.isArray(result.data)) {
+        newFieldValues[result.instanceId] = {};
+        result.data.forEach(field => {
+          newFieldValues[result.instanceId][field.name] = field.value || '';
+        });
+      }
+    });
+
+    setFieldCache(newFieldCache);
+    setFieldValuesByInstance(newFieldValues);
+
+    // Cache the data for this session
+    sessionStorage.setItem(`ccc_field_cache_${cacheKey}`, JSON.stringify({
+      fieldCache: newFieldCache,
+      fieldValues: newFieldValues
+    }));
+  };
+
   // Save components via Ajax (called only on page update)
   const saveComponents = async (componentsToSave) => {
     try {
@@ -138,6 +225,13 @@ function MetaboxApp() {
     loadAvailableComponents();
     loadAssignedComponents();
   }, []);
+
+  // After loading assigned components, preload all field data
+  useEffect(() => {
+    if (components.length > 0) {
+      preloadFieldData(components);
+    }
+  }, [components]);
 
   // Add new component(s) (from dropdown)
   const addComponent = (componentOrArray) => {
@@ -191,53 +285,12 @@ function MetaboxApp() {
         : [...prev, instance_id]
     );
   };
-  // Set active handler
-  const setActive = (instance_id) => {
-    // This function is no longer needed as there's no active component state
-  };
 
   // Remove component from UI immediately, only delete from DB on save
   const removeComponent = (instance_id) => {
     setComponents(prev => prev.filter(c => c.instance_id !== instance_id));
     setHasUnsavedChanges(true);
   };
-
-  // Load field values for assigned components
-  const loadFieldValues = async (components) => {
-    const postId = getPostId();
-    if (!postId || !components.length) return;
-    const result = {};
-    for (const comp of components) {
-      // Fetch all fields for this component instance
-      const response = await fetch(cccData.ajaxUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          action: 'ccc_get_component_fields',
-          nonce: cccData.nonce,
-          component_id: comp.id,
-          post_id: postId,
-          instance_id: comp.instance_id
-        })
-      });
-      const data = await response.json();
-      if (data.success && Array.isArray(data.data)) {
-        result[comp.instance_id] = {};
-        data.data.forEach(field => {
-          result[comp.instance_id][field.name] = field.value || '';
-        });
-      }
-    }
-    setFieldValuesByInstance(result);
-  };
-
-  // After loading assigned components, load their field values
-  useEffect(() => {
-    if (components.length > 0) {
-      loadFieldValues(components);
-      // Do NOT force expand any component here; rely on localStorage or user action
-    }
-  }, [components]);
 
   // Save on page update (WordPress save)
   useEffect(() => {
@@ -306,9 +359,20 @@ function MetaboxApp() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 text-center">
-        <div className="w-8 h-8 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-        <p className="text-gray-600">Loading components...</p>
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-8">
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="relative">
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-pink-500 rounded-full animate-spin mb-6"></div>
+            <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-r-blue-500 rounded-full animate-spin" style={{ animationDelay: '-0.5s' }}></div>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Loading Components</h3>
+          <p className="text-gray-600 text-sm">Please wait while we load your page components...</p>
+          <div className="mt-4 flex space-x-1">
+            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -318,7 +382,8 @@ function MetaboxApp() {
       {/* Hidden input for backend save */}
       <input type="hidden" id="ccc_components_data" name="ccc_components_data" />
       {isSaving && (
-        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-700">
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-700 flex items-center">
+          <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mr-2"></div>
           Saving changes...
         </div>
       )}
@@ -343,6 +408,7 @@ function MetaboxApp() {
         addComponent={addComponent}
         onFieldValuesChange={handleFieldValuesChange}
         fieldValuesByInstance={fieldValuesByInstance}
+        fieldCache={fieldCache}
       />
     </div>
   );
