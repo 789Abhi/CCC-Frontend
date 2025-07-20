@@ -444,14 +444,16 @@ const ComponentList = () => {
       const response = await axios.post(window.cccData.ajaxUrl, formData);
       
       if (response.data.success) {
-        setRevisions(response.data.revisions);
+        setRevisions(response.data.data.revisions || []);
       } else {
         console.error('Failed to load revisions:', response.data.message);
         toast.error('Failed to load revisions');
+        setRevisions([]);
       }
     } catch (error) {
       console.error('Error loading revisions:', error);
       toast.error('Error loading revisions');
+      setRevisions([]);
     } finally {
       setLoadingRevisions(false);
     }
@@ -475,6 +477,34 @@ const ComponentList = () => {
       
       if (response.data.success) {
         toast.success('Revision restored successfully!');
+        // Reload the page to show restored data
+        window.location.reload();
+      } else {
+        toast.error('Failed to restore revision: ' + response.data.message);
+      }
+    } catch (error) {
+      toast.error('Error restoring revision: ' + error.message);
+    }
+  };
+
+  const restoreRevisionHard = async (revisionId, postId) => {
+    if (!postId || !revisionId) return;
+    
+    if (!confirm('Are you sure you want to restore this revision and delete all newer revisions? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const formData = new FormData();
+      formData.append("action", "ccc_restore_field_revision_hard");
+      formData.append("nonce", window.cccData.nonce);
+      formData.append("revision_id", revisionId);
+      formData.append("post_id", postId);
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData);
+      
+      if (response.data.success) {
+        toast.success('Revision restored and newer revisions deleted!');
         // Reload the page to show restored data
         window.location.reload();
       } else {
@@ -1171,6 +1201,12 @@ const ComponentList = () => {
                               className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
                             >
                               Restore
+                            </button>
+                            <button
+                              onClick={() => restoreRevisionHard(revision.id, selectedPostForRevisions)}
+                              className="px-3 py-1 bg-purple-500 text-white text-sm rounded hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                            >
+                              Hard Restore
                             </button>
                             <button
                               onClick={() => deleteRevision(revision.id)}
