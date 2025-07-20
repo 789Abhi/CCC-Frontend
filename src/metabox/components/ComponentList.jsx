@@ -135,17 +135,12 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
     }
   };
 
-  // Field values state
-  const [fieldValues, setFieldValues] = useState({}); // { [instance_id]: { [field_name]: value } }
-
+  // Use the fieldValuesByInstance passed from parent instead of local state
   const handleFieldChange = (instance_id, field_name, value) => {
-    setFieldValues(prev => {
-      const updated = { ...prev };
-      if (!updated[instance_id]) updated[instance_id] = {};
-      updated[instance_id][field_name] = value;
-      if (onFieldValuesChange) onFieldValuesChange(updated);
-      return updated;
-    });
+    const updated = { ...fieldValuesByInstance };
+    if (!updated[instance_id]) updated[instance_id] = {};
+    updated[instance_id][field_name] = value;
+    if (onFieldValuesChange) onFieldValuesChange(updated);
   };
 
   return (
@@ -239,7 +234,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                   isExpanded={expandedComponentIds.includes(component.instance_id)}
                   onToggleExpand={onToggleExpand}
                   onFieldChange={handleFieldChange}
-                  fieldValues={fieldValues}
+                  fieldValues={fieldValuesByInstance}
                   availableComponents={availableComponents}
                 />
               ))}

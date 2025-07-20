@@ -231,12 +231,15 @@ function MetaboxApp() {
       let hasError = false;
       const requiredFields = [];
       
+      console.log('CCC DEBUG: Starting validation with fieldValuesByInstance:', fieldValuesByInstance);
+      
       // Check each component for required fields
       for (const comp of components) {
         if (comp.isPendingDelete) continue; // Skip deleted components
         
         // Get field values for this component instance
         const instanceFields = fieldValuesByInstance[comp.instance_id] || {};
+        console.log(`CCC DEBUG: Component ${comp.name} (${comp.instance_id}) has fields:`, instanceFields);
         
         // We need to fetch the actual fields for this component to check required status
         try {
@@ -256,12 +259,14 @@ function MetaboxApp() {
           if (data.success && Array.isArray(data.fields)) {
             data.fields.forEach(field => {
               if (field.required) {
-                const value = instanceFields[field.name] || field.value || '';
+                // Use the current field value from the form, not the server value
+                const currentValue = instanceFields[field.name] || '';
+                console.log(`CCC DEBUG: Required field ${field.name} has value: "${currentValue}"`);
                 requiredFields.push({
                   instance_id: comp.instance_id,
                   field_name: field.name,
                   label: field.label,
-                  value: value
+                  value: currentValue
                 });
               }
             });
@@ -271,7 +276,10 @@ function MetaboxApp() {
         }
       }
       
+      console.log('CCC DEBUG: All required fields found:', requiredFields);
       const missing = requiredFields.filter(f => !f.value.trim());
+      console.log('CCC DEBUG: Missing required fields:', missing);
+      
       if (missing.length > 0) {
         hasError = true;
         const missingLabels = missing.map(f => f.label).join(', ');
@@ -303,6 +311,8 @@ function MetaboxApp() {
               const fieldData = await fieldResponse.json();
               if (!fieldData.success) {
                 console.error('CCC: Failed to save field values:', fieldData.message);
+              } else {
+                console.log('CCC DEBUG: Field values saved successfully');
               }
             } catch (error) {
               console.error('CCC: Error saving field values:', error);
