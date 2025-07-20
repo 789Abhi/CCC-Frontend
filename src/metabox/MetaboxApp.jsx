@@ -350,33 +350,58 @@ function MetaboxApp() {
     return () => form.removeEventListener('submit', handleSubmit);
   }, [components, fieldValuesByInstance]);
 
+  if (isLoading) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-8">
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="relative">
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-pink-500 rounded-full animate-spin mb-6"></div>
+            <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-r-blue-500 rounded-full animate-spin" style={{ animationDelay: '-0.5s' }}></div>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Loading Components</h3>
+          <p className="text-gray-600 text-sm">Please wait while we load your page components...</p>
+          <div className="mt-4 flex space-x-1">
+            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="ccc-metabox-app">
-      <h2>Component Manager</h2>
-      <ComponentSelector
-        availableComponents={availableComponents}
-        onAddComponent={addComponent}
-        isLoading={isLoading}
-        isSaving={isSaving}
-        hasUnsavedChanges={hasUnsavedChanges}
-        onSave={saveComponents}
-        onFieldValuesChange={handleFieldValuesChange}
-        fieldValuesByInstance={fieldValuesByInstance}
-      />
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-0">
+      {/* Hidden input for backend save */}
+      <input type="hidden" id="ccc_components_data" name="ccc_components_data" />
+      {isSaving && (
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-700 flex items-center">
+          <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mr-2"></div>
+          Saving changes...
+        </div>
+      )}
       <ComponentList
         components={components}
-        isLoading={isLoading}
-        isSaving={isSaving}
-        hasUnsavedChanges={hasUnsavedChanges}
-        onSave={saveComponents}
-        onFieldValuesChange={handleFieldValuesChange}
-        fieldValuesByInstance={fieldValuesByInstance}
+        isReadOnly={false}
+        onAdd={() => setDropdownOpen((open) => !open)}
+        onRemove={markComponentForDelete}
+        onUndoDelete={undoDelete}
+        onToggleHide={(instance_id) => {
+          setComponents(prev => prev.map(c =>
+            c.instance_id === instance_id ? { ...c, isHidden: !c.isHidden } : c
+          ));
+          setHasUnsavedChanges(true);
+        }}
+        onReorder={reorderComponents}
         expandedComponentIds={expandedComponentIds}
         onToggleExpand={toggleExpand}
-        onMarkForDelete={markComponentForDelete}
-        onUndoDelete={undoDelete}
-        onReorder={reorderComponents}
-        onRemoveComponent={removeComponent}
+        dropdownOpen={dropdownOpen}
+        setDropdownOpen={setDropdownOpen}
+        availableComponents={availableComponents}
+        addComponent={addComponent}
+        onFieldValuesChange={handleFieldValuesChange}
+        fieldValuesByInstance={fieldValuesByInstance}
+        postId={getPostId()}
       />
     </div>
   );
