@@ -189,8 +189,9 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(component.id)}
-                        onChange={e => { e.stopPropagation(); handleDropdownSelect(component); }}
-                        className="accent-pink-500"
+                        onChange={() => handleDropdownSelect(component)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="accent-pink-500 cursor-pointer"
                       />
                       <span className="flex-1 min-w-0 text-gray-800 font-medium truncate text-base">{component.name}</span>
                     </li>

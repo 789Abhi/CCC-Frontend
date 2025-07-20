@@ -136,7 +136,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
           <div className="font-semibold text-gray-800 text-lg">{component.name}</div>
           <div className="text-xs text-gray-500">@{component.handle_name}</div>
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-3 flex-shrink-0" style={{ opacity: 1 }}>
           <ToggleSwitch checked={!component.isHidden} onChange={e => { e.stopPropagation(); onToggleHide(); }} />
           <DotMenu onDelete={onRemove} />
         </div>
