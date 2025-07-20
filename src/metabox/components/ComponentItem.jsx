@@ -89,6 +89,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
           } else if (data.data && Array.isArray(data.data.fields)) {
             fieldArr = data.data.fields;
           }
+          console.log('CCC: Fields loaded for component', component.name, fieldArr);
           setFields(fieldArr);
         })
         .catch(() => setFields([]))
@@ -150,7 +151,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
             <div>
               {fields.map(field => {
                 if (field.type === 'text') {
-                  const isRequired = compDef?.fields?.find(f => f.name === field.name)?.required;
+                  const isRequired = field.required || false;
                   const value = fieldValues?.[component.id]?.[component.instance_id]?.[field.name] ?? field.value ?? '';
                   return (
                     <TextField
