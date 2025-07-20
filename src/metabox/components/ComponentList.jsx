@@ -80,7 +80,7 @@ function SortableComponentItem(props) {
   return <ComponentItem {...rest} component={component} listeners={listeners} attributes={attributes} setNodeRef={setNodeRef} style={style} />;
 }
 
-function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndoDelete, onToggleHide, onReorder, expandedComponentIds = [], onToggleExpand, dropdownOpen, setDropdownOpen, availableComponents, addComponent, onFieldValuesChange, fieldValuesByInstance }) {
+function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndoDelete, onToggleHide, onReorder, expandedComponentIds = [], onToggleExpand, dropdownOpen, setDropdownOpen, availableComponents, addComponent, onFieldValuesChange, fieldValuesByInstance, postId }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 2 } })
   );
@@ -236,6 +236,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                   onFieldChange={handleFieldChange}
                   fieldValues={fieldValuesByInstance}
                   availableComponents={availableComponents}
+                  postId={postId}
                 />
               ))}
             </SortableContext>

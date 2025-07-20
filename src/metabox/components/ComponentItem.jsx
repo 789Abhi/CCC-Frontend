@@ -56,7 +56,7 @@ function DotMenu({ onDelete }) {
   );
 }
 
-function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents }) {
+function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents, postId }) {
   const [fields, setFields] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
 
@@ -73,7 +73,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
           action: 'ccc_get_component_fields',
           nonce: cccData.nonce,
           component_id: component.id,
-          post_id: cccData.postId,
+          post_id: postId,
           instance_id: component.instance_id
         })
       })
@@ -95,7 +95,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
         .catch(() => setFields([]))
         .finally(() => setLoadingFields(false));
     }
-  }, [isExpanded, component.id, component.instance_id]);
+  }, [isExpanded, component.id, component.instance_id, postId]);
 
   const handleFieldChange = (fieldName, value) => {
     if (onFieldChange) {

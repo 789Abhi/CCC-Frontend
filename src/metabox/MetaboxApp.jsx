@@ -403,7 +403,7 @@ function MetaboxApp() {
         components={components}
         isReadOnly={false}
         onAdd={() => setDropdownOpen((open) => !open)}
-        onRemove={removeComponent}
+        onRemove={markComponentForDelete}
         onUndoDelete={undoDelete}
         onToggleHide={(instance_id) => {
           setComponents(prev => prev.map(c =>
@@ -420,6 +420,7 @@ function MetaboxApp() {
         addComponent={addComponent}
         onFieldValuesChange={handleFieldValuesChange}
         fieldValuesByInstance={fieldValuesByInstance}
+        postId={getPostId()}
       />
     </div>
   );
