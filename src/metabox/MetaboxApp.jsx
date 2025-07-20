@@ -259,6 +259,11 @@ function MetaboxApp() {
         const toSave = components.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
         input.value = JSON.stringify(toSave);
       }
+      // Set field values hidden input
+      const fieldValuesInput = document.getElementById('ccc_field_values');
+      if (fieldValuesInput) {
+        fieldValuesInput.value = JSON.stringify(fieldValuesByInstance);
+      }
       // Validate required fields before save
       let hasError = false;
       const requiredFields = [];
@@ -374,6 +379,7 @@ function MetaboxApp() {
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-0">
       {/* Hidden input for backend save */}
       <input type="hidden" id="ccc_components_data" name="ccc_components_data" />
+      <input type="hidden" id="ccc_field_values" name="ccc_field_values" />
       {isSaving && (
         <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-700 flex items-center">
           <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mr-2"></div>
