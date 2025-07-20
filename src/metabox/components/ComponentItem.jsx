@@ -152,13 +152,13 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
               {fields.map(field => {
                 if (field.type === 'text') {
                   const isRequired = field.required || false;
-                  const value = fieldValues?.[component.instance_id]?.[field.name] ?? field.value ?? '';
+                  const value = fieldValues?.[component.instance_id]?.[field.id] ?? field.value ?? '';
                   return (
                     <TextField
-                      key={field.name}
+                      key={field.id}
                       label={field.label}
                       value={value}
-                      onChange={val => handleFieldChange(field.name, val)}
+                      onChange={val => handleFieldChange(field.id, val)}
                       placeholder={field.placeholder}
                       required={isRequired}
                       error={isRequired && !value.trim()}
