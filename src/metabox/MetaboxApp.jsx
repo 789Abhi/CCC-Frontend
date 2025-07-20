@@ -256,6 +256,12 @@ function MetaboxApp() {
     const form = document.querySelector('form#post');
     if (!form) return;
     const handleSubmit = async (e) => {
+      // Force update hidden input with current components (excluding deleted)
+      const input = document.getElementById('ccc_components_data');
+      if (input) {
+        const toSave = components.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
+        input.value = JSON.stringify(toSave);
+      }
       // Validate required fields before save
       let hasError = false;
       const requiredFields = [];

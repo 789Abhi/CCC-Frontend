@@ -1408,9 +1408,9 @@ const ComponentList = () => {
               // Update the component in the list
               setComponents(prevComponents => 
                 prevComponents.map(comp => 
-                  comp.id === selectedComponentForTree.id 
-                    ? { ...comp, fields: updatedFields }
-                    : comp
+                comp.id === selectedComponentForTree.id 
+                  ? { ...comp, fields: updatedFields }
+                  : comp
                 )
               )
 
