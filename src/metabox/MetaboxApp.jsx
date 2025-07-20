@@ -297,6 +297,21 @@ function MetaboxApp() {
           const postId = getPostId();
           if (postId && Object.keys(fieldValuesByInstance).length > 0) {
             console.log('CCC DEBUG: Saving field values payload:', fieldValuesByInstance);
+            
+            // Transform the data structure to match backend expectations
+            // From: { [instance_id]: { [field_name]: value } }
+            // To: { [component_id]: { [instance_id]: { [field_name]: value } } }
+            const transformedFieldValues = {};
+            components.forEach(comp => {
+              if (!comp.isPendingDelete && fieldValuesByInstance[comp.instance_id]) {
+                transformedFieldValues[comp.id] = {
+                  [comp.instance_id]: fieldValuesByInstance[comp.instance_id]
+                };
+              }
+            });
+            
+            console.log('CCC DEBUG: Transformed field values:', transformedFieldValues);
+            
             try {
               const fieldResponse = await fetch(cccData.ajaxUrl, {
                 method: 'POST',
@@ -305,7 +320,7 @@ function MetaboxApp() {
                   action: 'ccc_save_field_values',
                   nonce: cccData.nonce,
                   post_id: postId,
-                  ccc_field_values: JSON.stringify(fieldValuesByInstance)
+                  ccc_field_values: JSON.stringify(transformedFieldValues)
                 })
               });
               const fieldData = await fieldResponse.json();
