@@ -56,21 +56,46 @@ function DotMenu({ onDelete }) {
   );
 }
 
-function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents, fieldCache }) {
+function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents }) {
   const [fields, setFields] = useState([]);
+  const [loadingFields, setLoadingFields] = useState(false);
 
-  // Get fields from cache when component is expanded
+  // Find required info for fields
+  const compDef = availableComponents?.find(c => c.id === component.id);
+
   useEffect(() => {
-    if (isExpanded && component.id && component.instance_id) {
-      const cacheKey = `${component.id}_${component.instance_id}`;
-      const cachedFields = fieldCache[cacheKey];
-      if (cachedFields && Array.isArray(cachedFields)) {
-        setFields(cachedFields);
-      } else {
-        setFields([]);
-      }
+    if (isExpanded && fields.length === 0 && component.id && component.instance_id) {
+      setLoadingFields(true);
+      fetch(cccData.ajaxUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          action: 'ccc_get_component_fields',
+          nonce: cccData.nonce,
+          component_id: component.id,
+          post_id: cccData.postId,
+          instance_id: component.instance_id
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          let fieldArr = [];
+          if (Array.isArray(data.fields)) {
+            fieldArr = data.fields;
+          } else if (data.fields && Array.isArray(data.fields.fields)) {
+            fieldArr = data.fields.fields;
+          } else if (Array.isArray(data.data)) {
+            fieldArr = data.data;
+          } else if (data.data && Array.isArray(data.data.fields)) {
+            fieldArr = data.data.fields;
+          }
+          console.log('CCC: Fields loaded for component', component.name, fieldArr);
+          setFields(fieldArr);
+        })
+        .catch(() => setFields([]))
+        .finally(() => setLoadingFields(false));
     }
-  }, [isExpanded, component.id, component.instance_id, fieldCache]);
+  }, [isExpanded, component.id, component.instance_id]);
 
   const handleFieldChange = (fieldName, value) => {
     if (onFieldChange) {
@@ -118,7 +143,9 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
       </div>
       {isExpanded && (
         <div className="px-8 pb-4 pt-2 bg-gray-50 border-t border-pink-100 text-sm text-gray-700 animate-fade-in">
-          {fields.length === 0 ? (
+          {loadingFields ? (
+            <div className="text-center text-gray-400 italic">Loading fields...</div>
+          ) : fields.length === 0 ? (
             <div className="text-center text-gray-400 italic">No fields for this component</div>
           ) : (
             <div>

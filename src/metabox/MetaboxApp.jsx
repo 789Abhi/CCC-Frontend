@@ -13,7 +13,6 @@ function MetaboxApp() {
   const [expandedComponentIds, setExpandedComponentIds] = useState([]); // for expand/collapse
   const [dropdownOpen, setDropdownOpen] = useState(false); // for add dropdown
   const [fieldValuesByInstance, setFieldValuesByInstance] = useState({});
-  const [fieldCache, setFieldCache] = useState({}); // Cache for field data
 
   // Ensure unsaved changes are tracked when a field value changes
   const handleFieldValuesChange = (values) => {
@@ -112,73 +111,6 @@ function MetaboxApp() {
     }
   };
 
-  // Preload all field data for components to eliminate loading states
-  const preloadFieldData = async (components) => {
-    const postId = getPostId();
-    if (!postId || !components.length) return;
-
-    const cacheKey = `${postId}_${components.map(c => `${c.id}_${c.instance_id}`).join('_')}`;
-    
-    // Check if we have cached data for this exact combination
-    const cached = sessionStorage.getItem(`ccc_field_cache_${cacheKey}`);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        setFieldCache(parsed.fieldCache);
-        setFieldValuesByInstance(parsed.fieldValues);
-        return;
-      } catch (e) {
-        console.error('CCC: Failed to parse cached field data:', e);
-      }
-    }
-
-    // Load all field data in parallel
-    const fieldPromises = components.map(async (comp) => {
-      const response = await fetch(cccData.ajaxUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          action: 'ccc_get_component_fields',
-          nonce: cccData.nonce,
-          component_id: comp.id,
-          post_id: postId,
-          instance_id: comp.instance_id
-        })
-      });
-      const data = await response.json();
-      return {
-        componentId: comp.id,
-        instanceId: comp.instance_id,
-        data: data.success ? data.fields : []
-      };
-    });
-
-    const results = await Promise.all(fieldPromises);
-    
-    // Build cache and field values
-    const newFieldCache = {};
-    const newFieldValues = {};
-    
-    results.forEach(result => {
-      newFieldCache[`${result.componentId}_${result.instanceId}`] = result.data;
-      if (Array.isArray(result.data)) {
-        newFieldValues[result.instanceId] = {};
-        result.data.forEach(field => {
-          newFieldValues[result.instanceId][field.name] = field.value || '';
-        });
-      }
-    });
-
-    setFieldCache(newFieldCache);
-    setFieldValuesByInstance(newFieldValues);
-
-    // Cache the data for this session
-    sessionStorage.setItem(`ccc_field_cache_${cacheKey}`, JSON.stringify({
-      fieldCache: newFieldCache,
-      fieldValues: newFieldValues
-    }));
-  };
-
   // Save components via Ajax (called only on page update)
   const saveComponents = async (componentsToSave) => {
     try {
@@ -225,13 +157,6 @@ function MetaboxApp() {
     loadAvailableComponents();
     loadAssignedComponents();
   }, []);
-
-  // After loading assigned components, preload all field data
-  useEffect(() => {
-    if (components.length > 0) {
-      preloadFieldData(components);
-    }
-  }, [components]);
 
   // Add new component(s) (from dropdown)
   const addComponent = (componentOrArray) => {
@@ -408,7 +333,6 @@ function MetaboxApp() {
         addComponent={addComponent}
         onFieldValuesChange={handleFieldValuesChange}
         fieldValuesByInstance={fieldValuesByInstance}
-        fieldCache={fieldCache}
       />
     </div>
   );
