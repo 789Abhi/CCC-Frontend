@@ -156,13 +156,14 @@ function MetaboxApp() {
   // Save field values to database
   const saveFieldValues = async (fieldValuesData) => {
     try {
+      const postId = getPostId();
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           action: 'ccc_save_field_values',
           nonce: cccData.nonce,
-          post_id: cccData.postId,
+          post_id: postId,
           field_values: JSON.stringify(fieldValuesData)
         })
       });
@@ -178,34 +179,6 @@ function MetaboxApp() {
     } catch (error) {
       console.error('Error saving field values:', error);
       return false;
-    }
-  };
-
-  // Create a manual revision
-  const createRevision = async (revisionNote = '') => {
-    try {
-      const response = await fetch(cccData.ajaxUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          action: 'ccc_create_field_revision',
-          nonce: cccData.nonce,
-          post_id: cccData.postId,
-          revision_note: revisionNote
-        })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast.success('Revision created successfully!');
-        console.log('Revision created:', data.revision_id);
-      } else {
-        toast.error('Failed to create revision: ' + data.message);
-        console.error('Failed to create revision:', data.message);
-      }
-    } catch (error) {
-      toast.error('Error creating revision: ' + error.message);
-      console.error('Error creating revision:', error);
     }
   };
 
@@ -417,35 +390,15 @@ function MetaboxApp() {
   }
 
   return (
-    <div className="ccc-metabox-container">
-      {/* Header with revision management */}
-      <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-gray-800">Custom Components</h3>
-          {isSaving && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <div className="w-4 h-4 border-2 border-gray-300 border-t-pink-500 rounded-full animate-spin"></div>
-              <span>Saving...</span>
-            </div>
-          )}
-        </div>
-        
-        {/* Revision Management Button */}
-        <button
-          onClick={() => {
-            // Create a revision with current data
-            const revisionNote = prompt('Enter a note for this revision (optional):');
-            if (revisionNote !== null) {
-              createRevision(revisionNote);
-            }
-          }}
-          className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        >
-          Create Revision
-        </button>
-      </div>
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-0">
       {/* Hidden input for backend save */}
       <input type="hidden" id="ccc_components_data" name="ccc_components_data" />
+      {isSaving && (
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-700 flex items-center">
+          <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mr-2"></div>
+          Saving changes...
+        </div>
+      )}
       <ComponentList
         components={components}
         isReadOnly={false}

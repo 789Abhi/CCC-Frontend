@@ -61,6 +61,12 @@ const ComponentList = () => {
   const [showTreeModal, setShowTreeModal] = useState(false)
   const [selectedComponentForTree, setSelectedComponentForTree] = useState(null)
 
+  // Revision system state
+  const [revisions, setRevisions] = useState([])
+  const [loadingRevisions, setLoadingRevisions] = useState(false)
+  const [selectedPostForRevisions, setSelectedPostForRevisions] = useState('')
+  const [showRevisionsSection, setShowRevisionsSection] = useState(false)
+
   const generateHandle = (name) => {
     return name
       .toLowerCase()
@@ -422,8 +428,100 @@ const ComponentList = () => {
   const closeEditComponentNameModal = () => {
     setShowEditComponentNameModal(false)
     setComponentToEditName(null)
-    fetchComponents()
   }
+
+  // Revision system functions
+  const loadRevisions = async (postId) => {
+    if (!postId) return;
+    
+    setLoadingRevisions(true);
+    try {
+      const formData = new FormData();
+      formData.append("action", "ccc_get_field_revisions");
+      formData.append("nonce", window.cccData.nonce);
+      formData.append("post_id", postId);
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData);
+      
+      if (response.data.success) {
+        setRevisions(response.data.revisions);
+      } else {
+        console.error('Failed to load revisions:', response.data.message);
+        toast.error('Failed to load revisions');
+      }
+    } catch (error) {
+      console.error('Error loading revisions:', error);
+      toast.error('Error loading revisions');
+    } finally {
+      setLoadingRevisions(false);
+    }
+  };
+
+  const restoreRevision = async (revisionId, postId) => {
+    if (!postId || !revisionId) return;
+    
+    if (!confirm('Are you sure you want to restore this revision? This will overwrite all current field values.')) {
+      return;
+    }
+    
+    try {
+      const formData = new FormData();
+      formData.append("action", "ccc_restore_field_revision");
+      formData.append("nonce", window.cccData.nonce);
+      formData.append("revision_id", revisionId);
+      formData.append("post_id", postId);
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData);
+      
+      if (response.data.success) {
+        toast.success('Revision restored successfully!');
+        // Reload the page to show restored data
+        window.location.reload();
+      } else {
+        toast.error('Failed to restore revision: ' + response.data.message);
+      }
+    } catch (error) {
+      toast.error('Error restoring revision: ' + error.message);
+    }
+  };
+
+  const deleteRevision = async (revisionId) => {
+    if (!revisionId) return;
+    
+    if (!confirm('Are you sure you want to delete this revision? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const formData = new FormData();
+      formData.append("action", "ccc_delete_field_revision");
+      formData.append("nonce", window.cccData.nonce);
+      formData.append("revision_id", revisionId);
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData);
+      
+      if (response.data.success) {
+        toast.success('Revision deleted successfully!');
+        // Reload revisions for the current post
+        if (selectedPostForRevisions) {
+          loadRevisions(selectedPostForRevisions);
+        }
+      } else {
+        toast.error('Failed to delete revision: ' + response.data.message);
+      }
+    } catch (error) {
+      toast.error('Error deleting revision: ' + error.message);
+    }
+  };
+
+  const handlePostSelectionForRevisions = (postId) => {
+    setSelectedPostForRevisions(postId);
+    if (postId) {
+      loadRevisions(postId);
+    } else {
+      setRevisions([]);
+    }
+  };
 
   const getFieldIcon = (type) => {
     switch (type) {
@@ -981,6 +1079,113 @@ const ComponentList = () => {
             >
               Save Assignments
             </button>
+          </div>
+        </div>
+
+        {/* Field Value Revisions Section */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 p-3 rounded-xl text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-800">Field Value Revisions</h3>
+              <p className="text-gray-600">Manage and restore previous versions of your field data</p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
+              <p className="font-medium">Automatic Revision System</p>
+              <p className="text-sm mt-1">
+                • Revisions are automatically created when field values are saved<br/>
+                • Revisions are preserved even when plugin is uninstalled<br/>
+                • Restore any previous version of your field data<br/>
+                • Complete data safety and rollback capability
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Post for Revision Management</label>
+              <select
+                value={selectedPostForRevisions}
+                onChange={(e) => handlePostSelectionForRevisions(e.target.value)}
+                className="w-full max-w-xs px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+              >
+                <option value="">Choose a post...</option>
+                {posts.map((post) => (
+                  <option key={post.id} value={post.id}>
+                    {post.title} (ID: {post.id})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedPostForRevisions && (
+              <div>
+                <h4 className="text-lg font-semibold text-gray-800 mb-4">Revision History</h4>
+                
+                {loadingRevisions ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-4 border-gray-200 border-t-pink-500 rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-500">Loading revisions...</p>
+                  </div>
+                ) : revisions.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p>No revisions found for this post.</p>
+                    <p className="text-sm mt-1">Revisions will be created automatically when field values are saved.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {revisions.map((revision) => (
+                      <div key={revision.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-sm font-medium text-gray-700">
+                                Revision #{revision.id}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {revision.created_at_formatted}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-600 mb-2">
+                              Created by: {revision.created_by_name}
+                            </div>
+                            {revision.revision_note && (
+                              <div className="text-sm text-gray-600 italic">
+                                Note: {revision.revision_note}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => restoreRevision(revision.id, selectedPostForRevisions)}
+                              className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            >
+                              Restore
+                            </button>
+                            <button
+                              onClick={() => deleteRevision(revision.id)}
+                              className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
