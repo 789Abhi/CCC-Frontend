@@ -53,6 +53,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
   // Tree structure modal state
   const [showTreeModal, setShowTreeModal] = useState(false)
 
+  // Add state for image return type
+  const [imageReturnType, setImageReturnType] = useState('url');
+
   const isEditing = !!field
 
   const availableFieldTypes = [
@@ -101,6 +104,13 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
               teeny: config.editor_settings?.teeny ?? false,
               textarea_rows: config.editor_settings?.textarea_rows ?? 10,
             })
+          } else if (field.type === 'image' && field.config) {
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              setImageReturnType(config.return_type || 'url');
+            } catch (e) {
+              setImageReturnType('url');
+            }
           }
         } catch (e) {
           console.error("Error parsing field config:", e)
@@ -126,6 +136,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
         teeny: false,
         textarea_rows: 10,
       })
+      setImageReturnType('url');
     }
 
     setError("")
@@ -464,7 +475,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
         formData.append("nested_field_definitions", JSON.stringify(processedNestedFields))
       } else if (type === "image") {
         const config = {
-          return_type: "url",
+          return_type: imageReturnType || "url",
         }
         formData.append("field_config", JSON.stringify(config))
       } else if (type === "wysiwyg") {
