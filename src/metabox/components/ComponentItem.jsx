@@ -3,6 +3,7 @@ import TextField from '../fields/Textfield';
 
 import logo from '/drag-drop-icon.svg';
 import TextareaField from '../fields/TextareaField';
+import ImageField from '../fields/ImageField';
 
 function ToggleSwitch({ checked, onChange }) {
   return (
@@ -186,6 +187,26 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                       placeholder={placeholder}
                       required={isRequired}
                       error={isRequired && !value?.trim()}
+                    />
+                  );
+                }
+                if (field.type === 'image') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  const value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                  const handleChange = val => {
+                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                  };
+                  return (
+                    <ImageField
+                      key={field.id}
+                      label={field.label}
+                      value={value}
+                      onChange={handleChange}
+                      required={isRequired}
+                      error={isRequired && !value}
                     />
                   );
                 }
