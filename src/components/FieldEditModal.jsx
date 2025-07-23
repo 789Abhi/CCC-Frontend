@@ -557,33 +557,43 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                 type="text"
                 value={label}
                 onChange={(e) => {
-                  const value = e.target.value
-                  setLabel(value)
+                  const value = e.target.value;
+                  setLabel(value);
                   if (!isEditing && (!name || name === generateHandle(label))) {
-                    setName(generateHandle(value))
+                    setName(generateHandle(value));
                   }
                 }}
                 placeholder="Enter field label"
                 disabled={isSubmitting}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
               />
             </div>
 
-            {/* Field Name */}
+            {/* Field Name with copy-to-clipboard */}
             <div className="space-y-2">
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                 Field Name
               </label>
-              <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="field_name"
-                disabled={isSubmitting || isEditing}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-gray-50 text-gray-600"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="field_name"
+                  disabled={isSubmitting || isEditing}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors bg-gray-50 text-gray-600 shadow-sm"
+                />
+                <button
+                  type="button"
+                  className="bg-pink-100 border border-pink-400 text-pink-700 px-2 py-1 rounded-lg text-xs font-mono hover:bg-pink-200 transition-colors"
+                  onClick={() => navigator.clipboard.writeText(name)}
+                  title="Copy field name"
+                >
+                  Copy
+                </button>
+              </div>
               <p className="text-xs text-gray-500">
                 {isEditing
                   ? "Field name cannot be changed after creation"
@@ -591,7 +601,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
               </p>
             </div>
 
-            {/* Field Type */}
+            {/* Field Type with badge */}
             <div className="space-y-2">
               <label htmlFor="type" className="block text-sm font-medium text-gray-700">
                 Field Type
@@ -601,7 +611,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                 value={type}
                 onChange={(e) => setType(e.target.value)}
                 disabled={isSubmitting}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
               >
                 <option value="text">Text</option>
                 <option value="textarea">Textarea</option>
@@ -613,164 +623,128 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                 <option value="checkbox">Checkbox</option>
                 <option value="radio">Radio</option>
               </select>
-              {isEditing && <p className="text-xs text-gray-500">Field type can be changed.</p>}
+              <span className="inline-block bg-blue-100 border border-pink-400 text-pink-700 px-2 py-1 rounded-full text-xs font-medium capitalize mt-1">
+                {type}
+              </span>
             </div>
 
-            {/* WYSIWYG Settings */}
-            {type === "wysiwyg" && (
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
-                <h4 className="text-sm font-medium text-gray-700">WYSIWYG Editor Settings</h4>
-
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="media_buttons"
-                      checked={wysiwygSettings.media_buttons}
-                      onChange={(e) => setWysiwygSettings((prev) => ({ ...prev, media_buttons: e.target.checked }))}
-                      className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      disabled={isSubmitting}
-                    />
-                    <label htmlFor="media_buttons" className="ml-2 text-sm text-gray-700">
-                      Show media buttons
-                    </label>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="teeny"
-                      checked={wysiwygSettings.teeny}
-                      onChange={(e) => setWysiwygSettings((prev) => ({ ...prev, teeny: e.target.checked }))}
-                      className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      disabled={isSubmitting}
-                    />
-                    <label htmlFor="teeny" className="ml-2 text-sm text-gray-700">
-                      Use minimal editor (teeny mode)
-                    </label>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="textarea_rows" className="block text-sm font-medium text-gray-700">
-                      Editor Height (rows)
-                    </label>
-                    <input
-                      id="textarea_rows"
-                      type="number"
-                      value={wysiwygSettings.textarea_rows}
-                      onChange={(e) =>
-                        setWysiwygSettings((prev) => ({
-                          ...prev,
-                          textarea_rows: Number.parseInt(e.target.value) || 10,
-                        }))
-                      }
-                      min="5"
-                      max="30"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Options Configuration for Select, Checkbox, Radio */}
-            {["select", "checkbox", "radio"].includes(type) && (
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
-                <h4 className="text-sm font-medium text-gray-700">Field Options</h4>
-                <p className="text-xs text-gray-600">Define the options available for this {type} field.</p>
-
-                {fieldOptions.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-lg">
-                    <p>No options defined yet.</p>
-                    <button
-                      type="button"
-                      onClick={handleAddOption}
-                      className="text-indigo-600 hover:underline text-sm mt-2"
-                      disabled={isSubmitting}
-                    >
-                      Add your first option
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {fieldOptions.map((option, index) => (
-                      <div key={index} className="flex gap-2 items-center">
-                        <input
-                          type="text"
-                          value={option.label}
-                          onChange={(e) => handleUpdateOption(index, "label", e.target.value)}
-                          placeholder="Option Label"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                          disabled={isSubmitting}
-                        />
-                        <input
-                          type="text"
-                          value={option.value}
-                          onChange={(e) => handleUpdateOption(index, "value", e.target.value)}
-                          placeholder="Option Value"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                          disabled={isSubmitting}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteOption(index)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          disabled={isSubmitting}
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleAddOption}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
+            {/* Return Type for Image */}
+            {type === 'image' && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Return Type
+                </label>
+                <select
+                  value={imageReturnType}
+                  onChange={e => setImageReturnType(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
                   disabled={isSubmitting}
                 >
-                  <Plus className="w-5 h-5" />
-                  Add Option
-                </button>
+                  <option value="url">URL Only</option>
+                  <option value="full">Full Image Data</option>
+                </select>
+                <p className="text-xs text-gray-500">Choose whether to return just the image URL or the full image object (id, url, alt, etc).</p>
               </div>
             )}
 
-            {/* Placeholder and Required for non-repeater fields */}
-            {type !== "repeater" && !["select", "checkbox", "radio"].includes(type) && (
-              <>
-                <div className="space-y-2">
-                  <label htmlFor="placeholder" className="block text-sm font-medium text-gray-700">
-                    Placeholder
-                  </label>
-                  <input
-                    id="placeholder"
-                    type="text"
-                    value={placeholder}
-                    onChange={(e) => setPlaceholder(e.target.value)}
-                    placeholder="Enter placeholder text"
-                    disabled={isSubmitting}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Required field checkbox */}
-            <div className="flex items-center">
+            {/* Required Checkbox */}
+            <div className="flex items-center gap-2">
               <input
-                type="checkbox"
                 id="required"
+                type="checkbox"
                 checked={isRequired}
-                onChange={(e) => setIsRequired(e.target.checked)}
-                className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                onChange={e => setIsRequired(e.target.checked)}
                 disabled={isSubmitting}
+                className="h-4 w-4 text-pink-600 border-gray-300 rounded focus:ring-pink-400"
               />
-              <label htmlFor="required" className="ml-2 text-sm text-gray-700">
-                Required field
+              <label htmlFor="required" className="text-sm font-medium text-gray-700">
+                Required
               </label>
             </div>
+
+            {/* Placeholder */}
+            {type !== 'repeater' && type !== 'wysiwyg' && (
+              <div className="space-y-2">
+                <label htmlFor="placeholder" className="block text-sm font-medium text-gray-700">
+                  Placeholder
+                </label>
+                <input
+                  id="placeholder"
+                  type="text"
+                  value={placeholder}
+                  onChange={e => setPlaceholder(e.target.value)}
+                  placeholder="Enter placeholder text"
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
+                />
+              </div>
+            )}
+
+            {/* Options for select/checkbox/radio with chips and drag handles */}
+            {['select', 'checkbox', 'radio'].includes(type) && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Options
+                </label>
+                <div className="flex flex-col gap-2">
+                  {fieldOptions.map((option, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
+                      <span className="cursor-grab"><GripVertical className="w-4 h-4 text-gray-400" /></span>
+                      <input
+                        type="text"
+                        value={option.label}
+                        onChange={e => handleUpdateOption(idx, 'label', e.target.value)}
+                        placeholder="Label"
+                        className="w-32 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-pink-400 focus:border-pink-400 text-sm"
+                        disabled={isSubmitting}
+                      />
+                      <input
+                        type="text"
+                        value={option.value}
+                        onChange={e => handleUpdateOption(idx, 'value', e.target.value)}
+                        placeholder="Value"
+                        className="w-32 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-pink-400 focus:border-pink-400 text-sm"
+                        disabled={isSubmitting}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteOption(idx)}
+                        className="text-red-500 hover:text-red-700 px-2 py-1 rounded transition-colors"
+                        disabled={isSubmitting}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleAddOption}
+                    className="mt-2 px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400 text-base font-semibold shadow disabled:opacity-50"
+                    disabled={isSubmitting}
+                  >
+                    Add Option
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Max Sets for Repeater */}
+            {type === 'repeater' && (
+              <div className="space-y-2">
+                <label htmlFor="maxSets" className="block text-sm font-medium text-gray-700">
+                  Max Sets
+                </label>
+                <input
+                  id="maxSets"
+                  type="number"
+                  value={maxSets}
+                  onChange={e => setMaxSets(e.target.value)}
+                  placeholder="Enter max sets (0 for unlimited)"
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
+                />
+              </div>
+            )}
 
             {/* Repeater Settings */}
             {type === "repeater" && (
@@ -866,23 +840,21 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
             )}
 
             {/* Form Actions */}
-            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+            <div className="flex justify-end gap-2 mt-6">
               <button
                 type="button"
                 onClick={onClose}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 text-base font-semibold shadow"
                 disabled={isSubmitting}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
+                className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400 text-base font-semibold shadow disabled:opacity-50"
                 disabled={isSubmitting}
-                className={`px-6 py-2 rounded-lg text-white transition-colors ${
-                  isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
-                }`}
               >
-                {isSubmitting ? "Saving..." : isEditing ? "Update" : "Add Field"}
+                {isEditing ? 'Update Field' : 'Add Field'}
               </button>
             </div>
           </form>
