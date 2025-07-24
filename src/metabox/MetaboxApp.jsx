@@ -257,6 +257,21 @@ function MetaboxApp() {
       if (window.tinymce && window.tinymce.triggerSave) {
         window.tinymce.triggerSave();
       }
+      // --- Sync all WYSIWYG field values from DOM to state ---
+      const wysiwygTextareas = document.querySelectorAll('textarea[id^="wysiwyg_"]');
+      if (wysiwygTextareas.length > 0) {
+        const updatedFieldValues = { ...fieldValuesByInstance };
+        wysiwygTextareas.forEach(textarea => {
+          const idParts = textarea.id.split('_');
+          // id format: wysiwyg_{instance_id}_{field_id}
+          const instance_id = idParts.slice(1, -1).join('_');
+          const field_id = idParts[idParts.length - 1];
+          if (!updatedFieldValues[instance_id]) updatedFieldValues[instance_id] = {};
+          updatedFieldValues[instance_id][field_id] = textarea.value;
+        });
+        // Update the state so the latest values are used for submission
+        setFieldValuesByInstance(updatedFieldValues);
+      }
       // Force update hidden input with current components (excluding deleted)
       const input = document.getElementById('ccc_components_data');
       if (input) {
