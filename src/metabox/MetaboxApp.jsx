@@ -253,6 +253,10 @@ function MetaboxApp() {
     const form = document.querySelector('form#post');
     if (!form) return;
     const handleSubmit = async (e) => {
+      // Force TinyMCE to update all textareas
+      if (window.tinymce && window.tinymce.triggerSave) {
+        window.tinymce.triggerSave();
+      }
       // Force update hidden input with current components (excluding deleted)
       const input = document.getElementById('ccc_components_data');
       if (input) {
