@@ -8,25 +8,27 @@ function WysiwygField({ label, value, onChange, required, error, editorId }) {
     if (window.tinymce && window.tinymce.get(editorId)) {
       window.tinymce.get(editorId).remove();
     }
+    if (window.wp && window.wp.editor && window.wp.editor.remove) {
+      window.wp.editor.remove(editorId);
+    }
 
-    // Initialize TinyMCE
-    if (window.tinymce) {
-      window.tinymce.init({
-        selector: `#${editorId}`,
-        menubar: false,
-        branding: false,
-        height: 220,
-        plugins: 'lists link image paste', // removed 'code'
-        toolbar: 'undo redo | bold italic underline | bullist numlist | link image', // removed 'code'
-        setup: (editor) => {
-          editor.on('Change KeyUp', () => {
-            onChange && onChange(editor.getContent());
-          });
+    // Initialize the WordPress editor
+    if (window.wp && window.wp.editor && window.wp.editor.initialize) {
+      window.wp.editor.initialize(editorId, {
+        tinymce: {
+          wpautop: true,
+          plugins: 'charmap colorpicker hr lists paste tabfocus textcolor fullscreen wordpress wpautoresize wpeditimage wpemoji wpgallery wplink wptextpattern',
+          toolbar1: 'formatselect bold italic bullist numlist blockquote alignleft aligncenter alignright link unlink wp_more spellchecker fullscreen wp_adv',
+          toolbar2: 'strikethrough hr forecolor pastetext removeformat charmap outdent indent undo redo wp_help',
         },
-        init_instance_callback: (editor) => {
-          editor.setContent(value || '');
-        }
+        quicktags: true,
+        mediaButtons: true,
       });
+    }
+
+    // Set initial value
+    if (textareaRef.current) {
+      textareaRef.current.value = value || '';
     }
 
     // Cleanup on unmount
@@ -34,8 +36,28 @@ function WysiwygField({ label, value, onChange, required, error, editorId }) {
       if (window.tinymce && window.tinymce.get(editorId)) {
         window.tinymce.get(editorId).remove();
       }
+      if (window.wp && window.wp.editor && window.wp.editor.remove) {
+        window.wp.editor.remove(editorId);
+      }
     };
   }, [editorId]);
+
+  // Listen for changes
+  useEffect(() => {
+    const handler = () => {
+      if (textareaRef.current && onChange) {
+        onChange(textareaRef.current.value);
+      }
+    };
+    if (window.tinymce && window.tinymce.get(editorId)) {
+      window.tinymce.get(editorId).on('change keyup', handler);
+    }
+    return () => {
+      if (window.tinymce && window.tinymce.get(editorId)) {
+        window.tinymce.get(editorId).off('change keyup', handler);
+      }
+    };
+  }, [editorId, onChange]);
 
   // Update editor content if value changes externally
   useEffect(() => {
@@ -43,6 +65,9 @@ function WysiwygField({ label, value, onChange, required, error, editorId }) {
       if (window.tinymce.get(editorId).getContent() !== value) {
         window.tinymce.get(editorId).setContent(value || '');
       }
+    }
+    if (textareaRef.current && textareaRef.current.value !== value) {
+      textareaRef.current.value = value || '';
     }
   }, [value, editorId]);
 
