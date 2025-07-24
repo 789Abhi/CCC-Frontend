@@ -93,7 +93,10 @@ function WysiwygField({ label, value, onChange, required, error, editorId }) {
         defaultValue={value}
         className="w-full border border-gray-300 rounded-lg shadow-sm"
         style={{ minHeight: 120 }}
-        onChange={e => onChange && onChange(e.target.value)}
+        onChange={e => {
+          console.log('WYSIWYG textarea change:', e.target.value);
+          onChange && onChange(e.target.value);
+        }}
       />
       {error && <div className="text-xs text-red-500 mt-1">This field is required.</div>}
     </div>

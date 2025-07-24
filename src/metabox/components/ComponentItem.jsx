@@ -102,6 +102,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
   }, [isExpanded, component.id, component.instance_id, postId]);
 
   const handleFieldChange = (fieldName, value) => {
+    console.log('ComponentItem handleFieldChange', { instance_id: component.instance_id, fieldName, value });
     if (onFieldChange) {
       onFieldChange(component.instance_id, fieldName, value);
     }
