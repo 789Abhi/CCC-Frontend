@@ -26,17 +26,22 @@ function WysiwygField({ label, value, onChange, required, error, editorId }) {
       window.wp.editor.initialize(editorId, {
         tinymce: {
           wpautop: true,
-          plugins: 'charmap colorpicker hr lists paste tabfocus textcolor fullscreen wordpress wpautoresize wpeditimage wpemoji wpgallery wplink wptextpattern',
-          toolbar1: 'formatselect bold italic bullist numlist blockquote alignleft aligncenter alignright link unlink wp_more spellchecker fullscreen wp_adv',
+          plugins: 'charmap colorpicker hr lists paste tabfocus textcolor wordpress wpautoresize wpeditimage wpemoji wpgallery wplink wptextpattern',
+          toolbar1: 'formatselect bold italic bullist numlist blockquote alignleft aligncenter alignright link unlink wp_more spellchecker wp_adv',
           toolbar2: 'strikethrough hr forecolor pastetext removeformat charmap outdent indent undo redo wp_help',
         },
         quicktags: true,
         mediaButtons: true,
       });
-      // Set initial value
-      if (textareaRef.current) {
-        textareaRef.current.value = value || '';
-      }
+      // Set initial value after a short delay to ensure editor is ready
+      setTimeout(() => {
+        if (window.tinymce && window.tinymce.get(editorId)) {
+          window.tinymce.get(editorId).setContent(value || '');
+        }
+        if (textareaRef.current) {
+          textareaRef.current.value = value || '';
+        }
+      }, 200);
     });
 
     // Cleanup on unmount
