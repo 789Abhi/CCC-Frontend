@@ -253,7 +253,7 @@ function MetaboxApp() {
     const form = document.querySelector('form#post');
     if (!form) return;
     const handleSubmit = (e) => {
-      e.preventDefault(); // Always prevent default form submission
+      // Do NOT call e.preventDefault() here
       // Force TinyMCE to update all textareas
       if (window.tinymce && window.tinymce.triggerSave) {
         window.tinymce.triggerSave();
@@ -288,7 +288,7 @@ function MetaboxApp() {
       if (fieldValuesInput) {
         fieldValuesInput.value = JSON.stringify(fieldValuesToSubmit);
       }
-      // Do NOT call form.submit() here. Let the browser handle the actual submission.
+      // Let the browser handle the form submission as normal
     };
     form.addEventListener('submit', handleSubmit);
     return () => form.removeEventListener('submit', handleSubmit);
