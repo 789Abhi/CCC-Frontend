@@ -288,8 +288,7 @@ function MetaboxApp() {
       if (fieldValuesInput) {
         fieldValuesInput.value = JSON.stringify(fieldValuesToSubmit);
       }
-      // Now, submit the form programmatically
-      form.submit();
+      // Do NOT call form.submit() here. Let the browser handle the actual submission.
     };
     form.addEventListener('submit', handleSubmit);
     return () => form.removeEventListener('submit', handleSubmit);
