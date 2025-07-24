@@ -273,11 +273,15 @@ function MetaboxApp() {
         fieldValuesToSubmit = updatedFieldValues;
         // Do NOT call setFieldValuesByInstance here
       }
-      // Force update hidden input with current components (excluding deleted)
+      // Build componentsToSubmit from the current UI (not React state)
+      let componentsToSubmit = [];
+      if (Array.isArray(components)) {
+        componentsToSubmit = components.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
+      }
+      // Set components hidden input
       const input = document.getElementById('ccc_components_data');
       if (input) {
-        const toSave = components.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
-        input.value = JSON.stringify(toSave);
+        input.value = JSON.stringify(componentsToSubmit);
       }
       // Set field values hidden input
       const fieldValuesInput = document.getElementById('ccc_field_values');
@@ -349,11 +353,6 @@ function MetaboxApp() {
         // If no errors, proceed with saving
         const form = document.querySelector('form#post');
         if (form) {
-          const input = document.getElementById('ccc_components_data');
-          if (input) {
-            const toSave = components.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
-            input.value = JSON.stringify(toSave);
-          }
           // Save field values
           const fieldValuesInput = document.getElementById('ccc_field_values_data');
           if (fieldValuesInput) {
