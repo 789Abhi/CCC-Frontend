@@ -3,6 +3,15 @@ import React, { useEffect, useRef } from 'react';
 function WysiwygField({ label, value, onChange, required, error, editorId }) {
   const textareaRef = useRef();
 
+  // Helper to wait for wp.editor to be available
+  function waitForEditorInit(cb) {
+    if (window.wp && window.wp.editor && window.wp.editor.initialize) {
+      cb();
+    } else {
+      setTimeout(() => waitForEditorInit(cb), 100);
+    }
+  }
+
   useEffect(() => {
     // Remove any existing editor instance
     if (window.tinymce && window.tinymce.get(editorId)) {
@@ -12,8 +21,8 @@ function WysiwygField({ label, value, onChange, required, error, editorId }) {
       window.wp.editor.remove(editorId);
     }
 
-    // Initialize the WordPress editor
-    if (window.wp && window.wp.editor && window.wp.editor.initialize) {
+    // Wait for wp.editor to be available, then initialize
+    waitForEditorInit(() => {
       window.wp.editor.initialize(editorId, {
         tinymce: {
           wpautop: true,
@@ -24,12 +33,11 @@ function WysiwygField({ label, value, onChange, required, error, editorId }) {
         quicktags: true,
         mediaButtons: true,
       });
-    }
-
-    // Set initial value
-    if (textareaRef.current) {
-      textareaRef.current.value = value || '';
-    }
+      // Set initial value
+      if (textareaRef.current) {
+        textareaRef.current.value = value || '';
+      }
+    });
 
     // Cleanup on unmount
     return () => {
