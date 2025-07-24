@@ -26,8 +26,8 @@ function WysiwygField({ label, value, onChange, required, error, editorId }) {
       window.wp.editor.initialize(editorId, {
         tinymce: {
           wpautop: true,
-          plugins: 'charmap colorpicker hr lists paste tabfocus textcolor fullscreen wordpress wpautoresize wpeditimage wpemoji wpgallery wplink wptextpattern',
-          toolbar1: 'formatselect bold italic bullist numlist blockquote alignleft aligncenter alignright link unlink wp_more spellchecker fullscreen wp_adv',
+          plugins: 'charmap colorpicker hr lists paste tabfocus textcolor  wordpress wpautoresize wpeditimage wpemoji wpgallery wplink wptextpattern',
+          toolbar1: 'formatselect bold italic bullist numlist blockquote alignleft aligncenter alignright link unlink wp_more spellchecker  wp_adv',
           toolbar2: 'strikethrough hr forecolor pastetext removeformat charmap outdent indent undo redo wp_help',
         },
         quicktags: true,
@@ -93,6 +93,7 @@ function WysiwygField({ label, value, onChange, required, error, editorId }) {
         defaultValue={value}
         className="w-full border border-gray-300 rounded-lg shadow-sm"
         style={{ minHeight: 120 }}
+        onChange={e => onChange && onChange(e.target.value)}
       />
       {error && <div className="text-xs text-red-500 mt-1">This field is required.</div>}
     </div>
