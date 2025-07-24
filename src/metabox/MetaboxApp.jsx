@@ -252,12 +252,13 @@ function MetaboxApp() {
   useEffect(() => {
     const form = document.querySelector('form#post');
     if (!form) return;
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
+      e.preventDefault(); // Always prevent default form submission
       // Force TinyMCE to update all textareas
       if (window.tinymce && window.tinymce.triggerSave) {
         window.tinymce.triggerSave();
       }
-      // --- Sync all WYSIWYG field values from DOM to state ---
+      // --- Sync all WYSIWYG field values from DOM to local variable ---
       const wysiwygTextareas = document.querySelectorAll('textarea[id^="wysiwyg_"]');
       let fieldValuesToSubmit = fieldValuesByInstance;
       if (wysiwygTextareas.length > 0) {
@@ -271,7 +272,6 @@ function MetaboxApp() {
           updatedFieldValues[instance_id][field_id] = textarea.value;
         });
         fieldValuesToSubmit = updatedFieldValues;
-        // Do NOT call setFieldValuesByInstance here
       }
       // Build componentsToSubmit from the current UI (not React state)
       let componentsToSubmit = [];
@@ -288,87 +288,8 @@ function MetaboxApp() {
       if (fieldValuesInput) {
         fieldValuesInput.value = JSON.stringify(fieldValuesToSubmit);
       }
-      // Validate required fields before save
-      let hasError = false;
-      const requiredFields = [];
-      
-      console.log('CCC DEBUG: Starting validation with fieldValuesByInstance:', fieldValuesByInstance);
-      
-      // Check each component for required fields
-      for (const comp of components) {
-        if (comp.isPendingDelete) continue; // Skip deleted components
-        
-        // Get field values for this component instance
-        const instanceFields = fieldValuesByInstance[comp.instance_id] || {};
-        console.log(`CCC DEBUG: Component ${comp.name} (${comp.instance_id}) has fields:`, instanceFields);
-        
-        // We need to fetch the actual fields for this component to check required status
-        try {
-          const response = await fetch(cccData.ajaxUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              action: 'ccc_get_component_fields',
-              nonce: cccData.nonce,
-              component_id: comp.id,
-              post_id: getPostId(),
-              instance_id: comp.instance_id
-            })
-          });
-          const data = await response.json();
-          
-          if (data.success && Array.isArray(data.fields)) {
-            data.fields.forEach(field => {
-              if (field.required) {
-                // Use the current field value from the form, not the server value
-                const currentValue = instanceFields[field.name] || '';
-                console.log(`CCC DEBUG: Required field ${field.name} has value: "${currentValue}"`);
-                requiredFields.push({
-                  instance_id: comp.instance_id,
-                  field_name: field.name,
-                  label: field.label,
-                  value: currentValue
-                });
-              }
-            });
-          }
-        } catch (error) {
-          console.error('CCC: Error fetching fields for validation:', error);
-        }
-      }
-      
-      console.log('CCC DEBUG: All required fields found:', requiredFields);
-      const missing = requiredFields.filter(f => !f.value.trim());
-      console.log('CCC DEBUG: Missing required fields:', missing);
-      
-      if (missing.length > 0) {
-        hasError = true;
-        const missingLabels = missing.map(f => f.label).join(', ');
-        toast.error(`Please fill all required fields before saving: ${missingLabels}`);
-      }
-      
-      if (hasError) {
-        e.preventDefault(); // Prevent form submission
-      } else {
-        // If no errors, proceed with saving
-        const form = document.querySelector('form#post');
-        if (form) {
-          // Save field values
-          const fieldValuesInput = document.getElementById('ccc_field_values_data');
-          if (fieldValuesInput) {
-            const fieldValuesToSave = Object.entries(fieldValuesByInstance).map(([instance_id, values]) => ({
-              instance_id,
-              field_values: JSON.stringify(values)
-            }));
-            fieldValuesInput.value = JSON.stringify(fieldValuesToSave);
-          }
-          // Trigger the save action
-          const saveButton = document.querySelector('button[type="submit"]');
-          if (saveButton) {
-            saveButton.click();
-          }
-        }
-      }
+      // Now, submit the form programmatically
+      form.submit();
     };
     form.addEventListener('submit', handleSubmit);
     return () => form.removeEventListener('submit', handleSubmit);
