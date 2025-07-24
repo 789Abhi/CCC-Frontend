@@ -16,8 +16,8 @@ function WysiwygField({ label, value, onChange, required, error, editorId }) {
         menubar: false,
         branding: false,
         height: 220,
-        plugins: 'lists link image code paste',
-        toolbar: 'undo redo | bold italic underline | bullist numlist | link image | code',
+        plugins: 'lists link image paste', // removed 'code'
+        toolbar: 'undo redo | bold italic underline | bullist numlist | link image', // removed 'code'
         setup: (editor) => {
           editor.on('Change KeyUp', () => {
             onChange && onChange(editor.getContent());
