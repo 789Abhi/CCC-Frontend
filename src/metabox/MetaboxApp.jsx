@@ -259,6 +259,7 @@ function MetaboxApp() {
       }
       // --- Sync all WYSIWYG field values from DOM to state ---
       const wysiwygTextareas = document.querySelectorAll('textarea[id^="wysiwyg_"]');
+      let fieldValuesToSubmit = fieldValuesByInstance;
       if (wysiwygTextareas.length > 0) {
         const updatedFieldValues = { ...fieldValuesByInstance };
         wysiwygTextareas.forEach(textarea => {
@@ -269,8 +270,8 @@ function MetaboxApp() {
           if (!updatedFieldValues[instance_id]) updatedFieldValues[instance_id] = {};
           updatedFieldValues[instance_id][field_id] = textarea.value;
         });
-        // Update the state so the latest values are used for submission
-        setFieldValuesByInstance(updatedFieldValues);
+        fieldValuesToSubmit = updatedFieldValues;
+        // Do NOT call setFieldValuesByInstance here
       }
       // Force update hidden input with current components (excluding deleted)
       const input = document.getElementById('ccc_components_data');
@@ -281,7 +282,7 @@ function MetaboxApp() {
       // Set field values hidden input
       const fieldValuesInput = document.getElementById('ccc_field_values');
       if (fieldValuesInput) {
-        fieldValuesInput.value = JSON.stringify(fieldValuesByInstance);
+        fieldValuesInput.value = JSON.stringify(fieldValuesToSubmit);
       }
       // Validate required fields before save
       let hasError = false;
