@@ -827,23 +827,6 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
               </div>
             )}
 
-            {type === "image" && (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Return Type</label>
-                <select
-                  value={imageReturnType}
-                  onChange={(e) => setImageReturnType(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
-                  disabled={isSubmitting}
-                >
-                  <option value="url">URL Only</option>
-                  <option value="array">Full Image Data (ID, URL, Alt, etc.)</option>
-                </select>
-                <p className="text-xs text-gray-500">
-                  Choose whether to return just the image URL or complete image data including ID, alt text, etc.
-                </p>
-              </div>
-            )}
 
             {type === "repeater" && renderNestedFields()}
 

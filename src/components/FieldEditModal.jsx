@@ -585,14 +585,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                   disabled={isSubmitting || isEditing}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors bg-gray-50 text-gray-600 shadow-sm"
                 />
-                <button
-                  type="button"
-                  className="bg-pink-100 border border-pink-400 text-pink-700 px-2 py-1 rounded-lg text-xs font-mono hover:bg-pink-200 transition-colors"
-                  onClick={() => navigator.clipboard.writeText(name)}
-                  title="Copy field name"
-                >
-                  Copy
-                </button>
               </div>
               <p className="text-xs text-gray-500">
                 {isEditing
@@ -623,29 +615,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                 <option value="checkbox">Checkbox</option>
                 <option value="radio">Radio</option>
               </select>
-              <span className="inline-block bg-blue-100 border border-pink-400 text-pink-700 px-2 py-1 rounded-full text-xs font-medium capitalize mt-1">
-                {type}
-              </span>
             </div>
 
-            {/* Return Type for Image */}
-            {type === 'image' && (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Return Type
-                </label>
-                <select
-                  value={imageReturnType}
-                  onChange={e => setImageReturnType(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
-                  disabled={isSubmitting}
-                >
-                  <option value="url">URL Only</option>
-                  <option value="full">Full Image Data</option>
-                </select>
-                <p className="text-xs text-gray-500">Choose whether to return just the image URL or the full image object (id, url, alt, etc).</p>
-              </div>
-            )}
 
             {/* Required Checkbox */}
             <div className="flex items-center gap-2">
