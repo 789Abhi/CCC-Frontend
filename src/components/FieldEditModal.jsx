@@ -55,6 +55,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
 
   // Add state for image return type
   const [imageReturnType, setImageReturnType] = useState('url');
+  const [selectMultiple, setSelectMultiple] = useState(false);
 
   const isEditing = !!field
 
@@ -112,6 +113,10 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
               setImageReturnType('url');
             }
           }
+          if (field.type === 'select' && field.config) {
+            const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+            setSelectMultiple(!!config.multiple);
+          }
         } catch (e) {
           console.error("Error parsing field config:", e)
         }
@@ -137,6 +142,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
         textarea_rows: 10,
       })
       setImageReturnType('url');
+      setSelectMultiple(false);
     }
 
     setError("")
@@ -493,7 +499,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
         })
         const config = { options: optionsObject }
         if (type === "select") {
-          config.multiple = false // Default to single selection, can be extended later
+          config.multiple = !!selectMultiple;
         }
         formData.append("field_config", JSON.stringify(config))
       }
@@ -657,6 +663,22 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-700">
                   Options
                 </label>
+                {/* Multiple select checkbox for select fields */}
+                {type === 'select' && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <input
+                      id="select-multiple"
+                      type="checkbox"
+                      checked={selectMultiple}
+                      onChange={e => setSelectMultiple(e.target.checked)}
+                      disabled={isSubmitting}
+                      className="h-4 w-4 text-pink-600 border-gray-300 rounded focus:ring-pink-400"
+                    />
+                    <label htmlFor="select-multiple" className="text-sm text-gray-700">
+                      Choose Multiple
+                    </label>
+                  </div>
+                )}
                 <div className="flex flex-col gap-2">
                   {fieldOptions.map((option, idx) => (
                     <div key={idx} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
