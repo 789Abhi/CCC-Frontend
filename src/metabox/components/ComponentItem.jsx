@@ -240,9 +240,15 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                   const value = instanceFieldValues[field.id] !== undefined
                     ? instanceFieldValues[field.id]
                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || (field.config && field.config.multiple ? [] : '')));
-                  const options = (field.options || (field.config && field.config.options) || []).map(opt =>
-                    typeof opt === 'string' ? { label: opt, value: opt } : opt
-                  );
+                  let optionsRaw = field.options || (field.config && field.config.options) || [];
+                  let options = [];
+                  if (Array.isArray(optionsRaw)) {
+                    options = optionsRaw.map(opt => typeof opt === 'string' ? { label: opt, value: opt } : opt);
+                  } else if (optionsRaw && typeof optionsRaw === 'object') {
+                    options = Object.entries(optionsRaw).map(([value, label]) => ({ label, value }));
+                  } else {
+                    options = [];
+                  }
                   const multiple = field.config && field.config.multiple;
                   const handleChange = val => {
                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
