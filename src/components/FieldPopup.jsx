@@ -35,6 +35,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
   const [fieldOptions, setFieldOptions] = useState(Array.isArray(initialField?.options || initialField?.config?.options) ? (initialField?.options || initialField?.config?.options) : [])
   const [nestedFieldDefinitions, setNestedFieldDefinitions] = useState(Array.isArray(initialField?.nestedFieldDefinitions || initialField?.config?.nested_fields) ? (initialField?.nestedFieldDefinitions || initialField?.config?.nested_fields) : [])
   const [editingNestedFieldIndex, setEditingNestedFieldIndex] = useState(null)
+  const [selectMultiple, setSelectMultiple] = useState(initialField?.config?.multiple || false);
 
   // Recursive popup state
   const [showRecursivePopup, setShowRecursivePopup] = useState(false)
@@ -84,6 +85,9 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
       // Ensure nestedFields is always an array
       setNestedFieldDefinitions(Array.isArray(nestedFields) ? nestedFields : [])
       
+      // Handle selectMultiple
+      setSelectMultiple(initialField?.config?.multiple || false);
+
       console.log('CCC FieldPopup: Loaded nested field definitions', nestedFields)
     } else {
       console.log('CCC FieldPopup: No initial field data provided')
@@ -321,7 +325,8 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
         maxSets: field.config?.max_sets || field.maxSets || "",
         imageReturnType: field.config?.return_type || field.imageReturnType || "url",
         fieldOptions: fieldOpts,
-        nestedFieldDefinitions: nestedFields
+        nestedFieldDefinitions: nestedFields,
+        selectMultiple: field.config?.multiple || false
       }
       console.log('CCC FieldPopup: Initial field data for edit', initialFieldData)
       console.log('CCC FieldPopup: Extracted nested fields', nestedFields)
@@ -367,7 +372,8 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
         })
       }
       processedField.config = {
-        options: optionsObject
+        options: optionsObject,
+        multiple: !!nestedField.selectMultiple
       }
     }
     
@@ -518,7 +524,8 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
         maxSets,
         imageReturnType,
         fieldOptions,
-        nestedFieldDefinitions
+        nestedFieldDefinitions,
+        selectMultiple
       }
       
       console.log('CCC FieldPopup: Saving field data for recursive popup', fieldData)
@@ -579,7 +586,8 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
                 })
               }
               processedField.config = {
-                options: optionsObject
+                options: optionsObject,
+                multiple: !!field.selectMultiple
               }
             }
             return processedField
@@ -596,7 +604,7 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
             optionsObject[option.value] = option.label
           }
         })
-        formData.append("field_config", JSON.stringify({ options: optionsObject }))
+        formData.append("field_config", JSON.stringify({ options: optionsObject, multiple: !!selectMultiple }))
       }
 
       const response = await axios.post(window.cccData.ajaxUrl, formData)
@@ -827,6 +835,21 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
               </div>
             )}
 
+            {type === 'select' && (
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  id="select-multiple"
+                  type="checkbox"
+                  checked={selectMultiple}
+                  onChange={e => setSelectMultiple(e.target.checked)}
+                  disabled={isSubmitting}
+                  className="h-4 w-4 text-pink-600 border-gray-300 rounded focus:ring-pink-400"
+                />
+                <label htmlFor="select-multiple" className="text-sm text-gray-700">
+                  Choose Multiple
+                </label>
+              </div>
+            )}
 
             {type === "repeater" && renderNestedFields()}
 

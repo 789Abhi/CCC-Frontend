@@ -237,9 +237,14 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                 if (field.type === 'select') {
                   const isRequired = field.required || false;
                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
-                  const value = instanceFieldValues[field.id] !== undefined
+                  const multiple = field.config && field.config.multiple;
+                  let value = instanceFieldValues[field.id] !== undefined
                     ? instanceFieldValues[field.id]
-                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || (field.config && field.config.multiple ? [] : '')));
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || (multiple ? [] : '')));
+                  // Always coerce to array for multiple select
+                  if (multiple && !Array.isArray(value)) {
+                    value = value ? [value] : [];
+                  }
                   let optionsRaw = field.options || (field.config && field.config.options) || [];
                   let options = [];
                   if (Array.isArray(optionsRaw)) {
@@ -249,7 +254,6 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                   } else {
                     options = [];
                   }
-                  const multiple = field.config && field.config.multiple;
                   const handleChange = val => {
                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
                   };
