@@ -18,6 +18,8 @@ function SelectField({ label, value, onChange, options = [], multiple = false, r
     } else {
       newValue.push(optionValue);
     }
+    // Always ensure unique values
+    newValue = Array.from(new Set(newValue));
     onChange(newValue);
   };
 

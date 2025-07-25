@@ -241,9 +241,14 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                   let value = instanceFieldValues[field.id] !== undefined
                     ? instanceFieldValues[field.id]
                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || (multiple ? [] : '')));
-                  // Always coerce to array for multiple select
-                  if (multiple && !Array.isArray(value)) {
-                    value = value ? [value] : [];
+                  // Always coerce to unique array for multiple select
+                  if (multiple) {
+                    if (typeof value === 'string') {
+                      value = value ? [value] : [];
+                    }
+                    if (Array.isArray(value)) {
+                      value = Array.from(new Set(value));
+                    }
                   }
                   let optionsRaw = field.options || (field.config && field.config.options) || [];
                   let options = [];
@@ -255,7 +260,12 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                     options = [];
                   }
                   const handleChange = val => {
-                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                    // Always save unique array for multiple
+                    if (multiple && Array.isArray(val)) {
+                      onFieldChange(component.instance_id, field.id, Array.from(new Set(val)));
+                    } else {
+                      onFieldChange(component.instance_id, field.id, val);
+                    }
                   };
                   return (
                     <SelectField
