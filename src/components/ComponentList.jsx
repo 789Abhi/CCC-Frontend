@@ -1124,7 +1124,7 @@ const ComponentList = () => {
                   newFields[index] = {
                     ...newFields[index],
                     children: updateFieldInComponent(newFields[index].children || [], rest, updatedField)
-                  }
+                    }
                   return newFields
                 }
               }
@@ -1139,7 +1139,7 @@ const ComponentList = () => {
                   : comp
                 )
               )
-
+              
               // Send update to backend
               await handleUpdateComponentFields(selectedComponentForTree.id, updatedFields)
               

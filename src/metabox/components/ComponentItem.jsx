@@ -5,6 +5,7 @@ import logo from '/drag-drop-icon.svg';
 import TextareaField from '../fields/TextareaField';
 import ImageField from '../fields/ImageField';
 import WysiwygField from '../fields/WysiwygField';
+import SelectField from '../fields/SelectField';
 
 function ToggleSwitch({ checked, onChange }) {
   return (
@@ -230,6 +231,32 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                       required={isRequired}
                       error={isRequired && !value}
                       editorId={`wysiwyg_${component.instance_id}_${field.id}`}
+                    />
+                  );
+                }
+                if (field.type === 'select') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  const value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || (field.config && field.config.multiple ? [] : '')));
+                  const options = (field.options || (field.config && field.config.options) || []).map(opt =>
+                    typeof opt === 'string' ? { label: opt, value: opt } : opt
+                  );
+                  const multiple = field.config && field.config.multiple;
+                  const handleChange = val => {
+                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                  };
+                  return (
+                    <SelectField
+                      key={field.id}
+                      label={field.label}
+                      value={value}
+                      onChange={handleChange}
+                      options={options}
+                      multiple={multiple}
+                      required={isRequired}
+                      error={isRequired && (multiple ? !value?.length : !value)}
                     />
                   );
                 }
