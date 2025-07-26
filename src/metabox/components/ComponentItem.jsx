@@ -6,6 +6,7 @@ import TextareaField from '../fields/TextareaField';
 import ImageField from '../fields/ImageField';
 import WysiwygField from '../fields/WysiwygField';
 import SelectField from '../fields/SelectField';
+import CheckboxField from '../fields/CheckboxField';
 
 function ToggleSwitch({ checked, onChange }) {
   return (
@@ -277,6 +278,50 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                       multiple={multiple}
                       required={isRequired}
                       error={isRequired && (multiple ? !value?.length : !value)}
+                    />
+                  );
+                }
+                if (field.type === 'checkbox') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  let value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || []));
+                  // Always ensure value is an array for checkboxes
+                  if (typeof value === 'string') {
+                    value = value ? [value] : [];
+                  }
+                  if (Array.isArray(value)) {
+                    value = Array.from(new Set(value));
+                  } else {
+                    value = [];
+                  }
+                  let optionsRaw = field.options || (field.config && field.config.options) || [];
+                  let options = [];
+                  if (Array.isArray(optionsRaw)) {
+                    options = optionsRaw.map(opt => typeof opt === 'string' ? { label: opt, value: opt } : opt);
+                  } else if (optionsRaw && typeof optionsRaw === 'object') {
+                    options = Object.entries(optionsRaw).map(([value, label]) => ({ label, value }));
+                  } else {
+                    options = [];
+                  }
+                  const handleChange = val => {
+                    // Always save unique array for checkboxes
+                    if (Array.isArray(val)) {
+                      onFieldChange(component.instance_id, field.id, Array.from(new Set(val)));
+                    } else {
+                      onFieldChange(component.instance_id, field.id, []);
+                    }
+                  };
+                  return (
+                    <CheckboxField
+                      key={field.id}
+                      label={field.label}
+                      value={value}
+                      onChange={handleChange}
+                      options={options}
+                      required={isRequired}
+                      error={isRequired && !value?.length}
                     />
                   );
                 }
