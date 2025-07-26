@@ -82,6 +82,7 @@ function MetaboxApp() {
       const postId = getPostId();
       if (!postId) {
         setComponents([]);
+        setFieldValuesByInstance({});
         setIsLoading(false);
         return;
       }
@@ -101,11 +102,18 @@ function MetaboxApp() {
         // Add isHidden and isPendingDelete property for UI, and sort by order
         const sorted = [...data.data.components].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         setComponents(sorted.map(c => ({ ...c, isHidden: c.isHidden ?? false, isPendingDelete: false })));
+        
+        // Set field values from the response
+        if (data.data?.field_values) {
+          setFieldValuesByInstance(data.data.field_values);
+        }
       } else {
         setComponents([]);
+        setFieldValuesByInstance({});
       }
     } catch (error) {
       setComponents([]);
+      setFieldValuesByInstance({});
     } finally {
       setIsLoading(false);
     }
