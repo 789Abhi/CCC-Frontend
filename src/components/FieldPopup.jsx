@@ -758,96 +758,72 @@ function FieldPopup({ componentId, onClose, onFieldAdded, initialField, onSave }
 
             {/* Options Configuration for Select, Checkbox, Radio */}
             {["select", "checkbox", "radio"].includes(type) && (
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">Field Options *</label>
-                <p className="text-xs text-gray-500">
-                  Define the options available for this {type} field.
-                </p>
-
-                {fieldOptions.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-lg">
-                    <p>No options defined yet.</p>
-                    <button
-                      type="button"
-                      onClick={handleAddOption}
-                      className="text-purple-600 hover:underline text-sm mt-2"
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
+                  <label className="block text-base font-semibold text-gray-800">Options</label>
+                </div>
+                
+                {/* Multiple select checkbox for select fields - moved above options */}
+                {type === 'select' && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <input
+                      id="select-multiple"
+                      type="checkbox"
+                      checked={selectMultiple}
+                      onChange={e => setSelectMultiple(e.target.checked)}
                       disabled={isSubmitting}
-                    >
-                      Add your first option
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {fieldOptions.map((option, index) => (
-                      <div key={index} className="flex gap-2 items-center">
-                        <input
-                          type="text"
-                          value={option.label}
-                          onChange={(e) => handleUpdateOption(index, "label", e.target.value)}
-                          placeholder="Option Label"
-                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-                          disabled={isSubmitting}
-                        />
-                        <input
-                          type="text"
-                          value={option.value}
-                          onChange={(e) => handleUpdateOption(index, "value", e.target.value)}
-                          placeholder="Option Value"
-                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-                          disabled={isSubmitting}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteOption(index)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          disabled={isSubmitting}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
+                      className="h-4 w-4 text-pink-600 border-gray-300 rounded focus:ring-pink-400"
+                    />
+                    <label htmlFor="select-multiple" className="text-sm text-gray-700">
+                      Choose Multiple
+                    </label>
                   </div>
                 )}
-
-                <button
-                  type="button"
-                  onClick={handleAddOption}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
-                  disabled={isSubmitting}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Add Option
-                </button>
-              </div>
-            )}
-
-            {type === 'select' && (
-              <div className="flex items-center gap-2 mb-2">
-                <input
-                  id="select-multiple"
-                  type="checkbox"
-                  checked={selectMultiple}
-                  onChange={e => setSelectMultiple(e.target.checked)}
-                  disabled={isSubmitting}
-                  className="h-4 w-4 text-pink-600 border-gray-300 rounded focus:ring-pink-400"
-                />
-                <label htmlFor="select-multiple" className="text-sm text-gray-700">
-                  Choose Multiple
-                </label>
+                
+                <div className="space-y-2">
+                  {fieldOptions.map((option, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={option.label}
+                        onChange={(e) => handleUpdateOption(index, "label", e.target.value)}
+                        placeholder="Label"
+                        disabled={isSubmitting}
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+                      />
+                      <input
+                        type="text"
+                        value={option.value}
+                        onChange={(e) => handleUpdateOption(index, "value", e.target.value)}
+                        placeholder="Value"
+                        disabled={isSubmitting}
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteOption(index)}
+                        disabled={isSubmitting}
+                        className="px-3 py-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 disabled:opacity-50"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleAddOption}
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl transition-all duration-200 font-medium disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Option
+                  </button>
+                </div>
               </div>
             )}
 

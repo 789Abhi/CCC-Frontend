@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react"
 import { Treebeard } from "react-treebeard"
 import { X, Edit, Eye, ChevronRight, ChevronDown } from "lucide-react"
-import FieldPopup from "./FieldPopup"
+import FieldEditModal from "./FieldEditModal"
 
-function FieldTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
+function FieldTreeModal({ isOpen, fields, onClose, onFieldUpdate, component }) {
   const [treeData, setTreeData] = useState(null)
   const [cursor, setCursor] = useState(null)
-  const [showFieldPopup, setShowFieldPopup] = useState(false)
+  const [showFieldEditModal, setShowFieldEditModal] = useState(false)
   const [editingField, setEditingField] = useState(null)
   const [editingPath, setEditingPath] = useState([])
 
@@ -63,7 +63,7 @@ function FieldTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
   const handleEditField = (node) => {
     setEditingField(node.field)
     setEditingPath(node.path)
-    setShowFieldPopup(true)
+    setShowFieldEditModal(true)
   }
 
   const handleFieldUpdate = (updatedField) => {
@@ -110,9 +110,23 @@ function FieldTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
     // Call the parent update function
     onFieldUpdate(editingPath, updatedField)
     
-    setShowFieldPopup(false)
+    setShowFieldEditModal(false)
     setEditingField(null)
     setEditingPath([])
+  }
+
+  // Custom save handler for FieldEditModal to prevent direct database save
+  const handleFieldEditSave = () => {
+    // The FieldEditModal will handle the save internally
+    // We just need to close the modal and refresh the tree
+    setShowFieldEditModal(false)
+    setEditingField(null)
+    setEditingPath([])
+    
+    // Force a refresh of the tree data by calling onFieldUpdate with the current field
+    if (editingField) {
+      onFieldUpdate(editingPath, editingField)
+    }
   }
 
   const getFieldIcon = (type) => {
@@ -329,18 +343,21 @@ function FieldTreeModal({ isOpen, fields, onClose, onFieldUpdate }) {
         </div>
       </div>
 
-      {/* Field Edit Popup */}
-      {showFieldPopup && editingField && (
-        <FieldPopup
-          isOpen={showFieldPopup}
-          initialField={editingField}
-          onSave={handleFieldUpdate}
+      {/* Field Edit Modal */}
+      {showFieldEditModal && editingField && (
+        <FieldEditModal
+          isOpen={showFieldEditModal}
+          field={editingField}
+          component={component}
           onClose={() => {
-            setShowFieldPopup(false)
+            setShowFieldEditModal(false)
             setEditingField(null)
             setEditingPath([])
           }}
-          onFieldAdded={() => {}}
+          onSave={(updatedField) => {
+            handleFieldUpdate(updatedField)
+          }}
+          preventDatabaseSave={true}
         />
       )}
     </div>

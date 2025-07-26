@@ -24,7 +24,7 @@ import { CSS } from '@dnd-kit/utilities'
 import FieldPopup from "./FieldPopup"
 import FieldTreeModal from "./FieldTreeModal"
 
-function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
+function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false }) {
   // Add debugging
   console.log("FieldEditModal rendered with:", { isOpen, field, component })
 
@@ -408,6 +408,50 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
     setError("")
 
     try {
+      // If preventDatabaseSave is true, just call onSave with the field data
+      if (preventDatabaseSave) {
+        const fieldData = {
+          id: field?.id,
+          label: label.trim(),
+          name: name || generateHandle(label),
+          type: type,
+          required: isRequired,
+          placeholder: placeholder.trim(),
+          config: {}
+        }
+
+        // Build config based on field type
+        if (type === "repeater") {
+          fieldData.config = {
+            max_sets: maxSets ? Number.parseInt(maxSets) : 0,
+            nested_fields: nestedFieldDefinitions
+          }
+        } else if (type === "image") {
+          fieldData.config = {
+            return_type: imageReturnType || "url"
+          }
+        } else if (type === "wysiwyg") {
+          fieldData.config = {
+            editor_settings: wysiwygSettings
+          }
+        } else if (["select", "checkbox", "radio"].includes(type)) {
+          const optionsObject = {}
+          fieldOptions.forEach((option) => {
+            if (option.label.trim() && option.value.trim()) {
+              optionsObject[option.value.trim()] = option.label.trim()
+            }
+          })
+          fieldData.config = { options: optionsObject }
+          if (type === "select") {
+            fieldData.config.multiple = !!selectMultiple
+          }
+        }
+
+        onSave(fieldData)
+        return
+      }
+
+      // Normal database save flow
       const formData = new FormData()
       formData.append("action", isEditing ? "ccc_update_field" : "ccc_add_field")
       formData.append("nonce", window.cccData.nonce)
@@ -871,6 +915,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave }) {
           fields={nestedFieldDefinitions}
           onClose={() => setShowTreeModal(false)}
           onFieldUpdate={handleTreeFieldUpdate}
+          component={component}
         />
       )}
     </div>
