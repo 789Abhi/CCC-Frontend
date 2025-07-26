@@ -21,7 +21,6 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import FieldPopup from "./FieldPopup"
 import FieldTreeModal from "./FieldTreeModal"
 
 function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false }) {
@@ -251,7 +250,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   }
 
   const handleDeleteNestedField = (indexToDelete) => {
-    if (window.confirm("Are you sure you want to delete this nested field?")) {
+    if (window.confirm("Are you sure you want to delete this field?")) {
       setNestedFieldDefinitions((prev) => prev.filter((_, i) => i !== indexToDelete))
     }
   }
@@ -386,7 +385,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     }
 
     if (type === "repeater" && nestedFieldDefinitions.length === 0) {
-      setError("Repeater fields must have at least one nested field defined.")
+      setError("Repeater fields must have at least one field defined.")
       return
     }
 
@@ -805,16 +804,29 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   <p className="text-xs text-gray-500">Limit the number of items that can be added to this repeater.</p>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700">Nested Fields</h4>
-                      <p className="text-xs text-gray-600">Define the fields that will appear within each repeater item.</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                      </div>
+                      <h4 className="text-sm font-medium text-gray-700">Fields</h4>
                     </div>
+                    <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-medium">
+                      {nestedFieldDefinitions.length} field{nestedFieldDefinitions.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
                   {nestedFieldDefinitions.length === 0 ? (
-                    <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-lg">
-                      <p>No nested fields defined yet.</p>
+                    <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100">
+                      <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium">No fields defined yet</p>
+                      <p className="text-xs mt-1 text-gray-400">Add fields that will appear within each repeater item</p>
                       <button
                         type="button"
                         onClick={() => {
@@ -822,10 +834,10 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                           setEditingNestedFieldIndex(null)
                           setShowFieldPopup(true)
                         }}
-                        className="text-indigo-600 hover:underline text-sm mt-2"
+                        className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
                         disabled={isSubmitting}
                       >
-                        Add your first nested field
+                        Add your first field
                       </button>
                     </div>
                   ) : (
@@ -870,7 +882,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     disabled={isSubmitting}
                   >
                     <Plus className="w-5 h-5" />
-                    Add Nested Field
+                    Add Field
                   </button>
                 </div>
               </div>
@@ -899,12 +911,19 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       </div>
 
       {showFieldPopup && (
-        <FieldPopup
+        <FieldEditModal
           isOpen={showFieldPopup}
-          initialField={currentNestedField}
+          field={currentNestedField}
+          component={component}
           onClose={() => setShowFieldPopup(false)}
-          onSave={editingNestedFieldIndex !== null ? handleUpdateNestedField : handleAddNestedField}
-          availableFieldTypes={availableFieldTypes}
+          onSave={(updatedField) => {
+            if (editingNestedFieldIndex !== null) {
+              handleUpdateNestedField(updatedField)
+            } else {
+              handleAddNestedField(updatedField)
+            }
+          }}
+          preventDatabaseSave={true}
         />
       )}
 

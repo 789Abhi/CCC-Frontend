@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { X, Edit, GitBranch, GitCommit, ArrowRight } from "lucide-react"
-import FieldPopup from "./FieldPopup"
+import FieldEditModal from "./FieldEditModal"
 import axios from "axios"
 
-function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldUpdateSuccess }) {
+function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldUpdateSuccess, component }) {
   const [processedFields, setProcessedFields] = useState([])
-  const [showFieldPopup, setShowFieldPopup] = useState(false)
+  const [showFieldEditModal, setShowFieldEditModal] = useState(false)
   const [editingField, setEditingField] = useState(null)
   const [editingPath, setEditingPath] = useState([])
   // Add state for adding a nested field to a repeater
@@ -104,7 +104,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
     if (!originalField) {
       console.error('Could not find original field data for id path:', idPath, fields)
     }
-    // Ensure the field data is properly formatted for FieldPopup
+    // Ensure the field data is properly formatted for FieldEditModal
     let config = typeof originalField.config === 'string' 
       ? JSON.parse(originalField.config) 
       : originalField.config || {}
@@ -122,7 +122,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
     }
     setEditingField(formattedField)
     setEditingPath(idPath)
-    setShowFieldPopup(true)
+    setShowFieldEditModal(true)
   }
 
   // Update handleFieldUpdate to use idPath
@@ -174,7 +174,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
           formData.append("config", JSON.stringify(configObj))
           const response = await axios.post(window.cccData.ajaxUrl, formData)
           if (response.data.success) {
-            setShowFieldPopup(false)
+            setShowFieldEditModal(false)
             setEditingField(null)
             setEditingPath([])
             if (typeof onFieldUpdateSuccess === 'function') onFieldUpdateSuccess()
@@ -200,7 +200,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
       config: {},
     })
     setAddingToRepeaterId(repeaterField.id)
-    setShowFieldPopup(true)
+    setShowFieldEditModal(true)
   }
 
   // Handler to actually add the nested field
@@ -222,7 +222,7 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
       }
       const response = await axios.post(window.cccData.ajaxUrl, formData)
       if (response.data.success) {
-        setShowFieldPopup(false)
+                    setShowFieldEditModal(false)
         setEditingField(null)
         setAddingToRepeaterId(null)
         // --- NEW: Fetch latest fields and update parent repeater's config.nested_fields ---
@@ -543,67 +543,34 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
       </div>
 
       {/* Field Edit Popup */}
-      {showFieldPopup && editingField && (
-        <div className="relative">
-          {(() => {
-            try {
-              return (
-                <FieldPopup
-                  componentId={null}
-                  isOpen={showFieldPopup}
-                  initialField={editingField}
-                  onSave={handleFieldUpdate}
-                  onClose={() => {
-                    setShowFieldPopup(false)
-                    setEditingField(null)
-                    setEditingPath([])
-                  }}
-                  onFieldAdded={() => {}}
-                />
-              )
-            } catch (error) {
-              console.error('CCC FieldVisualTreeModal: Error rendering FieldPopup:', error)
-              return (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-                  <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-                    <div className="text-center">
-                      <div className="text-red-400 mb-4">
-                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-medium text-red-600 mb-2">Error Opening Field Editor</h3>
-                      <p className="text-red-500 mb-4">There was an error opening the field editor.</p>
-                      <button
-                        onClick={() => {
-                          setShowFieldPopup(false)
-                          setEditingField(null)
-                          setEditingPath([])
-                        }}
-                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            }
-          })()}
-        </div>
+      {showFieldEditModal && editingField && (
+        <FieldEditModal
+          isOpen={showFieldEditModal}
+          field={editingField}
+          component={component}
+          onClose={() => {
+            setShowFieldEditModal(false)
+            setEditingField(null)
+            setEditingPath([])
+          }}
+          onSave={handleFieldUpdate}
+          preventDatabaseSave={true}
+        />
       )}
 
-      {/* Render FieldPopup for adding a nested field */}
-      {showFieldPopup && addingToRepeaterId && (
-        <FieldPopup
-          isOpen={showFieldPopup}
+      {/* Render FieldEditModal for adding a nested field */}
+      {showFieldEditModal && addingToRepeaterId && (
+        <FieldEditModal
+          isOpen={showFieldEditModal}
           field={editingField}
+          component={component}
           onClose={() => {
-            setShowFieldPopup(false)
+            setShowFieldEditModal(false)
             setEditingField(null)
             setAddingToRepeaterId(null)
           }}
           onSave={handleSaveNewNestedField}
+          preventDatabaseSave={true}
         />
       )}
     </div>

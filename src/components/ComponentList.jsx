@@ -1149,6 +1149,7 @@ const ComponentList = () => {
               toast.error('Failed to update field')
             }
           }}
+          component={selectedComponentForTree}
         />
       )}
     </div>
