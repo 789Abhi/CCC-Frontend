@@ -1149,6 +1149,25 @@ const ComponentList = () => {
               toast.error('Failed to update field')
             }
           }}
+          onFieldUpdateSuccess={async () => {
+            // Refresh the component data to ensure we have the latest fields
+            try {
+              const response = await axios.post(window.cccData.ajaxUrl, new URLSearchParams({
+                action: 'ccc_get_components',
+                nonce: window.cccData.nonce
+              }))
+              
+              if (response.data.success && Array.isArray(response.data.data)) {
+                const updatedComponent = response.data.data.find(comp => comp.id === selectedComponentForTree.id)
+                if (updatedComponent) {
+                  setSelectedComponentForTree(updatedComponent)
+                  setComponents(response.data.data)
+                }
+              }
+            } catch (error) {
+              console.error('Error refreshing component data:', error)
+            }
+          }}
           component={selectedComponentForTree}
         />
       )}
