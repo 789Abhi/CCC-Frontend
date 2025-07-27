@@ -16,6 +16,17 @@ function VideoField({ label, value, onChange, required = false, error, config = 
   const allowedSources = Array.isArray(config.sources) && config.sources.length > 0 ? config.sources : ['file'];
   const selectedSource = allowedSources[0];
 
+  // Initialize player options from config
+  const playerOptions = config.player_options || {
+    controls: true,
+    autoplay: false,
+    muted: false,
+    loop: false,
+    download: true,
+    fullscreen: true,
+    pictureInPicture: true
+  };
+
   // Load saved video data when component mounts or value changes
   useEffect(() => {
     if (value) {
