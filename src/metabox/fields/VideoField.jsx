@@ -199,7 +199,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
           return (
             <iframe
               width="100%"
-              height="200"
+              height="500"
               src={youtubeUrl}
               title="YouTube video"
               frameBorder="0"
@@ -229,7 +229,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
           return (
             <iframe
               width="100%"
-              height="200"
+              height="500"
               src={vimeoUrl}
               title="Vimeo video"
               frameBorder="0"
@@ -245,7 +245,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
         return (
           <video
             width="100%"
-            height="200"
+            height="500"
             controls={playerOptions.controls}
             autoplay={playerOptions.autoplay}
             muted={playerOptions.autoplay || playerOptions.muted} // Autoplay requires muted
@@ -280,7 +280,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2" />
                 </svg>
-                Select from WordPress Media Library
+                Select from Media Library
               </button>
               <p className="mt-2 text-xs text-gray-500 text-center">
                 Choose from existing videos or upload new ones
