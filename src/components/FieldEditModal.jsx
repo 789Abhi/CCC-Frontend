@@ -55,6 +55,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   // Add state for image return type
   const [imageReturnType, setImageReturnType] = useState('url');
   const [selectMultiple, setSelectMultiple] = useState(false);
+  const [videoReturnType, setVideoReturnType] = useState('url');
+  const [videoSources, setVideoSources] = useState(['file', 'youtube', 'vimeo', 'url']);
 
   const isEditing = !!field
 
@@ -62,6 +64,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "text",
     "textarea",
     "image",
+    "video",
     "repeater",
     "wysiwyg",
     "color",
@@ -111,6 +114,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             } catch (e) {
               setImageReturnType('url');
             }
+          } else if (field.type === 'video' && field.config) {
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              setVideoReturnType(config.return_type || 'url');
+              setVideoSources(config.sources || ['file', 'youtube', 'vimeo', 'url']);
+            } catch (e) {
+              setVideoReturnType('url');
+              setVideoSources(['file', 'youtube', 'vimeo', 'url']);
+            }
           }
           if (field.type === 'select' && field.config) {
             const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
@@ -142,6 +154,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       })
       setImageReturnType('url');
       setSelectMultiple(false);
+      setVideoReturnType('url');
+      setVideoSources(['file', 'youtube', 'vimeo', 'url']);
     }
 
     setError("")
@@ -429,6 +443,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           fieldData.config = {
             return_type: imageReturnType || "url"
           }
+        } else if (type === "video") {
+          fieldData.config = {
+            return_type: videoReturnType || "url",
+            sources: videoSources
+          }
         } else if (type === "wysiwyg") {
           fieldData.config = {
             editor_settings: wysiwygSettings
@@ -525,6 +544,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       } else if (type === "image") {
         const config = {
           return_type: imageReturnType || "url",
+        }
+        formData.append("field_config", JSON.stringify(config))
+      } else if (type === "video") {
+        const config = {
+          return_type: videoReturnType || "url",
+          sources: videoSources
         }
         formData.append("field_config", JSON.stringify(config))
       } else if (type === "wysiwyg") {
@@ -657,6 +682,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 <option value="text">Text</option>
                 <option value="textarea">Textarea</option>
                 <option value="image">Image</option>
+                <option value="video">Video</option>
                 <option value="repeater">Repeater</option>
                 <option value="wysiwyg">WYSIWYG Editor</option>
                 <option value="color">Color</option>
@@ -884,6 +910,72 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <Plus className="w-5 h-5" />
                     Add Field
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* Video Field Settings */}
+            {type === "video" && (
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">Video Field Settings</h4>
+
+                {/* Return Type */}
+                <div className="space-y-2">
+                  <label htmlFor="videoReturnType" className="block text-sm font-medium text-gray-700">
+                    Return Type
+                  </label>
+                  <select
+                    id="videoReturnType"
+                    value={videoReturnType}
+                    onChange={(e) => setVideoReturnType(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    <option value="url">URL only</option>
+                    <option value="array">Full Video Data</option>
+                  </select>
+                  <p className="text-xs text-gray-500">
+                    {videoReturnType === 'url' 
+                      ? 'Returns just the video URL as a string' 
+                      : 'Returns complete video data including URL, type, and metadata'
+                    }
+                  </p>
+                </div>
+
+                {/* Video Sources */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Allowed Video Sources
+                  </label>
+                  <div className="space-y-2">
+                    {['file', 'youtube', 'vimeo', 'url'].map((source) => (
+                      <div key={source} className="flex items-center gap-2">
+                        <input
+                          id={`source-${source}`}
+                          type="checkbox"
+                          checked={videoSources.includes(source)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setVideoSources([...videoSources, source]);
+                            } else {
+                              setVideoSources(videoSources.filter(s => s !== source));
+                            }
+                          }}
+                          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                          disabled={isSubmitting}
+                        />
+                        <label htmlFor={`source-${source}`} className="text-sm text-gray-700 capitalize">
+                          {source === 'file' ? 'File Upload' : 
+                           source === 'youtube' ? 'YouTube' : 
+                           source === 'vimeo' ? 'Vimeo' : 
+                           'Direct URL'}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Select which video sources users can choose from in the metabox
+                  </p>
                 </div>
               </div>
             )}
