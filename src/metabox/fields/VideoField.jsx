@@ -172,11 +172,24 @@ function VideoField({ label, value, onChange, required = false, error, config = 
       case 'youtube':
         const youtubeId = extractVideoId(videoData.url, 'youtube');
         if (youtubeId) {
+          const youtubeParams = [];
+          if (playerOptions.autoplay) {
+            youtubeParams.push('autoplay=1');
+            youtubeParams.push('mute=1'); // Autoplay requires muted
+          } else if (playerOptions.muted) {
+            youtubeParams.push('mute=1');
+          }
+          if (playerOptions.loop) youtubeParams.push('loop=1&playlist=' + youtubeId);
+          if (!playerOptions.controls) youtubeParams.push('controls=0');
+          if (!playerOptions.fullscreen) youtubeParams.push('fs=0');
+          
+          const youtubeUrl = `https://www.youtube.com/embed/${youtubeId}${youtubeParams.length > 0 ? '?' + youtubeParams.join('&') : ''}`;
+          
           return (
             <iframe
               width="100%"
               height="200"
-              src={`https://www.youtube.com/embed/${youtubeId}`}
+              src={youtubeUrl}
               title="YouTube video"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -189,11 +202,24 @@ function VideoField({ label, value, onChange, required = false, error, config = 
       case 'vimeo':
         const vimeoId = extractVideoId(videoData.url, 'vimeo');
         if (vimeoId) {
+          const vimeoParams = [];
+          if (playerOptions.autoplay) {
+            vimeoParams.push('autoplay=1');
+            vimeoParams.push('muted=1'); // Autoplay requires muted
+          } else if (playerOptions.muted) {
+            vimeoParams.push('muted=1');
+          }
+          if (playerOptions.loop) vimeoParams.push('loop=1');
+          if (!playerOptions.controls) vimeoParams.push('controls=0');
+          if (!playerOptions.fullscreen) vimeoParams.push('fullscreen=0');
+          
+          const vimeoUrl = `https://player.vimeo.com/video/${vimeoId}${vimeoParams.length > 0 ? '?' + vimeoParams.join('&') : ''}`;
+          
           return (
             <iframe
               width="100%"
               height="200"
-              src={`https://player.vimeo.com/video/${vimeoId}`}
+              src={vimeoUrl}
               title="Vimeo video"
               frameBorder="0"
               allow="autoplay; fullscreen; picture-in-picture"
@@ -209,8 +235,8 @@ function VideoField({ label, value, onChange, required = false, error, config = 
             width="100%"
             height="200"
             controls={playerOptions.controls}
-            autoPlay={playerOptions.autoplay}
-            muted={playerOptions.muted}
+            autoplay={playerOptions.autoplay}
+            muted={playerOptions.autoplay || playerOptions.muted} // Autoplay requires muted
             loop={playerOptions.loop}
             className="rounded-lg"
             style={{ border: 'none' }}
@@ -229,8 +255,8 @@ function VideoField({ label, value, onChange, required = false, error, config = 
             width="100%"
             height="200"
             controls={playerOptions.controls}
-            autoPlay={playerOptions.autoplay}
-            muted={playerOptions.muted}
+            autoplay={playerOptions.autoplay}
+            muted={playerOptions.autoplay || playerOptions.muted} // Autoplay requires muted
             loop={playerOptions.loop}
             style={{ border: 'none', display: 'block' }}
             {...(playerOptions.download ? {} : { controlsList: 'nodownload' })}
