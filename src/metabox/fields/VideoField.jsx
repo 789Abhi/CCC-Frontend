@@ -154,11 +154,27 @@ function VideoField({ label, value, onChange, required = false, error, config = 
         title = `Vimeo Video (${videoId})`;
         description = `Vimeo: https://vimeo.com/${videoId}`;
       }
+    } else if (url.includes('dailymotion.com')) {
+      type = 'dailymotion';
+      title = 'Dailymotion Video';
+      description = `Dailymotion: ${url}`;
+    } else if (url.includes('facebook.com') && url.includes('/videos/')) {
+      type = 'facebook';
+      title = 'Facebook Video';
+      description = `Facebook: ${url}`;
+    } else if (url.includes('twitch.tv')) {
+      type = 'twitch';
+      title = 'Twitch Video';
+      description = `Twitch: ${url}`;
+    } else if (url.includes('tiktok.com')) {
+      type = 'tiktok';
+      title = 'TikTok Video';
+      description = `TikTok: ${url}`;
     } else if (url) {
-      // For direct video URLs, treat as file
-      type = 'file';
-      title = 'Video File';
-      description = `Direct URL: ${url}`;
+      // For direct video URLs or other platforms, treat as iframe-embeddable
+      type = 'iframe';
+      title = 'External Video';
+      description = `External: ${url}`;
     }
 
     handleVideoDataChange({ url, type, title, description });
@@ -174,6 +190,14 @@ function VideoField({ label, value, onChange, required = false, error, config = 
         videoType = 'youtube';
       } else if (videoData.url.includes('vimeo.com')) {
         videoType = 'vimeo';
+      } else if (videoData.url.includes('dailymotion.com')) {
+        videoType = 'dailymotion';
+      } else if (videoData.url.includes('facebook.com') && videoData.url.includes('/videos/')) {
+        videoType = 'facebook';
+      } else if (videoData.url.includes('twitch.tv')) {
+        videoType = 'twitch';
+      } else if (videoData.url.includes('tiktok.com')) {
+        videoType = 'tiktok';
       } else {
         videoType = 'file';
       }
@@ -240,6 +264,109 @@ function VideoField({ label, value, onChange, required = false, error, config = 
           );
         }
         break;
+      case 'dailymotion':
+        // Extract Dailymotion video ID
+        const dailymotionMatch = videoData.url.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/);
+        if (dailymotionMatch) {
+          const dailymotionId = dailymotionMatch[1];
+          const dailymotionParams = [];
+          if (playerOptions.autoplay) dailymotionParams.push('autoplay=1');
+          if (playerOptions.muted) dailymotionParams.push('mute=1');
+          if (!playerOptions.controls) dailymotionParams.push('controls=0');
+          
+          const dailymotionUrl = `https://www.dailymotion.com/embed/video/${dailymotionId}${dailymotionParams.length > 0 ? '?' + dailymotionParams.join('&') : ''}`;
+          
+          return (
+            <iframe
+              width="100%"
+              height="500"
+              src={dailymotionUrl}
+              title="Dailymotion video"
+              frameBorder="0"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              style={{ border: 'none' }}
+            />
+          );
+        }
+        break;
+      case 'facebook':
+        // Facebook videos need special handling - convert to embed URL
+        const facebookMatch = videoData.url.match(/facebook\.com\/[^\/]+\/videos\/(\d+)/);
+        if (facebookMatch) {
+          const facebookId = facebookMatch[1];
+          const facebookUrl = `https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/video.php?v=${facebookId}&show_text=false&width=560&height=315&appId`;
+          
+          return (
+            <iframe
+              width="100%"
+              height="500"
+              src={facebookUrl}
+              title="Facebook video"
+              frameBorder="0"
+              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+              allowFullScreen
+              style={{ border: 'none' }}
+            />
+          );
+        }
+        break;
+      case 'twitch':
+        // Twitch videos need special handling
+        const twitchMatch = videoData.url.match(/twitch\.tv\/videos\/(\d+)/);
+        if (twitchMatch) {
+          const twitchId = twitchMatch[1];
+          const twitchUrl = `https://clips.twitch.tv/embed?clip=${twitchId}&parent=${window.location.hostname}`;
+          
+          return (
+            <iframe
+              width="100%"
+              height="500"
+              src={twitchUrl}
+              title="Twitch video"
+              frameBorder="0"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              style={{ border: 'none' }}
+            />
+          );
+        }
+        break;
+      case 'tiktok':
+        // TikTok videos need special handling
+        const tiktokMatch = videoData.url.match(/tiktok\.com\/@[^\/]+\/video\/(\d+)/);
+        if (tiktokMatch) {
+          const tiktokId = tiktokMatch[1];
+          const tiktokUrl = `https://www.tiktok.com/embed/${tiktokId}`;
+          
+          return (
+            <iframe
+              width="100%"
+              height="500"
+              src={tiktokUrl}
+              title="TikTok video"
+              frameBorder="0"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              style={{ border: 'none' }}
+            />
+          );
+        }
+        break;
+      case 'iframe':
+        // For other iframe-embeddable videos, try to embed directly
+        return (
+          <iframe
+            width="100%"
+            height="500"
+            src={videoData.url}
+            title="External video"
+            frameBorder="0"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+            style={{ border: 'none' }}
+          />
+        );
       case 'file':
       default:
         return (
@@ -316,58 +443,51 @@ function VideoField({ label, value, onChange, required = false, error, config = 
             )}
           </div>
         );
-      case 'youtube':
-        return (
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              YouTube Video URL
-            </label>
-            <input
-              type="text"
-              placeholder="https://www.youtube.com/watch?v=..."
-              value={videoData.url || ''}
-              onChange={handleUrlChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            />
-            <p className="text-xs text-gray-500">
-              Paste a YouTube video URL to embed it
-            </p>
-          </div>
-        );
-      case 'vimeo':
-        return (
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Vimeo Video URL
-            </label>
-            <input
-              type="text"
-              placeholder="https://vimeo.com/..."
-              value={videoData.url || ''}
-              onChange={handleUrlChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            />
-            <p className="text-xs text-gray-500">
-              Paste a Vimeo video URL to embed it
-            </p>
-          </div>
-        );
       case 'url':
         return (
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Direct Video URL
-            </label>
-            <input
-              type="text"
-              placeholder="https://example.com/video.mp4"
-              value={videoData.url || ''}
-              onChange={handleUrlChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            />
-            <p className="text-xs text-gray-500">
-              Enter a direct link to your video file
-            </p>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Video URL
+              </label>
+              <input
+                type="url"
+                value={videoData.url || ''}
+                onChange={handleUrlChange}
+                placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/... or any video URL"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={isSubmitting}
+              />
+              <p className="mt-2 text-xs text-gray-500">
+                Supports YouTube, Vimeo, and any other video platform that uses iframe embedding
+              </p>
+            </div>
+
+            {/* Selected URL Display */}
+            {videoData.url && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-800">
+                      {videoData.title || 'Video URL Added'}
+                    </p>
+                    <p className="text-xs text-green-600 break-all">{videoData.url}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleVideoDataChange({ url: '', type: 'url', title: '', description: '' })}
+                    className="text-green-600 hover:text-green-800"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         );
       default:

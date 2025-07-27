@@ -986,18 +986,21 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     Allowed Video Source
                   </label>
                   <div className="flex flex-col gap-2">
-                    {['file', 'youtube', 'vimeo', 'url'].map((source) => (
-                      <label key={source} className="flex items-center gap-2">
+                    {[
+                      { value: 'file', label: 'File Upload' },
+                      { value: 'url', label: 'Video URL (YouTube, Vimeo, etc.)' }
+                    ].map((source) => (
+                      <label key={source.value} className="flex items-center gap-2">
                         <input
                           type="radio"
                           name="video-source"
-                          value={source}
-                          checked={videoSources[0] === source}
-                          onChange={() => setVideoSources([source])}
+                          value={source.value}
+                          checked={videoSources[0] === source.value}
+                          onChange={() => setVideoSources([source.value])}
                           className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
                           disabled={isSubmitting}
                         />
-                        <span className="text-sm text-gray-700 capitalize">{source === 'file' ? 'File Upload' : source.charAt(0).toUpperCase() + source.slice(1)}</span>
+                        <span className="text-sm text-gray-700">{source.label}</span>
                       </label>
                     ))}
                   </div>
