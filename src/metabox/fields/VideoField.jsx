@@ -9,7 +9,6 @@ function VideoField({ label, value, onChange, required = false, error, config = 
   });
   const [activeTab, setActiveTab] = useState('url');
   const [isOpen, setIsOpen] = useState(false);
-  const fileInputRef = useRef(null);
   const mediaFrameRef = useRef(null);
 
   // Only allow one source, default to 'file' if not set
@@ -83,26 +82,6 @@ function VideoField({ label, value, onChange, required = false, error, config = 
     }
   };
 
-  const handleFileUpload = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Create a temporary URL for the file
-      const fileUrl = URL.createObjectURL(file);
-      handleVideoDataChange({
-        url: fileUrl,
-        type: 'file',
-        title: file.name,
-        description: `File: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
-      });
-    }
-  };
-
   const openMediaLibrary = () => {
     if (window.wp && window.wp.media) {
       const frame = window.wp.media({
@@ -139,9 +118,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
     } else {
       // Fallback if WordPress Media Library is not available
       console.warn('WordPress Media Library not available');
-      if (fileInputRef.current) {
-        fileInputRef.current.click();
-      }
+      alert('WordPress Media Library is not available. Please ensure you are in the WordPress admin area.');
     }
   };
 
@@ -307,33 +284,8 @@ function VideoField({ label, value, onChange, required = false, error, config = 
                 </svg>
                 Select from WordPress Media Library
               </button>
-            </div>
-
-            {/* Or Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or</span>
-              </div>
-            </div>
-
-            {/* Direct File Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Video File
-              </label>
-              <div className="relative">
-                <input 
-                  type="file" 
-                  accept="video/*" 
-                  onChange={handleFileChange} 
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer cursor-pointer border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Supported formats: MP4, WebM, OGG, MOV, AVI
+              <p className="mt-2 text-xs text-gray-500 text-center">
+                Choose from existing videos or upload new ones
               </p>
             </div>
 
