@@ -118,16 +118,30 @@ function VideoField({ label, value, onChange, required = false, error, config = 
 
       frame.on('select', () => {
         const attachment = frame.state().get('selection').first().toJSON();
+        
+        // Determine the video type based on the URL
+        let videoType = 'file';
+        if (attachment.url.includes('youtube.com') || attachment.url.includes('youtu.be')) {
+          videoType = 'youtube';
+        } else if (attachment.url.includes('vimeo.com')) {
+          videoType = 'vimeo';
+        }
+        
         handleVideoDataChange({
           url: attachment.url,
-          type: 'file',
-          title: attachment.title || attachment.filename,
-          description: `File: ${attachment.filename} (${(attachment.filesize / 1024 / 1024).toFixed(2)} MB)`
+          type: videoType,
+          title: attachment.title || attachment.filename || 'Video',
+          description: `File: ${attachment.filename || 'Video'} (${attachment.filesize ? (attachment.filesize / 1024 / 1024).toFixed(2) + ' MB' : 'Unknown size'})`
         });
       });
 
       frame.open();
-      mediaFrameRef.current = frame;
+    } else {
+      // Fallback if WordPress Media Library is not available
+      console.warn('WordPress Media Library not available');
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
     }
   };
 
@@ -280,41 +294,131 @@ function VideoField({ label, value, onChange, required = false, error, config = 
     switch (selectedSource) {
       case 'file':
         return (
-          <div>
-            <button type="button" onClick={openMediaLibrary} className="btn btn-secondary mb-2">Select from Media Library</button>
-            <input type="file" accept="video/*" onChange={handleFileChange} className="block" />
-            {videoData.url && <div className="text-xs text-gray-500 mt-1">Selected: {videoData.url}</div>}
+          <div className="space-y-3">
+            {/* WordPress Media Library Button */}
+            <div>
+              <button 
+                type="button" 
+                onClick={openMediaLibrary} 
+                className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2" />
+                </svg>
+                Select from WordPress Media Library
+              </button>
+            </div>
+
+            {/* Or Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">or</span>
+              </div>
+            </div>
+
+            {/* Direct File Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Upload Video File
+              </label>
+              <div className="relative">
+                <input 
+                  type="file" 
+                  accept="video/*" 
+                  onChange={handleFileChange} 
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer cursor-pointer border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Supported formats: MP4, WebM, OGG, MOV, AVI
+              </p>
+            </div>
+
+            {/* Selected File Display */}
+            {videoData.url && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-800">
+                      {videoData.title || 'Video Selected'}
+                    </p>
+                    {videoData.description && (
+                      <p className="text-xs text-green-600">{videoData.description}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleVideoDataChange({ url: '', type: 'url', title: '', description: '' })}
+                    className="text-green-600 hover:text-green-800"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         );
       case 'youtube':
         return (
-          <input
-            type="text"
-            placeholder="Enter YouTube URL"
-            value={videoData.url || ''}
-            onChange={handleUrlChange}
-            className="input input-bordered w-full"
-          />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              YouTube Video URL
+            </label>
+            <input
+              type="text"
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={videoData.url || ''}
+              onChange={handleUrlChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+            <p className="text-xs text-gray-500">
+              Paste a YouTube video URL to embed it
+            </p>
+          </div>
         );
       case 'vimeo':
         return (
-          <input
-            type="text"
-            placeholder="Enter Vimeo URL"
-            value={videoData.url || ''}
-            onChange={handleUrlChange}
-            className="input input-bordered w-full"
-          />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Vimeo Video URL
+            </label>
+            <input
+              type="text"
+              placeholder="https://vimeo.com/..."
+              value={videoData.url || ''}
+              onChange={handleUrlChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+            <p className="text-xs text-gray-500">
+              Paste a Vimeo video URL to embed it
+            </p>
+          </div>
         );
       case 'url':
         return (
-          <input
-            type="text"
-            placeholder="Enter Direct Video URL"
-            value={videoData.url || ''}
-            onChange={handleUrlChange}
-            className="input input-bordered w-full"
-          />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Direct Video URL
+            </label>
+            <input
+              type="text"
+              placeholder="https://example.com/video.mp4"
+              value={videoData.url || ''}
+              onChange={handleUrlChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+            <p className="text-xs text-gray-500">
+              Enter a direct link to your video file
+            </p>
+          </div>
         );
       default:
         return null;
@@ -336,9 +440,9 @@ function VideoField({ label, value, onChange, required = false, error, config = 
   }, [selectedSource, playerOptions.autoplay, playerOptions.loop, videoData.url]);
 
   return (
-    <div className="mb-4">
+    <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-gray-900 mb-3">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -346,21 +450,50 @@ function VideoField({ label, value, onChange, required = false, error, config = 
       
       {/* Autoplay Info Banner */}
       {playerOptions.autoplay && (
-        <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
-          <strong>Autoplay Enabled:</strong> Video will start automatically (muted for browser compatibility)
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-blue-800">
+              <strong>Autoplay Enabled:</strong> Video will start automatically (muted for browser compatibility)
+            </p>
+          </div>
         </div>
       )}
       
-      <div className="space-y-3">
-        {/* Only show the input for the selected source */}
-        {renderInput()}
-        {/* Preview for the selected source */}
-        <div className="mt-2">
-          {getVideoPreview()}
+      <div className="space-y-4">
+        {/* Input Section */}
+        <div className="bg-gray-50 p-4 rounded-lg">
+          {renderInput()}
         </div>
+        
+        {/* Preview Section */}
+        {videoData.url && (
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Video Preview
+            </h4>
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              {getVideoPreview()}
+            </div>
+          </div>
+        )}
       </div>
       
-      {error && <div className="text-red-500 text-xs mt-1">{error}</div>}
+      {error && (
+        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
