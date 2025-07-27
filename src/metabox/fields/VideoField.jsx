@@ -12,17 +12,9 @@ function VideoField({ label, value, onChange, required = false, error, config = 
   const fileInputRef = useRef(null);
   const mediaFrameRef = useRef(null);
 
-  // Parse video sources from config
-  const allowedSources = config.sources || ['file', 'youtube', 'vimeo', 'url'];
-  const playerOptions = config.player_options || {
-    controls: true,
-    autoplay: false,
-    muted: false,
-    loop: false,
-    download: true,
-    fullscreen: true,
-    pictureInPicture: true
-  };
+  // Only allow one source, default to 'file' if not set
+  const allowedSources = Array.isArray(config.sources) && config.sources.length > 0 ? config.sources : ['file'];
+  const selectedSource = allowedSources[0];
 
   // Load saved video data when component mounts or value changes
   useEffect(() => {
@@ -238,7 +230,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
             autoplay={playerOptions.autoplay}
             muted={playerOptions.autoplay || playerOptions.muted} // Autoplay requires muted
             loop={playerOptions.loop}
-            className="rounded-lg"
+            className="rounded-lg ccc-video-preview"
             style={{ border: 'none' }}
             {...(playerOptions.download ? {} : { controlsList: 'nodownload' })}
             {...(playerOptions.fullscreen ? {} : { disablePictureInPicture: !playerOptions.pictureInPicture })}
@@ -258,6 +250,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
             autoplay={playerOptions.autoplay}
             muted={playerOptions.autoplay || playerOptions.muted} // Autoplay requires muted
             loop={playerOptions.loop}
+            className="ccc-video-preview"
             style={{ border: 'none', display: 'block' }}
             {...(playerOptions.download ? {} : { controlsList: 'nodownload' })}
             {...(playerOptions.fullscreen ? {} : { disablePictureInPicture: !playerOptions.pictureInPicture })}
@@ -270,6 +263,66 @@ function VideoField({ label, value, onChange, required = false, error, config = 
         );
     }
   };
+
+  // Only show the input for the selected source
+  const renderInput = () => {
+    switch (selectedSource) {
+      case 'file':
+        return (
+          <div>
+            <button type="button" onClick={openMediaLibrary} className="btn btn-secondary mb-2">Select from Media Library</button>
+            <input type="file" accept="video/*" onChange={handleFileChange} className="block" />
+            {videoData.url && <div className="text-xs text-gray-500 mt-1">Selected: {videoData.url}</div>}
+          </div>
+        );
+      case 'youtube':
+        return (
+          <input
+            type="text"
+            placeholder="Enter YouTube URL"
+            value={videoData.url || ''}
+            onChange={handleUrlChange}
+            className="input input-bordered w-full"
+          />
+        );
+      case 'vimeo':
+        return (
+          <input
+            type="text"
+            placeholder="Enter Vimeo URL"
+            value={videoData.url || ''}
+            onChange={handleUrlChange}
+            className="input input-bordered w-full"
+          />
+        );
+      case 'url':
+        return (
+          <input
+            type="text"
+            placeholder="Enter Direct Video URL"
+            value={videoData.url || ''}
+            onChange={handleUrlChange}
+            className="input input-bordered w-full"
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Fix autoplay/muted/loop preview for file videos
+  React.useEffect(() => {
+    if (selectedSource === 'file' && playerOptions.autoplay && videoData.url) {
+      const videoEl = document.querySelector('.ccc-video-preview');
+      if (videoEl) {
+        videoEl.muted = true;
+        videoEl.autoplay = true;
+        videoEl.loop = !!playerOptions.loop;
+        videoEl.load();
+        videoEl.play().catch(() => {});
+      }
+    }
+  }, [selectedSource, playerOptions.autoplay, playerOptions.loop, videoData.url]);
 
   return (
     <div className="mb-4">
@@ -288,154 +341,15 @@ function VideoField({ label, value, onChange, required = false, error, config = 
       )}
       
       <div className="space-y-3">
-        {/* Video Source Tabs */}
-        <div className="flex border-b border-gray-200">
-          {allowedSources.includes('url') && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('url')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'url'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              URL
-            </button>
-          )}
-          {allowedSources.includes('youtube') && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('youtube')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'youtube'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              YouTube
-            </button>
-          )}
-          {allowedSources.includes('vimeo') && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('vimeo')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'vimeo'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Vimeo
-            </button>
-          )}
-          {allowedSources.includes('file') && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('file')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'file'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              File Upload
-            </button>
-          )}
+        {/* Only show the input for the selected source */}
+        {renderInput()}
+        {/* Preview for the selected source */}
+        <div className="mt-2">
+          {getVideoPreview()}
         </div>
-
-        {/* URL Input */}
-        {(activeTab === 'url' || activeTab === 'youtube' || activeTab === 'vimeo') && (
-          <div className="space-y-2">
-            <input
-              type="url"
-              value={videoData.url}
-              onChange={handleUrlChange}
-              placeholder={
-                activeTab === 'youtube' ? 'https://www.youtube.com/watch?v=...' :
-                activeTab === 'vimeo' ? 'https://vimeo.com/...' :
-                'https://example.com/video.mp4'
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            />
-            <p className="text-xs text-gray-500">
-              {activeTab === 'youtube' ? 'Enter YouTube video URL' :
-               activeTab === 'vimeo' ? 'Enter Vimeo video URL' :
-               'Enter direct video URL'}
-            </p>
-          </div>
-        )}
-
-        {/* File Upload */}
-        {activeTab === 'file' && (
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={openMediaLibrary}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-              >
-                Choose from Media Library
-              </button>
-              <button
-                type="button"
-                onClick={handleFileUpload}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-              >
-                Upload File
-              </button>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="video/*"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            <p className="text-xs text-gray-500">
-              Choose from WordPress media library or upload a new video file
-            </p>
-          </div>
-        )}
-
-        {/* Video Preview */}
-        {videoData.url && (
-          <div className="mt-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Preview</h4>
-            <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
-              {getVideoPreview()}
-            </div>
-            {videoData.title && (
-              <p className="text-sm text-gray-600 mt-2">
-                <strong>Title:</strong> {videoData.title}
-              </p>
-            )}
-            {videoData.description && (
-              <p className="text-xs text-gray-500 mt-1">
-                {videoData.description}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Clear Button */}
-        {videoData.url && (
-          <button
-            type="button"
-            onClick={() => handleVideoDataChange({
-              url: '',
-              type: 'url',
-              title: '',
-              description: ''
-            })}
-            className="px-3 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
-          >
-            Clear Video
-          </button>
-        )}
       </div>
       
-      {error && <div className="text-xs text-red-500 mt-2">{error}</div>}
+      {error && <div className="text-red-500 text-xs mt-1">{error}</div>}
     </div>
   );
 }

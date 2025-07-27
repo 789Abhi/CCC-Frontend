@@ -980,41 +980,34 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   </p>
                 </div>
 
-                {/* Video Sources */}
+                {/* Allowed Video Sources */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Allowed Video Sources
+                    Allowed Video Source
                   </label>
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     {['file', 'youtube', 'vimeo', 'url'].map((source) => (
-                      <div key={source} className="flex items-center gap-2">
+                      <label key={source} className="flex items-center gap-2">
                         <input
-                          id={`source-${source}`}
-                          type="checkbox"
-                          checked={videoSources.includes(source)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setVideoSources([...videoSources, source]);
-                            } else {
-                              setVideoSources(videoSources.filter(s => s !== source));
-                            }
-                          }}
-                          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                          type="radio"
+                          name="video-source"
+                          value={source}
+                          checked={videoSources[0] === source}
+                          onChange={() => setVideoSources([source])}
+                          className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
                           disabled={isSubmitting}
                         />
-                        <label htmlFor={`source-${source}`} className="text-sm text-gray-700 capitalize">
-                          {source === 'file' ? 'File Upload' : 
-                           source === 'youtube' ? 'YouTube' : 
-                           source === 'vimeo' ? 'Vimeo' : 
-                           'Direct URL'}
-                        </label>
-                      </div>
+                        <span className="text-sm text-gray-700 capitalize">{source === 'file' ? 'File Upload' : source.charAt(0).toUpperCase() + source.slice(1)}</span>
+                      </label>
                     ))}
                   </div>
                   <p className="text-xs text-gray-500">
-                    Select which video sources users can choose from in the metabox
+                    Only one source can be selected. If none is selected, File Upload will be used by default.
                   </p>
                 </div>
+
+                {/* Ensure default to file if nothing is selected */}
+                {videoSources.length === 0 && setVideoSources(['file'])}
 
                 {/* Video Player Options */}
                 <div className="space-y-2">
