@@ -57,6 +57,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   const [selectMultiple, setSelectMultiple] = useState(false);
   const [videoReturnType, setVideoReturnType] = useState('url');
   const [videoSources, setVideoSources] = useState(['file', 'youtube', 'vimeo', 'url']);
+  const [videoPlayerOptions, setVideoPlayerOptions] = useState({
+    controls: true,
+    autoplay: false,
+    muted: false,
+    loop: false,
+    download: true,
+    fullscreen: true,
+    pictureInPicture: true
+  });
 
   const isEditing = !!field
 
@@ -119,9 +128,27 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
               setVideoReturnType(config.return_type || 'url');
               setVideoSources(config.sources || ['file', 'youtube', 'vimeo', 'url']);
+              setVideoPlayerOptions(config.player_options || {
+                controls: true,
+                autoplay: false,
+                muted: false,
+                loop: false,
+                download: true,
+                fullscreen: true,
+                pictureInPicture: true
+              });
             } catch (e) {
               setVideoReturnType('url');
               setVideoSources(['file', 'youtube', 'vimeo', 'url']);
+              setVideoPlayerOptions({
+                controls: true,
+                autoplay: false,
+                muted: false,
+                loop: false,
+                download: true,
+                fullscreen: true,
+                pictureInPicture: true
+              });
             }
           }
           if (field.type === 'select' && field.config) {
@@ -156,6 +183,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       setSelectMultiple(false);
       setVideoReturnType('url');
       setVideoSources(['file', 'youtube', 'vimeo', 'url']);
+      setVideoPlayerOptions({
+        controls: true,
+        autoplay: false,
+        muted: false,
+        loop: false,
+        download: true,
+        fullscreen: true,
+        pictureInPicture: true
+      });
     }
 
     setError("")
@@ -446,7 +482,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         } else if (type === "video") {
           fieldData.config = {
             return_type: videoReturnType || "url",
-            sources: videoSources
+            sources: videoSources,
+            player_options: videoPlayerOptions
           }
         } else if (type === "wysiwyg") {
           fieldData.config = {
@@ -549,7 +586,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       } else if (type === "video") {
         const config = {
           return_type: videoReturnType || "url",
-          sources: videoSources
+          sources: videoSources,
+          player_options: videoPlayerOptions
         }
         formData.append("field_config", JSON.stringify(config))
       } else if (type === "wysiwyg") {
@@ -975,6 +1013,47 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   </div>
                   <p className="text-xs text-gray-500">
                     Select which video sources users can choose from in the metabox
+                  </p>
+                </div>
+
+                {/* Video Player Options */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Video Player Options
+                  </label>
+                  <div className="space-y-2">
+                    {[
+                      { key: 'controls', label: 'Show Controls', description: 'Display video player controls' },
+                      { key: 'autoplay', label: 'Autoplay', description: 'Start video automatically' },
+                      { key: 'muted', label: 'Muted', description: 'Start video muted' },
+                      { key: 'loop', label: 'Loop', description: 'Repeat video continuously' },
+                      { key: 'download', label: 'Download Button', description: 'Show download option' },
+                      { key: 'fullscreen', label: 'Fullscreen', description: 'Allow fullscreen mode' },
+                      { key: 'pictureInPicture', label: 'Picture in Picture', description: 'Enable PiP mode' }
+                    ].map((option) => (
+                      <div key={option.key} className="flex items-center gap-2">
+                        <input
+                          id={`video-option-${option.key}`}
+                          type="checkbox"
+                          checked={videoPlayerOptions[option.key]}
+                          onChange={(e) => {
+                            setVideoPlayerOptions({
+                              ...videoPlayerOptions,
+                              [option.key]: e.target.checked
+                            });
+                          }}
+                          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                          disabled={isSubmitting}
+                        />
+                        <label htmlFor={`video-option-${option.key}`} className="text-sm text-gray-700">
+                          {option.label}
+                        </label>
+                        <span className="text-xs text-gray-500">({option.description})</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Configure video player behavior and available features
                   </p>
                 </div>
               </div>

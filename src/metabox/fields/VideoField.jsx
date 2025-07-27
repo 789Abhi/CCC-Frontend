@@ -14,6 +14,15 @@ function VideoField({ label, value, onChange, required = false, error, config = 
 
   // Parse video sources from config
   const allowedSources = config.sources || ['file', 'youtube', 'vimeo', 'url'];
+  const playerOptions = config.player_options || {
+    controls: true,
+    autoplay: false,
+    muted: false,
+    loop: false,
+    download: true,
+    fullscreen: true,
+    pictureInPicture: true
+  };
 
   // Load saved video data when component mounts or value changes
   useEffect(() => {
@@ -199,9 +208,14 @@ function VideoField({ label, value, onChange, required = false, error, config = 
           <video
             width="100%"
             height="200"
-            controls
+            controls={playerOptions.controls}
+            autoPlay={playerOptions.autoplay}
+            muted={playerOptions.muted}
+            loop={playerOptions.loop}
             className="rounded-lg"
             style={{ border: 'none' }}
+            {...(playerOptions.download ? {} : { controlsList: 'nodownload' })}
+            {...(playerOptions.fullscreen ? {} : { disablePictureInPicture: !playerOptions.pictureInPicture })}
           >
             <source src={videoData.url} type="video/mp4" />
             <source src={videoData.url} type="video/webm" />
@@ -211,9 +225,22 @@ function VideoField({ label, value, onChange, required = false, error, config = 
         );
       default:
         return (
-          <div className="p-4 bg-gray-100 rounded-lg text-center">
-            <p className="text-sm text-gray-600">Video URL: {videoData.url}</p>
-          </div>
+          <video
+            width="100%"
+            height="200"
+            controls={playerOptions.controls}
+            autoPlay={playerOptions.autoplay}
+            muted={playerOptions.muted}
+            loop={playerOptions.loop}
+            style={{ border: 'none', display: 'block' }}
+            {...(playerOptions.download ? {} : { controlsList: 'nodownload' })}
+            {...(playerOptions.fullscreen ? {} : { disablePictureInPicture: !playerOptions.pictureInPicture })}
+          >
+            <source src={videoData.url} type="video/mp4" />
+            <source src={videoData.url} type="video/webm" />
+            <source src={videoData.url} type="video/ogg" />
+            Your browser does not support the video tag.
+          </video>
         );
     }
   };
