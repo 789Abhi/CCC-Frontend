@@ -139,7 +139,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
     let title = '';
     let description = '';
 
-    // Auto-detect video platform
+    // Auto-detect video type from URL
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
       type = 'youtube';
       const videoId = extractVideoId(url, 'youtube');
@@ -154,6 +154,11 @@ function VideoField({ label, value, onChange, required = false, error, config = 
         title = `Vimeo Video (${videoId})`;
         description = `Vimeo: https://vimeo.com/${videoId}`;
       }
+    } else if (url) {
+      // For direct video URLs, treat as file
+      type = 'file';
+      title = 'Video File';
+      description = `Direct URL: ${url}`;
     }
 
     handleVideoDataChange({ url, type, title, description });
@@ -162,7 +167,19 @@ function VideoField({ label, value, onChange, required = false, error, config = 
   const getVideoPreview = () => {
     if (!videoData.url) return null;
 
-    switch (videoData.type) {
+    // Auto-detect video type from URL if not already set
+    let videoType = videoData.type;
+    if (!videoType || videoType === 'url') {
+      if (videoData.url.includes('youtube.com') || videoData.url.includes('youtu.be')) {
+        videoType = 'youtube';
+      } else if (videoData.url.includes('vimeo.com')) {
+        videoType = 'vimeo';
+      } else {
+        videoType = 'file';
+      }
+    }
+
+    switch (videoType) {
       case 'youtube':
         const youtubeId = extractVideoId(videoData.url, 'youtube');
         if (youtubeId) {
@@ -224,6 +241,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
         }
         break;
       case 'file':
+      default:
         return (
           <video
             width="100%"
@@ -234,26 +252,6 @@ function VideoField({ label, value, onChange, required = false, error, config = 
             loop={playerOptions.loop}
             className="rounded-lg ccc-video-preview"
             style={{ border: 'none' }}
-            {...(playerOptions.download ? {} : { controlsList: 'nodownload' })}
-            {...(playerOptions.fullscreen ? {} : { disablePictureInPicture: !playerOptions.pictureInPicture })}
-          >
-            <source src={videoData.url} type="video/mp4" />
-            <source src={videoData.url} type="video/webm" />
-            <source src={videoData.url} type="video/ogg" />
-            Your browser does not support the video tag.
-          </video>
-        );
-      default:
-        return (
-          <video
-            width="100%"
-            height="200"
-            controls={playerOptions.controls}
-            autoplay={playerOptions.autoplay}
-            muted={playerOptions.autoplay || playerOptions.muted} // Autoplay requires muted
-            loop={playerOptions.loop}
-            className="ccc-video-preview"
-            style={{ border: 'none', display: 'block' }}
             {...(playerOptions.download ? {} : { controlsList: 'nodownload' })}
             {...(playerOptions.fullscreen ? {} : { disablePictureInPicture: !playerOptions.pictureInPicture })}
           >
