@@ -280,6 +280,13 @@ function VideoField({ label, value, onChange, required = false, error, config = 
         </label>
       )}
       
+      {/* Autoplay Info Banner */}
+      {playerOptions.autoplay && (
+        <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+          <strong>Autoplay Enabled:</strong> Video will start automatically (muted for browser compatibility)
+        </div>
+      )}
+      
       <div className="space-y-3">
         {/* Video Source Tabs */}
         <div className="flex border-b border-gray-200">

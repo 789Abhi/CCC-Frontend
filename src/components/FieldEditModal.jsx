@@ -1024,8 +1024,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   <div className="space-y-2">
                     {[
                       { key: 'controls', label: 'Show Controls', description: 'Display video player controls' },
-                      { key: 'autoplay', label: 'Autoplay', description: 'Start video automatically' },
-                      { key: 'muted', label: 'Muted', description: 'Start video muted' },
+                      { key: 'autoplay', label: 'Autoplay', description: 'Start video automatically (requires muted)' },
+                      { key: 'muted', label: 'Muted', description: 'Start video muted (auto-enabled with autoplay)' },
                       { key: 'loop', label: 'Loop', description: 'Repeat video continuously' },
                       { key: 'download', label: 'Download Button', description: 'Show download option' },
                       { key: 'fullscreen', label: 'Fullscreen', description: 'Allow fullscreen mode' },
@@ -1037,10 +1037,18 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                           type="checkbox"
                           checked={videoPlayerOptions[option.key]}
                           onChange={(e) => {
-                            setVideoPlayerOptions({
+                            const newValue = e.target.checked;
+                            let updatedOptions = {
                               ...videoPlayerOptions,
-                              [option.key]: e.target.checked
-                            });
+                              [option.key]: newValue
+                            };
+                            
+                            // Auto-enable muted when autoplay is enabled
+                            if (option.key === 'autoplay' && newValue) {
+                              updatedOptions.muted = true;
+                            }
+                            
+                            setVideoPlayerOptions(updatedOptions);
                           }}
                           className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                           disabled={isSubmitting}
@@ -1051,6 +1059,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                         <span className="text-xs text-gray-500">({option.description})</span>
                       </div>
                     ))}
+                  </div>
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-xs text-blue-800">
+                      <strong>Note:</strong> Autoplay requires muted to work in modern browsers. When you enable autoplay, muted will be automatically enabled.
+                    </p>
                   </div>
                   <p className="text-xs text-gray-500">
                     Configure video player behavior and available features
