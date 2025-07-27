@@ -374,41 +374,28 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                   }
                   
                   // Handle enhanced color data structure
-                  let colorData = value;
+                  let colorData = { main: '', adjusted: '', hover: '' };
                   if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
                     try {
                       colorData = JSON.parse(value);
                     } catch (e) {
                       colorData = { main: value, adjusted: value, hover: '' };
                     }
-                  } else if (typeof value === 'string') {
+                  } else if (typeof value === 'string' && value !== '') {
                     colorData = { main: value, adjusted: value, hover: '' };
-                  } else {
-                    colorData = { main: '', adjusted: '', hover: '' };
                   }
                   
-                  const handleChange = (val, type = 'main') => {
-                    // Update the appropriate color value
-                    const updatedData = { ...colorData };
-                    if (type === 'main') {
-                      updatedData.main = val;
-                      updatedData.adjusted = val; // Reset adjusted to main color
-                    } else if (type === 'adjusted') {
-                      updatedData.adjusted = val;
-                    } else if (type === 'hover') {
-                      updatedData.hover = val;
-                    }
-                    
-                    // Save as JSON string for enhanced color data
-                    onFieldChange(component.instance_id, field.id, JSON.stringify(updatedData));
+                  const handleChange = (colorDataString) => {
+                    // Save the complete color data structure
+                    onFieldChange(component.instance_id, field.id, colorDataString);
                   };
                   
                   return (
                     <ColorField
                       key={field.id}
                       label={field.label}
-                      value={colorData.main}
-                      onChange={(val) => handleChange(val, 'main')}
+                      value={JSON.stringify(colorData)}
+                      onChange={handleChange}
                       required={isRequired}
                       error={isRequired && !colorData.main}
                     />
