@@ -172,6 +172,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
+              style={{ border: 'none' }}
             />
           );
         }
@@ -188,6 +189,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
               frameBorder="0"
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
+              style={{ border: 'none' }}
             />
           );
         }
@@ -199,6 +201,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
             height="200"
             controls
             className="rounded-lg"
+            style={{ border: 'none' }}
           >
             <source src={videoData.url} type="video/mp4" />
             <source src={videoData.url} type="video/webm" />
@@ -339,7 +342,9 @@ function VideoField({ label, value, onChange, required = false, error, config = 
         {videoData.url && (
           <div className="mt-4">
             <h4 className="text-sm font-medium text-gray-700 mb-2">Preview</h4>
-            {getVideoPreview()}
+            <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+              {getVideoPreview()}
+            </div>
             {videoData.title && (
               <p className="text-sm text-gray-600 mt-2">
                 <strong>Title:</strong> {videoData.title}
