@@ -32,16 +32,40 @@ function ColorField({ label, value, onChange, required = false, error }) {
       try {
         const savedData = JSON.parse(value);
         if (savedData && typeof savedData === 'object') {
+          // Check if we have double-encoded JSON
+          let mainColorValue = savedData.main;
+          let adjustedColorValue = savedData.adjusted;
+          
+          // If main color is also JSON, parse it
+          if (typeof mainColorValue === 'string' && mainColorValue.startsWith('{')) {
+            try {
+              const parsedMain = JSON.parse(mainColorValue);
+              mainColorValue = parsedMain.main || mainColorValue;
+            } catch (e) {
+              // Keep original if parsing fails
+            }
+          }
+          
+          // If adjusted color is also JSON, parse it
+          if (typeof adjustedColorValue === 'string' && adjustedColorValue.startsWith('{')) {
+            try {
+              const parsedAdjusted = JSON.parse(adjustedColorValue);
+              adjustedColorValue = parsedAdjusted.adjusted || adjustedColorValue;
+            } catch (e) {
+              // Keep original if parsing fails
+            }
+          }
+          
           // Load saved hover color
           if (savedData.hover) {
             setHoverColor(savedData.hover);
           }
           
           // Calculate percentage from adjusted color
-          if (savedData.adjusted && savedData.main && savedData.adjusted !== savedData.main) {
+          if (adjustedColorValue && mainColorValue && adjustedColorValue !== mainColorValue) {
             // Calculate the percentage difference
-            const mainHex = savedData.main.replace('#', '');
-            const adjustedHex = savedData.adjusted.replace('#', '');
+            const mainHex = mainColorValue.replace('#', '');
+            const adjustedHex = adjustedColorValue.replace('#', '');
             
             const mainR = parseInt(mainHex.substr(0, 2), 16);
             const mainG = parseInt(mainHex.substr(2, 2), 16);
@@ -85,12 +109,13 @@ function ColorField({ label, value, onChange, required = false, error }) {
       };
       onChange(JSON.stringify(colorData));
     } else if (activeTab === 'hover') {
-      setHoverColor(newColor);
+      const newHoverColor = newColor;
+      setHoverColor(newHoverColor);
       // Save complete data structure with updated hover color
       const colorData = {
-        main: value,
-        adjusted: adjustColorByPercentage(value, percentage),
-        hover: newColor
+        main: mainColor,
+        adjusted: adjustColorByPercentage(mainColor, percentage),
+        hover: newHoverColor
       };
       onChange(JSON.stringify(colorData));
     }
@@ -109,12 +134,13 @@ function ColorField({ label, value, onChange, required = false, error }) {
         };
         onChange(JSON.stringify(colorData));
       } else if (activeTab === 'hover') {
-        setHoverColor(inputValue);
+        const newHoverColor = inputValue;
+        setHoverColor(newHoverColor);
         // Save complete data structure with updated hover color
         const colorData = {
-          main: value,
-          adjusted: adjustColorByPercentage(value, percentage),
-          hover: inputValue
+          main: mainColor,
+          adjusted: adjustColorByPercentage(mainColor, percentage),
+          hover: newHoverColor
         };
         onChange(JSON.stringify(colorData));
       }

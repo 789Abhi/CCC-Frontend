@@ -377,7 +377,30 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                   let colorData = { main: '', adjusted: '', hover: '' };
                   if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
                     try {
-                      colorData = JSON.parse(value);
+                      const parsed = JSON.parse(value);
+                      // Check for double-encoded JSON
+                      if (parsed.main && typeof parsed.main === 'string' && parsed.main.startsWith('{')) {
+                        try {
+                          const nestedParsed = JSON.parse(parsed.main);
+                          colorData = {
+                            main: nestedParsed.main || '',
+                            adjusted: nestedParsed.adjusted || nestedParsed.main || '',
+                            hover: parsed.hover || ''
+                          };
+                        } catch (e) {
+                          colorData = {
+                            main: parsed.main,
+                            adjusted: parsed.adjusted || parsed.main,
+                            hover: parsed.hover || ''
+                          };
+                        }
+                      } else {
+                        colorData = {
+                          main: parsed.main || '',
+                          adjusted: parsed.adjusted || parsed.main || '',
+                          hover: parsed.hover || ''
+                        };
+                      }
                     } catch (e) {
                       colorData = { main: value, adjusted: value, hover: '' };
                     }
