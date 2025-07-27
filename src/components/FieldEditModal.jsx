@@ -625,15 +625,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 Field Name
               </label>
               <div className="flex items-center gap-2">
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="field_name"
-                  disabled={isSubmitting || isEditing}
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="field_name"
+                disabled={isSubmitting || isEditing}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors bg-gray-50 text-gray-600 shadow-sm"
-                />
+              />
               </div>
               <p className="text-xs text-gray-500">
                 {isEditing
@@ -669,18 +669,18 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
             {/* Required Checkbox */}
             <div className="flex items-center gap-2">
-              <input
+                    <input
                 id="required"
-                type="checkbox"
+                      type="checkbox"
                 checked={isRequired}
                 onChange={e => setIsRequired(e.target.checked)}
-                disabled={isSubmitting}
+                      disabled={isSubmitting}
                 className="h-4 w-4 text-pink-600 border-gray-300 rounded focus:ring-pink-400"
-              />
+                    />
               <label htmlFor="required" className="text-sm font-medium text-gray-700">
                 Required
-              </label>
-            </div>
+                    </label>
+                  </div>
 
             {/* Placeholder */}
             {type !== 'repeater' && type !== 'wysiwyg' && (
@@ -688,24 +688,24 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 <label htmlFor="placeholder" className="block text-sm font-medium text-gray-700">
                   Placeholder
                 </label>
-                <input
+                    <input
                   id="placeholder"
                   type="text"
                   value={placeholder}
                   onChange={e => setPlaceholder(e.target.value)}
                   placeholder="Enter placeholder text"
-                  disabled={isSubmitting}
+                      disabled={isSubmitting}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
-                />
-              </div>
+                    />
+                  </div>
             )}
 
             {/* Options for select/checkbox/radio with chips and drag handles */}
             {['select', 'checkbox', 'radio'].includes(type) && (
-              <div className="space-y-2">
+                  <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   Options
-                </label>
+                    </label>
                 {/* Multiple select checkbox for select fields */}
                 {type === 'select' && (
                   <div className="flex items-center gap-2 mb-2">
@@ -720,66 +720,66 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <label htmlFor="select-multiple" className="text-sm text-gray-700">
                       Choose Multiple
                     </label>
-                  </div>
-                )}
+              </div>
+            )}
                 <div className="flex flex-col gap-2">
                   {fieldOptions.map((option, idx) => (
                     <div key={idx} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
                       <span className="cursor-grab"><GripVertical className="w-4 h-4 text-gray-400" /></span>
-                      <input
-                        type="text"
-                        value={option.label}
+                        <input
+                          type="text"
+                          value={option.label}
                         onChange={e => handleUpdateOption(idx, 'label', e.target.value)}
                         placeholder="Label"
                         className="w-32 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-pink-400 focus:border-pink-400 text-sm"
-                        disabled={isSubmitting}
-                      />
-                      <input
-                        type="text"
-                        value={option.value}
+                          disabled={isSubmitting}
+                        />
+                        <input
+                          type="text"
+                          value={option.value}
                         onChange={e => handleUpdateOption(idx, 'value', e.target.value)}
                         placeholder="Value"
                         className="w-32 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-pink-400 focus:border-pink-400 text-sm"
-                        disabled={isSubmitting}
-                      />
-                      <button
-                        type="button"
+                          disabled={isSubmitting}
+                        />
+                        <button
+                          type="button"
                         onClick={() => handleDeleteOption(idx)}
                         className="text-red-500 hover:text-red-700 px-2 py-1 rounded transition-colors"
-                        disabled={isSubmitting}
-                      >
+                          disabled={isSubmitting}
+                        >
                         Remove
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={handleAddOption}
+                        </button>
+                      </div>
+                    ))}
+                <button
+                  type="button"
+                  onClick={handleAddOption}
                     className="mt-2 px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400 text-base font-semibold shadow disabled:opacity-50"
-                    disabled={isSubmitting}
-                  >
-                    Add Option
-                  </button>
+                  disabled={isSubmitting}
+                >
+                  Add Option
+                </button>
                 </div>
               </div>
             )}
 
             {/* Max Sets for Repeater */}
             {type === 'repeater' && (
-              <div className="space-y-2">
+                <div className="space-y-2">
                 <label htmlFor="maxSets" className="block text-sm font-medium text-gray-700">
                   Max Sets
-                </label>
-                <input
+                  </label>
+                  <input
                   id="maxSets"
                   type="number"
                   value={maxSets}
                   onChange={e => setMaxSets(e.target.value)}
                   placeholder="Enter max sets (0 for unlimited)"
-                  disabled={isSubmitting}
+                    disabled={isSubmitting}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
-                />
-              </div>
+                  />
+                </div>
             )}
 
             {/* Repeater Settings */}
@@ -811,7 +811,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
-                      </div>
+                    </div>
                       <h4 className="text-sm font-medium text-gray-700">Fields</h4>
                     </div>
                     <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-medium">

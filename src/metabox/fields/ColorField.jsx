@@ -271,6 +271,37 @@ function ColorField({ label, value, onChange, required = false, error }) {
                   >
                     Hover Color
                   </button>
+                  
+                  {/* Reset Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeTab === 'main') {
+                        // Reset main color
+                        const colorData = {
+                          main: '',
+                          adjusted: '',
+                          hover: hoverColor
+                        };
+                        onChange(JSON.stringify(colorData));
+                      } else if (activeTab === 'hover') {
+                        // Reset hover color
+                        const colorData = {
+                          main: mainColor,
+                          adjusted: adjustColorByPercentage(mainColor, percentage),
+                          hover: ''
+                        };
+                        setHoverColor('');
+                        onChange(JSON.stringify(colorData));
+                      }
+                    }}
+                    className="ml-auto px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                    title={`Reset ${activeTab === 'main' ? 'main' : 'hover'} color`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
 
                 {/* Color Picker */}

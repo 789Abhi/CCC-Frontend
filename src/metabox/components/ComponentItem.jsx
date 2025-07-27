@@ -37,18 +37,18 @@ function DotMenu({ onDelete }) {
   }, [open]);
   return (
     <div className="relative" ref={menuRef}>
-      <button
+          <button
         className="ccc-action-btn p-1 rounded hover:bg-gray-200 text-gray-500 focus:outline-none"
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-        type="button"
+            type="button"
         aria-label="More actions"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <circle cx="5" cy="12" r="2" />
           <circle cx="12" cy="12" r="2" />
           <circle cx="19" cy="12" r="2" />
-        </svg>
-      </button>
+              </svg>
+          </button>
       {open && (
         <div className="absolute right-0 mt-2 w-32 bg-white border border-pink-200 rounded shadow-lg z-30 animate-fade-in">
           <button
@@ -427,7 +427,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                 // Add more field types here as needed
                 return null;
               })}
-            </div>
+          </div>
           )}
         </div>
       )}
