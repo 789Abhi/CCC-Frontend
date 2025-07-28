@@ -456,7 +456,6 @@ function VideoField({ label, value, onChange, required = false, error, config = 
                 onChange={handleUrlChange}
                 placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/... or any video URL"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                disabled={isSubmitting}
               />
               <p className="mt-2 text-xs text-gray-500">
                 Supports YouTube, Vimeo, and any other video platform that uses iframe embedding
@@ -496,7 +495,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
   };
 
   // Fix autoplay/muted/loop preview for file videos
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedSource === 'file' && playerOptions.autoplay && videoData.url) {
       const videoEl = document.querySelector('.ccc-video-preview');
       if (videoEl) {
