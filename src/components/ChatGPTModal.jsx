@@ -85,6 +85,12 @@ Please return ONLY the JSON response, no additional text.`
     window.open(`https://chat.openai.com/?prompt=${encodedPrompt}`, '_blank')
   }
 
+  const openChatGPTManually = () => {
+    const basePrompt = "I wanted to create a JSON format: "
+    const encodedPrompt = encodeURIComponent(basePrompt)
+    window.open(`https://chat.openai.com/?prompt=${encodedPrompt}`, '_blank')
+  }
+
   const validateAndParseChatGPTJson = () => {
     if (!chatGPTJson.trim()) {
       showMessage('Please paste the ChatGPT JSON response', 'error')
@@ -320,157 +326,211 @@ Please return ONLY the JSON response, no additional text.`
 
   return (
     <>
-      {/* Main ChatGPT Modal */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-          {/* Header - Fixed */}
-          <div className="p-6 border-b border-gray-200 flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Bot className="h-8 w-8 text-green-600" />
-                <h2 className="text-2xl font-bold text-gray-900">Create Component with ChatGPT</h2>
-              </div>
-              <button
-                onClick={handleClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+             {/* Main ChatGPT Modal */}
+       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+         <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
+           {/* Header - Fixed */}
+           <div className="p-6 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-green-50 to-blue-50">
+             <div className="flex items-center justify-between">
+               <div className="flex items-center gap-3">
+                 <div className="h-10 w-10 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
+                   <Bot className="h-6 w-6 text-white" />
+                 </div>
+                 <div>
+                   <h2 className="text-2xl font-bold text-gray-900">Create Component with ChatGPT</h2>
+                   <p className="text-sm text-gray-600">AI-powered component generation</p>
+                 </div>
+               </div>
+               <button
+                 onClick={handleClose}
+                 className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+               >
+                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                 </svg>
+               </button>
+             </div>
+           </div>
+
+                     {/* Content - Scrollable */}
+           <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
+             {/* Context Prompt Input */}
+             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+               <div className="flex items-center gap-3 mb-4">
+                 <div className="h-8 w-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
+                   <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                   </svg>
+                 </div>
+                 <h3 className="font-semibold text-gray-900 text-lg">Describe Your Component</h3>
+               </div>
+               <p className="text-gray-600 text-sm mb-4">
+                 Tell us what component you want to create. Be specific about the fields and functionality you need.
+               </p>
+               <textarea
+                 value={contextPrompt}
+                 onChange={(e) => setContextPrompt(e.target.value)}
+                 placeholder="Example: I want to create a testimonials component with customer name, testimonial content, customer photo, company name, and rating. The component should be visually appealing and professional."
+                 className="w-full h-24 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-white"
+               />
+               
+               <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                 <p className="text-gray-900 font-medium mb-2">💡 Examples:</p>
+                 <ul className="text-gray-700 text-sm space-y-1">
+                   <li>• "Testimonials with customer name, content, photo, company, and rating"</li>
+                   <li>• "Team members with name, position, bio, photo, and social links"</li>
+                   <li>• "Portfolio items with title, description, image, category, and link"</li>
+                   <li>• "FAQ section with question, answer, and category"</li>
+                 </ul>
+               </div>
+             </div>
+
+                         {/* Repeater Option */}
+             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+               <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-3">
+                   <div className="h-8 w-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
+                     <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                     </svg>
+                   </div>
+                   <div>
+                     <h3 className="font-semibold text-gray-900 text-lg">Multiple Instances</h3>
+                     <p className="text-gray-600 text-sm">
+                       Will you need to add multiple instances of this component? (e.g., multiple testimonials, team members, etc.)
+                     </p>
+                   </div>
+                 </div>
+                 <label className="flex items-center gap-3">
+                   <input
+                     type="checkbox"
+                     checked={hasRepeater}
+                     onChange={(e) => setHasRepeater(e.target.checked)}
+                     className="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                   />
+                   <span className="text-gray-900 font-medium">Yes, use repeater field</span>
+                 </label>
+               </div>
+             </div>
+
+                         {/* Action Buttons */}
+             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+               <div className="flex items-center gap-3 mb-4">
+                 <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                   <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                   </svg>
+                 </div>
+                 <h3 className="font-semibold text-gray-900 text-lg">Generate with AI</h3>
+               </div>
+               <div className="flex gap-3">
+                 <button
+                   onClick={openChatGPT}
+                   disabled={!contextPrompt.trim()}
+                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                 >
+                   <Bot className="h-5 w-5" />
+                   Generate with ChatGPT
+                 </button>
+                 <button
+                   onClick={openChatGPTManually}
+                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-sm"
+                 >
+                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                   </svg>
+                   Open ChatGPT Manually
+                 </button>
+               </div>
+             </div>
+
+                         {/* Instructions */}
+             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+               <div className="flex items-center gap-3 mb-4">
+                 <div className="h-8 w-8 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-full flex items-center justify-center">
+                   <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                   </svg>
+                 </div>
+                 <h3 className="font-semibold text-gray-900 text-lg">Next Steps</h3>
+               </div>
+               <ol className="text-gray-700 space-y-2 text-sm">
+                 <li className="flex items-start gap-2">
+                   <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">1</span>
+                   <span>Describe your component above</span>
+                 </li>
+                 <li className="flex items-start gap-2">
+                   <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">2</span>
+                   <span>Check "repeater field" if you need multiple instances</span>
+                 </li>
+                 <li className="flex items-start gap-2">
+                   <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">3</span>
+                   <span>Click "Generate with ChatGPT" to get a pre-filled prompt</span>
+                 </li>
+                 <li className="flex items-start gap-2">
+                   <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">4</span>
+                   <span>Copy the JSON response from ChatGPT</span>
+                 </li>
+                 <li className="flex items-start gap-2">
+                   <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">5</span>
+                   <span>Paste it in the textarea below and click "Update"</span>
+                 </li>
+               </ol>
+             </div>
+
+                         {/* JSON Input */}
+             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+               <div className="flex items-center gap-3 mb-4">
+                 <div className="h-8 w-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                   <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                   </svg>
+                 </div>
+                 <h3 className="font-semibold text-gray-900 text-lg">Paste ChatGPT JSON Response</h3>
+               </div>
+               <textarea
+                 value={chatGPTJson}
+                 onChange={(e) => setChatGPTJson(e.target.value)}
+                 placeholder={`{
+   "component": {
+     "name": "Component Name",
+     "handle": "component_handle",
+     "description": "Component description"
+   },
+   "fields": [
+     {
+       "label": "Field Label",
+       "name": "field_name",
+       "type": "text",
+       "required": true,
+       "placeholder": "Enter placeholder text"
+     }
+   ]
+ }`}
+                 className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-gray-50"
+               />
+             </div>
           </div>
 
-          {/* Content - Scrollable */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* Context Prompt Input */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <h3 className="font-semibold text-blue-900 mb-3">🎯 Describe Your Component</h3>
-              <p className="text-blue-800 text-sm mb-3">
-                Tell us what component you want to create. Be specific about the fields and functionality you need.
-              </p>
-              <textarea
-                value={contextPrompt}
-                onChange={(e) => setContextPrompt(e.target.value)}
-                placeholder="Example: I want to create a testimonials component with customer name, testimonial content, customer photo, company name, and rating. The component should be visually appealing and professional."
-                className="w-full h-24 p-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              />
-              
-              <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
-                <p className="text-blue-900 font-medium mb-1">💡 Examples:</p>
-                <ul className="text-blue-800 text-sm space-y-1">
-                  <li>• "Testimonials with customer name, content, photo, company, and rating"</li>
-                  <li>• "Team members with name, position, bio, photo, and social links"</li>
-                  <li>• "Portfolio items with title, description, image, category, and link"</li>
-                  <li>• "FAQ section with question, answer, and category"</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Repeater Option */}
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-purple-900 mb-1">🔄 Multiple Instances</h3>
-                  <p className="text-purple-800 text-sm">
-                    Will you need to add multiple instances of this component? (e.g., multiple testimonials, team members, etc.)
-                  </p>
-                </div>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={hasRepeater}
-                    onChange={(e) => setHasRepeater(e.target.checked)}
-                    className="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-                  />
-                  <span className="text-purple-800 font-medium">Yes, use repeater field</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={openChatGPT}
-                disabled={!contextPrompt.trim()}
-                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              >
-                <Bot className="h-5 w-5" />
-                Generate with ChatGPT
-              </button>
-              <a
-                href="https://chat.openai.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                Open ChatGPT Manually
-              </a>
-            </div>
-
-            {/* Instructions */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-              <h3 className="font-semibold text-yellow-900 mb-2">📋 Next Steps:</h3>
-              <ol className="text-yellow-800 space-y-1 text-sm">
-                <li>1. Describe your component above</li>
-                <li>2. Check "repeater field" if you need multiple instances</li>
-                <li>3. Click "Generate with ChatGPT" to get a pre-filled prompt</li>
-                <li>4. Copy the JSON response from ChatGPT</li>
-                <li>5. Paste it in the textarea below and click "Update"</li>
-              </ol>
-            </div>
-
-            {/* JSON Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                📋 Paste ChatGPT JSON Response:
-              </label>
-              <textarea
-                value={chatGPTJson}
-                onChange={(e) => setChatGPTJson(e.target.value)}
-                placeholder={`{
-  "component": {
-    "name": "Component Name",
-    "handle": "component_handle",
-    "description": "Component description"
-  },
-  "fields": [
-    {
-      "label": "Field Label",
-      "name": "field_name",
-      "type": "text",
-      "required": true,
-      "placeholder": "Enter placeholder text"
-    }
-  ]
-}`}
-                className="w-full h-64 p-4 border border-gray-300 rounded-xl font-mono text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-              />
-            </div>
-          </div>
-
-          {/* Footer - Fixed */}
-          <div className="flex justify-end gap-3 p-6 bg-gray-50 border-t border-gray-200 flex-shrink-0">
-            <button
-              onClick={handleClose}
-              className="px-6 py-3 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={validateAndParseChatGPTJson}
-              disabled={isProcessingChatGPT || !chatGPTJson.trim()}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Update
-            </button>
-          </div>
+                     {/* Footer - Fixed */}
+           <div className="flex justify-end gap-3 p-6 bg-white border-t border-gray-200 flex-shrink-0 shadow-lg">
+             <button
+               onClick={handleClose}
+               className="px-6 py-3 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+             >
+               Cancel
+             </button>
+             <button
+               onClick={validateAndParseChatGPTJson}
+               disabled={isProcessingChatGPT || !chatGPTJson.trim()}
+               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+             >
+               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+               </svg>
+               Update
+             </button>
+           </div>
         </div>
       </div>
 
