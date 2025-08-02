@@ -9,9 +9,8 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
   const [parsedComponent, setParsedComponent] = useState(null)
   const [processingStep, setProcessingStep] = useState("")
   const [processingProgress, setProcessingProgress] = useState(0)
+  const [contextPrompt, setContextPrompt] = useState("")
   const [hasRepeater, setHasRepeater] = useState(false)
-  const [repeaterFields, setRepeaterFields] = useState([])
-  const [showRepeaterSetup, setShowRepeaterSetup] = useState(false)
 
   const showMessage = (message, type = 'info') => {
     // You can implement your own toast/notification system here
@@ -23,38 +22,67 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
     }
   }
 
+  const generateChatGPTPrompt = () => {
+    if (!contextPrompt.trim()) {
+      showMessage('Please describe what component you want to create', 'error')
+      return null
+    }
+
+    let prompt = `Create a WordPress component for: ${contextPrompt}
+
+Please create a JSON response with the following structure:
+{
+  "component": {
+    "name": "Component Name",
+    "handle": "component_handle",
+    "description": "Component description"
+  },
+  "fields": [
+    {
+      "label": "Field Label",
+      "name": "field_name",
+      "type": "field_type",
+      "required": true/false,
+      "placeholder": "Placeholder text"
+    }
+  ]
+}`
+
+    if (hasRepeater) {
+      prompt += `
+
+IMPORTANT: This component needs to support multiple instances (repeater field). Please include a repeater field with nested children fields. The structure should be:
+{
+  "label": "Component Name",
+  "name": "component_name",
+  "type": "repeater",
+  "children": [
+    {
+      "label": "Nested Field Label",
+      "name": "nested_field_name",
+      "type": "field_type",
+      "required": true/false
+    }
+  ]
+}
+
+Make sure to include all the necessary fields as children of the repeater field.`
+    }
+
+    prompt += `
+
+Available field types: text, textarea, image, video, color, select, checkbox, radio, wysiwyg
+Please return ONLY the JSON response, no additional text.`
+
+    return prompt
+  }
+
   const openChatGPT = () => {
-    window.open('https://chat.openai.com', '_blank')
-  }
-
-  const addRepeaterField = () => {
-    setRepeaterFields([...repeaterFields, {
-      label: '',
-      name: '',
-      type: 'text',
-      required: false,
-      placeholder: ''
-    }])
-  }
-
-  const updateRepeaterField = (index, field, value) => {
-    const updatedFields = [...repeaterFields]
-    updatedFields[index] = { ...updatedFields[index], [field]: value }
-    setRepeaterFields(updatedFields)
-  }
-
-  const removeRepeaterField = (index) => {
-    setRepeaterFields(repeaterFields.filter((_, i) => i !== index))
-  }
-
-  const generateRepeaterPrompt = () => {
-    if (!hasRepeater || repeaterFields.length === 0) return ""
+    const prompt = generateChatGPTPrompt()
+    if (!prompt) return
     
-    const fieldList = repeaterFields.map(field => 
-      `- ${field.label} (${field.type}): ${field.name}`
-    ).join('\n')
-    
-    return `\n\nThis component will have a repeater field that allows adding multiple instances. Each instance will contain these nested fields:\n${fieldList}\n\nPlease include a repeater field in your JSON response with these nested fields.`
+    const encodedPrompt = encodeURIComponent(prompt)
+    window.open(`https://chat.openai.com/?prompt=${encodedPrompt}`, '_blank')
   }
 
   const validateAndParseChatGPTJson = () => {
@@ -138,27 +166,17 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
             options.push({ value: i.toString(), label: i.toString() })
           }
           normalizedField.config = { options }
-        } else if (normalizedField.type === 'repeater' && field.children) {
-          // Handle repeater field with nested children from ChatGPT
-          normalizedField.children = field.children.map((child, childIndex) => ({
-            label: child.label || child.name || `Nested Field ${childIndex + 1}`,
-            name: child.name || child.label?.toLowerCase().replace(/\s+/g, '_') || `nested_field_${childIndex + 1}`,
-            type: fieldTypeMapping[child.type?.toLowerCase()] || 'text',
-            required: child.required || false,
-            placeholder: child.placeholder || '',
-            config: {}
-          }))
-        } else if (normalizedField.type === 'repeater' && hasRepeater && repeaterFields.length > 0) {
-          // Use the user-defined repeater fields
-          normalizedField.children = repeaterFields.map((field, index) => ({
-            label: field.label || `Nested Field ${index + 1}`,
-            name: field.name || field.label?.toLowerCase().replace(/\s+/g, '_') || `nested_field_${index + 1}`,
-            type: field.type || 'text',
-            required: field.required || false,
-            placeholder: field.placeholder || '',
-            config: {}
-          }))
-        }
+                 } else if (normalizedField.type === 'repeater' && field.children) {
+           // Handle repeater field with nested children from ChatGPT
+           normalizedField.children = field.children.map((child, childIndex) => ({
+             label: child.label || child.name || `Nested Field ${childIndex + 1}`,
+             name: child.name || child.label?.toLowerCase().replace(/\s+/g, '_') || `nested_field_${childIndex + 1}`,
+             type: fieldTypeMapping[child.type?.toLowerCase()] || 'text',
+             required: child.required || false,
+             placeholder: child.placeholder || '',
+             config: {}
+           }))
+         }
 
         // Handle additional field properties
         if (field.return_format) {
@@ -293,9 +311,8 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
     setParsedComponent(null)
     setProcessingStep("")
     setProcessingProgress(0)
+    setContextPrompt("")
     setHasRepeater(false)
-    setRepeaterFields([])
-    setShowRepeaterSetup(false)
     onClose()
   }
 
@@ -326,54 +343,39 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
 
           {/* Content - Scrollable */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* Instructions */}
+            {/* Context Prompt Input */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">📖 How to Use:</h3>
-              <ol className="text-blue-800 space-y-1 text-sm">
-                <li>1. Click "Open ChatGPT" to go to ChatGPT in a new tab</li>
-                <li>2. Ask: "Create a WordPress component for [your request] with JSON format"</li>
-                <li>3. Copy the JSON response from ChatGPT</li>
-                <li>4. Paste it in the textarea below</li>
-                <li>5. Click "Update" to validate and create the component</li>
-              </ol>
+              <h3 className="font-semibold text-blue-900 mb-3">🎯 Describe Your Component</h3>
+              <p className="text-blue-800 text-sm mb-3">
+                Tell us what component you want to create. Be specific about the fields and functionality you need.
+              </p>
+              <textarea
+                value={contextPrompt}
+                onChange={(e) => setContextPrompt(e.target.value)}
+                placeholder="Example: I want to create a testimonials component with customer name, testimonial content, customer photo, company name, and rating. The component should be visually appealing and professional."
+                className="w-full h-24 p-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              />
               
               <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
-                <p className="text-blue-900 font-medium mb-1">Example ChatGPT Prompt:</p>
-                <p className="text-blue-800 text-sm">
-                  "Create a WordPress component for testimonials. Include fields for customer name, testimonial content, customer photo, company name, and rating. Return the response in JSON format with component name, handle, description, and fields array."
-                </p>
-                <p className="text-blue-800 text-sm mt-2">
-                  <strong>💡 Tip:</strong> If you want to add multiple testimonials, use the "Repeater Field Setup" below to define nested fields that can be repeated.
-                </p>
+                <p className="text-blue-900 font-medium mb-1">💡 Examples:</p>
+                <ul className="text-blue-800 text-sm space-y-1">
+                  <li>• "Testimonials with customer name, content, photo, company, and rating"</li>
+                  <li>• "Team members with name, position, bio, photo, and social links"</li>
+                  <li>• "Portfolio items with title, description, image, category, and link"</li>
+                  <li>• "FAQ section with question, answer, and category"</li>
+                </ul>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={openChatGPT}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Bot className="h-5 w-5" />
-                Open ChatGPT
-              </button>
-              <a
-                href="https://chat.openai.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                Open in New Tab
-              </a>
-            </div>
-
-            {/* Repeater Field Setup */}
+            {/* Repeater Option */}
             <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-purple-900">🔄 Repeater Field Setup (Optional)</h3>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-purple-900 mb-1">🔄 Multiple Instances</h3>
+                  <p className="text-purple-800 text-sm">
+                    Will you need to add multiple instances of this component? (e.g., multiple testimonials, team members, etc.)
+                  </p>
+                </div>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -381,92 +383,44 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
                     onChange={(e) => setHasRepeater(e.target.checked)}
                     className="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
                   />
-                  <span className="text-purple-800 text-sm">Include repeater field</span>
+                  <span className="text-purple-800 font-medium">Yes, use repeater field</span>
                 </label>
               </div>
-              
-              {hasRepeater && (
-                <div className="space-y-4">
-                  <p className="text-purple-800 text-sm">
-                    Define the nested fields that will be repeated. For example, if creating testimonials, 
-                    you might want to repeat: customer name, testimonial content, customer photo, etc.
-                  </p>
-                  
-                  <div className="space-y-3">
-                    {repeaterFields.map((field, index) => (
-                      <div key={index} className="bg-white rounded-lg p-3 border border-purple-200">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                          <input
-                            type="text"
-                            placeholder="Field Label (e.g., Customer Name)"
-                            value={field.label}
-                            onChange={(e) => updateRepeaterField(index, 'label', e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Field Name (e.g., customer_name)"
-                            value={field.name}
-                            onChange={(e) => updateRepeaterField(index, 'name', e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                          <select
-                            value={field.type}
-                            onChange={(e) => updateRepeaterField(index, 'type', e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          >
-                            <option value="text">Text</option>
-                            <option value="textarea">Textarea</option>
-                            <option value="image">Image</option>
-                            <option value="wysiwyg">WYSIWYG</option>
-                            <option value="select">Select</option>
-                            <option value="checkbox">Checkbox</option>
-                            <option value="radio">Radio</option>
-                            <option value="color">Color</option>
-                          </select>
-                          <div className="flex items-center gap-2">
-                            <label className="flex items-center gap-1">
-                              <input
-                                type="checkbox"
-                                checked={field.required}
-                                onChange={(e) => updateRepeaterField(index, 'required', e.target.checked)}
-                                className="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-                              />
-                              <span className="text-purple-800 text-xs">Required</span>
-                            </label>
-                            <button
-                              onClick={() => removeRepeaterField(index)}
-                              className="text-red-500 hover:text-red-700"
-                              title="Remove field"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Placeholder text (optional)"
-                          value={field.placeholder}
-                          onChange={(e) => updateRepeaterField(index, 'placeholder', e.target.value)}
-                          className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <button
-                    onClick={addRepeaterField}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Add Nested Field
-                  </button>
-                </div>
-              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={openChatGPT}
+                disabled={!contextPrompt.trim()}
+                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                <Bot className="h-5 w-5" />
+                Generate with ChatGPT
+              </button>
+              <a
+                href="https://chat.openai.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Open ChatGPT Manually
+              </a>
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+              <h3 className="font-semibold text-yellow-900 mb-2">📋 Next Steps:</h3>
+              <ol className="text-yellow-800 space-y-1 text-sm">
+                <li>1. Describe your component above</li>
+                <li>2. Check "repeater field" if you need multiple instances</li>
+                <li>3. Click "Generate with ChatGPT" to get a pre-filled prompt</li>
+                <li>4. Copy the JSON response from ChatGPT</li>
+                <li>5. Paste it in the textarea below and click "Update"</li>
+              </ol>
             </div>
 
             {/* JSON Input */}
