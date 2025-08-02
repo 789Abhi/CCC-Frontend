@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Bot } from 'lucide-react'
+import axios from 'axios'
 
 const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
   const [chatGPTJson, setChatGPTJson] = useState("")
@@ -143,27 +144,23 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
       setProcessingStep("Creating component...")
       setProcessingProgress(30)
       
-      const componentResponse = await fetch('/wp-json/ccc/v1/components', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': window.wpApiSettings?.nonce || ''
-        },
-        body: JSON.stringify({
-          name: parsedComponent.component.name,
-          handle_name: parsedComponent.component.handle,
-          description: parsedComponent.component.description || '',
-          status: 'active'
-        })
-      })
+      const componentPayload = {
+        name: parsedComponent.component.name,
+        handle_name: parsedComponent.component.handle,
+        description: parsedComponent.component.description || '',
+        status: 'active'
+      }
+      
+      console.log('Creating component with payload:', componentPayload) // Debug log
+      
+      const componentResponse = await axios.post('/wp-json/ccc/v1/components', componentPayload)
+      console.log('Component creation result:', componentResponse.data) // Debug log
 
-      const componentData = await componentResponse.json()
-
-      if (!componentData.success) {
-        throw new Error(componentData.message || 'Failed to create component')
+      if (!componentResponse.data.success) {
+        throw new Error(componentResponse.data.message || 'Failed to create component')
       }
 
-      const componentId = componentData.data.id
+      const componentId = componentResponse.data.data.id
       setProcessingStep("Component created successfully!")
       setProcessingProgress(50)
       
@@ -174,36 +171,38 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
       let fieldsCreated = 0
       const totalFields = parsedComponent.fields.length
       
+      console.log('Creating fields:', parsedComponent.fields) // Debug log
+      
       for (const fieldData of parsedComponent.fields) {
         try {
           setProcessingStep(`Creating field ${fieldsCreated + 1} of ${totalFields}: ${fieldData.label}`)
           setProcessingProgress(60 + ((fieldsCreated + 1) / totalFields) * 30)
           
-          const fieldResponse = await fetch('/wp-json/ccc/v1/fields', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-WP-Nonce': window.wpApiSettings?.nonce || ''
-            },
-            body: JSON.stringify({
-              component_id: componentId,
-              label: fieldData.label,
-              name: fieldData.name,
-              type: fieldData.type,
-              required: fieldData.required || false,
-              placeholder: fieldData.placeholder || '',
-              config: fieldData.config ? JSON.stringify(fieldData.config) : '{}',
-              order: fieldsCreated + 1
-            })
-          })
+          const fieldPayload = {
+            component_id: componentId,
+            label: fieldData.label,
+            name: fieldData.name,
+            type: fieldData.type,
+            required: fieldData.required || false,
+            placeholder: fieldData.placeholder || '',
+            config: fieldData.config ? JSON.stringify(fieldData.config) : '{}',
+            order: fieldsCreated + 1
+          }
           
-          const fieldResult = await fieldResponse.json()
+          console.log('Creating field with payload:', fieldPayload) // Debug log
           
-          if (fieldResult.success) {
+          const fieldResponse = await axios.post('/wp-json/ccc/v1/fields', fieldPayload)
+          console.log('Field creation result:', fieldResponse.data) // Debug log
+          
+          if (fieldResponse.data.success) {
             fieldsCreated++
+            console.log(`Field "${fieldData.label}" created successfully`)
+          } else {
+            console.error(`Failed to create field "${fieldData.label}":`, fieldResponse.data)
           }
         } catch (fieldError) {
           console.error('Error creating field:', fieldError)
+          console.error('Field data that failed:', fieldData)
         }
       }
 
