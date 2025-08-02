@@ -29,7 +29,7 @@ import FilterIcon from "/Filter.svg"
 import dragDropIcon from "/drag-drop-icon.svg"
 import deleteIcon from "/delete.svg"
 import editIcon from "/Edit.svg"
-import { LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users, Palette, GripVertical, GitBranch } from "lucide-react"
+import { LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users, Palette, GripVertical, GitBranch, Bot } from "lucide-react"
 import ComponentEditNameModal from "./ComponentEditModal"
 import FieldVisualTreeModal from "./FieldVisualTreeModal"
 
@@ -60,6 +60,11 @@ const ComponentList = () => {
   // Tree modal state
   const [showTreeModal, setShowTreeModal] = useState(false)
   const [selectedComponentForTree, setSelectedComponentForTree] = useState(null)
+
+  // ChatGPT integration state
+  const [showChatGPTModal, setShowChatGPTModal] = useState(false)
+  const [chatGPTJson, setChatGPTJson] = useState("")
+  const [isProcessingChatGPT, setIsProcessingChatGPT] = useState(false)
 
   // Remove all revision-related state, functions, and UI. Only keep component management, assignment, and field editing logic.
 
@@ -426,6 +431,83 @@ const ComponentList = () => {
     setComponentToEditName(null)
   }
 
+  // ChatGPT integration functions
+  const openChatGPT = () => {
+    window.open('https://chat.openai.com', '_blank')
+  }
+
+  const handleChatGPTJsonSubmit = async () => {
+    if (!chatGPTJson.trim()) {
+      showMessage('Please paste the ChatGPT JSON response', 'error')
+      return
+    }
+
+    setIsProcessingChatGPT(true)
+    
+    try {
+      // Parse JSON to validate
+      const componentData = JSON.parse(chatGPTJson)
+      
+      if (!componentData.component || !componentData.fields) {
+        throw new Error('Invalid JSON format. Must contain "component" and "fields" properties.')
+      }
+
+      // Create component using existing API
+      const componentResponse = await axios.post('/wp-json/ccc/v1/components', {
+        name: componentData.component.name,
+        handle_name: componentData.component.handle,
+        description: componentData.component.description || '',
+        status: 'active'
+      })
+
+      if (componentResponse.data.success) {
+        const componentId = componentResponse.data.data.id
+        
+        // Create fields
+        let fieldsCreated = 0
+        for (const fieldData of componentData.fields) {
+          try {
+            const fieldResponse = await axios.post('/wp-json/ccc/v1/fields', {
+              component_id: componentId,
+              label: fieldData.label,
+              name: fieldData.name,
+              type: fieldData.type,
+              required: fieldData.required || false,
+              placeholder: fieldData.placeholder || '',
+              config: fieldData.config ? JSON.stringify(fieldData.config) : '{}',
+              order: fieldsCreated + 1
+            })
+            
+            if (fieldResponse.data.success) {
+              fieldsCreated++
+            }
+          } catch (fieldError) {
+            console.error('Error creating field:', fieldError)
+          }
+        }
+
+        showMessage(`Component "${componentData.component.name}" created successfully with ${fieldsCreated} fields!`, 'success')
+        setShowChatGPTModal(false)
+        setChatGPTJson("")
+        
+        // Refresh components list
+        fetchComponents()
+      } else {
+        throw new Error(componentResponse.data.message || 'Failed to create component')
+      }
+    } catch (error) {
+      console.error('ChatGPT JSON processing error:', error)
+      showMessage(error.message || 'Failed to process ChatGPT JSON', 'error')
+    } finally {
+      setIsProcessingChatGPT(false)
+    }
+  }
+
+  const closeChatGPTModal = () => {
+    setShowChatGPTModal(false)
+    setChatGPTJson("")
+  }
+
   // Remove all revision-related state, functions, and UI. Only keep component management, assignment, and field editing logic.
 
   const getFieldIcon = (type) => {
@@ -689,21 +771,31 @@ const ComponentList = () => {
 
         <div className="rounded-custom">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <button
-              onClick={() => {
-                setShowNewComponentDialog(true)
-                setComponentName("")
-                setHandle("")
-              }}
-              className="text-bgSecondary px-6 py-3 text-lg rounded-custom flex border border-bgPrimary items-center gap-3 font-medium"
-            >
-              Add New
-              <img
-                className="h-[30px] w-[30px] object-contain"
-                src={plusIcon || "/placeholder.svg"}
-                alt="Add New Component"
-              />
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowNewComponentDialog(true)
+                  setComponentName("")
+                  setHandle("")
+                }}
+                className="text-bgSecondary px-6 py-3 text-lg rounded-custom flex border border-bgPrimary items-center gap-3 font-medium"
+              >
+                Add New
+                <img
+                  className="h-[30px] w-[30px] object-contain"
+                  src={plusIcon || "/placeholder.svg"}
+                  alt="Add New Component"
+                />
+              </button>
+              
+              <button
+                onClick={() => setShowChatGPTModal(true)}
+                className="text-white px-6 py-3 text-lg rounded-custom flex border border-green-600 bg-green-600 hover:bg-green-700 items-center gap-3 font-medium transition-colors"
+              >
+                <Bot className="h-[30px] w-[30px]" />
+                Use ChatGPT
+              </button>
+            </div>
 
             <div className="flex flex-row items-center gap-4">
               <div className="relative flex items-center border rounded-custom border-bgPrimary px-3 py-3 w-[220px]">
@@ -1170,6 +1262,128 @@ const ComponentList = () => {
           }}
           component={selectedComponentForTree}
         />
+      )}
+
+      {/* ChatGPT Modal */}
+      {showChatGPTModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Bot className="h-8 w-8 text-green-600" />
+                  <h2 className="text-2xl font-bold text-gray-900">Create Component with ChatGPT</h2>
+                </div>
+                <button
+                  onClick={closeChatGPTModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <h3 className="font-semibold text-blue-900 mb-2">📖 How to Use:</h3>
+                <ol className="text-blue-800 space-y-1 text-sm">
+                  <li>1. Click "Open ChatGPT" to go to ChatGPT in a new tab</li>
+                  <li>2. Ask: "Create a WordPress component for [your request] with JSON format"</li>
+                  <li>3. Copy the JSON response from ChatGPT</li>
+                  <li>4. Paste it in the textarea below</li>
+                  <li>5. Click "Create Component" to automatically create it</li>
+                </ol>
+                
+                <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
+                  <p className="text-blue-900 font-medium mb-1">Example ChatGPT Prompt:</p>
+                  <p className="text-blue-800 text-sm">
+                    "Create a WordPress component for testimonials. Include fields for customer name, testimonial content, customer photo, company name, and rating. Return the response in JSON format with component name, handle, description, and fields array."
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={openChatGPT}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <Bot className="h-5 w-5" />
+                  Open ChatGPT
+                </button>
+                <a
+                  href="https://chat.openai.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  Open in New Tab
+                </a>
+              </div>
+
+              {/* JSON Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  📋 Paste ChatGPT JSON Response:
+                </label>
+                <textarea
+                  value={chatGPTJson}
+                  onChange={(e) => setChatGPTJson(e.target.value)}
+                  placeholder={`{
+  "component": {
+    "name": "Component Name",
+    "handle": "component_handle",
+    "description": "Component description"
+  },
+  "fields": [
+    {
+      "label": "Field Label",
+      "name": "field_name",
+      "type": "text",
+      "required": true,
+      "placeholder": "Enter placeholder text"
+    }
+  ]
+}`}
+                  className="w-full h-64 p-4 border border-gray-300 rounded-xl font-mono text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 p-6 bg-gray-50 border-t border-gray-200">
+              <button
+                onClick={closeChatGPTModal}
+                className="px-6 py-3 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChatGPTJsonSubmit}
+                disabled={isProcessingChatGPT || !chatGPTJson.trim()}
+                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                {isProcessingChatGPT ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Bot className="h-5 w-5" />
+                    Create Component
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
