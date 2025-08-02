@@ -26,7 +26,7 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
     examples += `// Component: ${component.name}\n`
     examples += "// Available fields:\n"
     
-    component.fields.forEach(field => {
+    const processField = (field, prefix = '') => {
       const fieldName = field.name
       const fieldType = field.type
       const fieldLabel = field.label
@@ -34,19 +34,38 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
       examples += `// ${fieldLabel} (${fieldType})\n`
       examples += `$${fieldName} = get_ccc_field('${fieldName}');\n`
       
-             // Add type-specific examples
-       if (fieldType === 'image') {
-         examples += `// For image field:\n`
-         examples += `// $${fieldName} = get_ccc_field('${fieldName}'); // Returns image URL by default\n`
-         examples += `// $${fieldName}_id = get_ccc_field('${fieldName}', 'id'); // Get attachment ID\n`
-       } else if (fieldType === 'textarea' || fieldType === 'wysiwyg') {
+      // Add type-specific examples
+      if (fieldType === 'image') {
+        examples += `// For image field:\n`
+        examples += `// $${fieldName} = get_ccc_field('${fieldName}'); // Returns image URL by default\n`
+        examples += `// $${fieldName}_id = get_ccc_field('${fieldName}', 'id'); // Get attachment ID\n`
+      } else if (fieldType === 'textarea' || fieldType === 'wysiwyg') {
         examples += `// For ${fieldType} field:\n`
         examples += `// echo wp_kses_post($${fieldName}); // Safe HTML output\n`
       } else if (fieldType === 'select') {
         examples += `// For select field:\n`
         examples += `// $${fieldName}_label = get_ccc_field('${fieldName}', 'label');\n`
+      } else if (fieldType === 'repeater') {
+        examples += `// For repeater field:\n`
+        examples += `// $${fieldName} = get_ccc_field('${fieldName}'); // Returns array of items\n`
+        examples += `// foreach ($${fieldName} as $item) {\n`
+        examples += `//   echo $item['nested_field_name'];\n`
+        examples += `// }\n`
       }
       examples += "\n"
+      
+      // Process nested fields if this is a repeater
+      if (fieldType === 'repeater' && field.config && field.config.nested_fields) {
+        examples += `// Nested fields in ${fieldLabel} repeater:\n`
+        field.config.nested_fields.forEach(nestedField => {
+          examples += `// - ${nestedField.label} (${nestedField.type}): $item['${nestedField.name}']\n`
+        })
+        examples += "\n"
+      }
+    }
+    
+    component.fields.forEach(field => {
+      processField(field)
     })
     
     return examples
@@ -55,10 +74,23 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
   const generateChatGPTPrompt = () => {
     if (!component || !component.fields) return ""
     
-    const fieldList = component.fields.map(field => 
-      `- ${field.label} (${field.type}): ${field.name}`
-    ).join('\n')
+    const generateFieldList = (fields) => {
+      return fields.map(field => {
+        let fieldInfo = `- ${field.label} (${field.type}): ${field.name}`
+        
+        // Add nested fields for repeater
+        if (field.type === 'repeater' && field.config && field.config.nested_fields) {
+          fieldInfo += '\n  Nested fields:'
+          field.config.nested_fields.forEach(nestedField => {
+            fieldInfo += `\n    • ${nestedField.label} (${nestedField.type}): ${nestedField.name}`
+          })
+        }
+        
+        return fieldInfo
+      }).join('\n')
+    }
     
+    const fieldList = generateFieldList(component.fields)
     const fieldExamples = generateFieldExamples()
     
     let prompt = `Create a modern, responsive HTML/CSS design for a WordPress component called "${component.name}".
@@ -94,8 +126,19 @@ Requirements:
 
   const openChatGPT = () => {
     const prompt = generateChatGPTPrompt()
-    const encodedPrompt = encodeURIComponent(prompt)
-    window.open(`https://chat.openai.com/?prompt=${encodedPrompt}`, '_blank')
+    
+    if (referenceImage) {
+      // If there's a reference image, we need to copy the prompt to clipboard
+      // since ChatGPT URL doesn't support file uploads
+      copyToClipboard(prompt)
+      showMessage('Prompt copied to clipboard! Please paste it in ChatGPT and upload your reference image manually.', 'info')
+      // Still open ChatGPT but without the prompt
+      window.open('https://chat.openai.com', '_blank')
+    } else {
+      // No image, can use URL parameter
+      const encodedPrompt = encodeURIComponent(prompt)
+      window.open(`https://chat.openai.com/?prompt=${encodedPrompt}`, '_blank')
+    }
   }
 
   const handleImageUpload = (event) => {
@@ -211,6 +254,27 @@ Requirements:
                   </div>
                   <p className="font-medium text-gray-900">{field.label}</p>
                   <p className="text-sm text-gray-600">Field name: {field.name}</p>
+                  
+                  {/* Show nested fields for repeater */}
+                  {field.type === 'repeater' && field.config && field.config.nested_fields && (
+                    <div className="mt-2 pt-2 border-t border-blue-100">
+                      <p className="text-xs text-blue-700 font-medium mb-1">Nested Fields:</p>
+                      {field.config.nested_fields.map((nestedField, nestedIndex) => (
+                        <div key={nestedIndex} className="ml-2 mb-1">
+                          <div className="flex items-center gap-1">
+                            <span className="bg-green-100 text-green-800 px-1 py-0.5 rounded text-xs">
+                              {nestedField.type}
+                            </span>
+                            {nestedField.required && (
+                              <span className="bg-red-100 text-red-800 px-1 py-0.5 rounded text-xs">Required</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-700">{nestedField.label}</p>
+                          <p className="text-xs text-gray-500">Field name: {nestedField.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -298,11 +362,13 @@ Requirements:
              <h3 className="font-semibold text-yellow-900 mb-2">How to Use</h3>
              <ol className="text-yellow-800 space-y-1 text-sm">
                <li>1. (Optional) Upload a reference image to match your desired design style</li>
-               <li>2. Click "Open ChatGPT with Design Prompt" to go to ChatGPT with a pre-filled design request</li>
-               <li>3. ChatGPT will generate HTML/CSS code based on your component's fields and reference image</li>
-               <li>4. Copy the generated code and paste it into your component template file</li>
-               <li>5. The template file is located at: <code className="bg-yellow-100 px-1 rounded">your-theme/ccc-templates/{component.handle_name}.php</code></li>
-               <li>6. Use the PHP examples above to fetch your field data in the template</li>
+               <li>2. Click "Open ChatGPT with Design Prompt" to go to ChatGPT</li>
+               <li>3. If you uploaded an image: Paste the copied prompt and upload your reference image manually</li>
+               <li>4. If no image: The prompt will be pre-filled automatically</li>
+               <li>5. ChatGPT will generate HTML/CSS code based on your component's fields and reference image</li>
+               <li>6. Copy the generated code and paste it into your component template file</li>
+               <li>7. The template file is located at: <code className="bg-yellow-100 px-1 rounded">your-theme/ccc-templates/{component.handle_name}.php</code></li>
+               <li>8. Use the PHP examples above to fetch your field data in the template</li>
              </ol>
            </div>
         </div>
