@@ -19,6 +19,8 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
       alert(`✅ ${message}`);
     } else if (type === "error") {
       alert(`❌ ${message}`);
+    } else if (type === "info") {
+      alert(`ℹ️ ${message}`);
     }
   };
 
@@ -79,10 +81,35 @@ Please return ONLY the JSON response, no additional text.`;
 
   const copyToClipboard = async (text) => {
     try {
-      await navigator.clipboard.writeText(text);
-      showMessage("Prompt copied to clipboard!", "success");
+      // Try modern clipboard API first
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        showMessage("Prompt copied to clipboard!", "success");
+        return;
+      }
+      
+      // Fallback for older browsers or non-secure contexts
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        document.execCommand("copy");
+        showMessage("Prompt copied to clipboard!", "success");
+      } catch (err) {
+        // If execCommand fails, show the text in an alert for manual copy
+        showMessage(`Please copy this prompt manually:\n\n${text}`, "info");
+      }
+      
+      document.body.removeChild(textArea);
     } catch (err) {
-      showMessage("Failed to copy to clipboard", "error");
+      // Final fallback - show text in alert
+      showMessage(`Please copy this prompt manually:\n\n${text}`, "info");
     }
   };
 
