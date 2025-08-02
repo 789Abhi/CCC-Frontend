@@ -125,15 +125,7 @@ Please return ONLY the JSON response, no additional text.`;
   };
 
   const openChatGPTManually = () => {
-    const userInput = contextPrompt.trim();
-    const basePrompt = userInput
-      ? `I wanted to create a JSON format: ${userInput}`
-      : "I wanted to create a JSON format: ";
-
-    // Copy prompt to clipboard
-    copyToClipboard(basePrompt);
-
-    // Open ChatGPT
+    // Just open ChatGPT with blank page - no copying
     window.open("https://chat.openai.com", "_blank");
   };
 
@@ -500,42 +492,42 @@ Please return ONLY the JSON response, no additional text.`;
                 className="w-full h-24 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-white"
               />
 
-              {/* Action Buttons - Right after input */}
-              <div className="mt-4">
-                <div className="flex gap-3 mb-2">
-                  <button
-                    onClick={openChatGPT}
-                    disabled={!contextPrompt.trim()}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-                  >
-                    <Bot className="h-5 w-5" />
-                    Copy AI Prompt & Open ChatGPT
-                  </button>
-                  <button
-                    onClick={openChatGPTManually}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-sm"
-                  >
-                    <svg
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                    Copy Manual Prompt & Open ChatGPT
-                  </button>
-                </div>
-                <p className="text-xs text-gray-600">
-                  💡 The prompt will be copied to your clipboard. Just paste it
-                  (Ctrl+V) in ChatGPT when it opens.
-                </p>
-              </div>
+                             {/* Action Buttons - Right after input */}
+               <div className="mt-4">
+                 <div className="flex gap-3 mb-2">
+                   <button
+                     onClick={openChatGPT}
+                     disabled={!contextPrompt.trim()}
+                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                   >
+                     <Bot className="h-5 w-5" />
+                     Copy AI Prompt & Open ChatGPT
+                   </button>
+                   <button
+                     onClick={openChatGPTManually}
+                     disabled={contextPrompt.trim()}
+                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                   >
+                     <svg
+                       className="h-5 w-5"
+                       fill="none"
+                       viewBox="0 0 24 24"
+                       stroke="currentColor"
+                     >
+                       <path
+                         strokeLinecap="round"
+                         strokeLinejoin="round"
+                         strokeWidth={2}
+                         d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                       />
+                     </svg>
+                     Open ChatGPT Manually
+                   </button>
+                 </div>
+                 <p className="text-xs text-gray-600">
+                   💡 <strong>AI Prompt:</strong> Copies generated prompt to clipboard. <strong>Manual:</strong> Opens ChatGPT with blank page.
+                 </p>
+               </div>
 
               {/* Repeater Option */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -630,25 +622,22 @@ Please return ONLY the JSON response, no additional text.`;
                   </span>
                   <span>Describe your component in the textarea above</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">
-                    2
-                  </span>
-                  <span>
-                    Click "Copy AI Prompt & Open ChatGPT" for comprehensive
-                    prompts or "Copy Manual Prompt & Open ChatGPT" for simple
-                    input
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">
-                    3
-                  </span>
-                  <span>
-                    When ChatGPT opens, paste the copied prompt (Ctrl+V) and
-                    press Enter
-                  </span>
-                </li>
+                                 <li className="flex items-start gap-2">
+                   <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">
+                     2
+                   </span>
+                   <span>
+                     Click "Copy AI Prompt & Open ChatGPT" for AI-generated prompts or "Open ChatGPT Manually" for blank page
+                   </span>
+                 </li>
+                 <li className="flex items-start gap-2">
+                   <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">
+                     3
+                   </span>
+                   <span>
+                     For AI prompt: Paste the copied prompt (Ctrl+V) in ChatGPT. For manual: Type your own prompt.
+                   </span>
+                 </li>
                 <li className="flex items-start gap-2">
                   <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">
                     4
