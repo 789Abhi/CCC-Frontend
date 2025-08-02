@@ -33,6 +33,7 @@ import { LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users, Palette, Grip
 import ChatGPTModal from "./ChatGPTModal"
 import ComponentEditNameModal from "./ComponentEditModal"
 import FieldVisualTreeModal from "./FieldVisualTreeModal"
+import DesignChatGPTModal from "./DesignChatGPTModal"
 
 const ComponentList = () => {
   const [showNewComponentDialog, setShowNewComponentDialog] = useState(false)
@@ -64,6 +65,10 @@ const ComponentList = () => {
 
   // ChatGPT modal state
   const [showChatGPTModal, setShowChatGPTModal] = useState(false)
+  
+  // Design ChatGPT modal state
+  const [showDesignModal, setShowDesignModal] = useState(false)
+  const [selectedComponentForDesign, setSelectedComponentForDesign] = useState(null)
 
   // Remove all revision-related state, functions, and UI. Only keep component management, assignment, and field editing logic.
 
@@ -437,6 +442,16 @@ const ComponentList = () => {
 
   const handleChatGPTComponentCreated = () => {
     fetchComponents()
+  }
+  
+  const openDesignModal = (component) => {
+    setSelectedComponentForDesign(component)
+    setShowDesignModal(true)
+  }
+  
+  const closeDesignModal = () => {
+    setShowDesignModal(false)
+    setSelectedComponentForDesign(null)
   }
 
   // Remove all revision-related state, functions, and UI. Only keep component management, assignment, and field editing logic.
@@ -864,6 +879,11 @@ const ComponentList = () => {
                           setShowTreeModal(true)
                         }}
                       />
+                      <Palette
+                        className="w-[25px] h-[25px] cursor-pointer text-purple-600 hover:text-purple-800 transition-colors duration-200"
+                        title="Design with ChatGPT"
+                        onClick={() => openDesignModal(comp)}
+                      />
                       <img
                         onClick={() => openEditComponentNameModal(comp)}
                         className="w-[25px] h-[25px] cursor-pointer"
@@ -1202,6 +1222,13 @@ const ComponentList = () => {
         isOpen={showChatGPTModal}
         onClose={handleChatGPTModalClose}
         onComponentCreated={handleChatGPTComponentCreated}
+      />
+
+      {/* Design ChatGPT Modal */}
+      <DesignChatGPTModal
+        isOpen={showDesignModal}
+        component={selectedComponentForDesign}
+        onClose={closeDesignModal}
       />
     </div>
   )
