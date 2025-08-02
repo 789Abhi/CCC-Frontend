@@ -9,6 +9,9 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
   const [parsedComponent, setParsedComponent] = useState(null)
   const [processingStep, setProcessingStep] = useState("")
   const [processingProgress, setProcessingProgress] = useState(0)
+  const [hasRepeater, setHasRepeater] = useState(false)
+  const [repeaterFields, setRepeaterFields] = useState([])
+  const [showRepeaterSetup, setShowRepeaterSetup] = useState(false)
 
   const showMessage = (message, type = 'info') => {
     // You can implement your own toast/notification system here
@@ -22,6 +25,36 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
 
   const openChatGPT = () => {
     window.open('https://chat.openai.com', '_blank')
+  }
+
+  const addRepeaterField = () => {
+    setRepeaterFields([...repeaterFields, {
+      label: '',
+      name: '',
+      type: 'text',
+      required: false,
+      placeholder: ''
+    }])
+  }
+
+  const updateRepeaterField = (index, field, value) => {
+    const updatedFields = [...repeaterFields]
+    updatedFields[index] = { ...updatedFields[index], [field]: value }
+    setRepeaterFields(updatedFields)
+  }
+
+  const removeRepeaterField = (index) => {
+    setRepeaterFields(repeaterFields.filter((_, i) => i !== index))
+  }
+
+  const generateRepeaterPrompt = () => {
+    if (!hasRepeater || repeaterFields.length === 0) return ""
+    
+    const fieldList = repeaterFields.map(field => 
+      `- ${field.label} (${field.type}): ${field.name}`
+    ).join('\n')
+    
+    return `\n\nThis component will have a repeater field that allows adding multiple instances. Each instance will contain these nested fields:\n${fieldList}\n\nPlease include a repeater field in your JSON response with these nested fields.`
   }
 
   const validateAndParseChatGPTJson = () => {
@@ -105,6 +138,26 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
             options.push({ value: i.toString(), label: i.toString() })
           }
           normalizedField.config = { options }
+        } else if (normalizedField.type === 'repeater' && field.children) {
+          // Handle repeater field with nested children from ChatGPT
+          normalizedField.children = field.children.map((child, childIndex) => ({
+            label: child.label || child.name || `Nested Field ${childIndex + 1}`,
+            name: child.name || child.label?.toLowerCase().replace(/\s+/g, '_') || `nested_field_${childIndex + 1}`,
+            type: fieldTypeMapping[child.type?.toLowerCase()] || 'text',
+            required: child.required || false,
+            placeholder: child.placeholder || '',
+            config: {}
+          }))
+        } else if (normalizedField.type === 'repeater' && hasRepeater && repeaterFields.length > 0) {
+          // Use the user-defined repeater fields
+          normalizedField.children = repeaterFields.map((field, index) => ({
+            label: field.label || `Nested Field ${index + 1}`,
+            name: field.name || field.label?.toLowerCase().replace(/\s+/g, '_') || `nested_field_${index + 1}`,
+            type: field.type || 'text',
+            required: field.required || false,
+            placeholder: field.placeholder || '',
+            config: {}
+          }))
         }
 
         // Handle additional field properties
@@ -240,6 +293,9 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
     setParsedComponent(null)
     setProcessingStep("")
     setProcessingProgress(0)
+    setHasRepeater(false)
+    setRepeaterFields([])
+    setShowRepeaterSetup(false)
     onClose()
   }
 
@@ -286,6 +342,9 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
                 <p className="text-blue-800 text-sm">
                   "Create a WordPress component for testimonials. Include fields for customer name, testimonial content, customer photo, company name, and rating. Return the response in JSON format with component name, handle, description, and fields array."
                 </p>
+                <p className="text-blue-800 text-sm mt-2">
+                  <strong>💡 Tip:</strong> If you want to add multiple testimonials, use the "Repeater Field Setup" below to define nested fields that can be repeated.
+                </p>
               </div>
             </div>
 
@@ -309,6 +368,105 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
                 </svg>
                 Open in New Tab
               </a>
+            </div>
+
+            {/* Repeater Field Setup */}
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-purple-900">🔄 Repeater Field Setup (Optional)</h3>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={hasRepeater}
+                    onChange={(e) => setHasRepeater(e.target.checked)}
+                    className="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <span className="text-purple-800 text-sm">Include repeater field</span>
+                </label>
+              </div>
+              
+              {hasRepeater && (
+                <div className="space-y-4">
+                  <p className="text-purple-800 text-sm">
+                    Define the nested fields that will be repeated. For example, if creating testimonials, 
+                    you might want to repeat: customer name, testimonial content, customer photo, etc.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    {repeaterFields.map((field, index) => (
+                      <div key={index} className="bg-white rounded-lg p-3 border border-purple-200">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                          <input
+                            type="text"
+                            placeholder="Field Label (e.g., Customer Name)"
+                            value={field.label}
+                            onChange={(e) => updateRepeaterField(index, 'label', e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Field Name (e.g., customer_name)"
+                            value={field.name}
+                            onChange={(e) => updateRepeaterField(index, 'name', e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                          <select
+                            value={field.type}
+                            onChange={(e) => updateRepeaterField(index, 'type', e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          >
+                            <option value="text">Text</option>
+                            <option value="textarea">Textarea</option>
+                            <option value="image">Image</option>
+                            <option value="wysiwyg">WYSIWYG</option>
+                            <option value="select">Select</option>
+                            <option value="checkbox">Checkbox</option>
+                            <option value="radio">Radio</option>
+                            <option value="color">Color</option>
+                          </select>
+                          <div className="flex items-center gap-2">
+                            <label className="flex items-center gap-1">
+                              <input
+                                type="checkbox"
+                                checked={field.required}
+                                onChange={(e) => updateRepeaterField(index, 'required', e.target.checked)}
+                                className="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+                              />
+                              <span className="text-purple-800 text-xs">Required</span>
+                            </label>
+                            <button
+                              onClick={() => removeRepeaterField(index)}
+                              className="text-red-500 hover:text-red-700"
+                              title="Remove field"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Placeholder text (optional)"
+                          value={field.placeholder}
+                          onChange={(e) => updateRepeaterField(index, 'placeholder', e.target.value)}
+                          className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <button
+                    onClick={addRepeaterField}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add Nested Field
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* JSON Input */}
