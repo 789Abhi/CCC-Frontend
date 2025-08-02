@@ -31,39 +31,99 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
 
     try {
       // Parse JSON to validate
-      const componentData = JSON.parse(chatGPTJson)
+      let componentData = JSON.parse(chatGPTJson)
       
-      if (!componentData.component || !componentData.fields) {
-        throw new Error('Invalid JSON format. Must contain "component" and "fields" properties.')
+      // Handle different JSON formats
+      if (!componentData.component && !componentData.component_name) {
+        throw new Error('JSON must contain component information')
       }
 
-      // Validate required fields
-      if (!componentData.component.name || !componentData.component.handle) {
-        throw new Error('Component must have name and handle properties.')
+      // Normalize component data
+      const normalizedComponent = {
+        name: componentData.component?.name || componentData.component_name || 'Generated Component',
+        handle: componentData.component?.handle || componentData.handle || 'generated_component',
+        description: componentData.component?.description || componentData.description || ''
       }
 
-      if (!Array.isArray(componentData.fields) || componentData.fields.length === 0) {
-        throw new Error('Component must have at least one field.')
+      // Handle different field formats
+      if (!componentData.fields || !Array.isArray(componentData.fields) || componentData.fields.length === 0) {
+        throw new Error('Component must have at least one field')
       }
 
-      // Validate each field
+      // Normalize and validate fields
       const validFieldTypes = ['text', 'textarea', 'image', 'video', 'color', 'select', 'checkbox', 'radio', 'wysiwyg', 'repeater']
-      
-      for (const field of componentData.fields) {
-        if (!field.label || !field.name || !field.type) {
-          throw new Error('Each field must have label, name, and type properties.')
-        }
-        
-        if (!validFieldTypes.includes(field.type)) {
-          throw new Error(`Invalid field type: ${field.type}. Valid types are: ${validFieldTypes.join(', ')}`)
-        }
+      const fieldTypeMapping = {
+        'number': 'text',
+        'email': 'text',
+        'url': 'text',
+        'tel': 'text',
+        'password': 'text',
+        'file': 'image',
+        'image': 'image',
+        'video': 'video',
+        'color': 'color',
+        'select': 'select',
+        'dropdown': 'select',
+        'checkbox': 'checkbox',
+        'radio': 'radio',
+        'wysiwyg': 'wysiwyg',
+        'editor': 'wysiwyg',
+        'repeater': 'repeater',
+        'repeat': 'repeater'
       }
 
-      setParsedComponent(componentData)
+      const normalizedFields = componentData.fields.map((field, index) => {
+        // Ensure required properties exist
+        const normalizedField = {
+          label: field.label || field.name || `Field ${index + 1}`,
+          name: field.name || field.label?.toLowerCase().replace(/\s+/g, '_') || `field_${index + 1}`,
+          type: field.type || 'text',
+          required: field.required || false,
+          placeholder: field.placeholder || '',
+          config: {}
+        }
+
+        // Map field type to valid type
+        const originalType = normalizedField.type.toLowerCase()
+        if (fieldTypeMapping[originalType]) {
+          normalizedField.type = fieldTypeMapping[originalType]
+        } else if (!validFieldTypes.includes(originalType)) {
+          normalizedField.type = 'text' // Default fallback
+        }
+
+        // Handle special field configurations
+        if (normalizedField.type === 'select' && field.options) {
+          normalizedField.config = { options: field.options }
+        } else if (normalizedField.type === 'select' && (field.min || field.max)) {
+          // Convert number range to select options
+          const min = field.min || 1
+          const max = field.max || 5
+          const step = field.step || 1
+          const options = []
+          for (let i = min; i <= max; i += step) {
+            options.push({ value: i.toString(), label: i.toString() })
+          }
+          normalizedField.config = { options }
+        }
+
+        // Handle additional field properties
+        if (field.return_format) {
+          normalizedField.config.return_format = field.return_format
+        }
+
+        return normalizedField
+      })
+
+      const finalComponentData = {
+        component: normalizedComponent,
+        fields: normalizedFields
+      }
+
+      setParsedComponent(finalComponentData)
       setShowConfirmation(true)
       return true
     } catch (error) {
-      showMessage(error.message || 'Failed to parse ChatGPT JSON', 'error')
+      showMessage('Please check your JSON format and try again', 'error')
       return false
     }
   }
