@@ -86,7 +86,8 @@ Please return ONLY the JSON response, no additional text.`
   }
 
   const openChatGPTManually = () => {
-    const basePrompt = "I wanted to create a JSON format: "
+    const userInput = contextPrompt.trim()
+    const basePrompt = userInput ? `I wanted to create a JSON format: ${userInput}` : "I wanted to create a JSON format: "
     const encodedPrompt = encodeURIComponent(basePrompt)
     window.open(`https://chat.openai.com/?prompt=${encodedPrompt}`, '_blank')
   }
@@ -374,6 +375,27 @@ Please return ONLY the JSON response, no additional text.`
                  className="w-full h-24 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-white"
                />
                
+               {/* Action Buttons - Right after input */}
+               <div className="mt-4 flex gap-3">
+                 <button
+                   onClick={openChatGPT}
+                   disabled={!contextPrompt.trim()}
+                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                 >
+                   <Bot className="h-5 w-5" />
+                   Generate with ChatGPT
+                 </button>
+                 <button
+                   onClick={openChatGPTManually}
+                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-sm"
+                 >
+                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                   </svg>
+                   Open ChatGPT Manually
+                 </button>
+               </div>
+               
                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                  <p className="text-gray-900 font-medium mb-2">💡 Examples:</p>
                  <ul className="text-gray-700 text-sm space-y-1">
@@ -413,36 +435,7 @@ Please return ONLY the JSON response, no additional text.`
                </div>
              </div>
 
-                         {/* Action Buttons */}
-             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-               <div className="flex items-center gap-3 mb-4">
-                 <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                   <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                   </svg>
-                 </div>
-                 <h3 className="font-semibold text-gray-900 text-lg">Generate with AI</h3>
-               </div>
-               <div className="flex gap-3">
-                 <button
-                   onClick={openChatGPT}
-                   disabled={!contextPrompt.trim()}
-                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-                 >
-                   <Bot className="h-5 w-5" />
-                   Generate with ChatGPT
-                 </button>
-                 <button
-                   onClick={openChatGPTManually}
-                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-sm"
-                 >
-                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                   </svg>
-                   Open ChatGPT Manually
-                 </button>
-               </div>
-             </div>
+            
 
                          {/* Instructions */}
              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -457,15 +450,15 @@ Please return ONLY the JSON response, no additional text.`
                <ol className="text-gray-700 space-y-2 text-sm">
                  <li className="flex items-start gap-2">
                    <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">1</span>
-                   <span>Describe your component above</span>
+                   <span>Describe your component in the textarea above</span>
                  </li>
                  <li className="flex items-start gap-2">
                    <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">2</span>
-                   <span>Check "repeater field" if you need multiple instances</span>
+                   <span>Choose "Generate with ChatGPT" for AI-powered prompts or "Open ChatGPT Manually" for custom input</span>
                  </li>
                  <li className="flex items-start gap-2">
                    <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">3</span>
-                   <span>Click "Generate with ChatGPT" to get a pre-filled prompt</span>
+                   <span>Check "repeater field" if you need multiple instances</span>
                  </li>
                  <li className="flex items-start gap-2">
                    <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">4</span>
