@@ -242,7 +242,7 @@ Please return ONLY the JSON response, no additional text.`;
           normalizedField.config = { options };
         } else if (normalizedField.type === "repeater" && field.children) {
           // Handle repeater field with nested children from ChatGPT
-          normalizedField.children = field.children.map(
+          const nestedFields = field.children.map(
             (child, childIndex) => ({
               label:
                 child.label || child.name || `Nested Field ${childIndex + 1}`,
@@ -256,6 +256,11 @@ Please return ONLY the JSON response, no additional text.`;
               config: {},
             })
           );
+          
+          // Store nested fields in the config for the repeater field
+          normalizedField.config = {
+            nested_fields: nestedFields
+          };
         }
 
         // Handle additional field properties
@@ -350,6 +355,11 @@ Please return ONLY the JSON response, no additional text.`;
           };
 
           console.log("Creating field with payload:", fieldPayload); // Debug log
+          console.log("Field config:", fieldData.config); // Debug log for repeater fields
+          console.log("Field type:", fieldData.type); // Debug log for field type
+          if (fieldData.type === "repeater") {
+            console.log("Repeater field detected, nested fields:", fieldData.config?.nested_fields);
+          }
 
           const fieldResponse = await axios.post(
             "/wp-json/ccc/v1/fields",
