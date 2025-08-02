@@ -22,6 +22,10 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
   const generateFieldExamples = () => {
     if (!component || !component.fields) return ""
     
+    // Debug logging
+    console.log("DesignChatGPTModal: Component data:", component)
+    console.log("DesignChatGPTModal: Fields:", component.fields)
+    
     let examples = "// Example to Fetch component fields data\n"
     examples += `// Component: ${component.name}\n`
     examples += "// Available fields:\n"
@@ -54,14 +58,22 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
       }
       examples += "\n"
       
-      // Process nested fields if this is a repeater
-      if (fieldType === 'repeater' && field.config && field.config.nested_fields) {
-        examples += `// Nested fields in ${fieldLabel} repeater:\n`
-        field.config.nested_fields.forEach(nestedField => {
-          examples += `// - ${nestedField.label} (${nestedField.type}): $item['${nestedField.name}']\n`
-        })
-        examples += "\n"
-      }
+             // Process nested fields if this is a repeater
+       if (fieldType === 'repeater' && field.config && field.config.nested_fields) {
+         console.log(`DesignChatGPTModal: Found nested fields in ${fieldLabel}:`, field.config.nested_fields)
+         examples += `// Nested fields in ${fieldLabel} repeater:\n`
+         field.config.nested_fields.forEach(nestedField => {
+           examples += `// - ${nestedField.label} (${nestedField.type}): $item['${nestedField.name}']\n`
+         })
+         examples += "\n"
+       } else if (fieldType === 'repeater' && field.children && field.children.length > 0) {
+         console.log(`DesignChatGPTModal: Found children in ${fieldLabel}:`, field.children)
+         examples += `// Nested fields in ${fieldLabel} repeater:\n`
+         field.children.forEach(nestedField => {
+           examples += `// - ${nestedField.label} (${nestedField.type}): $item['${nestedField.name}']\n`
+         })
+         examples += "\n"
+       }
     }
     
     component.fields.forEach(field => {
@@ -78,13 +90,18 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
       return fields.map(field => {
         let fieldInfo = `- ${field.label} (${field.type}): ${field.name}`
         
-        // Add nested fields for repeater
-        if (field.type === 'repeater' && field.config && field.config.nested_fields) {
-          fieldInfo += '\n  Nested fields:'
-          field.config.nested_fields.forEach(nestedField => {
-            fieldInfo += `\n    • ${nestedField.label} (${nestedField.type}): ${nestedField.name}`
-          })
-        }
+                 // Add nested fields for repeater
+         if (field.type === 'repeater' && field.config && field.config.nested_fields) {
+           fieldInfo += '\n  Nested fields:'
+           field.config.nested_fields.forEach(nestedField => {
+             fieldInfo += `\n    • ${nestedField.label} (${nestedField.type}): ${nestedField.name}`
+           })
+         } else if (field.type === 'repeater' && field.children && field.children.length > 0) {
+           fieldInfo += '\n  Nested fields:'
+           field.children.forEach(nestedField => {
+             fieldInfo += `\n    • ${nestedField.label} (${nestedField.type}): ${nestedField.name}`
+           })
+         }
         
         return fieldInfo
       }).join('\n')
@@ -255,26 +272,27 @@ Requirements:
                   <p className="font-medium text-gray-900">{field.label}</p>
                   <p className="text-sm text-gray-600">Field name: {field.name}</p>
                   
-                  {/* Show nested fields for repeater */}
-                  {field.type === 'repeater' && field.config && field.config.nested_fields && (
-                    <div className="mt-2 pt-2 border-t border-blue-100">
-                      <p className="text-xs text-blue-700 font-medium mb-1">Nested Fields:</p>
-                      {field.config.nested_fields.map((nestedField, nestedIndex) => (
-                        <div key={nestedIndex} className="ml-2 mb-1">
-                          <div className="flex items-center gap-1">
-                            <span className="bg-green-100 text-green-800 px-1 py-0.5 rounded text-xs">
-                              {nestedField.type}
-                            </span>
-                            {nestedField.required && (
-                              <span className="bg-red-100 text-red-800 px-1 py-0.5 rounded text-xs">Required</span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-700">{nestedField.label}</p>
-                          <p className="text-xs text-gray-500">Field name: {nestedField.name}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                                     {/* Show nested fields for repeater */}
+                   {(field.type === 'repeater' && field.config && field.config.nested_fields) || 
+                    (field.type === 'repeater' && field.children && field.children.length > 0) ? (
+                     <div className="mt-2 pt-2 border-t border-blue-100">
+                       <p className="text-xs text-blue-700 font-medium mb-1">Nested Fields:</p>
+                       {(field.config?.nested_fields || field.children || []).map((nestedField, nestedIndex) => (
+                         <div key={nestedIndex} className="ml-2 mb-1">
+                           <div className="flex items-center gap-1">
+                             <span className="bg-green-100 text-green-800 px-1 py-0.5 rounded text-xs">
+                               {nestedField.type}
+                             </span>
+                             {nestedField.required && (
+                               <span className="bg-red-100 text-red-800 px-1 py-0.5 rounded text-xs">Required</span>
+                             )}
+                           </div>
+                           <p className="text-xs text-gray-700">{nestedField.label}</p>
+                           <p className="text-xs text-gray-500">Field name: {nestedField.name}</p>
+                         </div>
+                       ))}
+                     </div>
+                   ) : null}
                 </div>
               ))}
             </div>
