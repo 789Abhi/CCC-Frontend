@@ -117,11 +117,11 @@ Please return ONLY the JSON response, no additional text.`;
     const prompt = generateChatGPTPrompt();
     if (!prompt) return;
 
-    // Copy prompt to clipboard
-    copyToClipboard(prompt);
-
-    // Open ChatGPT
-    window.open("https://chat.openai.com", "_blank");
+    // Encode the prompt for URL
+    const encodedPrompt = encodeURIComponent(prompt);
+    
+    // Open ChatGPT with pre-filled prompt
+    window.open(`https://chat.openai.com/?prompt=${encodedPrompt}`, "_blank");
   };
 
   const openChatGPTManually = () => {
@@ -501,7 +501,7 @@ Please return ONLY the JSON response, no additional text.`;
                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
                    >
                      <Bot className="h-5 w-5" />
-                     Copy AI Prompt & Open ChatGPT
+                     Generate
                    </button>
                    <button
                      onClick={openChatGPTManually}
@@ -525,7 +525,7 @@ Please return ONLY the JSON response, no additional text.`;
                    </button>
                  </div>
                  <p className="text-xs text-gray-600">
-                   💡 <strong>AI Prompt:</strong> Copies generated prompt to clipboard. <strong>Manual:</strong> Opens ChatGPT with blank page.
+                   💡 <strong>Generate:</strong> Opens ChatGPT with AI-generated prompt pre-filled. <strong>Manual:</strong> Opens ChatGPT with blank page.
                  </p>
                </div>
 
@@ -627,7 +627,7 @@ Please return ONLY the JSON response, no additional text.`;
                      2
                    </span>
                    <span>
-                     Click "Copy AI Prompt & Open ChatGPT" for AI-generated prompts or "Open ChatGPT Manually" for blank page
+                     Click "Generate" for AI-generated prompts or "Open ChatGPT Manually" for blank page
                    </span>
                  </li>
                  <li className="flex items-start gap-2">
@@ -635,7 +635,7 @@ Please return ONLY the JSON response, no additional text.`;
                      3
                    </span>
                    <span>
-                     For AI prompt: Paste the copied prompt (Ctrl+V) in ChatGPT. For manual: Type your own prompt.
+                     For Generate: ChatGPT opens with prompt pre-filled. For manual: Type your own prompt.
                    </span>
                  </li>
                 <li className="flex items-start gap-2">
