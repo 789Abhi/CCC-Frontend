@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ComponentList from './components/ComponentList';
 import ComponentSelector from './components/ComponentSelector';
 import toast from 'react-hot-toast';
@@ -17,26 +17,23 @@ function MetaboxApp() {
   // Use refs to access current values without causing re-renders
   const componentsRef = useRef(components);
   const fieldValuesRef = useRef(fieldValuesByInstance);
-  
-  // Update refs directly in state setters to avoid useEffect loops
-  const setComponentsWithRef = (newComponents) => {
-    console.log('CCC DEBUG: Setting components - count:', newComponents.length);
-    componentsRef.current = newComponents;
-    setComponents(newComponents);
-  };
-  
-  const setFieldValuesWithRef = (newFieldValues) => {
-    console.log('CCC DEBUG: Setting field values - keys:', Object.keys(newFieldValues).length);
-    fieldValuesRef.current = newFieldValues;
-    setFieldValuesByInstance(newFieldValues);
-  };
+  const isInitializedRef = useRef(false);
 
   // Ensure unsaved changes are tracked when a field value changes
-  const handleFieldValuesChange = (values) => {
+  const handleFieldValuesChange = useCallback((values) => {
     console.log('CCC DEBUG: Field values changed - keys:', Object.keys(values).length);
-    setFieldValuesWithRef(values);
-    setHasUnsavedChanges(true);
-  };
+    // Prevent infinite loop by checking if values actually changed
+    const currentValues = fieldValuesRef.current;
+    const valuesChanged = JSON.stringify(currentValues) !== JSON.stringify(values);
+    
+    if (valuesChanged) {
+      fieldValuesRef.current = values;
+      setFieldValuesByInstance(values);
+      setHasUnsavedChanges(true);
+    } else {
+      console.log('CCC DEBUG: Field values unchanged, skipping update');
+    }
+  }, []); // Empty dependency array to prevent re-creation
 
   // Get post ID from WordPress
   const getPostId = () => {
@@ -123,19 +120,25 @@ function MetaboxApp() {
         // Add isHidden and isPendingDelete property for UI, and sort by order
         const sorted = [...data.data.components].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
                 const sortedComponents = sorted.map(c => ({ ...c, isHidden: c.isHidden ?? false, isPendingDelete: false }));
-        setComponentsWithRef(sortedComponents);
+        componentsRef.current = sortedComponents;
+        setComponents(sortedComponents);
         
         // Set field values from the response
         if (data.data?.field_values) {
-          setFieldValuesWithRef(data.data.field_values);
+          fieldValuesRef.current = data.data.field_values;
+          setFieldValuesByInstance(data.data.field_values);
         }
       } else {
-        setComponentsWithRef([]);
-        setFieldValuesWithRef({});
+        componentsRef.current = [];
+        setComponents([]);
+        fieldValuesRef.current = {};
+        setFieldValuesByInstance({});
       }
     } catch (error) {
-      setComponentsWithRef([]);
-      setFieldValuesWithRef({});
+      componentsRef.current = [];
+      setComponents([]);
+      fieldValuesRef.current = {};
+      setFieldValuesByInstance({});
     } finally {
       setIsLoading(false);
     }
@@ -213,7 +216,14 @@ function MetaboxApp() {
   };
 
   useEffect(() => {
+    if (isInitializedRef.current) {
+      console.log('CCC DEBUG: Component already initialized, skipping');
+      return;
+    }
+    
     console.log('CCC DEBUG: Initializing data');
+    isInitializedRef.current = true;
+    
     const initializeData = async () => {
       console.log('CCC DEBUG: Loading available components');
       await loadAvailableComponents();
@@ -240,7 +250,8 @@ function MetaboxApp() {
     setExpandedComponentIds(prev => [...prev, ...newInstanceIds]);
     
     const updatedComponents = [...components, ...newComponents];
-    setComponentsWithRef(updatedComponents);
+    componentsRef.current = updatedComponents;
+    setComponents(updatedComponents);
     setHasUnsavedChanges(true);
     setDropdownOpen(false);
   };
@@ -248,7 +259,8 @@ function MetaboxApp() {
   // Remove component from UI immediately, only delete from DB on save
   const markComponentForDelete = (instance_id) => {
     const filtered = components.filter(c => c.instance_id !== instance_id);
-    setComponentsWithRef(filtered);
+    componentsRef.current = filtered;
+    setComponents(filtered);
     setHasUnsavedChanges(true);
     setExpandedComponentIds(prev => prev.filter(id => id !== instance_id));
   };
@@ -258,7 +270,8 @@ function MetaboxApp() {
     const updated = components.map(c =>
       c.instance_id === instance_id ? { ...c, isPendingDelete: false } : c
     );
-    setComponentsWithRef(updated);
+    componentsRef.current = updated;
+    setComponents(updated);
     setHasUnsavedChanges(true);
   };
 
@@ -269,7 +282,8 @@ function MetaboxApp() {
       ...c,
       order: idx
     }));
-    setComponentsWithRef(reordered);
+    componentsRef.current = reordered;
+    setComponents(reordered);
     setHasUnsavedChanges(true);
   };
 
@@ -388,7 +402,8 @@ function MetaboxApp() {
           const updated = components.map(c =>
             c.instance_id === instance_id ? { ...c, isHidden: !c.isHidden } : c
           );
-          setComponentsWithRef(updated);
+          componentsRef.current = updated;
+          setComponents(updated);
           setHasUnsavedChanges(true);
         }}
         onReorder={reorderComponents}
