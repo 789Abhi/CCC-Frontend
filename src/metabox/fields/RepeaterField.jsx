@@ -16,6 +16,21 @@ import ColorField from './ColorField';
 const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemoveItem, instanceId, fieldId }) => {
   const [isExpanded, setIsExpanded] = useState(true); // Default expanded
   const [isHidden, setIsHidden] = useState(false); // Default visible
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Dropdown menu state
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isDropdownOpen && !event.target.closest('.dropdown-container')) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
   
   const {
     attributes,
@@ -314,34 +329,62 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
           </span>
         </div>
         
-        <div className="flex items-center gap-2">
-          {/* Toggle Hide/Show Button for this item */}
-          <button
-            type="button"
-            onClick={() => setIsHidden(!isHidden)}
-            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-            title={isHidden ? "Show item" : "Hide item"}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {isHidden ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-              )}
-            </svg>
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => onRemoveItem(index)}
-            className="p-1 text-red-400 hover:text-red-600 transition-colors"
-            title="Remove item"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        </div>
+                 <div className="flex items-center gap-2">
+           {/* Toggle Switch for Hide/Show */}
+           <div className="flex items-center gap-2">
+             <span className="text-xs text-gray-500">Hide</span>
+             <button
+               type="button"
+               onClick={() => setIsHidden(!isHidden)}
+               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 ${
+                 isHidden ? 'bg-gray-200' : 'bg-green-500'
+               }`}
+               title={isHidden ? "Show item" : "Hide item"}
+             >
+               <span
+                 className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                   isHidden ? 'translate-x-1' : 'translate-x-5'
+                 }`}
+               />
+             </button>
+             <span className="text-xs text-gray-500">Show</span>
+           </div>
+           
+           {/* Dropdown Menu */}
+           <div className="relative dropdown-container">
+             <button
+               type="button"
+               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+               className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+               title="More options"
+             >
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+               </svg>
+             </button>
+             
+             {/* Dropdown Menu */}
+             {isDropdownOpen && (
+               <div className="absolute right-0 top-6 z-50 w-32 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                 <div className="py-1">
+                   <button
+                     type="button"
+                     onClick={() => {
+                       onRemoveItem(index);
+                       setIsDropdownOpen(false);
+                     }}
+                     className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                   >
+                     <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                     </svg>
+                     Delete
+                   </button>
+                 </div>
+               </div>
+             )}
+           </div>
+         </div>
       </div>
 
       {/* Collapsible Content for this item */}
