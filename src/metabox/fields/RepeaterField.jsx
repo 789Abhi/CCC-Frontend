@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import TextField from './Textfield';
 import TextareaField from './TextareaField';
 import ImageField from './ImageField';
@@ -9,81 +12,26 @@ import CheckboxField from './CheckboxField';
 import RadioField from './RadioField';
 import ColorField from './ColorField';
 
-const RepeaterField = ({ 
-  label, 
-  value = [], 
-  onChange, 
-  required = false, 
-  error = false,
-  config = {},
-  fieldId,
-  instanceId,
-  children = [] // Add children prop for nested fields
-}) => {
-  const [items, setItems] = useState([]);
-  const maxSets = config.max_sets || 0; // 0 means unlimited
-  // Use children if available, otherwise fall back to config.nested_fields
-  const nestedFields = children.length > 0 ? children : (config.nested_fields || []);
+// Sortable Repeater Item Component
+const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemoveItem, instanceId, fieldId }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ 
+    id: `repeater-item-${index}`,
+    transition: { duration: 200, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+  });
 
-  // Initialize items from value or empty array
-  useEffect(() => {
-    if (Array.isArray(value)) {
-      setItems(value);
-    } else if (typeof value === 'string' && value) {
-      try {
-        const parsed = JSON.parse(value);
-        setItems(Array.isArray(parsed) ? parsed : []);
-      } catch (e) {
-        setItems([]);
-      }
-    } else {
-      setItems([]);
-    }
-  }, [value]);
-
-  // Update parent when items change
-  useEffect(() => {
-    if (onChange) {
-      onChange(JSON.stringify(items));
-    }
-  }, [items, onChange]);
-
-  const addItem = () => {
-    if (maxSets > 0 && items.length >= maxSets) {
-      alert(`Maximum ${maxSets} items allowed.`);
-      return;
-    }
-    
-    const newItem = {};
-    nestedFields.forEach(field => {
-      newItem[field.name] = field.type === 'checkbox' ? [] : '';
-    });
-    
-    setItems([...items, newItem]);
-  };
-
-  const removeItem = (index) => {
-    if (confirm('Are you sure you want to remove this item?')) {
-      setItems(items.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateItem = (index, fieldName, fieldValue) => {
-    const updatedItems = [...items];
-    updatedItems[index] = {
-      ...updatedItems[index],
-      [fieldName]: fieldValue
-    };
-    setItems(updatedItems);
-  };
-
-  const moveItem = (fromIndex, toIndex) => {
-    if (toIndex < 0 || toIndex >= items.length) return;
-    
-    const updatedItems = [...items];
-    const [movedItem] = updatedItems.splice(fromIndex, 1);
-    updatedItems.splice(toIndex, 0, movedItem);
-    setItems(updatedItems);
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.7 : 1,
+    zIndex: isDragging ? 100 : 'auto',
+    boxShadow: isDragging ? '0 8px 24px 0 rgba(236, 72, 153, 0.15)' : undefined,
   };
 
   const renderNestedField = (field, itemValue, itemIndex) => {
@@ -92,7 +40,7 @@ const RepeaterField = ({
     const fieldError = isRequired && !fieldValue;
 
     const handleChange = (value) => {
-      updateItem(itemIndex, field.name, value);
+      onUpdateItem(itemIndex, field.name, value);
     };
 
     switch (field.type) {
@@ -323,6 +271,136 @@ const RepeaterField = ({
   };
 
   return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm"
+    >
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 rounded focus:outline-none focus:ring-2 focus:ring-pink-400 hover:bg-gray-50"
+            style={{ background: '#f9fafb' }}
+          >
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+            </svg>
+          </div>
+          <span className="text-sm font-medium text-gray-700">
+            Item {index + 1}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => onRemoveItem(index)}
+          className="p-1 text-red-400 hover:text-red-600 transition-colors"
+          title="Remove item"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {nestedFields.map(field => renderNestedField(field, item, index))}
+      </div>
+    </div>
+  );
+};
+
+const RepeaterField = ({ 
+  label, 
+  value = [], 
+  onChange, 
+  required = false, 
+  error = false,
+  config = {},
+  fieldId,
+  instanceId,
+  children = [] // Add children prop for nested fields
+}) => {
+  const [items, setItems] = useState([]);
+  const maxSets = config.max_sets || 0; // 0 means unlimited
+  // Use children if available, otherwise fall back to config.nested_fields
+  const nestedFields = children.length > 0 ? children : (config.nested_fields || []);
+
+  // Initialize items from value or empty array
+  useEffect(() => {
+    if (Array.isArray(value)) {
+      setItems(value);
+    } else if (typeof value === 'string' && value) {
+      try {
+        const parsed = JSON.parse(value);
+        setItems(Array.isArray(parsed) ? parsed : []);
+      } catch (e) {
+        setItems([]);
+      }
+    } else {
+      setItems([]);
+    }
+  }, [value]);
+
+  // Update parent when items change
+  useEffect(() => {
+    if (onChange) {
+      onChange(JSON.stringify(items));
+    }
+  }, [items, onChange]);
+
+  const addItem = () => {
+    if (maxSets > 0 && items.length >= maxSets) {
+      alert(`Maximum ${maxSets} items allowed.`);
+      return;
+    }
+    
+    if (nestedFields.length === 0) {
+      alert('This repeater field has no nested fields configured. Please add nested fields to the component first.');
+      return;
+    }
+    
+    const newItem = {};
+    nestedFields.forEach(field => {
+      newItem[field.name] = field.type === 'checkbox' ? [] : '';
+    });
+    
+    setItems([...items, newItem]);
+  };
+
+  const removeItem = (index) => {
+    if (confirm('Are you sure you want to remove this item?')) {
+      setItems(items.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateItem = (index, fieldName, fieldValue) => {
+    const updatedItems = [...items];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      [fieldName]: fieldValue
+    };
+    setItems(updatedItems);
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 2 } })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (active && over && active.id !== over.id) {
+      const activeIndex = parseInt(active.id.replace('repeater-item-', ''));
+      const overIndex = parseInt(over.id.replace('repeater-item-', ''));
+      if (!isNaN(activeIndex) && !isNaN(overIndex)) {
+        const newOrder = arrayMove(items, activeIndex, overIndex);
+        setItems(newOrder);
+      }
+    }
+  };
+
+  return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -335,14 +413,15 @@ const RepeaterField = ({
               {items.length}/{maxSets}
             </span>
           )}
-          <button
-            type="button"
-            onClick={addItem}
-            disabled={maxSets > 0 && items.length >= maxSets}
-            className="px-3 py-1 bg-pink-500 text-white text-xs rounded hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Add Item
-          </button>
+                     <button
+             type="button"
+             onClick={addItem}
+             disabled={maxSets > 0 && items.length >= maxSets || nestedFields.length === 0}
+             className="px-3 py-1 bg-pink-500 text-white text-xs rounded hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+             title={nestedFields.length === 0 ? "No nested fields configured" : ""}
+           >
+             Add Item
+           </button>
         </div>
       </div>
 
@@ -352,70 +431,53 @@ const RepeaterField = ({
         </div>
       )}
 
-      {items.length === 0 ? (
-        <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
-          <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <p className="text-sm">No items added yet</p>
-          <p className="text-xs">Click "Add Item" to get started</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {items.map((item, index) => (
-            <div
-              key={index}
-              className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm"
-            >
-              <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">
-                    Item {index + 1}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => moveItem(index, index - 1)}
-                      disabled={index === 0}
-                      className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Move up"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveItem(index, index + 1)}
-                      disabled={index === items.length - 1}
-                      className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Move down"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeItem(index)}
-                  className="p-1 text-red-400 hover:text-red-600 transition-colors"
-                  title="Remove item"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {nestedFields.map(field => renderNestedField(field, item, index))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+             {items.length === 0 ? (
+         <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
+           {nestedFields.length === 0 ? (
+             <>
+               <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+               </svg>
+               <p className="text-sm font-medium text-red-600">No nested fields configured</p>
+               <p className="text-xs">This repeater field has no nested fields. Please configure nested fields in the component first.</p>
+             </>
+           ) : (
+             <>
+               <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+               </svg>
+               <p className="text-sm">No items added yet</p>
+               <p className="text-xs">Click "Add Item" to get started</p>
+             </>
+           )}
+         </div>
+             ) : (
+         <DndContext 
+           sensors={sensors} 
+           collisionDetection={closestCenter} 
+           onDragEnd={handleDragEnd}
+         >
+           <SortableContext 
+             items={items.map((_, index) => `repeater-item-${index}`)} 
+             strategy={verticalListSortingStrategy}
+           >
+             <div className="space-y-4">
+               {items.map((item, index) => (
+                 <SortableRepeaterItem
+                   key={`repeater-item-${index}`}
+                   item={item}
+                   index={index}
+                   nestedFields={nestedFields}
+                   onUpdateItem={updateItem}
+                   onRemoveItem={removeItem}
+                   instanceId={instanceId}
+                   fieldId={fieldId}
+                 />
+               ))}
+             </div>
+           </SortableContext>
+         </DndContext>
+       )}
     </div>
   );
 };

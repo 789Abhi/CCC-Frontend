@@ -191,9 +191,12 @@ function MetaboxApp() {
   };
 
   useEffect(() => {
-    loadAvailableComponents();
-    loadAssignedComponents();
-  }, []);
+    const initializeData = async () => {
+      await loadAvailableComponents();
+      await loadAssignedComponents();
+    };
+    initializeData();
+  }, []); // Empty dependency array to run only once
 
   // Add new component(s) (from dropdown)
   const addComponent = (componentOrArray) => {
