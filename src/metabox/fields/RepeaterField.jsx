@@ -1,0 +1,423 @@
+import React, { useState, useEffect } from 'react';
+import TextField from './Textfield';
+import TextareaField from './TextareaField';
+import ImageField from './ImageField';
+import VideoField from './VideoField';
+import WysiwygField from './WysiwygField';
+import SelectField from './SelectField';
+import CheckboxField from './CheckboxField';
+import RadioField from './RadioField';
+import ColorField from './ColorField';
+
+const RepeaterField = ({ 
+  label, 
+  value = [], 
+  onChange, 
+  required = false, 
+  error = false,
+  config = {},
+  fieldId,
+  instanceId,
+  children = [] // Add children prop for nested fields
+}) => {
+  const [items, setItems] = useState([]);
+  const maxSets = config.max_sets || 0; // 0 means unlimited
+  // Use children if available, otherwise fall back to config.nested_fields
+  const nestedFields = children.length > 0 ? children : (config.nested_fields || []);
+
+  // Initialize items from value or empty array
+  useEffect(() => {
+    if (Array.isArray(value)) {
+      setItems(value);
+    } else if (typeof value === 'string' && value) {
+      try {
+        const parsed = JSON.parse(value);
+        setItems(Array.isArray(parsed) ? parsed : []);
+      } catch (e) {
+        setItems([]);
+      }
+    } else {
+      setItems([]);
+    }
+  }, [value]);
+
+  // Update parent when items change
+  useEffect(() => {
+    if (onChange) {
+      onChange(JSON.stringify(items));
+    }
+  }, [items, onChange]);
+
+  const addItem = () => {
+    if (maxSets > 0 && items.length >= maxSets) {
+      alert(`Maximum ${maxSets} items allowed.`);
+      return;
+    }
+    
+    const newItem = {};
+    nestedFields.forEach(field => {
+      newItem[field.name] = field.type === 'checkbox' ? [] : '';
+    });
+    
+    setItems([...items, newItem]);
+  };
+
+  const removeItem = (index) => {
+    if (confirm('Are you sure you want to remove this item?')) {
+      setItems(items.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateItem = (index, fieldName, fieldValue) => {
+    const updatedItems = [...items];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      [fieldName]: fieldValue
+    };
+    setItems(updatedItems);
+  };
+
+  const moveItem = (fromIndex, toIndex) => {
+    if (toIndex < 0 || toIndex >= items.length) return;
+    
+    const updatedItems = [...items];
+    const [movedItem] = updatedItems.splice(fromIndex, 1);
+    updatedItems.splice(toIndex, 0, movedItem);
+    setItems(updatedItems);
+  };
+
+  const renderNestedField = (field, itemValue, itemIndex) => {
+    const fieldValue = itemValue[field.name] || '';
+    const isRequired = field.required || false;
+    const fieldError = isRequired && !fieldValue;
+
+    const handleChange = (value) => {
+      updateItem(itemIndex, field.name, value);
+    };
+
+    switch (field.type) {
+      case 'text':
+        return (
+          <TextField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            value={fieldValue}
+            onChange={handleChange}
+            placeholder={field.placeholder}
+            required={isRequired}
+            error={fieldError}
+          />
+        );
+
+      case 'textarea':
+        return (
+          <TextareaField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            value={fieldValue}
+            onChange={handleChange}
+            placeholder={field.placeholder}
+            required={isRequired}
+            error={fieldError}
+          />
+        );
+
+      case 'image':
+        return (
+          <ImageField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            value={fieldValue}
+            onChange={handleChange}
+            required={isRequired}
+            error={fieldError}
+          />
+        );
+
+      case 'video':
+        return (
+          <VideoField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            value={fieldValue}
+            onChange={handleChange}
+            required={isRequired}
+            error={fieldError}
+            config={field.config || {}}
+          />
+        );
+
+      case 'wysiwyg':
+        return (
+          <WysiwygField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            value={fieldValue}
+            onChange={handleChange}
+            required={isRequired}
+            error={fieldError}
+            editorId={`wysiwyg_${instanceId}_${fieldId}_${itemIndex}_${field.name}`}
+          />
+        );
+
+      case 'select':
+        const multiple = field.config && field.config.multiple;
+        let selectValue = fieldValue;
+        if (multiple && typeof selectValue === 'string') {
+          selectValue = selectValue ? [selectValue] : [];
+        }
+        if (multiple && Array.isArray(selectValue)) {
+          selectValue = Array.from(new Set(selectValue));
+        }
+
+        let options = [];
+        if (field.config && field.config.options) {
+          if (Array.isArray(field.config.options)) {
+            options = field.config.options.map(opt => 
+              typeof opt === 'string' ? { label: opt, value: opt } : opt
+            );
+          } else if (typeof field.config.options === 'object') {
+            options = Object.entries(field.config.options).map(([value, label]) => ({ label, value }));
+          }
+        }
+
+        return (
+          <SelectField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            value={selectValue}
+            onChange={handleChange}
+            options={options}
+            multiple={multiple}
+            required={isRequired}
+            error={fieldError}
+          />
+        );
+
+      case 'checkbox':
+        let checkboxValue = fieldValue;
+        if (typeof checkboxValue === 'string') {
+          checkboxValue = checkboxValue ? [checkboxValue] : [];
+        }
+        if (Array.isArray(checkboxValue)) {
+          checkboxValue = Array.from(new Set(checkboxValue));
+        } else {
+          checkboxValue = [];
+        }
+
+        let checkboxOptions = [];
+        if (field.config && field.config.options) {
+          if (Array.isArray(field.config.options)) {
+            checkboxOptions = field.config.options.map(opt => 
+              typeof opt === 'string' ? { label: opt, value: opt } : opt
+            );
+          } else if (typeof field.config.options === 'object') {
+            checkboxOptions = Object.entries(field.config.options).map(([value, label]) => ({ label, value }));
+          }
+        }
+
+        return (
+          <CheckboxField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            value={checkboxValue}
+            onChange={handleChange}
+            options={checkboxOptions}
+            required={isRequired}
+            error={fieldError}
+          />
+        );
+
+      case 'radio':
+        let radioValue = fieldValue;
+        if (Array.isArray(radioValue)) {
+          radioValue = radioValue[0] || '';
+        }
+
+        let radioOptions = [];
+        if (field.config && field.config.options) {
+          if (Array.isArray(field.config.options)) {
+            radioOptions = field.config.options.map(opt => 
+              typeof opt === 'string' ? { label: opt, value: opt } : opt
+            );
+          } else if (typeof field.config.options === 'object') {
+            radioOptions = Object.entries(field.config.options).map(([value, label]) => ({ label, value }));
+          }
+        }
+
+        return (
+          <RadioField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            value={radioValue}
+            onChange={handleChange}
+            options={radioOptions}
+            required={isRequired}
+            error={fieldError}
+          />
+        );
+
+      case 'color':
+        let colorValue = fieldValue;
+        if (Array.isArray(colorValue)) {
+          colorValue = colorValue[0] || '';
+        }
+
+        let colorData = { main: '', adjusted: '', hover: '' };
+        if (typeof colorValue === 'string' && colorValue.startsWith('{') && colorValue.endsWith('}')) {
+          try {
+            const parsed = JSON.parse(colorValue);
+            if (parsed.main && typeof parsed.main === 'string' && parsed.main.startsWith('{')) {
+              try {
+                const nestedParsed = JSON.parse(parsed.main);
+                colorData = {
+                  main: nestedParsed.main || '',
+                  adjusted: nestedParsed.adjusted || nestedParsed.main || '',
+                  hover: parsed.hover || ''
+                };
+              } catch (e) {
+                colorData = {
+                  main: parsed.main,
+                  adjusted: parsed.adjusted || parsed.main,
+                  hover: parsed.hover || ''
+                };
+              }
+            } else {
+              colorData = {
+                main: parsed.main || '',
+                adjusted: parsed.adjusted || parsed.main || '',
+                hover: parsed.hover || ''
+              };
+            }
+          } catch (e) {
+            colorData = { main: colorValue, adjusted: colorValue, hover: '' };
+          }
+        } else if (typeof colorValue === 'string' && colorValue !== '') {
+          colorData = { main: colorValue, adjusted: colorValue, hover: '' };
+        }
+
+        return (
+          <ColorField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            value={JSON.stringify(colorData)}
+            onChange={handleChange}
+            required={isRequired}
+            error={fieldError}
+          />
+        );
+
+      default:
+        return (
+          <TextField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            value={fieldValue}
+            onChange={handleChange}
+            placeholder={field.placeholder}
+            required={isRequired}
+            error={fieldError}
+          />
+        );
+    }
+  };
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+        <div className="flex items-center gap-2">
+          {maxSets > 0 && (
+            <span className="text-xs text-gray-500">
+              {items.length}/{maxSets}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={addItem}
+            disabled={maxSets > 0 && items.length >= maxSets}
+            className="px-3 py-1 bg-pink-500 text-white text-xs rounded hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Add Item
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="text-red-500 text-sm mb-2">
+          This field is required
+        </div>
+      )}
+
+      {items.length === 0 ? (
+        <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
+          <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="text-sm">No items added yet</p>
+          <p className="text-xs">Click "Add Item" to get started</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {items.map((item, index) => (
+            <div
+              key={index}
+              className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm"
+            >
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    Item {index + 1}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => moveItem(index, index - 1)}
+                      disabled={index === 0}
+                      className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Move up"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveItem(index, index + 1)}
+                      disabled={index === items.length - 1}
+                      className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Move down"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeItem(index)}
+                  className="p-1 text-red-400 hover:text-red-600 transition-colors"
+                  title="Remove item"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {nestedFields.map(field => renderNestedField(field, item, index))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default RepeaterField; 

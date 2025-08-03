@@ -10,6 +10,7 @@ import SelectField from '../fields/SelectField';
 import CheckboxField from '../fields/CheckboxField';
 import RadioField from '../fields/RadioField';
 import ColorField from '../fields/ColorField';
+import RepeaterField from '../fields/RepeaterField';
 
 function ToggleSwitch({ checked, onChange }) {
   return (
@@ -443,6 +444,45 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                       onChange={handleChange}
                       required={isRequired}
                       error={isRequired && !colorData.main}
+                    />
+                  );
+                }
+                if (field.type === 'repeater') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  let value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : '[]');
+                  
+                  // Parse repeater value
+                  let repeaterValue = [];
+                  if (typeof value === 'string' && value) {
+                    try {
+                      const parsed = JSON.parse(value);
+                      repeaterValue = Array.isArray(parsed) ? parsed : [];
+                    } catch (e) {
+                      repeaterValue = [];
+                    }
+                  } else if (Array.isArray(value)) {
+                    repeaterValue = value;
+                  }
+                  
+                  const handleChange = (repeaterDataString) => {
+                    onFieldChange(component.instance_id, field.id, repeaterDataString);
+                  };
+                  
+                  return (
+                    <RepeaterField
+                      key={field.id}
+                      label={field.label}
+                      value={repeaterValue}
+                      onChange={handleChange}
+                      required={isRequired}
+                      error={isRequired && (!repeaterValue || repeaterValue.length === 0)}
+                      config={field.config || {}}
+                      fieldId={field.id}
+                      instanceId={component.instance_id}
+                      children={field.children || []}
                     />
                   );
                 }
