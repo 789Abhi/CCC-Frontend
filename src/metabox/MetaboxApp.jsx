@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ComponentList from './components/ComponentList';
 import ComponentSelector from './components/ComponentSelector';
 import toast from 'react-hot-toast';
@@ -275,52 +275,52 @@ function MetaboxApp() {
   };
 
   // Save on page update (WordPress save)
-  const handleFormSubmit = useCallback((e) => {
-    // Do NOT call e.preventDefault() here
-    // Force TinyMCE to update all textareas
-    if (window.tinymce && window.tinymce.triggerSave) {
-      window.tinymce.triggerSave();
-    }
-    // --- Sync all WYSIWYG field values from DOM to local variable ---
-    const wysiwygTextareas = document.querySelectorAll('textarea[id^="wysiwyg_"]');
-    let fieldValuesToSubmit = fieldValuesRef.current;
-    if (wysiwygTextareas.length > 0) {
-      const updatedFieldValues = { ...fieldValuesRef.current };
-      wysiwygTextareas.forEach(textarea => {
-        const idParts = textarea.id.split('_');
-        // id format: wysiwyg_{instance_id}_{field_id}
-        const instance_id = idParts.slice(1, -1).join('_');
-        const field_id = idParts[idParts.length - 1];
-        if (!updatedFieldValues[instance_id]) updatedFieldValues[instance_id] = {};
-        updatedFieldValues[instance_id][field_id] = textarea.value;
-      });
-      fieldValuesToSubmit = updatedFieldValues;
-    }
-    // Build componentsToSubmit from the current UI (not React state)
-    let componentsToSubmit = [];
-    if (Array.isArray(componentsRef.current)) {
-      componentsToSubmit = componentsRef.current.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
-    }
-    // Set components hidden input
-    const input = document.getElementById('ccc_components_data');
-    if (input) {
-      input.value = JSON.stringify(componentsToSubmit);
-    }
-    // Set field values hidden input
-    const fieldValuesInput = document.getElementById('ccc_field_values');
-    if (fieldValuesInput) {
-      fieldValuesInput.value = JSON.stringify(fieldValuesToSubmit);
-    }
-    // Let the browser handle the form submission as normal
-  }, []); // No dependencies needed since we use refs
-
   useEffect(() => {
     const form = document.querySelector('form#post');
     if (!form) return;
     
+    const handleFormSubmit = (e) => {
+      // Do NOT call e.preventDefault() here
+      // Force TinyMCE to update all textareas
+      if (window.tinymce && window.tinymce.triggerSave) {
+        window.tinymce.triggerSave();
+      }
+      // --- Sync all WYSIWYG field values from DOM to local variable ---
+      const wysiwygTextareas = document.querySelectorAll('textarea[id^="wysiwyg_"]');
+      let fieldValuesToSubmit = fieldValuesRef.current;
+      if (wysiwygTextareas.length > 0) {
+        const updatedFieldValues = { ...fieldValuesRef.current };
+        wysiwygTextareas.forEach(textarea => {
+          const idParts = textarea.id.split('_');
+          // id format: wysiwyg_{instance_id}_{field_id}
+          const instance_id = idParts.slice(1, -1).join('_');
+          const field_id = idParts[idParts.length - 1];
+          if (!updatedFieldValues[instance_id]) updatedFieldValues[instance_id] = {};
+          updatedFieldValues[instance_id][field_id] = textarea.value;
+        });
+        fieldValuesToSubmit = updatedFieldValues;
+      }
+      // Build componentsToSubmit from the current UI (not React state)
+      let componentsToSubmit = [];
+      if (Array.isArray(componentsRef.current)) {
+        componentsToSubmit = componentsRef.current.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
+      }
+      // Set components hidden input
+      const input = document.getElementById('ccc_components_data');
+      if (input) {
+        input.value = JSON.stringify(componentsToSubmit);
+      }
+      // Set field values hidden input
+      const fieldValuesInput = document.getElementById('ccc_field_values');
+      if (fieldValuesInput) {
+        fieldValuesInput.value = JSON.stringify(fieldValuesToSubmit);
+      }
+      // Let the browser handle the form submission as normal
+    };
+    
     form.addEventListener('submit', handleFormSubmit);
     return () => form.removeEventListener('submit', handleFormSubmit);
-  }, [handleFormSubmit]);
+  }, []); // Empty dependency array - this effect runs only once
 
   if (isLoading) {
     return (
