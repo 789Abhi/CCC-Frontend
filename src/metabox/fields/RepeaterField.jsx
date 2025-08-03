@@ -332,6 +332,7 @@ const RepeaterField = ({
 
   // Initialize items from value or empty array
   useEffect(() => {
+    console.log('CCC DEBUG: RepeaterField initializing with value:', value);
     if (Array.isArray(value)) {
       setItems(value);
     } else if (typeof value === 'string' && value) {
@@ -339,6 +340,7 @@ const RepeaterField = ({
         const parsed = JSON.parse(value);
         setItems(Array.isArray(parsed) ? parsed : []);
       } catch (e) {
+        console.error('CCC DEBUG: RepeaterField failed to parse value:', e);
         setItems([]);
       }
     } else {
@@ -349,7 +351,10 @@ const RepeaterField = ({
   // Update parent when items change
   useEffect(() => {
     if (onChange) {
-      onChange(JSON.stringify(items));
+      console.log('CCC DEBUG: RepeaterField updating parent with items:', items);
+      const jsonString = JSON.stringify(items);
+      console.log('CCC DEBUG: RepeaterField JSON string:', jsonString);
+      onChange(jsonString);
     }
   }, [items, onChange]);
 
@@ -379,11 +384,13 @@ const RepeaterField = ({
   };
 
   const updateItem = (index, fieldName, fieldValue) => {
+    console.log('CCC DEBUG: RepeaterField updateItem called:', { index, fieldName, fieldValue });
     const updatedItems = [...items];
     updatedItems[index] = {
       ...updatedItems[index],
       [fieldName]: fieldValue
     };
+    console.log('CCC DEBUG: RepeaterField updatedItems:', updatedItems);
     setItems(updatedItems);
   };
 
@@ -511,23 +518,23 @@ const RepeaterField = ({
         </>
       )}
 
-      {/* Floating Add Item Button - Bottom Right */}
-      {isExpanded && nestedFields.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <button
-            type="button"
-            onClick={addItem}
-            disabled={maxSets > 0 && items.length >= maxSets}
-            className="flex items-center gap-2 px-4 py-3 bg-pink-500 text-white text-sm rounded-full shadow-lg hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
-            title={maxSets > 0 && items.length >= maxSets ? `Maximum ${maxSets} items allowed` : "Add new item"}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span className="hidden sm:inline">Add Item</span>
-          </button>
-        </div>
-      )}
+             {/* Add Item Button - Bottom of Repeater Field */}
+       {isExpanded && nestedFields.length > 0 && (
+         <div className="mt-4 flex justify-end">
+           <button
+             type="button"
+             onClick={addItem}
+             disabled={maxSets > 0 && items.length >= maxSets}
+             className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white text-sm rounded-lg hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+             title={maxSets > 0 && items.length >= maxSets ? `Maximum ${maxSets} items allowed` : "Add new item"}
+           >
+             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+             </svg>
+             Add Item
+           </button>
+         </div>
+       )}
     </div>
   );
 };

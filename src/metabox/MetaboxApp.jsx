@@ -340,6 +340,7 @@ function MetaboxApp() {
       }
       console.log('CCC DEBUG: Submitting components:', componentsToSubmit.length);
       console.log('CCC DEBUG: Submitting field values:', Object.keys(fieldValuesToSubmit).length);
+      console.log('CCC DEBUG: Field values data:', fieldValuesToSubmit);
       // Set components hidden input
       const input = document.getElementById('ccc_components_data');
       if (input) {
