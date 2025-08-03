@@ -320,9 +320,12 @@ const RepeaterField = ({
   config = {},
   fieldId,
   instanceId,
-  children = [] // Add children prop for nested fields
+  children = [], // Add children prop for nested fields
+  isHidden = false, // Add hidden state prop
+  onToggleHide = null // Add toggle function prop
 }) => {
   const [items, setItems] = useState([]);
+  const [isExpanded, setIsExpanded] = useState(true); // Default expanded
   const maxSets = config.max_sets || 0; // 0 means unlimited
   // Use children if available, otherwise fall back to config.nested_fields
   const nestedFields = children.length > 0 ? children : (config.nested_fields || []);
@@ -400,84 +403,131 @@ const RepeaterField = ({
     }
   };
 
-  return (
-    <div className="mb-6">
+    return (
+    <div className={`mb-6 ${isHidden ? 'opacity-50' : ''}`}>
       <div className="flex items-center justify-between mb-3">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
-        </label>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            title={isExpanded ? "Collapse" : "Expand"}
+          >
+            <svg 
+              className={`w-4 h-4 transform transition-transform ${isExpanded ? 'rotate-90' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          <label className="block text-sm font-medium text-gray-700">
+            {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
+          </label>
           {maxSets > 0 && (
             <span className="text-xs text-gray-500">
               {items.length}/{maxSets}
             </span>
           )}
-                     <button
-             type="button"
-             onClick={addItem}
-             disabled={maxSets > 0 && items.length >= maxSets || nestedFields.length === 0}
-             className="px-3 py-1 bg-pink-500 text-white text-xs rounded hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-             title={nestedFields.length === 0 ? "No nested fields configured" : ""}
-           >
-             Add Item
-           </button>
         </div>
+        
+        {/* Toggle Hide/Show Button */}
+        {onToggleHide && (
+          <button
+            type="button"
+            onClick={onToggleHide}
+            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            title={isHidden ? "Show field" : "Hide field"}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {isHidden ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+              )}
+            </svg>
+          </button>
+        )}
       </div>
 
-      {error && (
+            {error && (
         <div className="text-red-500 text-sm mb-2">
           This field is required
         </div>
       )}
 
-             {items.length === 0 ? (
-         <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
-           {nestedFields.length === 0 ? (
-             <>
-               <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-               </svg>
-               <p className="text-sm font-medium text-red-600">No nested fields configured</p>
-               <p className="text-xs">This repeater field has no nested fields. Please configure nested fields in the component first.</p>
-             </>
-           ) : (
-             <>
-               <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-               </svg>
-               <p className="text-sm">No items added yet</p>
-               <p className="text-xs">Click "Add Item" to get started</p>
-             </>
-           )}
-         </div>
-             ) : (
-         <DndContext 
-           sensors={sensors} 
-           collisionDetection={closestCenter} 
-           onDragEnd={handleDragEnd}
-         >
-           <SortableContext 
-             items={items.map((_, index) => `repeater-item-${index}`)} 
-             strategy={verticalListSortingStrategy}
-           >
-             <div className="space-y-4">
-               {items.map((item, index) => (
-                 <SortableRepeaterItem
-                   key={`repeater-item-${index}`}
-                   item={item}
-                   index={index}
-                   nestedFields={nestedFields}
-                   onUpdateItem={updateItem}
-                   onRemoveItem={removeItem}
-                   instanceId={instanceId}
-                   fieldId={fieldId}
-                 />
-               ))}
-             </div>
-           </SortableContext>
-         </DndContext>
-       )}
+      {/* Collapsible Content */}
+      {isExpanded && (
+        <>
+          {items.length === 0 ? (
+            <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
+              {nestedFields.length === 0 ? (
+                <>
+                  <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <p className="text-sm font-medium text-red-600">No nested fields configured</p>
+                  <p className="text-xs">This repeater field has no nested fields. Please configure nested fields in the component first.</p>
+                </>
+              ) : (
+                <>
+                  <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="text-sm">No items added yet</p>
+                  <p className="text-xs">Click "Add Item" to get started</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <DndContext 
+              sensors={sensors} 
+              collisionDetection={closestCenter} 
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext 
+                items={items.map((_, index) => `repeater-item-${index}`)} 
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-4">
+                  {items.map((item, index) => (
+                    <SortableRepeaterItem
+                      key={`repeater-item-${index}`}
+                      item={item}
+                      index={index}
+                      nestedFields={nestedFields}
+                      onUpdateItem={updateItem}
+                      onRemoveItem={removeItem}
+                      instanceId={instanceId}
+                      fieldId={fieldId}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
+        </>
+      )}
+
+      {/* Floating Add Item Button - Bottom Right */}
+      {isExpanded && nestedFields.length > 0 && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            type="button"
+            onClick={addItem}
+            disabled={maxSets > 0 && items.length >= maxSets}
+            className="flex items-center gap-2 px-4 py-3 bg-pink-500 text-white text-sm rounded-full shadow-lg hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
+            title={maxSets > 0 && items.length >= maxSets ? `Maximum ${maxSets} items allowed` : "Add new item"}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span className="hidden sm:inline">Add Item</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

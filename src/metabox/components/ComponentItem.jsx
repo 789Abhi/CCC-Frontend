@@ -471,6 +471,14 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                     onFieldChange(component.instance_id, field.id, repeaterDataString);
                   };
                   
+                  // Check if field is hidden (you can implement this based on your needs)
+                  const isFieldHidden = false; // Default to visible
+                  
+                  const handleToggleField = () => {
+                    // You can implement field-level hide/show functionality here
+                    console.log('Toggle field visibility for field:', field.id);
+                  };
+                  
                   return (
                     <RepeaterField
                       key={field.id}
@@ -483,6 +491,8 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                       fieldId={field.id}
                       instanceId={component.instance_id}
                       children={field.children || []}
+                      isHidden={isFieldHidden}
+                      onToggleHide={handleToggleField}
                     />
                   );
                 }
