@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ComponentList from './components/ComponentList';
 import ComponentSelector from './components/ComponentSelector';
 import toast from 'react-hot-toast';
@@ -13,6 +13,19 @@ function MetaboxApp() {
   const [expandedComponentIds, setExpandedComponentIds] = useState([]); // for expand/collapse
   const [dropdownOpen, setDropdownOpen] = useState(false); // for add dropdown
   const [fieldValuesByInstance, setFieldValuesByInstance] = useState({});
+  
+  // Use refs to access current values without causing re-renders
+  const componentsRef = useRef(components);
+  const fieldValuesRef = useRef(fieldValuesByInstance);
+  
+  // Keep refs in sync with state
+  useEffect(() => {
+    componentsRef.current = components;
+  }, [components]);
+  
+  useEffect(() => {
+    fieldValuesRef.current = fieldValuesByInstance;
+  }, [fieldValuesByInstance]);
 
   // Ensure unsaved changes are tracked when a field value changes
   const handleFieldValuesChange = (values) => {
@@ -101,7 +114,8 @@ function MetaboxApp() {
       if (data.success && Array.isArray(data.data?.components)) {
         // Add isHidden and isPendingDelete property for UI, and sort by order
         const sorted = [...data.data.components].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-        setComponents(sorted.map(c => ({ ...c, isHidden: c.isHidden ?? false, isPendingDelete: false })));
+        const sortedComponents = sorted.map(c => ({ ...c, isHidden: c.isHidden ?? false, isPendingDelete: false }));
+    setComponents(sortedComponents);
         
         // Set field values from the response
         if (data.data?.field_values) {
@@ -213,7 +227,8 @@ function MetaboxApp() {
     const newInstanceIds = newComponents.map(c => c.instance_id);
     setExpandedComponentIds(prev => [...prev, ...newInstanceIds]);
     
-    setComponents([...components, ...newComponents]);
+    const updatedComponents = [...components, ...newComponents];
+    setComponents(updatedComponents);
     setHasUnsavedChanges(true);
     setDropdownOpen(false);
   };
@@ -260,50 +275,52 @@ function MetaboxApp() {
   };
 
   // Save on page update (WordPress save)
+  const handleFormSubmit = useCallback((e) => {
+    // Do NOT call e.preventDefault() here
+    // Force TinyMCE to update all textareas
+    if (window.tinymce && window.tinymce.triggerSave) {
+      window.tinymce.triggerSave();
+    }
+    // --- Sync all WYSIWYG field values from DOM to local variable ---
+    const wysiwygTextareas = document.querySelectorAll('textarea[id^="wysiwyg_"]');
+    let fieldValuesToSubmit = fieldValuesRef.current;
+    if (wysiwygTextareas.length > 0) {
+      const updatedFieldValues = { ...fieldValuesRef.current };
+      wysiwygTextareas.forEach(textarea => {
+        const idParts = textarea.id.split('_');
+        // id format: wysiwyg_{instance_id}_{field_id}
+        const instance_id = idParts.slice(1, -1).join('_');
+        const field_id = idParts[idParts.length - 1];
+        if (!updatedFieldValues[instance_id]) updatedFieldValues[instance_id] = {};
+        updatedFieldValues[instance_id][field_id] = textarea.value;
+      });
+      fieldValuesToSubmit = updatedFieldValues;
+    }
+    // Build componentsToSubmit from the current UI (not React state)
+    let componentsToSubmit = [];
+    if (Array.isArray(componentsRef.current)) {
+      componentsToSubmit = componentsRef.current.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
+    }
+    // Set components hidden input
+    const input = document.getElementById('ccc_components_data');
+    if (input) {
+      input.value = JSON.stringify(componentsToSubmit);
+    }
+    // Set field values hidden input
+    const fieldValuesInput = document.getElementById('ccc_field_values');
+    if (fieldValuesInput) {
+      fieldValuesInput.value = JSON.stringify(fieldValuesToSubmit);
+    }
+    // Let the browser handle the form submission as normal
+  }, []); // No dependencies needed since we use refs
+
   useEffect(() => {
     const form = document.querySelector('form#post');
     if (!form) return;
-    const handleSubmit = (e) => {
-      // Do NOT call e.preventDefault() here
-      // Force TinyMCE to update all textareas
-      if (window.tinymce && window.tinymce.triggerSave) {
-        window.tinymce.triggerSave();
-      }
-      // --- Sync all WYSIWYG field values from DOM to local variable ---
-      const wysiwygTextareas = document.querySelectorAll('textarea[id^="wysiwyg_"]');
-      let fieldValuesToSubmit = fieldValuesByInstance;
-      if (wysiwygTextareas.length > 0) {
-        const updatedFieldValues = { ...fieldValuesByInstance };
-        wysiwygTextareas.forEach(textarea => {
-          const idParts = textarea.id.split('_');
-          // id format: wysiwyg_{instance_id}_{field_id}
-          const instance_id = idParts.slice(1, -1).join('_');
-          const field_id = idParts[idParts.length - 1];
-          if (!updatedFieldValues[instance_id]) updatedFieldValues[instance_id] = {};
-          updatedFieldValues[instance_id][field_id] = textarea.value;
-        });
-        fieldValuesToSubmit = updatedFieldValues;
-      }
-      // Build componentsToSubmit from the current UI (not React state)
-      let componentsToSubmit = [];
-      if (Array.isArray(components)) {
-        componentsToSubmit = components.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
-      }
-      // Set components hidden input
-      const input = document.getElementById('ccc_components_data');
-      if (input) {
-        input.value = JSON.stringify(componentsToSubmit);
-      }
-      // Set field values hidden input
-      const fieldValuesInput = document.getElementById('ccc_field_values');
-      if (fieldValuesInput) {
-        fieldValuesInput.value = JSON.stringify(fieldValuesToSubmit);
-      }
-      // Let the browser handle the form submission as normal
-    };
-    form.addEventListener('submit', handleSubmit);
-    return () => form.removeEventListener('submit', handleSubmit);
-  }, [components, fieldValuesByInstance]);
+    
+    form.addEventListener('submit', handleFormSubmit);
+    return () => form.removeEventListener('submit', handleFormSubmit);
+  }, [handleFormSubmit]);
 
   if (isLoading) {
     return (
