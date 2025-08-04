@@ -456,16 +456,19 @@ const RepeaterField = ({
     }
   }, [value]);
 
-  // Update parent when items change - filter out hidden items for database
+  // Update parent when items change - save ALL items to database (including hidden ones)
   useEffect(() => {
     if (onChange) {
       console.log('CCC DEBUG: RepeaterField updating parent with items:', items);
       
-      // Filter out hidden items for database storage
-      const visibleItems = items.filter(item => !item._hidden);
-      console.log('CCC DEBUG: RepeaterField visible items for database:', visibleItems);
+      // Save ALL items to database (including hidden ones) so they persist
+      const allItems = items.map(item => ({
+        ...item,
+        _hidden: item._hidden || false
+      }));
+      console.log('CCC DEBUG: RepeaterField all items for database:', allItems);
       
-      const jsonString = JSON.stringify(visibleItems);
+      const jsonString = JSON.stringify(allItems);
       console.log('CCC DEBUG: RepeaterField JSON string:', jsonString);
       onChange(jsonString);
     }
