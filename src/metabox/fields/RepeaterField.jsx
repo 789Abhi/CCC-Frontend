@@ -13,9 +13,9 @@ import RadioField from './RadioField';
 import ColorField from './ColorField';
 
 // Sortable Repeater Item Component
-const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemoveItem, instanceId, fieldId }) => {
+const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemoveItem, onToggleHidden, instanceId, fieldId }) => {
   const [isExpanded, setIsExpanded] = useState(true); // Default expanded
-  const [isHidden, setIsHidden] = useState(false); // Default visible
+  const [isHidden, setIsHidden] = useState(item._hidden || false); // Get hidden state from item
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Dropdown menu state
   
   // Close dropdown when clicking outside
@@ -50,6 +50,12 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
     opacity: isDragging ? 0.7 : (isHidden ? 0.5 : 1),
     zIndex: isDragging ? 100 : 'auto',
     boxShadow: isDragging ? '0 8px 24px 0 rgba(236, 72, 153, 0.15)' : undefined,
+  };
+
+  const handleToggleHidden = () => {
+    const newHiddenState = !isHidden;
+    setIsHidden(newHiddenState);
+    onToggleHidden(index, newHiddenState);
   };
 
   const renderNestedField = (field, itemValue, itemIndex) => {
@@ -324,23 +330,28 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
             </svg>
           </button>
           
-          <span className="text-sm font-medium text-gray-700">
-            Item {index + 1}
-          </span>
+                            <span className="text-sm font-medium text-gray-700">
+                    Item {index + 1}
+                    {isHidden && (
+                      <span className="ml-2 text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                        Hidden
+                      </span>
+                    )}
+                  </span>
         </div>
         
                  <div className="flex items-center gap-2">
            {/* Toggle Switch for Hide/Show */}
            <div className="flex items-center gap-2">
              <span className="text-xs text-gray-500">Hide</span>
-             <button
-               type="button"
-               onClick={() => setIsHidden(!isHidden)}
-               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 ${
-                 isHidden ? 'bg-gray-200' : 'bg-green-500'
-               }`}
-               title={isHidden ? "Show item" : "Hide item"}
-             >
+                           <button
+                type="button"
+                onClick={handleToggleHidden}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 ${
+                  isHidden ? 'bg-gray-200' : 'bg-green-500'
+                }`}
+                title={isHidden ? "Show item" : "Hide item"}
+              >
                <span
                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
                    isHidden ? 'translate-x-1' : 'translate-x-5'
@@ -417,11 +428,25 @@ const RepeaterField = ({
   useEffect(() => {
     console.log('CCC DEBUG: RepeaterField initializing with value:', value);
     if (Array.isArray(value)) {
-      setItems(value);
+      // Ensure all items have _hidden property
+      const itemsWithHiddenState = value.map(item => ({
+        ...item,
+        _hidden: item._hidden || false
+      }));
+      setItems(itemsWithHiddenState);
     } else if (typeof value === 'string' && value) {
       try {
         const parsed = JSON.parse(value);
-        setItems(Array.isArray(parsed) ? parsed : []);
+        if (Array.isArray(parsed)) {
+          // Ensure all items have _hidden property
+          const itemsWithHiddenState = parsed.map(item => ({
+            ...item,
+            _hidden: item._hidden || false
+          }));
+          setItems(itemsWithHiddenState);
+        } else {
+          setItems([]);
+        }
       } catch (e) {
         console.error('CCC DEBUG: RepeaterField failed to parse value:', e);
         setItems([]);
@@ -431,11 +456,16 @@ const RepeaterField = ({
     }
   }, [value]);
 
-  // Update parent when items change
+  // Update parent when items change - filter out hidden items for database
   useEffect(() => {
     if (onChange) {
       console.log('CCC DEBUG: RepeaterField updating parent with items:', items);
-      const jsonString = JSON.stringify(items);
+      
+      // Filter out hidden items for database storage
+      const visibleItems = items.filter(item => !item._hidden);
+      console.log('CCC DEBUG: RepeaterField visible items for database:', visibleItems);
+      
+      const jsonString = JSON.stringify(visibleItems);
       console.log('CCC DEBUG: RepeaterField JSON string:', jsonString);
       onChange(jsonString);
     }
@@ -452,7 +482,9 @@ const RepeaterField = ({
       return;
     }
     
-    const newItem = {};
+    const newItem = {
+      _hidden: false // New items are visible by default
+    };
     nestedFields.forEach(field => {
       newItem[field.name] = field.type === 'checkbox' ? [] : '';
     });
@@ -474,6 +506,17 @@ const RepeaterField = ({
       [fieldName]: fieldValue
     };
     console.log('CCC DEBUG: RepeaterField updatedItems:', updatedItems);
+    setItems(updatedItems);
+  };
+
+  const toggleItemHidden = (index, hidden) => {
+    console.log('CCC DEBUG: RepeaterField toggleItemHidden called:', { index, hidden });
+    const updatedItems = [...items];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      _hidden: hidden
+    };
+    console.log('CCC DEBUG: RepeaterField updatedItems with hidden state:', updatedItems);
     setItems(updatedItems);
   };
 
@@ -503,7 +546,7 @@ const RepeaterField = ({
           </label>
           {maxSets > 0 && (
             <span className="text-xs text-gray-500">
-              {items.length}/{maxSets}
+              {items.filter(item => !item._hidden).length}/{maxSets}
             </span>
           )}
         </div>
@@ -516,7 +559,7 @@ const RepeaterField = ({
       )}
 
       {/* Content */}
-      {items.length === 0 ? (
+      {items.filter(item => !item._hidden).length === 0 ? (
         <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
           {nestedFields.length === 0 ? (
             <>
@@ -547,18 +590,19 @@ const RepeaterField = ({
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-4">
-              {items.map((item, index) => (
-                <SortableRepeaterItem
-                  key={`repeater-item-${index}`}
-                  item={item}
-                  index={index}
-                  nestedFields={nestedFields}
-                  onUpdateItem={updateItem}
-                  onRemoveItem={removeItem}
-                  instanceId={instanceId}
-                  fieldId={fieldId}
-                />
-              ))}
+                              {items.map((item, index) => (
+                  <SortableRepeaterItem
+                    key={`repeater-item-${index}`}
+                    item={item}
+                    index={index}
+                    nestedFields={nestedFields}
+                    onUpdateItem={updateItem}
+                    onRemoveItem={removeItem}
+                    onToggleHidden={toggleItemHidden}
+                    instanceId={instanceId}
+                    fieldId={fieldId}
+                  />
+                ))}
             </div>
           </SortableContext>
         </DndContext>
@@ -567,13 +611,13 @@ const RepeaterField = ({
                    {/* Add Item Button - Bottom of Repeater Field */}
       {nestedFields.length > 0 && (
         <div className="mt-4 flex justify-end">
-          <button
-            type="button"
-            onClick={addItem}
-            disabled={maxSets > 0 && items.length >= maxSets}
-            className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white text-sm rounded-lg hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            title={maxSets > 0 && items.length >= maxSets ? `Maximum ${maxSets} items allowed` : "Add new item"}
-          >
+                      <button
+              type="button"
+              onClick={addItem}
+              disabled={maxSets > 0 && items.filter(item => !item._hidden).length >= maxSets}
+              className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white text-sm rounded-lg hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              title={maxSets > 0 && items.filter(item => !item._hidden).length >= maxSets ? `Maximum ${maxSets} items allowed` : "Add new item"}
+            >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
