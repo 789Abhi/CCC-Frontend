@@ -718,16 +718,26 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 disabled={isSubmitting}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
               >
-                <option value="text">Text</option>
-                <option value="textarea">Textarea</option>
-                <option value="image">Image</option>
-                <option value="video">Video</option>
-                <option value="repeater">Repeater</option>
-                <option value="wysiwyg">WYSIWYG Editor</option>
-                <option value="color">Color</option>
-                <option value="select">Select</option>
-                <option value="checkbox">Checkbox</option>
-                <option value="radio">Radio</option>
+                {availableFieldTypes.map(fieldType => {
+                  const labels = {
+                    text: "Text",
+                    textarea: "Textarea", 
+                    image: "Image",
+                    video: "Video",
+                    oembed: "O-Embed",
+                    repeater: "Repeater",
+                    wysiwyg: "WYSIWYG Editor",
+                    color: "Color",
+                    select: "Select",
+                    checkbox: "Checkbox",
+                    radio: "Radio"
+                  };
+                  return (
+                    <option key={fieldType} value={fieldType}>
+                      {labels[fieldType] || fieldType}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
