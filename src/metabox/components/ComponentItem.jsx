@@ -405,6 +405,25 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                     />
                   );
                 }
+                if (field.type === 'oembed') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  const value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                  const handleChange = val => {
+                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                  };
+                  return (
+                    <OembedField
+                      key={field.id}
+                      field={field}
+                      value={value}
+                      onChange={handleChange}
+                      isSubmitting={false}
+                    />
+                  );
+                }
                 if (field.type === 'color') {
                   const isRequired = field.required || false;
                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
