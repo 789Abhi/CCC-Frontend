@@ -406,12 +406,15 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                   );
                 }
                 if (field.type === 'oembed') {
+                  console.log('CCC DEBUG: ComponentItem rendering oembed field:', field.id, field.label);
                   const isRequired = field.required || false;
                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
                   const value = instanceFieldValues[field.id] !== undefined
                     ? instanceFieldValues[field.id]
                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                  console.log('CCC DEBUG: ComponentItem oembed field value:', value);
                   const handleChange = val => {
+                    console.log('CCC DEBUG: ComponentItem oembed field onChange called with:', val);
                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
                   };
                   return (

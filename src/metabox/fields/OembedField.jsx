@@ -19,6 +19,7 @@ const OembedField = ({ field, value, onChange, isSubmitting }) => {
 
   useEffect(() => {
     if (onChange) {
+      console.log('CCC DEBUG: OembedField calling onChange with:', iframeCode);
       onChange(iframeCode);
     }
   }, [iframeCode, onChange]);
