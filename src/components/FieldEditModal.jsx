@@ -74,6 +74,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "textarea",
     "image",
     "video",
+    "oembed",
     "repeater",
     "wysiwyg",
     "color",
