@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ExternalLink, Eye, EyeOff, Settings } from 'lucide-react';
 
 const OembedField = ({ field, value, onChange, isSubmitting }) => {
-  const [url, setUrl] = useState(value || '');
-  const [preview, setPreview] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [iframeCode, setIframeCode] = useState(value || '');
   const [showSettings, setShowSettings] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [error, setError] = useState('');
@@ -14,8 +12,6 @@ const OembedField = ({ field, value, onChange, isSubmitting }) => {
   const {
     width = '100%',
     height = '400px',
-    autoplay = false,
-    allow_fullscreen = true,
     show_title = true,
     show_author = false,
     show_related = false
@@ -23,98 +19,24 @@ const OembedField = ({ field, value, onChange, isSubmitting }) => {
 
   useEffect(() => {
     if (onChange) {
-      onChange(url);
+      onChange(iframeCode);
     }
-  }, [url, onChange]);
+  }, [iframeCode, onChange]);
 
-  const fetchOembed = async (url) => {
-    if (!url) {
-      setPreview(null);
-      setError('');
-      return;
-    }
-
-    setIsLoading(true);
+  const handleIframeCodeChange = (e) => {
+    const newCode = e.target.value;
+    setIframeCode(newCode);
     setError('');
-
-    try {
-      // Use WordPress oEmbed API
-      const response = await fetch(`/wp-json/oembed/1.0/proxy?url=${encodeURIComponent(url)}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch embed data');
-      }
-
-      const data = await response.json();
-      
-      if (data.html) {
-        setPreview(data);
-        setShowPreview(true);
-      } else {
-        setError('No embed data found for this URL');
-      }
-    } catch (err) {
-      console.error('OEmbed error:', err);
-      setError('Failed to load embed preview. Please check the URL.');
-      setPreview(null);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
-  const handleUrlChange = (e) => {
-    const newUrl = e.target.value;
-    setUrl(newUrl);
-    setError('');
-    
-    // Auto-fetch preview if URL looks valid
-    if (newUrl && isValidUrl(newUrl)) {
-      // Debounce the fetch
-      const timeoutId = setTimeout(() => {
-        fetchOembed(newUrl);
-      }, 1000);
-      
-      return () => clearTimeout(timeoutId);
-    } else {
-      setPreview(null);
-    }
+  const extractIframeSrc = (iframeCode) => {
+    const srcMatch = iframeCode.match(/src=["']([^"']+)["']/);
+    return srcMatch ? srcMatch[1] : null;
   };
 
-  const handlePreviewClick = () => {
-    if (url && isValidUrl(url)) {
-      fetchOembed(url);
-    }
-  };
-
-  const isValidUrl = (string) => {
-    try {
-      new URL(string);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  };
-
-  const getEmbedHtml = () => {
-    if (!preview || !preview.html) return null;
-
-    let embedHtml = preview.html;
-
-    // Add autoplay parameter for supported platforms
-    if (autoplay) {
-      if (embedHtml.includes('youtube.com') || embedHtml.includes('youtu.be')) {
-        embedHtml = embedHtml.replace('?', '?autoplay=1&muted=1&');
-      } else if (embedHtml.includes('vimeo.com')) {
-        embedHtml = embedHtml.replace('?', '?autoplay=1&muted=1&');
-      }
-    }
-
-    // Add fullscreen parameter
-    if (!allow_fullscreen) {
-      embedHtml = embedHtml.replace('allowfullscreen', '');
-    }
-
-    return embedHtml;
+  const extractIframeTitle = (iframeCode) => {
+    const titleMatch = iframeCode.match(/title=["']([^"']+)["']/);
+    return titleMatch ? titleMatch[1] : null;
   };
 
   const getPreviewStyle = () => ({
@@ -124,6 +46,33 @@ const OembedField = ({ field, value, onChange, isSubmitting }) => {
     borderRadius: '4px',
     overflow: 'hidden'
   });
+
+  const getProcessedIframeCode = () => {
+    if (!iframeCode) return null;
+    
+    // Replace width and height attributes if they exist
+    let processedCode = iframeCode;
+    
+    // Replace width attribute
+    processedCode = processedCode.replace(/width=["']([^"']*)["']/g, `width="${width}"`);
+    
+    // Replace height attribute
+    processedCode = processedCode.replace(/height=["']([^"']*)["']/g, `height="${height}"`);
+    
+    // If width/height attributes don't exist, add them
+    if (!processedCode.includes('width=')) {
+      processedCode = processedCode.replace('<iframe', `<iframe width="${width}"`);
+    }
+    if (!processedCode.includes('height=')) {
+      processedCode = processedCode.replace('<iframe', `<iframe height="${height}"`);
+    }
+    
+    return processedCode;
+  };
+
+  const isValidIframeCode = (code) => {
+    return code.trim().startsWith('<iframe') && code.includes('src=');
+  };
 
   return (
     <div className="ccc-field ccc-oembed-field">
@@ -141,7 +90,7 @@ const OembedField = ({ field, value, onChange, isSubmitting }) => {
           >
             <Settings size={16} />
           </button>
-          {preview && (
+          {iframeCode && isValidIframeCode(iframeCode) && (
             <button
               type="button"
               className="ccc-field-action-btn"
@@ -153,32 +102,30 @@ const OembedField = ({ field, value, onChange, isSubmitting }) => {
           )}
         </div>
       </div>
-
+      
       <div className="ccc-oembed-input-container">
-        <input
-          type="url"
-          value={url}
-          onChange={handleUrlChange}
-          placeholder="Enter URL (YouTube, Vimeo, Google Maps, etc.)"
-          className="ccc-field-input ccc-oembed-url-input"
+        <textarea
+          value={iframeCode}
+          onChange={handleIframeCodeChange}
+          placeholder="Paste your iframe code here (e.g., Google Maps, YouTube, Vimeo embed code)"
+          className="ccc-field-textarea ccc-oembed-iframe-textarea"
+          rows={4}
           disabled={isSubmitting}
         />
-        <button
-          type="button"
-          onClick={handlePreviewClick}
-          disabled={!url || isLoading || isSubmitting}
-          className="ccc-field-btn ccc-oembed-preview-btn"
-        >
-          {isLoading ? 'Loading...' : 'Preview'}
-        </button>
       </div>
-
+      
       {error && (
         <div className="ccc-field-error">
           {error}
         </div>
       )}
-
+      
+      {iframeCode && !isValidIframeCode(iframeCode) && (
+        <div className="ccc-field-warning">
+          Please enter a valid iframe code starting with &lt;iframe
+        </div>
+      )}
+      
       {showSettings && (
         <div className="ccc-oembed-settings">
           <div className="ccc-oembed-setting-row">
@@ -201,41 +148,27 @@ const OembedField = ({ field, value, onChange, isSubmitting }) => {
               />
             </div>
           </div>
-          <div className="ccc-oembed-setting-row">
-            <label className="ccc-checkbox-label">
-              <input
-                type="checkbox"
-                defaultChecked={autoplay}
-                className="ccc-checkbox ccc-oembed-autoplay"
-              />
-              Autoplay
-            </label>
-            <label className="ccc-checkbox-label">
-              <input
-                type="checkbox"
-                defaultChecked={allow_fullscreen}
-                className="ccc-checkbox ccc-oembed-fullscreen"
-              />
-              Allow Fullscreen
-            </label>
-          </div>
         </div>
       )}
-
-      {showPreview && preview && (
+      
+      {showPreview && iframeCode && isValidIframeCode(iframeCode) && (
         <div className="ccc-oembed-preview" style={getPreviewStyle()}>
           <div
             className="ccc-oembed-preview-content"
-            dangerouslySetInnerHTML={{ __html: getEmbedHtml() }}
+            dangerouslySetInnerHTML={{ __html: getProcessedIframeCode() }}
           />
         </div>
       )}
-
-      {preview && preview.title && show_title && (
+      
+      {iframeCode && isValidIframeCode(iframeCode) && show_title && extractIframeTitle(iframeCode) && (
         <div className="ccc-oembed-info">
-          <h4>{preview.title}</h4>
-          {show_author && preview.author_name && (
-            <p>By: {preview.author_name}</p>
+          <h4>{extractIframeTitle(iframeCode)}</h4>
+          {extractIframeSrc(iframeCode) && (
+            <p className="ccc-oembed-src">
+              Source: <a href={extractIframeSrc(iframeCode)} target="_blank" rel="noopener noreferrer">
+                {extractIframeSrc(iframeCode)}
+              </a>
+            </p>
           )}
         </div>
       )}
