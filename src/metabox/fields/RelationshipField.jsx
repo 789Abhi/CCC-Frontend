@@ -13,12 +13,12 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
   // Parse field config
   const config = field.config ? (typeof field.config === 'string' ? JSON.parse(field.config) : field.config) : {};
   const {
-    filter_post_types = [],
-    filter_post_status = [],
-    filter_taxonomy = '',
-    filters = ['search', 'post_type'],
-    max_posts = 0,
-    return_format = 'object'
+    filter_post_types = Array.isArray(config.filter_post_types) ? config.filter_post_types : [],
+    filter_post_status = Array.isArray(config.filter_post_status) ? config.filter_post_status : [],
+    filter_taxonomy = config.filter_taxonomy || '',
+    filters = Array.isArray(config.filters) ? config.filters : ['search', 'post_type'],
+    max_posts = parseInt(config.max_posts) || 0,
+    return_format = config.return_format || 'object'
   } = config;
 
   // Load available posts on component mount
@@ -49,7 +49,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
   // Update parent when selected posts change
   useEffect(() => {
     if (onChange) {
-      const postIds = selectedPosts.map(post => post.id);
+      const postIds = Array.isArray(selectedPosts) ? selectedPosts.map(post => post.id) : [];
       const valueToSend = return_format === 'id' ? postIds : postIds.join(',');
       onChange(valueToSend);
     }
@@ -88,8 +88,8 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
           search: searchTerm,
           post_type: postTypeFilter,
           taxonomy: taxonomyFilter,
-          filter_post_types: filter_post_types.join(','),
-          filter_post_status: filter_post_status.join(','),
+          filter_post_types: Array.isArray(filter_post_types) ? filter_post_types.join(',') : '',
+          filter_post_status: Array.isArray(filter_post_status) ? filter_post_status.join(',') : '',
           filter_taxonomy: filter_taxonomy
         })
       });
@@ -98,7 +98,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       if (data.success && data.data) {
         // Filter out already selected posts
         const filteredPosts = data.data.filter(post => 
-          !selectedPosts.some(selected => selected.id === post.id)
+          !Array.isArray(selectedPosts) || !selectedPosts.some(selected => selected.id === post.id)
         );
         setAvailablePosts(filteredPosts);
       } else {
@@ -116,27 +116,27 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
 
   const addPost = (post) => {
     // Check if already selected
-    if (selectedPosts.some(p => p.id === post.id)) {
+    if (Array.isArray(selectedPosts) && selectedPosts.some(p => p.id === post.id)) {
       return;
     }
     
     // Check max posts limit
-    if (max_posts > 0 && selectedPosts.length >= max_posts) {
+    if (max_posts > 0 && Array.isArray(selectedPosts) && selectedPosts.length >= max_posts) {
       return;
     }
     
-    setSelectedPosts(prev => [...prev, post]);
+    setSelectedPosts(prev => Array.isArray(prev) ? [...prev, post] : [post]);
     // Remove from available posts
-    setAvailablePosts(prev => prev.filter(p => p.id !== post.id));
+    setAvailablePosts(prev => Array.isArray(prev) ? prev.filter(p => p.id !== post.id) : []);
   };
 
   const removePost = (postId) => {
-    const removedPost = selectedPosts.find(post => post.id === postId);
-    setSelectedPosts(prev => prev.filter(post => post.id !== postId));
+    const removedPost = Array.isArray(selectedPosts) ? selectedPosts.find(post => post.id === postId) : null;
+    setSelectedPosts(prev => Array.isArray(prev) ? prev.filter(post => post.id !== postId) : []);
     
     // Add back to available posts if it exists
     if (removedPost) {
-      setAvailablePosts(prev => [...prev, removedPost]);
+      setAvailablePosts(prev => Array.isArray(prev) ? [...prev, removedPost] : [removedPost]);
     }
   };
 
@@ -216,14 +216,14 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
         <div className="ccc-relationship-columns">
           {/* Available Posts Column */}
           <div className="ccc-relationship-available">
-            <h4>Available Posts ({availablePosts.length})</h4>
+                         <h4>Available Posts ({Array.isArray(availablePosts) ? availablePosts.length : 0})</h4>
             <div className="ccc-relationship-available-items">
               {isLoading ? (
                 <div className="ccc-relationship-loading">Loading posts...</div>
-              ) : availablePosts.length === 0 ? (
+                             ) : !Array.isArray(availablePosts) || availablePosts.length === 0 ? (
                 <div className="ccc-relationship-empty">No posts available</div>
               ) : (
-                availablePosts.map(post => (
+                                 (Array.isArray(availablePosts) ? availablePosts : []).map(post => (
                   <div
                     key={post.id}
                     className="ccc-relationship-available-item"
@@ -243,7 +243,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
                         e.stopPropagation();
                         addPost(post);
                       }}
-                      disabled={max_posts > 0 && selectedPosts.length >= max_posts}
+                                             disabled={max_posts > 0 && Array.isArray(selectedPosts) && selectedPosts.length >= max_posts}
                     >
                       <ArrowRight size={14} />
                     </button>
@@ -255,12 +255,12 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
 
           {/* Selected Posts Column */}
           <div className="ccc-relationship-selected">
-            <h4>Selected Posts ({selectedPosts.length}{max_posts > 0 ? `/${max_posts}` : ''})</h4>
+                         <h4>Selected Posts ({Array.isArray(selectedPosts) ? selectedPosts.length : 0}{max_posts > 0 ? `/${max_posts}` : ''})</h4>
             <div className="ccc-relationship-selected-items">
-              {selectedPosts.length === 0 ? (
+                             {!Array.isArray(selectedPosts) || selectedPosts.length === 0 ? (
                 <div className="ccc-relationship-empty">No posts selected</div>
               ) : (
-                selectedPosts.map(post => (
+                                 (Array.isArray(selectedPosts) ? selectedPosts : []).map(post => (
                   <div key={post.id} className="ccc-relationship-selected-item">
                     <div className="ccc-relationship-selected-content">
                       <div className="ccc-relationship-selected-title">{post.title}</div>

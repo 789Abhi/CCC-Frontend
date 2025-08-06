@@ -266,11 +266,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       });
       
       const data = await response.json();
-      if (data.success && data.data) {
+      if (data.success && Array.isArray(data.data)) {
         setAvailablePostTypes(data.data);
+      } else {
+        console.warn('Invalid post types data received:', data);
+        setAvailablePostTypes([]);
       }
     } catch (error) {
       console.error('Error fetching available post types:', error);
+      setAvailablePostTypes([]);
     }
   };
 
@@ -286,11 +290,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       });
       
       const data = await response.json();
-      if (data.success && data.data) {
+      if (data.success && Array.isArray(data.data)) {
         setAvailableTaxonomies(data.data);
+      } else {
+        console.warn('Invalid taxonomies data received:', data);
+        setAvailableTaxonomies([]);
       }
     } catch (error) {
       console.error('Error fetching available taxonomies:', error);
+      setAvailableTaxonomies([]);
     }
   };
 
@@ -1189,7 +1197,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   </label>
                   <select
                     id="filterPostTypes"
-                    value={relationshipConfig.filter_post_types[0] || ''}
+                    value={Array.isArray(relationshipConfig.filter_post_types) ? relationshipConfig.filter_post_types[0] || '' : ''}
                     onChange={(e) => setRelationshipConfig({
                       ...relationshipConfig,
                       filter_post_types: e.target.value ? [e.target.value] : []
@@ -1198,7 +1206,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     disabled={isSubmitting}
                   >
                     <option value="">All Post Types</option>
-                    {availablePostTypes.map((postType) => (
+                    {Array.isArray(availablePostTypes) && availablePostTypes.map((postType) => (
                       <option key={postType.value} value={postType.value}>
                         {postType.label}
                       </option>
@@ -1216,7 +1224,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   </label>
                   <select
                     id="filterPostStatus"
-                    value={relationshipConfig.filter_post_status[0] || ''}
+                    value={Array.isArray(relationshipConfig.filter_post_status) ? relationshipConfig.filter_post_status[0] || '' : ''}
                     onChange={(e) => setRelationshipConfig({
                       ...relationshipConfig,
                       filter_post_status: e.target.value ? [e.target.value] : []
@@ -1251,7 +1259,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     disabled={isSubmitting}
                   >
                     <option value="">No taxonomy filter</option>
-                    {availableTaxonomies.map((taxonomy) => (
+                    {Array.isArray(availableTaxonomies) && availableTaxonomies.map((taxonomy) => (
                       <option key={taxonomy.value} value={taxonomy.value}>
                         {taxonomy.label}
                       </option>
@@ -1276,11 +1284,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       <label key={filter.key} className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={relationshipConfig.filters.includes(filter.key)}
+                          checked={Array.isArray(relationshipConfig.filters) && relationshipConfig.filters.includes(filter.key)}
                           onChange={(e) => {
+                            const currentFilters = Array.isArray(relationshipConfig.filters) ? relationshipConfig.filters : [];
                             const newFilters = e.target.checked
-                              ? [...relationshipConfig.filters, filter.key]
-                              : relationshipConfig.filters.filter(f => f !== filter.key);
+                              ? [...currentFilters, filter.key]
+                              : currentFilters.filter(f => f !== filter.key);
                             setRelationshipConfig({
                               ...relationshipConfig,
                               filters: newFilters
