@@ -67,6 +67,16 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     pictureInPicture: true
   });
 
+  // Relationship field configuration state
+  const [relationshipConfig, setRelationshipConfig] = useState({
+    filter_post_types: [],
+    filter_post_status: [],
+    filter_taxonomy: '',
+    filters: ['search', 'post_type'],
+    max_posts: 0,
+    return_format: 'object'
+  });
+
   const isEditing = !!field
 
   const availableFieldTypes = [
@@ -156,6 +166,28 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           if (field.type === 'select' && field.config) {
             const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
             setSelectMultiple(!!config.multiple);
+          } else if (field.type === 'relationship' && field.config) {
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              setRelationshipConfig({
+                filter_post_types: config.filter_post_types || [],
+                filter_post_status: config.filter_post_status || [],
+                filter_taxonomy: config.filter_taxonomy || '',
+                filters: config.filters || ['search', 'post_type'],
+                max_posts: config.max_posts || 0,
+                return_format: config.return_format || 'object'
+              });
+            } catch (e) {
+              console.error("Error parsing relationship config:", e);
+              setRelationshipConfig({
+                filter_post_types: [],
+                filter_post_status: [],
+                filter_taxonomy: '',
+                filters: ['search', 'post_type'],
+                max_posts: 0,
+                return_format: 'object'
+              });
+            }
           }
         } catch (e) {
           console.error("Error parsing field config:", e)
@@ -193,6 +225,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         download: true,
         fullscreen: true,
         pictureInPicture: true
+      });
+      setRelationshipConfig({
+        filter_post_types: [],
+        filter_post_status: [],
+        filter_taxonomy: '',
+        filters: ['search', 'post_type'],
+        max_posts: 0,
+        return_format: 'object'
       });
     }
 
@@ -502,6 +542,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           if (type === "select") {
             fieldData.config.multiple = !!selectMultiple
           }
+        } else if (type === "relationship") {
+          fieldData.config = relationshipConfig
         }
 
         onSave(fieldData)
@@ -610,6 +652,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           config.multiple = !!selectMultiple;
         }
         formData.append("field_config", JSON.stringify(config))
+      } else if (type === "relationship") {
+        formData.append("field_config", JSON.stringify(relationshipConfig))
       }
 
       console.log("Submitting form data:", Object.fromEntries(formData))
@@ -1076,6 +1120,187 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   </div>
                   <p className="text-xs text-gray-500">
                     Configure video player behavior and available features
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Relationship Field Settings */}
+            {type === "relationship" && (
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">Relationship Field Settings</h4>
+
+                {/* Filter Post Types */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Filter by Post Type
+                  </label>
+                  <div className="flex flex-col gap-2">
+                    {['post', 'page', 'product', 'event', 'testimonial'].map((postType) => (
+                      <label key={postType} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={relationshipConfig.filter_post_types.includes(postType)}
+                          onChange={(e) => {
+                            const newTypes = e.target.checked
+                              ? [...relationshipConfig.filter_post_types, postType]
+                              : relationshipConfig.filter_post_types.filter(type => type !== postType);
+                            setRelationshipConfig({
+                              ...relationshipConfig,
+                              filter_post_types: newTypes
+                            });
+                          }}
+                          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                          disabled={isSubmitting}
+                        />
+                        <span className="text-sm text-gray-700 capitalize">{postType}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Select which post types to include in the relationship field. Leave empty to include all.
+                  </p>
+                </div>
+
+                {/* Filter Post Status */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Filter by Post Status
+                  </label>
+                  <div className="flex flex-col gap-2">
+                    {['publish', 'draft', 'pending', 'private'].map((status) => (
+                      <label key={status} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={relationshipConfig.filter_post_status.includes(status)}
+                          onChange={(e) => {
+                            const newStatuses = e.target.checked
+                              ? [...relationshipConfig.filter_post_status, status]
+                              : relationshipConfig.filter_post_status.filter(s => s !== status);
+                            setRelationshipConfig({
+                              ...relationshipConfig,
+                              filter_post_status: newStatuses
+                            });
+                          }}
+                          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                          disabled={isSubmitting}
+                        />
+                        <span className="text-sm text-gray-700 capitalize">{status}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Select which post statuses to include. Leave empty to include all.
+                  </p>
+                </div>
+
+                {/* Filter Taxonomy */}
+                <div className="space-y-2">
+                  <label htmlFor="filterTaxonomy" className="block text-sm font-medium text-gray-700">
+                    Filter by Taxonomy
+                  </label>
+                  <select
+                    id="filterTaxonomy"
+                    value={relationshipConfig.filter_taxonomy}
+                    onChange={(e) => setRelationshipConfig({
+                      ...relationshipConfig,
+                      filter_taxonomy: e.target.value
+                    })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    <option value="">No taxonomy filter</option>
+                    <option value="category">Category</option>
+                    <option value="post_tag">Post Tag</option>
+                    <option value="product_cat">Product Category</option>
+                    <option value="product_tag">Product Tag</option>
+                  </select>
+                  <p className="text-xs text-gray-500">
+                    Select a taxonomy to filter posts by. Users will be able to select terms from this taxonomy.
+                  </p>
+                </div>
+
+                {/* Available Filters */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Available Filters
+                  </label>
+                  <div className="flex flex-col gap-2">
+                    {[
+                      { key: 'search', label: 'Search', description: 'Allow users to search for posts' },
+                      { key: 'post_type', label: 'Post Type', description: 'Show post type filter dropdown' },
+                      { key: 'taxonomy', label: 'Taxonomy', description: 'Show taxonomy filter dropdown' }
+                    ].map((filter) => (
+                      <label key={filter.key} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={relationshipConfig.filters.includes(filter.key)}
+                          onChange={(e) => {
+                            const newFilters = e.target.checked
+                              ? [...relationshipConfig.filters, filter.key]
+                              : relationshipConfig.filters.filter(f => f !== filter.key);
+                            setRelationshipConfig({
+                              ...relationshipConfig,
+                              filters: newFilters
+                            });
+                          }}
+                          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                          disabled={isSubmitting}
+                        />
+                        <span className="text-sm text-gray-700">{filter.label}</span>
+                        <span className="text-xs text-gray-500">({filter.description})</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Select which filter options to show in the metabox interface.
+                  </p>
+                </div>
+
+                {/* Max Posts */}
+                <div className="space-y-2">
+                  <label htmlFor="maxPosts" className="block text-sm font-medium text-gray-700">
+                    Maximum Posts
+                  </label>
+                  <input
+                    id="maxPosts"
+                    type="number"
+                    value={relationshipConfig.max_posts}
+                    onChange={(e) => setRelationshipConfig({
+                      ...relationshipConfig,
+                      max_posts: parseInt(e.target.value) || 0
+                    })}
+                    placeholder="0 for unlimited"
+                    min="0"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Maximum number of posts that can be selected. Set to 0 for unlimited.
+                  </p>
+                </div>
+
+                {/* Return Format */}
+                <div className="space-y-2">
+                  <label htmlFor="returnFormat" className="block text-sm font-medium text-gray-700">
+                    Return Format
+                  </label>
+                  <select
+                    id="returnFormat"
+                    value={relationshipConfig.return_format}
+                    onChange={(e) => setRelationshipConfig({
+                      ...relationshipConfig,
+                      return_format: e.target.value
+                    })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    <option value="object">Post Objects</option>
+                    <option value="id">Post IDs</option>
+                    <option value="title">Post Titles</option>
+                  </select>
+                  <p className="text-xs text-gray-500">
+                    Choose how the selected posts will be returned in templates.
                   </p>
                 </div>
               </div>
