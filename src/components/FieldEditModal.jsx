@@ -75,6 +75,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "image",
     "video",
     "oembed",
+    "relationship",
     "repeater",
     "wysiwyg",
     "color",
@@ -719,19 +720,20 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
               >
                 {availableFieldTypes.map(fieldType => {
-                  const labels = {
-                    text: "Text",
-                    textarea: "Textarea", 
-                    image: "Image",
-                    video: "Video",
-                    oembed: "O-Embed",
-                    repeater: "Repeater",
-                    wysiwyg: "WYSIWYG Editor",
-                    color: "Color",
-                    select: "Select",
-                    checkbox: "Checkbox",
-                    radio: "Radio"
-                  };
+                                      const labels = {
+                        text: "Text",
+                        textarea: "Textarea",
+                        image: "Image",
+                        video: "Video",
+                        oembed: "O-Embed",
+                        relationship: "Relationship",
+                        repeater: "Repeater",
+                        wysiwyg: "WYSIWYG Editor",
+                        color: "Color",
+                        select: "Select",
+                        checkbox: "Checkbox",
+                        radio: "Radio"
+                    };
                   return (
                     <option key={fieldType} value={fieldType}>
                       {labels[fieldType] || fieldType}
