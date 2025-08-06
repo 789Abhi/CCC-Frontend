@@ -4,6 +4,8 @@ import { Search, X, ChevronDown, ChevronUp, ArrowRight, ArrowLeft } from 'lucide
 const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
   const [selectedPosts, setSelectedPosts] = useState([]);
   const [availablePosts, setAvailablePosts] = useState([]);
+  const [availablePostTypes, setAvailablePostTypes] = useState([]);
+  const [availableTaxonomies, setAvailableTaxonomies] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [postTypeFilter, setPostTypeFilter] = useState('');
   const [taxonomyFilter, setTaxonomyFilter] = useState('');
@@ -23,6 +25,8 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
 
   // Load available posts on component mount
   useEffect(() => {
+    fetchAvailablePostTypes();
+    fetchAvailableTaxonomies();
     loadAvailablePosts();
   }, []);
 
@@ -55,6 +59,56 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
     }
   }, [selectedPosts, onChange, return_format]);
 
+  const fetchAvailablePostTypes = async () => {
+    try {
+      const response = await fetch(cccData.ajaxUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          action: 'ccc_get_available_post_types',
+          nonce: cccData.nonce
+        })
+      });
+      
+      const data = await response.json();
+      console.log('RelationshipField: Post types data received:', data);
+      if (data.success && Array.isArray(data.data)) {
+        setAvailablePostTypes(data.data);
+      } else {
+        console.warn('Invalid post types data received:', data);
+        setAvailablePostTypes([]);
+      }
+    } catch (error) {
+      console.error('Error fetching available post types:', error);
+      setAvailablePostTypes([]);
+    }
+  };
+
+  const fetchAvailableTaxonomies = async () => {
+    try {
+      const response = await fetch(cccData.ajaxUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          action: 'ccc_get_available_taxonomies',
+          nonce: cccData.nonce
+        })
+      });
+      
+      const data = await response.json();
+      console.log('RelationshipField: Taxonomies data received:', data);
+      if (data.success && Array.isArray(data.data)) {
+        setAvailableTaxonomies(data.data);
+      } else {
+        console.warn('Invalid taxonomies data received:', data);
+        setAvailableTaxonomies([]);
+      }
+    } catch (error) {
+      console.error('Error fetching available taxonomies:', error);
+      setAvailableTaxonomies([]);
+    }
+  };
+
   const fetchPostDetails = async (postIds) => {
     try {
       const response = await fetch(cccData.ajaxUrl, {
@@ -85,7 +139,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
         body: new URLSearchParams({
           action: 'ccc_search_posts',
           nonce: cccData.nonce,
-          search: searchTerm,
+          search: searchTerm || '', // Always send search parameter, even if empty
           post_type: postTypeFilter,
           taxonomy: taxonomyFilter,
           filter_post_types: Array.isArray(filter_post_types) ? filter_post_types.join(',') : '',
@@ -95,13 +149,16 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       });
       
       const data = await response.json();
-      if (data.success && data.data) {
+      console.log('RelationshipField: Posts data received:', data);
+      if (data.success && Array.isArray(data.data)) {
         // Filter out already selected posts
         const filteredPosts = data.data.filter(post => 
           !Array.isArray(selectedPosts) || !selectedPosts.some(selected => selected.id === post.id)
         );
+        console.log('RelationshipField: Available posts after filtering:', filteredPosts);
         setAvailablePosts(filteredPosts);
       } else {
+        console.warn('Invalid posts data received:', data);
         setAvailablePosts([]);
       }
     } catch (error) {
@@ -185,31 +242,37 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
             </div>
           )}
           
-          {filters.includes('post_type') && (
-            <select
-              value={postTypeFilter}
-              onChange={(e) => setPostTypeFilter(e.target.value)}
-              className="ccc-field-input ccc-relationship-post-type-filter"
-              disabled={isSubmitting}
-            >
-              <option value="">All post types</option>
-              <option value="post">Post</option>
-              <option value="page">Page</option>
-            </select>
-          )}
+                     {filters.includes('post_type') && (
+             <select
+               value={postTypeFilter}
+               onChange={(e) => setPostTypeFilter(e.target.value)}
+               className="ccc-field-input ccc-relationship-post-type-filter"
+               disabled={isSubmitting}
+             >
+               <option value="">All post types</option>
+               {Array.isArray(availablePostTypes) && availablePostTypes.map((postType) => (
+                 <option key={postType.value} value={postType.value}>
+                   {postType.label}
+                 </option>
+               ))}
+             </select>
+           )}
           
-          {filters.includes('taxonomy') && (
-            <select
-              value={taxonomyFilter}
-              onChange={(e) => setTaxonomyFilter(e.target.value)}
-              className="ccc-field-input ccc-relationship-taxonomy-filter"
-              disabled={isSubmitting}
-            >
-              <option value="">All taxonomies</option>
-              <option value="category">Category</option>
-              <option value="post_tag">Tag</option>
-            </select>
-          )}
+                     {filters.includes('taxonomy') && (
+             <select
+               value={taxonomyFilter}
+               onChange={(e) => setTaxonomyFilter(e.target.value)}
+               className="ccc-field-input ccc-relationship-taxonomy-filter"
+               disabled={isSubmitting}
+             >
+               <option value="">All taxonomies</option>
+               {Array.isArray(availableTaxonomies) && availableTaxonomies.map((taxonomy) => (
+                 <option key={taxonomy.value} value={taxonomy.value}>
+                   {taxonomy.label}
+                 </option>
+               ))}
+             </select>
+           )}
         </div>
 
         {/* Two Column Layout */}
