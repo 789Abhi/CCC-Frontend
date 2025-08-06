@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, X, ChevronDown, ChevronUp, ArrowRight, ArrowLeft } from 'lucide-react';
 
 const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
   const [selectedPosts, setSelectedPosts] = useState([]);
+  const [availablePosts, setAvailablePosts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [postTypeFilter, setPostTypeFilter] = useState('');
   const [taxonomyFilter, setTaxonomyFilter] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showResults, setShowResults] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const searchTimeoutRef = useRef(null);
 
   // Parse field config
@@ -21,6 +20,20 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
     max_posts = 0,
     return_format = 'object'
   } = config;
+
+  // Load available posts on component mount
+  useEffect(() => {
+    loadAvailablePosts();
+  }, []);
+
+  // Load available posts when filters change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadAvailablePosts();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, postTypeFilter, taxonomyFilter]);
 
   // Initialize selected posts from value
   useEffect(() => {
@@ -63,13 +76,8 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
     }
   };
 
-  const searchPosts = async () => {
-    if (!searchTerm.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
+  const loadAvailablePosts = async () => {
+    setIsLoading(true);
     try {
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
@@ -88,34 +96,23 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       
       const data = await response.json();
       if (data.success && data.data) {
-        setSearchResults(data.data);
+        // Filter out already selected posts
+        const filteredPosts = data.data.filter(post => 
+          !selectedPosts.some(selected => selected.id === post.id)
+        );
+        setAvailablePosts(filteredPosts);
       } else {
-        setSearchResults([]);
+        setAvailablePosts([]);
       }
     } catch (error) {
-      console.error('Error searching posts:', error);
-      setSearchResults([]);
+      console.error('Error loading available posts:', error);
+      setAvailablePosts([]);
     } finally {
-      setIsSearching(false);
+      setIsLoading(false);
     }
   };
 
-  // Debounced search
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    searchTimeoutRef.current = setTimeout(() => {
-      searchPosts();
-    }, 300);
 
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchTerm, postTypeFilter, taxonomyFilter]);
 
   const addPost = (post) => {
     // Check if already selected
@@ -129,13 +126,18 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
     }
     
     setSelectedPosts(prev => [...prev, post]);
-    setSearchTerm('');
-    setSearchResults([]);
-    setShowResults(false);
+    // Remove from available posts
+    setAvailablePosts(prev => prev.filter(p => p.id !== post.id));
   };
 
   const removePost = (postId) => {
+    const removedPost = selectedPosts.find(post => post.id === postId);
     setSelectedPosts(prev => prev.filter(post => post.id !== postId));
+    
+    // Add back to available posts if it exists
+    if (removedPost) {
+      setAvailablePosts(prev => [...prev, removedPost]);
+    }
   };
 
   const getPostTypeLabel = (postType) => {
@@ -176,8 +178,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onFocus={() => setShowResults(true)}
-                placeholder="Search..."
+                placeholder="Search posts..."
                 className="ccc-field-input ccc-relationship-search"
                 disabled={isSubmitting}
               />
@@ -191,7 +192,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
               className="ccc-field-input ccc-relationship-post-type-filter"
               disabled={isSubmitting}
             >
-              <option value="">Select post type</option>
+              <option value="">All post types</option>
               <option value="post">Post</option>
               <option value="page">Page</option>
             </select>
@@ -204,75 +205,82 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
               className="ccc-field-input ccc-relationship-taxonomy-filter"
               disabled={isSubmitting}
             >
-              <option value="">Select taxonomy</option>
+              <option value="">All taxonomies</option>
               <option value="category">Category</option>
               <option value="post_tag">Tag</option>
             </select>
           )}
         </div>
 
-        {/* Search Results */}
-        {showResults && (searchResults.length > 0 || isSearching) && (
-          <div className="ccc-relationship-results">
-            {isSearching ? (
-              <div className="ccc-relationship-loading">Searching...</div>
-            ) : (
-              searchResults.map(post => (
-                <div
-                  key={post.id}
-                  className="ccc-relationship-result-item"
-                  onClick={() => addPost(post)}
-                >
-                  <div className="ccc-relationship-result-content">
-                    <div className="ccc-relationship-result-title">{post.title}</div>
-                    <div className="ccc-relationship-result-meta">
-                      <span className="ccc-relationship-result-type">{getPostTypeLabel(post.type)}</span>
-                      <span className="ccc-relationship-result-status">({getStatusLabel(post.status)})</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="ccc-relationship-add-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addPost(post);
-                    }}
+        {/* Two Column Layout */}
+        <div className="ccc-relationship-columns">
+          {/* Available Posts Column */}
+          <div className="ccc-relationship-available">
+            <h4>Available Posts ({availablePosts.length})</h4>
+            <div className="ccc-relationship-available-items">
+              {isLoading ? (
+                <div className="ccc-relationship-loading">Loading posts...</div>
+              ) : availablePosts.length === 0 ? (
+                <div className="ccc-relationship-empty">No posts available</div>
+              ) : (
+                availablePosts.map(post => (
+                  <div
+                    key={post.id}
+                    className="ccc-relationship-available-item"
+                    onClick={() => addPost(post)}
                   >
-                    +
-                  </button>
-                </div>
-              ))
-            )}
+                    <div className="ccc-relationship-available-content">
+                      <div className="ccc-relationship-available-title">{post.title}</div>
+                      <div className="ccc-relationship-available-meta">
+                        <span className="ccc-relationship-available-type">{getPostTypeLabel(post.type)}</span>
+                        <span className="ccc-relationship-available-status">({getStatusLabel(post.status)})</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="ccc-relationship-add-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addPost(post);
+                      }}
+                      disabled={max_posts > 0 && selectedPosts.length >= max_posts}
+                    >
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        )}
 
-        {/* Selected Items */}
-        <div className="ccc-relationship-selected">
-          <h4>Selected Items ({selectedPosts.length}{max_posts > 0 ? `/${max_posts}` : ''})</h4>
-          <div className="ccc-relationship-selected-items">
-            {selectedPosts.length === 0 ? (
-              <div className="ccc-relationship-empty">No items selected</div>
-            ) : (
-              selectedPosts.map(post => (
-                <div key={post.id} className="ccc-relationship-selected-item">
-                  <div className="ccc-relationship-selected-content">
-                    <div className="ccc-relationship-selected-title">{post.title}</div>
-                    <div className="ccc-relationship-selected-meta">
-                      <span className="ccc-relationship-selected-type">{getPostTypeLabel(post.type)}</span>
-                      <span className="ccc-relationship-selected-status">({getStatusLabel(post.status)})</span>
+          {/* Selected Posts Column */}
+          <div className="ccc-relationship-selected">
+            <h4>Selected Posts ({selectedPosts.length}{max_posts > 0 ? `/${max_posts}` : ''})</h4>
+            <div className="ccc-relationship-selected-items">
+              {selectedPosts.length === 0 ? (
+                <div className="ccc-relationship-empty">No posts selected</div>
+              ) : (
+                selectedPosts.map(post => (
+                  <div key={post.id} className="ccc-relationship-selected-item">
+                    <div className="ccc-relationship-selected-content">
+                      <div className="ccc-relationship-selected-title">{post.title}</div>
+                      <div className="ccc-relationship-selected-meta">
+                        <span className="ccc-relationship-selected-type">{getPostTypeLabel(post.type)}</span>
+                        <span className="ccc-relationship-selected-status">({getStatusLabel(post.status)})</span>
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      className="ccc-relationship-remove-btn"
+                      onClick={() => removePost(post.id)}
+                      disabled={isSubmitting}
+                    >
+                      <ArrowLeft size={14} />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="ccc-relationship-remove-btn"
-                    onClick={() => removePost(post.id)}
-                    disabled={isSubmitting}
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
