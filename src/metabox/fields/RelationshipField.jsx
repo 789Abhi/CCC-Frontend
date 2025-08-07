@@ -39,6 +39,18 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
     return () => clearTimeout(timeoutId);
   }, [searchTerm, postTypeFilter, taxonomyFilter]);
 
+  // Update taxonomies when post type changes
+  useEffect(() => {
+    if (postTypeFilter) {
+      fetchTaxonomiesForPostType(postTypeFilter);
+    } else {
+      // Reset to all taxonomies when no post type is selected
+      fetchAvailableTaxonomies();
+    }
+    // Reset taxonomy filter when post type changes
+    setTaxonomyFilter('');
+  }, [postTypeFilter]);
+
   // Initialize selected posts from value
   useEffect(() => {
     if (value) {
@@ -109,6 +121,32 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
     }
   };
 
+  const fetchTaxonomiesForPostType = async (postType) => {
+    try {
+      const response = await fetch(cccData.ajaxUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          action: 'ccc_get_taxonomies_for_post_type',
+          nonce: cccData.nonce,
+          post_type: postType
+        })
+      });
+      
+      const data = await response.json();
+      console.log('RelationshipField: Taxonomies for post type data received:', data);
+      if (data.success && Array.isArray(data.data)) {
+        setAvailableTaxonomies(data.data);
+      } else {
+        console.warn('Invalid taxonomies for post type data received:', data);
+        setAvailableTaxonomies([]);
+      }
+    } catch (error) {
+      console.error('Error fetching taxonomies for post type:', error);
+      setAvailableTaxonomies([]);
+    }
+  };
+
   const fetchPostDetails = async (postIds) => {
     try {
       const response = await fetch(cccData.ajaxUrl, {
@@ -133,6 +171,15 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
   const loadAvailablePosts = async () => {
     setIsLoading(true);
     try {
+      console.log('RelationshipField: Loading posts with filters:', {
+        searchTerm,
+        postTypeFilter,
+        taxonomyFilter,
+        filter_post_types,
+        filter_post_status,
+        filter_taxonomy
+      });
+
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -140,16 +187,17 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
           action: 'ccc_search_posts',
           nonce: cccData.nonce,
           search: searchTerm || '', // Always send search parameter, even if empty
-          post_type: postTypeFilter,
-          taxonomy: taxonomyFilter,
-          filter_post_types: Array.isArray(filter_post_types) ? filter_post_types.join(',') : '',
+          post_type: postTypeFilter || '', // Send empty string to show all posts by default
+          taxonomy: taxonomyFilter || '', // Ensure empty string if undefined
+          filter_post_types: '', // Don't filter by post types - show all posts
           filter_post_status: Array.isArray(filter_post_status) ? filter_post_status.join(',') : '',
-          filter_taxonomy: filter_taxonomy
+          filter_taxonomy: filter_taxonomy || '' // Ensure empty string if undefined
         })
       });
       
       const data = await response.json();
       console.log('RelationshipField: Posts data received:', data);
+
       if (data.success && Array.isArray(data.data)) {
         // Filter out already selected posts
         const filteredPosts = data.data.filter(post => 
@@ -157,6 +205,10 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
         );
         console.log('RelationshipField: Available posts after filtering:', filteredPosts);
         setAvailablePosts(filteredPosts);
+
+        // Log post types found
+        const postTypesFound = [...new Set(data.data.map(post => post.type))];
+        console.log('RelationshipField: Post types found in response:', postTypesFound);
       } else {
         console.warn('Invalid posts data received:', data);
         setAvailablePosts([]);
@@ -243,19 +295,27 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
           )}
           
                      {filters.includes('post_type') && (
-             <select
-               value={postTypeFilter}
-               onChange={(e) => setPostTypeFilter(e.target.value)}
-               className="ccc-field-input ccc-relationship-post-type-filter"
-               disabled={isSubmitting}
-             >
-               <option value="">All post types</option>
-               {Array.isArray(availablePostTypes) && availablePostTypes.map((postType) => (
-                 <option key={postType.value} value={postType.value}>
-                   {postType.label}
-                 </option>
-               ))}
-             </select>
+             <div className="ccc-relationship-filter-container">
+               <select
+                 value={postTypeFilter}
+                 onChange={(e) => {
+                   console.log('RelationshipField: Post type filter changed to:', e.target.value);
+                   setPostTypeFilter(e.target.value);
+                 }}
+                 className="ccc-field-input ccc-relationship-post-type-filter"
+                 disabled={isSubmitting}
+               >
+                 <option value="">All post types</option>
+                 {Array.isArray(availablePostTypes) && availablePostTypes.map((postType) => (
+                   <option key={postType.value} value={postType.value}>
+                     {postType.label}
+                   </option>
+                 ))}
+               </select>
+               {isLoading && (
+                 <div className="ccc-relationship-filter-loading">Loading...</div>
+               )}
+             </div>
            )}
           
                      {filters.includes('taxonomy') && (
@@ -297,7 +357,16 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
                       <div className="ccc-relationship-available-meta">
                         <span className="ccc-relationship-available-type">{getPostTypeLabel(post.type)}</span>
                         <span className="ccc-relationship-available-status">({getStatusLabel(post.status)})</span>
+                        {post.date && (
+                          <span className="ccc-relationship-available-date">{post.date}</span>
+                        )}
                       </div>
+                      {/* Show excerpt if available */}
+                      {post.excerpt && (
+                        <div className="ccc-relationship-available-excerpt">
+                          {post.excerpt}
+                        </div>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -306,7 +375,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
                         e.stopPropagation();
                         addPost(post);
                       }}
-                                             disabled={max_posts > 0 && Array.isArray(selectedPosts) && selectedPosts.length >= max_posts}
+                      disabled={max_posts > 0 && Array.isArray(selectedPosts) && selectedPosts.length >= max_posts}
                     >
                       <ArrowRight size={14} />
                     </button>
@@ -318,12 +387,12 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
 
           {/* Selected Posts Column */}
           <div className="ccc-relationship-selected">
-                         <h4>Selected Posts ({Array.isArray(selectedPosts) ? selectedPosts.length : 0}{max_posts > 0 ? `/${max_posts}` : ''})</h4>
+            <h4>Selected Posts ({Array.isArray(selectedPosts) ? selectedPosts.length : 0}{max_posts > 0 ? `/${max_posts}` : ''})</h4>
             <div className="ccc-relationship-selected-items">
-                             {!Array.isArray(selectedPosts) || selectedPosts.length === 0 ? (
+              {!Array.isArray(selectedPosts) || selectedPosts.length === 0 ? (
                 <div className="ccc-relationship-empty">No posts selected</div>
               ) : (
-                                 (Array.isArray(selectedPosts) ? selectedPosts : []).map(post => (
+                (Array.isArray(selectedPosts) ? selectedPosts : []).map(post => (
                   <div key={post.id} className="ccc-relationship-selected-item">
                     <div className="ccc-relationship-selected-content">
                       <div className="ccc-relationship-selected-title">{post.title}</div>
@@ -331,6 +400,35 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
                         <span className="ccc-relationship-selected-type">{getPostTypeLabel(post.type)}</span>
                         <span className="ccc-relationship-selected-status">({getStatusLabel(post.status)})</span>
                       </div>
+                      {/* Show post URL if available */}
+                      {post.url && (
+                        <div className="ccc-relationship-selected-url">
+                          <a href={post.url} target="_blank" rel="noopener noreferrer" className="ccc-relationship-post-link">
+                            View Post
+                          </a>
+                        </div>
+                      )}
+                      {/* Show post excerpt if available */}
+                      {post.excerpt && (
+                        <div className="ccc-relationship-selected-excerpt">
+                          {post.excerpt}
+                        </div>
+                      )}
+                      {/* Show post date and author if available */}
+                      {(post.date || post.author) && (
+                        <div className="ccc-relationship-selected-meta">
+                          {post.date && (
+                            <span className="ccc-relationship-selected-date">
+                              {post.date}
+                            </span>
+                          )}
+                          {post.author && (
+                            <span className="ccc-relationship-selected-author">
+                              by {post.author}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <button
                       type="button"
