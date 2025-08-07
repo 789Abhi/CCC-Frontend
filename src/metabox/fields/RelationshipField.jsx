@@ -188,7 +188,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
           nonce: cccData.nonce,
           search: searchTerm || '', // Always send search parameter, even if empty
           post_type: postTypeFilter || '', // Send empty string to show all posts by default
-          taxonomy: taxonomyFilter || '', // Ensure empty string if undefined
+          taxonomy: taxonomyFilter || '', // Send taxonomy filter if selected
           filter_post_types: '', // Don't filter by post types - show all posts
           filter_post_status: Array.isArray(filter_post_status) ? filter_post_status.join(',') : '',
           filter_taxonomy: filter_taxonomy || '' // Ensure empty string if undefined
@@ -321,7 +321,10 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
                      {filters.includes('taxonomy') && (
              <select
                value={taxonomyFilter}
-               onChange={(e) => setTaxonomyFilter(e.target.value)}
+               onChange={(e) => {
+                 console.log('RelationshipField: Taxonomy filter changed to:', e.target.value);
+                 setTaxonomyFilter(e.target.value);
+               }}
                className="ccc-field-input ccc-relationship-taxonomy-filter"
                disabled={isSubmitting}
              >
