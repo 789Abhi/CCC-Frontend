@@ -99,9 +99,19 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
         dataLength: data.data ? data.data.length : 0
       });
       
-      if (data.success && Array.isArray(data.data)) {
-        console.log('RelationshipField: Setting available post types:', data.data);
-        setAvailablePostTypes(data.data);
+      // Handle nested data structure
+      let postTypesArray = null;
+      if (data.success && data.data) {
+        if (Array.isArray(data.data)) {
+          postTypesArray = data.data;
+        } else if (data.data.data && Array.isArray(data.data.data)) {
+          postTypesArray = data.data.data;
+        }
+      }
+
+      if (postTypesArray) {
+        console.log('RelationshipField: Setting available post types:', postTypesArray);
+        setAvailablePostTypes(postTypesArray);
       } else {
         console.warn('Invalid post types data received:', data);
         setAvailablePostTypes([]);
@@ -132,8 +142,18 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       
       const data = await response.json();
       console.log('RelationshipField: Taxonomies data received:', data);
-      if (data.success && Array.isArray(data.data)) {
-        setAvailableTaxonomies(data.data);
+      // Handle nested data structure
+      let taxonomiesArray = null;
+      if (data.success && data.data) {
+        if (Array.isArray(data.data)) {
+          taxonomiesArray = data.data;
+        } else if (data.data.data && Array.isArray(data.data.data)) {
+          taxonomiesArray = data.data.data;
+        }
+      }
+
+      if (taxonomiesArray) {
+        setAvailableTaxonomies(taxonomiesArray);
       } else {
         console.warn('Invalid taxonomies data received:', data);
         setAvailableTaxonomies([]);
@@ -165,8 +185,18 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       
       const data = await response.json();
       console.log('RelationshipField: Taxonomies for post type data received:', data);
-      if (data.success && Array.isArray(data.data)) {
-        setAvailableTaxonomies(data.data);
+      // Handle nested data structure
+      let taxonomiesArray = null;
+      if (data.success && data.data) {
+        if (Array.isArray(data.data)) {
+          taxonomiesArray = data.data;
+        } else if (data.data.data && Array.isArray(data.data.data)) {
+          taxonomiesArray = data.data.data;
+        }
+      }
+
+      if (taxonomiesArray) {
+        setAvailableTaxonomies(taxonomiesArray);
       } else {
         console.warn('Invalid taxonomies for post type data received:', data);
         setAvailableTaxonomies([]);
@@ -196,8 +226,18 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       });
       
       const data = await response.json();
+      // Handle nested data structure
+      let postsArray = null;
       if (data.success && data.data) {
-        setSelectedPosts(data.data);
+        if (Array.isArray(data.data)) {
+          postsArray = data.data;
+        } else if (data.data.data && Array.isArray(data.data.data)) {
+          postsArray = data.data.data;
+        }
+      }
+
+      if (postsArray) {
+        setSelectedPosts(postsArray);
       }
     } catch (error) {
       console.error('Error fetching post details:', error);
@@ -253,21 +293,33 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
         dataLength: data.data ? data.data.length : 0
       });
 
-      if (data.success && Array.isArray(data.data)) {
-        console.log('RelationshipField: Processing posts data:', data.data);
+      // Handle nested data structure: {data: {data: Array(5)}}
+      let postsArray = null;
+      if (data.success && data.data) {
+        if (Array.isArray(data.data)) {
+          // Direct array: {data: Array(5)}
+          postsArray = data.data;
+        } else if (data.data.data && Array.isArray(data.data.data)) {
+          // Nested structure: {data: {data: Array(5)}}
+          postsArray = data.data.data;
+        }
+      }
+
+      if (postsArray) {
+        console.log('RelationshipField: Processing posts data:', postsArray);
         // Filter out already selected posts
-        const filteredPosts = data.data.filter(post => 
+        const filteredPosts = postsArray.filter(post => 
           !Array.isArray(selectedPosts) || !selectedPosts.some(selected => selected.id === post.id)
         );
         console.log('RelationshipField: Available posts after filtering:', filteredPosts);
         setAvailablePosts(filteredPosts);
 
         // Log post types found
-        const postTypesFound = [...new Set(data.data.map(post => post.type))];
+        const postTypesFound = [...new Set(postsArray.map(post => post.type))];
         console.log('RelationshipField: Post types found in response:', postTypesFound);
       } else {
         console.warn('Invalid posts data received:', data);
-        console.warn('RelationshipField: Expected data.data to be an array, got:', typeof data.data);
+        console.warn('RelationshipField: Could not find posts array in data structure');
         setAvailablePosts([]);
       }
     } catch (error) {
