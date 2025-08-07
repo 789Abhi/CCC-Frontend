@@ -73,6 +73,13 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
 
   const fetchAvailablePostTypes = async () => {
     try {
+      // Check if cccData is available
+      if (typeof cccData === 'undefined') {
+        console.error('RelationshipField: cccData is not defined for fetchAvailablePostTypes');
+        setAvailablePostTypes([]);
+        return;
+      }
+
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -84,7 +91,16 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       
       const data = await response.json();
       console.log('RelationshipField: Post types data received:', data);
+      console.log('RelationshipField: Post types data structure:', {
+        success: data.success,
+        hasData: !!data.data,
+        dataType: typeof data.data,
+        isArray: Array.isArray(data.data),
+        dataLength: data.data ? data.data.length : 0
+      });
+      
       if (data.success && Array.isArray(data.data)) {
+        console.log('RelationshipField: Setting available post types:', data.data);
         setAvailablePostTypes(data.data);
       } else {
         console.warn('Invalid post types data received:', data);
@@ -98,6 +114,13 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
 
   const fetchAvailableTaxonomies = async () => {
     try {
+      // Check if cccData is available
+      if (typeof cccData === 'undefined') {
+        console.error('RelationshipField: cccData is not defined for fetchAvailableTaxonomies');
+        setAvailableTaxonomies([]);
+        return;
+      }
+
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -123,6 +146,13 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
 
   const fetchTaxonomiesForPostType = async (postType) => {
     try {
+      // Check if cccData is available
+      if (typeof cccData === 'undefined') {
+        console.error('RelationshipField: cccData is not defined for fetchTaxonomiesForPostType');
+        setAvailableTaxonomies([]);
+        return;
+      }
+
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -149,6 +179,12 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
 
   const fetchPostDetails = async (postIds) => {
     try {
+      // Check if cccData is available
+      if (typeof cccData === 'undefined') {
+        console.error('RelationshipField: cccData is not defined for fetchPostDetails');
+        return;
+      }
+
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -180,6 +216,18 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
         filter_taxonomy
       });
 
+      // Check if cccData is available
+      if (typeof cccData === 'undefined') {
+        console.error('RelationshipField: cccData is not defined');
+        setAvailablePosts([]);
+        return;
+      }
+
+      console.log('RelationshipField: cccData available:', {
+        ajaxUrl: cccData.ajaxUrl,
+        nonce: cccData.nonce ? 'present' : 'missing'
+      });
+
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -197,8 +245,16 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       
       const data = await response.json();
       console.log('RelationshipField: Posts data received:', data);
+      console.log('RelationshipField: Data structure:', {
+        success: data.success,
+        hasData: !!data.data,
+        dataType: typeof data.data,
+        isArray: Array.isArray(data.data),
+        dataLength: data.data ? data.data.length : 0
+      });
 
       if (data.success && Array.isArray(data.data)) {
+        console.log('RelationshipField: Processing posts data:', data.data);
         // Filter out already selected posts
         const filteredPosts = data.data.filter(post => 
           !Array.isArray(selectedPosts) || !selectedPosts.some(selected => selected.id === post.id)
@@ -211,6 +267,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
         console.log('RelationshipField: Post types found in response:', postTypesFound);
       } else {
         console.warn('Invalid posts data received:', data);
+        console.warn('RelationshipField: Expected data.data to be an array, got:', typeof data.data);
         setAvailablePosts([]);
       }
     } catch (error) {
@@ -267,6 +324,18 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
     };
     return statuses[status] || status;
   };
+
+  // Debug logging for render
+  console.log('RelationshipField: Rendering with state:', {
+    availablePosts: availablePosts.length,
+    availablePostTypes: availablePostTypes.length,
+    availableTaxonomies: availableTaxonomies.length,
+    selectedPosts: selectedPosts.length,
+    isLoading,
+    searchTerm,
+    postTypeFilter,
+    taxonomyFilter
+  });
 
   return (
     <div className="ccc-field ccc-relationship-field">
