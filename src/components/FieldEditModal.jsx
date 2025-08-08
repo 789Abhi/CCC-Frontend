@@ -1273,38 +1273,47 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 {/* Available Filters */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Available Filters
+                    Available Filters (Metabox Display Options)
                   </label>
-                  <div className="flex flex-col gap-2">
-                    {[
-                      { key: 'search', label: 'Search', description: 'Allow users to search for posts' },
-                      { key: 'post_type', label: 'Post Type', description: 'Show post type filter dropdown' },
-                      { key: 'taxonomy', label: 'Taxonomy', description: 'Show taxonomy filter dropdown' }
-                    ].map((filter) => (
-                      <label key={filter.key} className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={Array.isArray(relationshipConfig.filters) && relationshipConfig.filters.includes(filter.key)}
-                          onChange={(e) => {
-                            const currentFilters = Array.isArray(relationshipConfig.filters) ? relationshipConfig.filters : [];
-                            const newFilters = e.target.checked
-                              ? [...currentFilters, filter.key]
-                              : currentFilters.filter(f => f !== filter.key);
-                            setRelationshipConfig({
-                              ...relationshipConfig,
-                              filters: newFilters
-                            });
-                          }}
-                          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                          disabled={isSubmitting}
-                        />
-                        <span className="text-sm text-gray-700">{filter.label}</span>
-                        <span className="text-xs text-gray-500">({filter.description})</span>
-                      </label>
-                    ))}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-xs text-blue-700 mb-3">
+                      <strong>Important:</strong> Select which filter options you want to display on the metabox when users are selecting posts. 
+                      These controls will appear above the post selection area.
+                    </p>
+                    <div className="flex flex-col gap-3">
+                      {[
+                        { key: 'search', label: 'Search Filter', description: 'Allow users to search for posts by title or content' },
+                        { key: 'post_type', label: 'Post Type Filter', description: 'Show dropdown to filter by post type (Post, Page, etc.)' },
+                        { key: 'taxonomy', label: 'Taxonomy Filter', description: 'Show dropdown to filter by taxonomy terms' }
+                      ].map((filter) => (
+                        <label key={filter.key} className="flex items-start gap-3 p-2 bg-white rounded border border-gray-200 hover:border-blue-300 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={Array.isArray(relationshipConfig.filters) && relationshipConfig.filters.includes(filter.key)}
+                            onChange={(e) => {
+                              const currentFilters = Array.isArray(relationshipConfig.filters) ? relationshipConfig.filters : [];
+                              const newFilters = e.target.checked
+                                ? [...currentFilters, filter.key]
+                                : currentFilters.filter(f => f !== filter.key);
+                              setRelationshipConfig({
+                                ...relationshipConfig,
+                                filters: newFilters
+                              });
+                            }}
+                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mt-0.5"
+                            disabled={isSubmitting}
+                          />
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-gray-700">{filter.label}</span>
+                            <p className="text-xs text-gray-500 mt-1">{filter.description}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Select which filter options to show in the metabox interface.
+                    <strong>Note:</strong> At least one filter should be selected to provide a good user experience. 
+                    If no filters are selected, users will see all posts without any filtering options.
                   </p>
                 </div>
 
