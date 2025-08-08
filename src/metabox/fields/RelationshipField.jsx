@@ -107,14 +107,20 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       if (data.success && data.data) {
         if (Array.isArray(data.data)) {
           postTypesArray = data.data;
+          console.log('RelationshipField: Found direct array in data.data');
         } else if (data.data.data && Array.isArray(data.data.data)) {
           postTypesArray = data.data.data;
+          console.log('RelationshipField: Found nested array in data.data.data');
+        } else {
+          console.log('RelationshipField: No valid array found in data structure');
         }
       }
 
       if (postTypesArray) {
-        console.log('RelationshipField: Setting available post types:', postTypesArray);
-        setAvailablePostTypes(postTypesArray);
+        // Filter out 'attachment' post type (Media)
+        const filteredPostTypes = postTypesArray.filter(postType => postType.value !== 'attachment');
+        console.log('RelationshipField: Setting available post types:', filteredPostTypes);
+        setAvailablePostTypes(filteredPostTypes);
       } else {
         console.warn('Invalid post types data received:', data);
         setAvailablePostTypes([]);
@@ -391,6 +397,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
     postTypeFilter,
     taxonomyFilter
   });
+  console.log('RelationshipField: Available post types for rendering:', availablePostTypes);
 
   return (
     <div className="ccc-field ccc-relationship-field">
