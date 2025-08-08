@@ -256,6 +256,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
   const fetchAvailablePostTypes = async () => {
     try {
+      console.log('FieldEditModal: Fetching available post types');
       const response = await fetch(window.cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -266,8 +267,27 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       });
       
       const data = await response.json();
-      if (data.success && Array.isArray(data.data)) {
-        setAvailablePostTypes(data.data);
+      console.log('FieldEditModal: Post types data received:', data);
+      
+      // Handle nested data structure
+      let postTypesArray = null;
+      if (data.success && data.data) {
+        if (Array.isArray(data.data)) {
+          postTypesArray = data.data;
+          console.log('FieldEditModal: Found direct array in data.data');
+        } else if (data.data.data && Array.isArray(data.data.data)) {
+          postTypesArray = data.data.data;
+          console.log('FieldEditModal: Found nested array in data.data.data');
+        } else {
+          console.log('FieldEditModal: No valid array found in data structure');
+        }
+      }
+
+      if (postTypesArray && Array.isArray(postTypesArray)) {
+        // Filter out 'attachment' post type (Media)
+        const filteredPostTypes = postTypesArray.filter(postType => postType.value !== 'attachment');
+        console.log('FieldEditModal: Setting available post types:', filteredPostTypes);
+        setAvailablePostTypes(filteredPostTypes);
       } else {
         console.warn('Invalid post types data received:', data);
         setAvailablePostTypes([]);
@@ -280,6 +300,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
   const fetchAvailableTaxonomies = async () => {
     try {
+      console.log('FieldEditModal: Fetching available taxonomies');
       const response = await fetch(window.cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -290,8 +311,21 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       });
       
       const data = await response.json();
-      if (data.success && Array.isArray(data.data)) {
-        setAvailableTaxonomies(data.data);
+      console.log('FieldEditModal: Taxonomies data received:', data);
+      
+      // Handle nested data structure
+      let taxonomiesArray = null;
+      if (data.success && data.data) {
+        if (Array.isArray(data.data)) {
+          taxonomiesArray = data.data;
+        } else if (data.data.data && Array.isArray(data.data.data)) {
+          taxonomiesArray = data.data.data;
+        }
+      }
+
+      if (taxonomiesArray && Array.isArray(taxonomiesArray)) {
+        console.log('FieldEditModal: Setting available taxonomies:', taxonomiesArray);
+        setAvailableTaxonomies(taxonomiesArray);
       } else {
         console.warn('Invalid taxonomies data received:', data);
         setAvailableTaxonomies([]);
@@ -1192,54 +1226,88 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
                 {/* Filter Post Types */}
                 <div className="space-y-2">
-                  <label htmlFor="filterPostTypes" className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700">
                     Filter by Post Type
                   </label>
-                  <select
-                    id="filterPostTypes"
-                    value={Array.isArray(relationshipConfig.filter_post_types) ? relationshipConfig.filter_post_types[0] || '' : ''}
-                    onChange={(e) => setRelationshipConfig({
-                      ...relationshipConfig,
-                      filter_post_types: e.target.value ? [e.target.value] : []
-                    })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                    disabled={isSubmitting}
-                  >
-                    <option value="">All Post Types</option>
-                    {Array.isArray(availablePostTypes) && availablePostTypes.map((postType) => (
-                      <option key={postType.value} value={postType.value}>
-                        {postType.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-3">
+                      Select which post types to include. Leave all unchecked to include all post types.
+                    </p>
+                    <div className="flex flex-col gap-2 max-h-40 overflow-y-auto">
+                      {Array.isArray(availablePostTypes) && availablePostTypes.length > 0 ? (
+                        availablePostTypes.map((postType) => (
+                          <label key={postType.value} className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 hover:border-blue-300 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={Array.isArray(relationshipConfig.filter_post_types) && relationshipConfig.filter_post_types.includes(postType.value)}
+                              onChange={(e) => {
+                                const currentTypes = Array.isArray(relationshipConfig.filter_post_types) ? relationshipConfig.filter_post_types : [];
+                                const newTypes = e.target.checked
+                                  ? [...currentTypes, postType.value]
+                                  : currentTypes.filter(type => type !== postType.value);
+                                setRelationshipConfig({
+                                  ...relationshipConfig,
+                                  filter_post_types: newTypes
+                                });
+                              }}
+                              className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                              disabled={isSubmitting}
+                            />
+                            <span className="text-sm text-gray-700">{postType.label}</span>
+                            <span className="text-xs text-gray-500">({postType.value})</span>
+                          </label>
+                        ))
+                      ) : (
+                        <div className="text-sm text-gray-500 italic">Loading post types...</div>
+                      )}
+                    </div>
+                  </div>
                   <p className="text-xs text-gray-500">
-                    Select a specific post type to filter by. Leave empty to include all post types.
+                    Select specific post types to filter by. If none are selected, all post types will be included.
                   </p>
                 </div>
 
                 {/* Filter Post Status */}
                 <div className="space-y-2">
-                  <label htmlFor="filterPostStatus" className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700">
                     Filter by Post Status
                   </label>
-                  <select
-                    id="filterPostStatus"
-                    value={Array.isArray(relationshipConfig.filter_post_status) ? relationshipConfig.filter_post_status[0] || '' : ''}
-                    onChange={(e) => setRelationshipConfig({
-                      ...relationshipConfig,
-                      filter_post_status: e.target.value ? [e.target.value] : []
-                    })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                    disabled={isSubmitting}
-                  >
-                    <option value="">All Statuses</option>
-                    <option value="publish">Published</option>
-                    <option value="draft">Draft</option>
-                    <option value="pending">Pending</option>
-                    <option value="private">Private</option>
-                  </select>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-3">
+                      Select which post statuses to include. Leave all unchecked to include all statuses.
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {[
+                        { value: 'publish', label: 'Published' },
+                        { value: 'draft', label: 'Draft' },
+                        { value: 'pending', label: 'Pending' },
+                        { value: 'private', label: 'Private' }
+                      ].map((status) => (
+                        <label key={status.value} className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 hover:border-blue-300 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={Array.isArray(relationshipConfig.filter_post_status) && relationshipConfig.filter_post_status.includes(status.value)}
+                            onChange={(e) => {
+                              const currentStatuses = Array.isArray(relationshipConfig.filter_post_status) ? relationshipConfig.filter_post_status : [];
+                              const newStatuses = e.target.checked
+                                ? [...currentStatuses, status.value]
+                                : currentStatuses.filter(s => s !== status.value);
+                              setRelationshipConfig({
+                                ...relationshipConfig,
+                                filter_post_status: newStatuses
+                              });
+                            }}
+                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            disabled={isSubmitting}
+                          />
+                          <span className="text-sm text-gray-700">{status.label}</span>
+                          <span className="text-xs text-gray-500">({status.value})</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                   <p className="text-xs text-gray-500">
-                    Select a specific post status to filter by. Leave empty to include all statuses.
+                    Select specific post statuses to filter by. If none are selected, all statuses will be included.
                   </p>
                 </div>
 
