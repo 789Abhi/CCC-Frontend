@@ -73,6 +73,8 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
 
   const fetchAvailablePostTypes = async () => {
     try {
+      console.log('RelationshipField: fetchAvailablePostTypes called');
+      
       // Check if cccData is available
       if (typeof cccData === 'undefined') {
         console.error('RelationshipField: cccData is not defined for fetchAvailablePostTypes');
@@ -80,6 +82,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
         return;
       }
 
+      console.log('RelationshipField: Making AJAX call to fetch post types');
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
