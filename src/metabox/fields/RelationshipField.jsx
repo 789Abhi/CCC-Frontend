@@ -25,6 +25,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
 
   // Load available posts on component mount
   useEffect(() => {
+    console.log('RelationshipField: Component mounted, calling fetchAvailablePostTypes');
     fetchAvailablePostTypes();
     fetchAvailableTaxonomies();
     loadAvailablePosts();
@@ -116,13 +117,15 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
         }
       }
 
-      if (postTypesArray) {
+      if (postTypesArray && Array.isArray(postTypesArray)) {
         // Filter out 'attachment' post type (Media)
         const filteredPostTypes = postTypesArray.filter(postType => postType.value !== 'attachment');
         console.log('RelationshipField: Setting available post types:', filteredPostTypes);
+        console.log('RelationshipField: Filtered post types length:', filteredPostTypes.length);
         setAvailablePostTypes(filteredPostTypes);
       } else {
         console.warn('Invalid post types data received:', data);
+        console.warn('RelationshipField: postTypesArray is not an array:', postTypesArray);
         setAvailablePostTypes([]);
       }
     } catch (error) {
@@ -436,12 +439,16 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
                  className="ccc-field-input ccc-relationship-post-type-filter"
                  disabled={isSubmitting}
                >
-                 <option value="">All post types</option>
-                 {Array.isArray(availablePostTypes) && availablePostTypes.map((postType) => (
-                   <option key={postType.value} value={postType.value}>
-                     {postType.label}
-                   </option>
-                 ))}
+                  <option value="">All post types</option>
+                  {Array.isArray(availablePostTypes) && availablePostTypes.length > 0 ? (
+                    availablePostTypes.map((postType) => (
+                      <option key={postType.value} value={postType.value}>
+                        {postType.label}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>Loading post types...</option>
+                  )}
                </select>
                {isLoading && (
                  <div className="ccc-relationship-filter-loading">Loading...</div>
