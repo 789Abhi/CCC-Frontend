@@ -1246,12 +1246,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                                   ? [...currentTypes, postType.value]
                                   : currentTypes.filter(type => type !== postType.value);
                                 setRelationshipConfig({
-                                  ...relationshipConfig,
+                      ...relationshipConfig,
                                   filter_post_types: newTypes
                                 });
                               }}
                               className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                              disabled={isSubmitting}
+                    disabled={isSubmitting}
                             />
                             <span className="text-sm text-gray-700">{postType.label}</span>
                             <span className="text-xs text-gray-500">({postType.value})</span>
@@ -1293,12 +1293,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                                 ? [...currentStatuses, status.value]
                                 : currentStatuses.filter(s => s !== status.value);
                               setRelationshipConfig({
-                                ...relationshipConfig,
+                      ...relationshipConfig,
                                 filter_post_status: newStatuses
                               });
                             }}
                             className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                            disabled={isSubmitting}
+                    disabled={isSubmitting}
                           />
                           <span className="text-sm text-gray-700">{status.label}</span>
                           <span className="text-xs text-gray-500">({status.value})</span>
@@ -1353,30 +1353,30 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                         { key: 'search', label: 'Search Filter', description: 'Allow users to search for posts by title or content' },
                         { key: 'post_type', label: 'Post Type Filter', description: 'Show dropdown to filter by post type (Post, Page, etc.)' },
                         { key: 'taxonomy', label: 'Taxonomy Filter', description: 'Show dropdown to filter by taxonomy terms' }
-                      ].map((filter) => (
+                    ].map((filter) => (
                         <label key={filter.key} className="flex items-start gap-3 p-2 bg-white rounded border border-gray-200 hover:border-blue-300 transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={Array.isArray(relationshipConfig.filters) && relationshipConfig.filters.includes(filter.key)}
-                            onChange={(e) => {
-                              const currentFilters = Array.isArray(relationshipConfig.filters) ? relationshipConfig.filters : [];
-                              const newFilters = e.target.checked
-                                ? [...currentFilters, filter.key]
-                                : currentFilters.filter(f => f !== filter.key);
-                              setRelationshipConfig({
-                                ...relationshipConfig,
-                                filters: newFilters
-                              });
-                            }}
+                        <input
+                          type="checkbox"
+                          checked={Array.isArray(relationshipConfig.filters) && relationshipConfig.filters.includes(filter.key)}
+                          onChange={(e) => {
+                            const currentFilters = Array.isArray(relationshipConfig.filters) ? relationshipConfig.filters : [];
+                            const newFilters = e.target.checked
+                              ? [...currentFilters, filter.key]
+                              : currentFilters.filter(f => f !== filter.key);
+                            setRelationshipConfig({
+                              ...relationshipConfig,
+                              filters: newFilters
+                            });
+                          }}
                             className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mt-0.5"
-                            disabled={isSubmitting}
-                          />
+                          disabled={isSubmitting}
+                        />
                           <div className="flex-1">
                             <span className="text-sm font-medium text-gray-700">{filter.label}</span>
                             <p className="text-xs text-gray-500 mt-1">{filter.description}</p>
                           </div>
-                        </label>
-                      ))}
+                      </label>
+                    ))}
                     </div>
                   </div>
                   <p className="text-xs text-gray-500">
