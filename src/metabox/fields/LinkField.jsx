@@ -111,6 +111,12 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
         const post = data.data[0];
         console.log('LinkField: Setting selectedPost:', post);
         setSelectedPost(post);
+        
+        // Update linkData with the URL if it's missing
+        setLinkData(prev => ({
+          ...prev,
+          url: prev.url || post.url || '' // Only set URL if not already set
+        }));
       } else {
         console.warn('LinkField: No post found for ID:', postId);
       }
@@ -170,6 +176,7 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
     setLinkData(prev => ({
       ...prev,
       post_id: post.id,
+      url: post.url || '', // Save the URL for reference
       title: prev.title || post.title // Only set title if not already set
     }));
     setSelectedPost(post);
@@ -181,6 +188,7 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
     setLinkData(prev => ({
       ...prev,
       post_id: '',
+      url: '', // Clear the URL when clearing post
       title: ''
     }));
     setSelectedPost(null);
@@ -423,14 +431,26 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
         ) && (
           <div className="mt-6 p-4 bg-white border-2 border-gray-200 rounded-lg">
             <div className="text-sm font-medium text-gray-600 mb-2">Preview:</div>
-            <div className="flex items-center gap-2">
-              {linkData.type === 'internal' ? <Link size={16} className="text-blue-500" /> : <ExternalLink size={16} className="text-emerald-500" />}
-              <span className="text-blue-600 underline">
-                {linkData.title || (linkData.type === 'internal' ? selectedPost?.title : linkData.url)}
-              </span>
-              <span className="text-gray-400 text-xs">
-                (opens in {linkData.target === '_blank' ? 'new window' : 'same window'})
-              </span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                {linkData.type === 'internal' ? <Link size={16} className="text-blue-500" /> : <ExternalLink size={16} className="text-emerald-500" />}
+                <span className="text-blue-600 underline font-medium">
+                  {linkData.title || (linkData.type === 'internal' ? selectedPost?.title : linkData.url)}
+                </span>
+                <span className="text-gray-400 text-xs">
+                  (opens in {linkData.target === '_blank' ? 'new window' : 'same window'})
+                </span>
+              </div>
+              {linkData.type === 'internal' && (linkData.url || selectedPost?.url) && (
+                <div className="text-xs text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded">
+                  URL: {linkData.url || selectedPost?.url}
+                </div>
+              )}
+              {linkData.type === 'external' && linkData.url && (
+                <div className="text-xs text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded">
+                  URL: {linkData.url}
+                </div>
+              )}
             </div>
           </div>
         )}
