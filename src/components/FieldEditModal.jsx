@@ -77,6 +77,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     return_format: 'object'
   });
 
+  // Link field configuration state
+  const [linkConfig, setLinkConfig] = useState({
+    link_types: ['internal', 'external'],
+    default_type: 'internal',
+    post_types: ['post', 'page'],
+    show_target: true,
+    show_title: true
+  });
+
   // Available post types and taxonomies for relationship field
   const [availablePostTypes, setAvailablePostTypes] = useState([]);
   const [availableTaxonomies, setAvailableTaxonomies] = useState([]);
@@ -90,6 +99,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "video",
     "oembed",
     "relationship",
+    "link",
     "repeater",
     "wysiwyg",
     "color",
@@ -190,6 +200,26 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 filters: ['search', 'post_type'],
                 max_posts: 0,
                 return_format: 'object'
+              });
+            }
+          } else if (field.type === 'link' && field.config) {
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              setLinkConfig({
+                link_types: config.link_types || ['internal', 'external'],
+                default_type: config.default_type || 'internal',
+                post_types: config.post_types || ['post', 'page'],
+                show_target: config.show_target !== undefined ? config.show_target : true,
+                show_title: config.show_title !== undefined ? config.show_title : true
+              });
+            } catch (e) {
+              console.error("Error parsing link config:", e);
+              setLinkConfig({
+                link_types: ['internal', 'external'],
+                default_type: 'internal',
+                post_types: ['post', 'page'],
+                show_target: true,
+                show_title: true
               });
             }
           }
@@ -865,6 +895,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                         video: "Video",
                         oembed: "O-Embed",
                         relationship: "Relationship",
+                        link: "Link",
                         repeater: "Repeater",
                         wysiwyg: "WYSIWYG Editor",
                         color: "Color",

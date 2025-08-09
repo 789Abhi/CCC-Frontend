@@ -12,6 +12,7 @@ import SelectField from '../fields/SelectField';
 import CheckboxField from '../fields/CheckboxField';
 import RadioField from '../fields/RadioField';
 import ColorField from '../fields/ColorField';
+import LinkField from '../fields/LinkField';
 import RepeaterField from '../fields/RepeaterField';
 
 function ToggleSwitch({ checked, onChange }) {
@@ -442,6 +443,28 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                   };
                   return (
                     <RelationshipField
+                      key={field.id}
+                      field={field}
+                      value={value}
+                      onChange={handleChange}
+                      isSubmitting={false}
+                    />
+                  );
+                }
+                if (field.type === 'link') {
+                  console.log('CCC DEBUG: ComponentItem rendering link field:', field.id, field.label);
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  const value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                  console.log('CCC DEBUG: ComponentItem link field value:', value);
+                  const handleChange = val => {
+                    console.log('CCC DEBUG: ComponentItem link field onChange called with:', val);
+                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                  };
+                  return (
+                    <LinkField
                       key={field.id}
                       field={field}
                       value={value}
