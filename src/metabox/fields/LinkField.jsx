@@ -17,6 +17,7 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
   const [showPostSearch, setShowPostSearch] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const searchTimeoutRef = useRef(null);
+  const isInitializing = useRef(true);
 
   // Parse field config
   const config = field.config ? (typeof field.config === 'string' ? JSON.parse(field.config) : field.config) : {};
@@ -30,9 +31,11 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
 
   // Initialize from value
   useEffect(() => {
+    console.log('LinkField: Initializing with value:', value);
     if (value) {
       try {
         const parsedValue = typeof value === 'string' ? JSON.parse(value) : value;
+        console.log('LinkField: Parsed value:', parsedValue);
         if (parsedValue && typeof parsedValue === 'object') {
           setLinkData(prev => ({
             ...prev,
@@ -41,6 +44,7 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
           
           // If internal link with post_id, fetch post details
           if (parsedValue.type === 'internal' && parsedValue.post_id) {
+            console.log('LinkField: Fetching post details for post_id:', parsedValue.post_id);
             fetchPostDetails(parsedValue.post_id);
           }
         }
@@ -48,11 +52,18 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
         console.error('Error parsing link field value:', error);
       }
     }
+    
+    // Mark initialization as complete
+    const timer = setTimeout(() => {
+      isInitializing.current = false;
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [value]);
 
-  // Update parent when linkData changes
+  // Update parent when linkData changes (but not during initialization)
   useEffect(() => {
-    if (onChange) {
+    if (onChange && !isInitializing.current) {
       onChange(JSON.stringify(linkData));
     }
   }, [linkData, onChange]);
@@ -77,6 +88,7 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
   }, [searchTerm, postTypeFilter, linkData.type, showPostSearch]);
 
   const fetchPostDetails = async (postId) => {
+    console.log('LinkField: fetchPostDetails called with postId:', postId);
     try {
       if (typeof cccData === 'undefined') {
         console.error('LinkField: cccData not available');
@@ -94,9 +106,13 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
       });
 
       const data = await response.json();
+      console.log('LinkField: fetchPostDetails response:', data);
       if (data.success && data.data && data.data.length > 0) {
         const post = data.data[0];
+        console.log('LinkField: Setting selectedPost:', post);
         setSelectedPost(post);
+      } else {
+        console.warn('LinkField: No post found for ID:', postId);
       }
     } catch (error) {
       console.error('Error fetching post details:', error);
