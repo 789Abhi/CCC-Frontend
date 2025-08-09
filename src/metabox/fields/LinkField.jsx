@@ -18,6 +18,7 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
   const [selectedPost, setSelectedPost] = useState(null);
   const searchTimeoutRef = useRef(null);
   const isInitializing = useRef(true);
+  const hasFetchedInitialPost = useRef(false);
 
   // Parse field config
   const config = field.config ? (typeof field.config === 'string' ? JSON.parse(field.config) : field.config) : {};
@@ -53,10 +54,11 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
       }
     }
     
-    // Mark initialization as complete
+    // Mark initialization as complete after a longer delay to allow post fetching
     const timer = setTimeout(() => {
       isInitializing.current = false;
-    }, 100);
+      console.log('LinkField: Initialization complete');
+    }, 500); // Increased timeout to allow for async post fetching
     
     return () => clearTimeout(timer);
   }, [value]);
@@ -112,11 +114,14 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
         console.log('LinkField: Setting selectedPost:', post);
         setSelectedPost(post);
         
-        // Update linkData with the URL if it's missing
-        setLinkData(prev => ({
-          ...prev,
-          url: prev.url || post.url || '' // Only set URL if not already set
-        }));
+        // Update linkData with the URL if it's missing (and we're initializing)
+        if (!hasFetchedInitialPost.current) {
+          setLinkData(prev => ({
+            ...prev,
+            url: prev.url || post.url || '' // Only set URL if not already set
+          }));
+          hasFetchedInitialPost.current = true;
+        }
       } else {
         console.warn('LinkField: No post found for ID:', postId);
       }
@@ -426,7 +431,7 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
 
         {/* Preview */}
         {(
-          (linkData.type === 'internal' && selectedPost) ||
+          (linkData.type === 'internal' && (selectedPost || linkData.post_id)) ||
           (linkData.type === 'external' && linkData.url)
         ) && (
           <div className="mt-6 p-4 bg-white border-2 border-gray-200 rounded-lg">
@@ -435,7 +440,10 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
               <div className="flex items-center gap-2">
                 {linkData.type === 'internal' ? <Link size={16} className="text-blue-500" /> : <ExternalLink size={16} className="text-emerald-500" />}
                 <span className="text-blue-600 underline font-medium">
-                  {linkData.title || (linkData.type === 'internal' ? selectedPost?.title : linkData.url)}
+                  {linkData.title || 
+                   (linkData.type === 'internal' ? 
+                     (selectedPost?.title || `Post ID: ${linkData.post_id}`) : 
+                     linkData.url)}
                 </span>
                 <span className="text-gray-400 text-xs">
                   (opens in {linkData.target === '_blank' ? 'new window' : 'same window'})
