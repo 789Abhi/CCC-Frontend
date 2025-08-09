@@ -119,7 +119,14 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
 
       if (postTypesArray && Array.isArray(postTypesArray)) {
         // Filter out 'attachment' post type (Media)
-        const filteredPostTypes = postTypesArray.filter(postType => postType.value !== 'attachment');
+        let filteredPostTypes = postTypesArray.filter(postType => postType.value !== 'attachment');
+        
+        // If specific post types are configured in field settings, only show those
+        if (Array.isArray(filter_post_types) && filter_post_types.length > 0) {
+          filteredPostTypes = filteredPostTypes.filter(postType => filter_post_types.includes(postType.value));
+          console.log('RelationshipField: Filtering post types based on configuration:', filter_post_types);
+        }
+        
         console.log('RelationshipField: Setting available post types:', filteredPostTypes);
         console.log('RelationshipField: Filtered post types length:', filteredPostTypes.length);
         setAvailablePostTypes(filteredPostTypes);
@@ -289,7 +296,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
           search: searchTerm || '', // Always send search parameter, even if empty
           post_type: postTypeFilter || '', // Send empty string to show all posts by default
           taxonomy: taxonomyFilter || '', // Send taxonomy filter if selected
-          filter_post_types: '', // Don't filter by post types - show all posts
+          filter_post_types: Array.isArray(filter_post_types) && filter_post_types.length > 0 ? filter_post_types.join(',') : '', // Use configured post types
           filter_post_status: Array.isArray(filter_post_status) ? filter_post_status.join(',') : '',
           filter_taxonomy: filter_taxonomy || '' // Ensure empty string if undefined
         })
