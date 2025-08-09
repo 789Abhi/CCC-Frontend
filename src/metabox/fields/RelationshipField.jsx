@@ -410,40 +410,40 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
   console.log('RelationshipField: Available post types for rendering:', availablePostTypes);
 
   return (
-    <div className="ccc-field ccc-relationship-field">
-      <div className="ccc-field-header">
-        <label className="ccc-field-label">
+    <div className="mb-4">
+      <div className="mb-2">
+        <label className="block text-sm font-medium text-gray-700">
           {field.label}
-          {field.required && <span className="required">*</span>}
+          {field.required && <span className="text-red-500 ml-1">*</span>}
         </label>
       </div>
       
-      <div className="ccc-relationship-container">
+      <div className="border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-gray-100 shadow-lg hover:border-blue-300 hover:shadow-xl transition-all duration-300">
         {/* Search and Filters */}
-        <div className="ccc-relationship-filters">
+        <div className="flex flex-wrap gap-4 mb-6 p-4 bg-white/80 backdrop-blur-sm rounded-lg border border-white/20">
           {filters.includes('search') && (
-            <div className="ccc-relationship-search-container">
-              <Search size={16} className="ccc-search-icon" />
+            <div className="relative flex-1 min-w-[250px]">
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 z-10" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search posts..."
-                className="ccc-field-input ccc-relationship-search"
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-3 focus:ring-blue-100 focus:border-blue-500 hover:-translate-y-0.5 transition-all duration-300"
                 disabled={isSubmitting}
               />
             </div>
           )}
           
-                     {filters.includes('post_type') && (
-             <div className="ccc-relationship-filter-container">
+          {filters.includes('post_type') && (
+             <div className="relative min-w-[160px]">
                <select
                  value={postTypeFilter}
                  onChange={(e) => {
                    console.log('RelationshipField: Post type filter changed to:', e.target.value);
                    setPostTypeFilter(e.target.value);
                  }}
-                 className="ccc-field-input ccc-relationship-post-type-filter"
+                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-3 focus:ring-blue-100 focus:border-blue-500 hover:-translate-y-0.5 transition-all duration-300"
                  disabled={isSubmitting}
                >
                   <option value="">All post types</option>
@@ -458,19 +458,21 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
                   )}
                </select>
                {isLoading && (
-                 <div className="ccc-relationship-filter-loading">Loading...</div>
+                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-blue-600 font-medium animate-pulse">
+                   Loading...
+                 </div>
                )}
              </div>
            )}
           
-                     {filters.includes('taxonomy') && (
+          {filters.includes('taxonomy') && (
              <select
                value={taxonomyFilter}
                onChange={(e) => {
                  console.log('RelationshipField: Taxonomy filter changed to:', e.target.value);
                  setTaxonomyFilter(e.target.value);
                }}
-               className="ccc-field-input ccc-relationship-taxonomy-filter"
+               className="min-w-[160px] px-4 py-3 border-2 border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-3 focus:ring-blue-100 focus:border-blue-500 hover:-translate-y-0.5 transition-all duration-300"
                disabled={isSubmitting}
              >
                <option value="">All taxonomies</option>
@@ -484,107 +486,97 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
         </div>
 
         {/* Two Column Layout */}
-        <div className="ccc-relationship-columns">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[350px]">
           {/* Available Posts Column */}
-          <div className="ccc-relationship-available">
-                         <h4>Available Posts ({Array.isArray(availablePosts) ? availablePosts.length : 0})</h4>
-            <div className="ccc-relationship-available-items">
+          <div className="border-2 border-gray-200 rounded-xl bg-white shadow-lg hover:border-emerald-300 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 overflow-hidden">
+            <h4 className="m-0 px-5 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-semibold">
+              Available Posts ({Array.isArray(availablePosts) ? availablePosts.length : 0})
+            </h4>
+            <div className="flex-1 max-h-[280px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {isLoading ? (
-                <div className="ccc-relationship-loading">Loading posts...</div>
-                             ) : !Array.isArray(availablePosts) || availablePosts.length === 0 ? (
-                <div className="ccc-relationship-empty">No posts available</div>
+                <div className="p-8 text-center text-gray-500 italic bg-gradient-to-br from-blue-50 to-cyan-50 m-4 rounded-lg border-2 border-dashed border-blue-200 animate-pulse">
+                  Loading posts...
+                </div>
+              ) : !Array.isArray(availablePosts) || availablePosts.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 italic bg-gradient-to-br from-gray-50 to-gray-100 m-4 rounded-lg border-2 border-dashed border-gray-300">
+                  No posts available
+                </div>
               ) : (
-                                 (Array.isArray(availablePosts) ? availablePosts : []).map(post => (
-                  <div
-                    key={post.id}
-                    className="ccc-relationship-available-item"
-                    onClick={() => addPost(post)}
-                  >
-                    <div className="ccc-relationship-available-content">
-                      <div className="ccc-relationship-available-title">{post.title}</div>
-                      <div className="ccc-relationship-available-meta">
-                        <span className="ccc-relationship-available-type">{getPostTypeLabel(post.type)}</span>
-                        <span className="ccc-relationship-available-status">({getStatusLabel(post.status)})</span>
-                        {post.date && (
-                          <span className="ccc-relationship-available-date">{post.date}</span>
-                        )}
-                      </div>
-                      {/* Show excerpt if available */}
-                      {post.excerpt && (
-                        <div className="ccc-relationship-available-excerpt">
-                          {post.excerpt}
+                (Array.isArray(availablePosts) ? availablePosts : []).map(post => {
+                  const isSelected = Array.isArray(selectedPosts) && selectedPosts.some(selected => selected.id === post.id);
+                  return (
+                    <div
+                      key={post.id}
+                      className={`flex items-center justify-between p-4 border-b border-gray-100 transition-all duration-300 cursor-pointer relative ${
+                        isSelected 
+                          ? 'opacity-50 bg-gray-100 cursor-default' 
+                          : 'hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 hover:translate-x-1'
+                      } last:border-b-0`}
+                      onClick={() => !isSelected && addPost(post)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-800 mb-2 leading-tight truncate">
+                          {post.title}
                         </div>
+                        <div className="flex gap-3 text-xs text-gray-500 items-center">
+                          <span className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 px-3 py-1 rounded-full font-medium capitalize">
+                            {getPostTypeLabel(post.type)}
+                          </span>
+                          <span className="italic">({getStatusLabel(post.status)})</span>
+                        </div>
+                      </div>
+                      {isSelected ? (
+                        <div className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                          ✓ Added
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="p-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 hover:-translate-y-0.5 hover:shadow-lg shadow-emerald-500/30 transition-all duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addPost(post);
+                          }}
+                          disabled={max_posts > 0 && Array.isArray(selectedPosts) && selectedPosts.length >= max_posts}
+                        >
+                          <ArrowRight size={14} />
+                        </button>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      className="ccc-relationship-add-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addPost(post);
-                      }}
-                      disabled={max_posts > 0 && Array.isArray(selectedPosts) && selectedPosts.length >= max_posts}
-                    >
-                      <ArrowRight size={14} />
-                    </button>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
 
           {/* Selected Posts Column */}
-          <div className="ccc-relationship-selected">
-            <h4>Selected Posts ({Array.isArray(selectedPosts) ? selectedPosts.length : 0}{max_posts > 0 ? `/${max_posts}` : ''})</h4>
-            <div className="ccc-relationship-selected-items">
+          <div className="border-2 border-gray-200 rounded-xl bg-white shadow-lg hover:border-red-300 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 overflow-hidden">
+            <h4 className="m-0 px-5 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-semibold">
+              Selected Posts ({Array.isArray(selectedPosts) ? selectedPosts.length : 0}{max_posts > 0 ? `/${max_posts}` : ''})
+            </h4>
+            <div className="flex-1 max-h-[280px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {!Array.isArray(selectedPosts) || selectedPosts.length === 0 ? (
-                <div className="ccc-relationship-empty">No posts selected</div>
+                <div className="p-8 text-center text-gray-500 italic bg-gradient-to-br from-gray-50 to-gray-100 m-4 rounded-lg border-2 border-dashed border-gray-300">
+                  No posts selected
+                </div>
               ) : (
                 (Array.isArray(selectedPosts) ? selectedPosts : []).map(post => (
-                  <div key={post.id} className="ccc-relationship-selected-item">
-                    <div className="ccc-relationship-selected-content">
-                      <div className="ccc-relationship-selected-title">{post.title}</div>
-                      <div className="ccc-relationship-selected-meta">
-                        <span className="ccc-relationship-selected-type">{getPostTypeLabel(post.type)}</span>
-                        <span className="ccc-relationship-selected-status">({getStatusLabel(post.status)})</span>
+                  <div 
+                    key={post.id} 
+                    className="flex items-center justify-between p-4 border-b border-gray-100 transition-all duration-300 bg-white hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:-translate-x-1 last:border-b-0"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-800 leading-tight truncate">
+                        {post.title}
                       </div>
-                      {/* Show post URL if available */}
-                      {post.url && (
-                        <div className="ccc-relationship-selected-url">
-                          <a href={post.url} target="_blank" rel="noopener noreferrer" className="ccc-relationship-post-link">
-                            View Post
-                          </a>
-                        </div>
-                      )}
-                      {/* Show post excerpt if available */}
-                      {post.excerpt && (
-                        <div className="ccc-relationship-selected-excerpt">
-                          {post.excerpt}
-                        </div>
-                      )}
-                      {/* Show post date and author if available */}
-                      {(post.date || post.author) && (
-                        <div className="ccc-relationship-selected-meta">
-                          {post.date && (
-                            <span className="ccc-relationship-selected-date">
-                              {post.date}
-                            </span>
-                          )}
-                          {post.author && (
-                            <span className="ccc-relationship-selected-author">
-                              by {post.author}
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </div>
                     <button
                       type="button"
-                      className="ccc-relationship-remove-btn"
+                      className="p-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 hover:-translate-y-0.5 hover:shadow-lg shadow-red-500/30 transition-all duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                       onClick={() => removePost(post.id)}
                       disabled={isSubmitting}
                     >
-                      <ArrowLeft size={14} />
+                      <X size={14} />
                     </button>
                   </div>
                 ))
