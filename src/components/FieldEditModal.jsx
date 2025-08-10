@@ -86,6 +86,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     show_title: true
   });
 
+  // Number field configuration state
+  const [fieldConfig, setFieldConfig] = useState({});
+
   // Available post types and taxonomies for relationship field
   const [availablePostTypes, setAvailablePostTypes] = useState([]);
   const [availableTaxonomies, setAvailableTaxonomies] = useState([]);
@@ -101,6 +104,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "relationship",
     "link",
     "email",
+    "number",
     "repeater",
     "wysiwyg",
     "color",
@@ -177,7 +181,50 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 pictureInPicture: true
               });
             }
+          } else if (field.type === 'link' && field.config) {
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              setLinkConfig({
+                link_types: config.link_types || ['internal', 'external'],
+                default_type: config.default_type || 'internal',
+                post_types: config.post_types || ['post', 'page'],
+                show_target: config.show_target !== undefined ? config.show_target : true,
+                show_title: config.show_title !== undefined ? config.show_title : true
+              });
+            } catch (e) {
+              console.error("Error parsing link config:", e);
+              setLinkConfig({
+                link_types: ['internal', 'external'],
+                default_type: 'internal',
+                post_types: ['post', 'page'],
+                show_target: true,
+                show_title: true
+              });
+            }
+          } else if (field.type === 'number' && field.config) {
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              setFieldConfig({
+                unique: config.unique || false,
+                min_value: config.min_value || null,
+                max_value: config.max_value || null,
+                step_value: config.step_value || null,
+                prepend: config.prepend || '',
+                append: config.append || ''
+              });
+            } catch (e) {
+              console.error("Error parsing number config:", e);
+              setFieldConfig({
+                unique: false,
+                min_value: null,
+                max_value: null,
+                step_value: null,
+                prepend: '',
+                append: ''
+              });
+            }
           }
+          
           if (field.type === 'select' && field.config) {
             const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
             setSelectMultiple(!!config.multiple);
@@ -201,26 +248,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 filters: ['search', 'post_type'],
                 max_posts: 0,
                 return_format: 'object'
-              });
-            }
-          } else if (field.type === 'link' && field.config) {
-            try {
-              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
-              setLinkConfig({
-                link_types: config.link_types || ['internal', 'external'],
-                default_type: config.default_type || 'internal',
-                post_types: config.post_types || ['post', 'page'],
-                show_target: config.show_target !== undefined ? config.show_target : true,
-                show_title: config.show_title !== undefined ? config.show_title : true
-              });
-            } catch (e) {
-              console.error("Error parsing link config:", e);
-              setLinkConfig({
-                link_types: ['internal', 'external'],
-                default_type: 'internal',
-                post_types: ['post', 'page'],
-                show_target: true,
-                show_title: true
               });
             }
           }
@@ -268,6 +295,21 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         filters: ['search', 'post_type'],
         max_posts: 0,
         return_format: 'object'
+      });
+      setFieldConfig({
+        unique: false,
+        min_value: null,
+        max_value: null,
+        step_value: null,
+        prepend: '',
+        append: ''
+      });
+      setLinkConfig({
+        link_types: ['internal', 'external'],
+        default_type: 'internal',
+        post_types: ['post', 'page'],
+        show_target: true,
+        show_title: true
       });
     }
 
@@ -669,6 +711,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           }
         } else if (type === "relationship") {
           fieldData.config = relationshipConfig
+        } else if (type === "number") {
+          fieldData.config = {
+            unique: fieldConfig?.unique || false,
+            min_value: fieldConfig?.min_value || null,
+            max_value: fieldConfig?.max_value || null,
+            step_value: fieldConfig?.step_value || null,
+            prepend: fieldConfig?.prepend || '',
+            append: fieldConfig?.append || ''
+          }
         }
 
         onSave(fieldData)
@@ -779,6 +830,16 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         formData.append("field_config", JSON.stringify(config))
       } else if (type === "relationship") {
         formData.append("field_config", JSON.stringify(relationshipConfig))
+      } else if (type === "number") {
+        const config = {
+          unique: fieldConfig?.unique || false,
+          min_value: fieldConfig?.min_value || null,
+          max_value: fieldConfig?.max_value || null,
+          step_value: fieldConfig?.step_value || null,
+          prepend: fieldConfig?.prepend || '',
+          append: fieldConfig?.append || ''
+        }
+        formData.append("field_config", JSON.stringify(config))
       }
 
       console.log("Submitting form data:", Object.fromEntries(formData))
@@ -1463,6 +1524,160 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   <p className="text-xs text-gray-500">
                     Choose how the selected posts will be returned in templates.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Number Field Settings */}
+            {type === "number" && (
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">Number Field Settings</h4>
+                
+                {/* Unique Number Option */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={fieldConfig?.unique || false}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          unique: e.target.checked
+                        });
+                      }}
+                      className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                      disabled={isSubmitting}
+                    />
+                    <span className="text-sm font-medium text-gray-700">Require Unique Number</span>
+                  </label>
+                  <p className="text-xs text-gray-500 ml-6">
+                    When enabled, this field will ensure that each number entered is unique across all instances of this field.
+                  </p>
+                </div>
+
+                {/* Min/Max Values */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="minValue" className="block text-sm font-medium text-gray-700">
+                      Minimum Value
+                    </label>
+                    <input
+                      id="minValue"
+                      type="number"
+                      step="any"
+                      value={fieldConfig?.min_value || ''}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          min_value: e.target.value ? parseFloat(e.target.value) : null
+                        });
+                      }}
+                      placeholder="No minimum"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="maxValue" className="block text-sm font-medium text-gray-700">
+                      Maximum Value
+                    </label>
+                    <input
+                      id="maxValue"
+                      type="number"
+                      step="any"
+                      value={fieldConfig?.max_value || ''}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          max_value: e.target.value ? parseFloat(e.target.value) : null
+                        });
+                      }}
+                      placeholder="No maximum"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+
+                {/* Step Value */}
+                <div className="space-y-2">
+                  <label htmlFor="stepValue" className="block text-sm font-medium text-gray-700">
+                    Step Value
+                  </label>
+                  <input
+                    id="stepValue"
+                    type="number"
+                    step="any"
+                    value={fieldConfig?.step_value || ''}
+                    onChange={(e) => {
+                      const currentConfig = fieldConfig || {};
+                      setFieldConfig({
+                        ...currentConfig,
+                        step_value: e.target.value ? parseFloat(e.target.value) : null
+                      });
+                    }}
+                    placeholder="Any value (default)"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-gray-500">
+                    The increment step for the number input. Leave empty to allow any decimal value.
+                  </p>
+                </div>
+
+                {/* Prepend and Append */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="prependValue" className="block text-sm font-medium text-gray-700">
+                      Prepend Text
+                    </label>
+                    <input
+                      id="prependValue"
+                      type="text"
+                      value={fieldConfig?.prepend || ''}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          prepend: e.target.value
+                        });
+                      }}
+                      placeholder="e.g., $, €, etc."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      disabled={isSubmitting}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Text to display before the input field
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="appendValue" className="block text-sm font-medium text-gray-700">
+                      Append Text
+                    </label>
+                    <input
+                      id="appendValue"
+                      type="text"
+                      value={fieldConfig?.append || ''}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          append: e.target.value
+                        });
+                      }}
+                      placeholder="e.g., %, kg, etc."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      disabled={isSubmitting}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Text to display after the input field
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
