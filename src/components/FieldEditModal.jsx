@@ -208,7 +208,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 unique: config.unique || false,
                 min_value: config.min_value || null,
                 max_value: config.max_value || null,
-                step_value: config.step_value || null,
                 prepend: config.prepend || '',
                 append: config.append || ''
               });
@@ -218,7 +217,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 unique: false,
                 min_value: null,
                 max_value: null,
-                step_value: null,
                 prepend: '',
                 append: ''
               });
@@ -300,7 +298,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         unique: false,
         min_value: null,
         max_value: null,
-        step_value: null,
         prepend: '',
         append: ''
       });
@@ -716,7 +713,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             unique: fieldConfig?.unique || false,
             min_value: fieldConfig?.min_value || null,
             max_value: fieldConfig?.max_value || null,
-            step_value: fieldConfig?.step_value || null,
             prepend: fieldConfig?.prepend || '',
             append: fieldConfig?.append || ''
           }
@@ -836,7 +832,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           unique: fieldConfig?.unique || false,
           min_value: fieldConfig?.min_value || null,
           max_value: fieldConfig?.max_value || null,
-          step_value: fieldConfig?.step_value || null,
           prepend: fieldConfig?.prepend || '',
           append: fieldConfig?.append || ''
         }
@@ -1116,85 +1111,80 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                    </div>
-                      <h4 className="text-sm font-medium text-gray-700">Fields</h4>
-                    </div>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-medium">
-                      {nestedFieldDefinitions.length} field{nestedFieldDefinitions.length !== 1 ? 's' : ''}
-                    </span>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <input
+                        type="checkbox"
+                        checked={fieldConfig?.unique || false}
+                        onChange={(e) => setFieldConfig(prev => ({ ...prev, unique: e.target.checked }))}
+                        className="mr-2"
+                      />
+                      Unique Value
+                    </label>
+                    <p className="text-xs text-gray-500">Ensures each number is unique across all posts</p>
                   </div>
-                  {nestedFieldDefinitions.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100">
-                      <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-medium">No fields defined yet</p>
-                      <p className="text-xs mt-1 text-gray-400">Add fields that will appear within each repeater item</p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCurrentNestedField(null)
-                          setEditingNestedFieldIndex(null)
-                          setShowFieldPopup(true)
-                        }}
-                        className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
-                        disabled={isSubmitting}
-                      >
-                        Add your first field
-                      </button>
-                    </div>
-                  ) : (
-                    <DndContext
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={onDragEnd}
-                    >
-                      <SortableContext
-                        items={nestedFieldDefinitions.map(field => field.name + field.label)}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        <div className="space-y-2">
-                          {nestedFieldDefinitions.map((nf, index) => (
-                            <SortableNestedField
-                              key={nf.name + index}
-                              field={nf}
-                              index={index}
-                              onEdit={() => {
-                                console.log("FieldEditModal: Opening edit popup for nested field:", nf, "at index:", index)
-                                setCurrentNestedField(nf)
-                                setEditingNestedFieldIndex(index)
-                                setShowFieldPopup(true)
-                              }}
-                              onDelete={() => handleDeleteNestedField(index)}
-                              isSubmitting={isSubmitting}
-                            />
-                          ))}
-                        </div>
-                      </SortableContext>
-                    </DndContext>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCurrentNestedField(null)
-                      setEditingNestedFieldIndex(null)
-                      setShowFieldPopup(true)
-                    }}
-                    className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
-                    disabled={isSubmitting}
-                  >
-                    <Plus className="w-5 h-5" />
-                    Add Field
-                  </button>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Minimum Value
+                    </label>
+                    <input
+                      type="number"
+                      value={fieldConfig?.min_value || ''}
+                      onChange={(e) => setFieldConfig(prev => ({ 
+                        ...prev, 
+                        min_value: e.target.value === '' ? null : parseFloat(e.target.value) 
+                      }))}
+                      placeholder="No minimum"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-500">Sets the lowest allowed number</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Maximum Value
+                    </label>
+                    <input
+                      type="number"
+                      value={fieldConfig?.max_value || ''}
+                      onChange={(e) => setFieldConfig(prev => ({ 
+                        ...prev, 
+                        max_value: e.target.value === '' ? null : parseFloat(e.target.value) 
+                      }))}
+                      placeholder="No maximum"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-500">Sets the highest allowed number</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Prepend Text
+                    </label>
+                    <input
+                      type="text"
+                      value={fieldConfig?.prepend || ''}
+                      onChange={(e) => setFieldConfig(prev => ({ ...prev, prepend: e.target.value }))}
+                      placeholder="e.g., $"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-500">Adds visual text before the input</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Append Text
+                    </label>
+                    <input
+                      type="text"
+                      value={fieldConfig?.append || ''}
+                      onChange={(e) => setFieldConfig(prev => ({ ...prev, append: e.target.value }))}
+                      placeholder="e.g., %"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-500">Adds visual text after the input</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -1567,7 +1557,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <input
                       id="minValue"
                       type="number"
-                      step="any"
                       value={fieldConfig?.min_value || ''}
                       onChange={(e) => {
                         const currentConfig = fieldConfig || {};
@@ -1589,7 +1578,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <input
                       id="maxValue"
                       type="number"
-                      step="any"
                       value={fieldConfig?.max_value || ''}
                       onChange={(e) => {
                         const currentConfig = fieldConfig || {};
@@ -1603,32 +1591,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       disabled={isSubmitting}
                     />
                   </div>
-                </div>
-
-                {/* Step Value */}
-                <div className="space-y-2">
-                  <label htmlFor="stepValue" className="block text-sm font-medium text-gray-700">
-                    Step Value
-                  </label>
-                  <input
-                    id="stepValue"
-                    type="number"
-                    step="any"
-                    value={fieldConfig?.step_value || ''}
-                    onChange={(e) => {
-                      const currentConfig = fieldConfig || {};
-                      setFieldConfig({
-                        ...currentConfig,
-                        step_value: e.target.value ? parseFloat(e.target.value) : null
-                      });
-                    }}
-                    placeholder="Any value (default)"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                    disabled={isSubmitting}
-                  />
-                  <p className="text-xs text-gray-500">
-                    The increment step for the number input. Leave empty to allow any decimal value.
-                  </p>
                 </div>
 
                 {/* Prepend and Append */}

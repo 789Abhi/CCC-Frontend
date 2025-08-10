@@ -14,7 +14,6 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
     const isUniqueRequired = fieldConfig?.unique === true;
     const minValue = fieldConfig?.min_value;
     const maxValue = fieldConfig?.max_value;
-    const stepValue = fieldConfig?.step_value;
     const prependText = fieldConfig?.prepend;
     const appendText = fieldConfig?.append;
 
@@ -237,9 +236,6 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                                 ref={inputRef}
                                 id={`number-${fieldName}`}
                                 type="number"
-                                step={stepValue || "any"}
-                                min={minValue !== null && minValue !== undefined ? minValue : undefined}
-                                max={maxValue !== null && maxValue !== undefined ? maxValue : undefined}
                                 value={number}
                                 onChange={handleNumberChange}
                                 onFocus={handleFocus}
@@ -287,9 +283,6 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                             ref={inputRef}
                             id={`number-${fieldName}`}
                             type="number"
-                            step={stepValue || "any"}
-                            min={minValue !== null && minValue !== undefined ? minValue : undefined}
-                            max={maxValue !== null && maxValue !== undefined ? maxValue : undefined}
                             value={number}
                             onChange={handleNumberChange}
                             onFocus={handleFocus}
@@ -345,14 +338,11 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                     <p className="text-gray-600">{fieldConfig.description}</p>
                 )}
                 <p>Enter a valid number{isUniqueRequired ? ' (must be unique)' : ''}</p>
-                {fieldConfig?.min !== undefined && (
-                    <p>Minimum value: {fieldConfig.min}</p>
+                {minValue !== null && minValue !== undefined && (
+                    <p>Minimum value: {minValue}</p>
                 )}
-                {fieldConfig?.max !== undefined && (
-                    <p>Maximum value: {fieldConfig.max}</p>
-                )}
-                {fieldConfig?.step && (
-                    <p>Step: {fieldConfig.step}</p>
+                {maxValue !== null && maxValue !== undefined && (
+                    <p>Maximum value: {maxValue}</p>
                 )}
             </div>
         </div>
