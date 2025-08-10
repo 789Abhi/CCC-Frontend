@@ -71,6 +71,8 @@
   margin-bottom: 1rem;
 }
 
+/* Email Field Styles - Using Tailwind CSS only */
+
 /* Relationship Field Styles */
 .ccc-relationship-field {
   margin-bottom: 1rem;
