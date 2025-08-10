@@ -215,6 +215,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                   return (
                     <EmailField
                       key={field.id}
+                      label={field.label}
                       fieldName={field.name}
                       fieldConfig={field.config || {}}
                       fieldValue={value}
