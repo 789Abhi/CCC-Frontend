@@ -720,6 +720,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             prepend: fieldConfig?.prepend || '',
             append: fieldConfig?.append || ''
           }
+          console.log("Number field config for preventDatabaseSave:", fieldData.config);
         }
 
         onSave(fieldData)
@@ -839,6 +840,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           prepend: fieldConfig?.prepend || '',
           append: fieldConfig?.append || ''
         }
+        console.log("Number field config being sent:", config);
         formData.append("field_config", JSON.stringify(config))
       }
 
