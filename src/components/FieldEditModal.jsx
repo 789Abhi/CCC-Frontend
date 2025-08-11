@@ -102,13 +102,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "video",
     "oembed",
     "relationship",
-    "link",
-    "email",
-    "number",
-    "range",
-    "repeater",
-    "wysiwyg",
-    "color",
+            "link",
+        "email",
+        "number",
+        "range",
+        "file",
+        "repeater",
+        "wysiwyg",
+        "color",
     "select",
     "checkbox",
     "radio",
@@ -238,6 +239,30 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 max_value: 100,
                 prepend: '',
                 append: ''
+              });
+            }
+          } else if (field.type === 'file' && field.config) {
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              setFieldConfig({
+                allowed_types: config.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
+                max_file_size: config.max_file_size || 10,
+                return_type: config.return_type || 'url',
+                multiple: config.multiple || false,
+                show_preview: config.show_preview !== undefined ? config.show_preview : true,
+                show_download: config.show_download !== undefined ? config.show_download : true,
+                show_delete: config.show_delete !== undefined ? config.show_delete : true
+              });
+            } catch (e) {
+              console.error("Error parsing file config:", e);
+              setFieldConfig({
+                allowed_types: ['image', 'video', 'document', 'audio', 'archive'],
+                max_file_size: 10,
+                return_type: 'url',
+                multiple: false,
+                show_preview: true,
+                show_download: true,
+                show_delete: true
               });
             }
           }
@@ -744,6 +769,17 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             append: fieldConfig?.append || ''
           }
           console.log("Range field config for preventDatabaseSave:", fieldData.config);
+        } else if (type === "file") {
+          fieldData.config = {
+            allowed_types: fieldConfig?.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
+            max_file_size: fieldConfig?.max_file_size || 10,
+            return_type: fieldConfig?.return_type || 'url',
+            multiple: fieldConfig?.multiple || false,
+            show_preview: fieldConfig?.show_preview !== undefined ? fieldConfig?.show_preview : true,
+            show_download: fieldConfig?.show_download !== undefined ? fieldConfig?.show_download : true,
+            show_delete: fieldConfig?.show_delete !== undefined ? fieldConfig?.show_delete : true
+          }
+          console.log("File field config for preventDatabaseSave:", fieldData.config);
         }
 
         onSave(fieldData)
@@ -872,6 +908,18 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           append: fieldConfig?.append || ''
         }
         console.log("Range field config being sent:", config);
+        formData.append("field_config", JSON.stringify(config))
+      } else if (type === "file") {
+        const config = {
+          allowed_types: fieldConfig?.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
+          max_file_size: fieldConfig?.max_file_size || 10,
+          return_type: fieldConfig?.return_type || 'url',
+          multiple: fieldConfig?.multiple || false,
+          show_preview: fieldConfig?.show_preview !== undefined ? fieldConfig?.show_preview : true,
+          show_download: fieldConfig?.show_download !== undefined ? fieldConfig?.show_download : true,
+          show_delete: fieldConfig?.show_delete !== undefined ? fieldConfig?.show_delete : true
+        }
+        console.log("File field config being sent:", config);
         formData.append("field_config", JSON.stringify(config))
       }
 
@@ -1787,6 +1835,180 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       Unit to display after the numeric input (optional)
                     </p>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* File Field Settings */}
+            {type === "file" && (
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">File Field Settings</h4>
+                
+                {/* Allowed File Types */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Allowed File Types
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['image', 'video', 'document', 'audio', 'archive'].map((fileType) => (
+                      <label key={fileType} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={fieldConfig?.allowed_types?.includes(fileType) || false}
+                          onChange={(e) => {
+                            const currentConfig = fieldConfig || {};
+                            const currentTypes = currentConfig.allowed_types || [];
+                            let newTypes;
+                            if (e.target.checked) {
+                              newTypes = [...currentTypes, fileType];
+                            } else {
+                              newTypes = currentTypes.filter(type => type !== fileType);
+                            }
+                            setFieldConfig({
+                              ...currentConfig,
+                              allowed_types: newTypes
+                            });
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 capitalize">{fileType}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Select which file types are allowed for upload
+                  </p>
+                </div>
+
+                {/* Max File Size */}
+                <div className="space-y-2">
+                  <label htmlFor="fileMaxSize" className="block text-sm font-medium text-gray-700">
+                    Maximum File Size (MB)
+                  </label>
+                  <input
+                    id="fileMaxSize"
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={fieldConfig?.max_file_size || 10}
+                    onChange={(e) => {
+                      const currentConfig = fieldConfig || {};
+                      setFieldConfig({
+                        ...currentConfig,
+                        max_file_size: parseInt(e.target.value) || 10
+                      });
+                    }}
+                    placeholder="10"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Maximum file size allowed for upload (1-100 MB)
+                  </p>
+                </div>
+
+                {/* Return Type */}
+                <div className="space-y-2">
+                  <label htmlFor="fileReturnType" className="block text-sm font-medium text-gray-700">
+                    Return Type
+                  </label>
+                  <select
+                    id="fileReturnType"
+                    value={fieldConfig?.return_type || 'url'}
+                    onChange={(e) => {
+                      const currentConfig = fieldConfig || {};
+                      setFieldConfig({
+                        ...currentConfig,
+                        return_type: e.target.value
+                      });
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    <option value="url">File URL</option>
+                    <option value="id">File ID</option>
+                    <option value="array">File Array</option>
+                  </select>
+                  <p className="text-xs text-gray-500">
+                    How the file data should be returned
+                  </p>
+                </div>
+
+                {/* Multiple Files */}
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={fieldConfig?.multiple || false}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          multiple: e.target.checked
+                        });
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Allow Multiple Files</span>
+                  </label>
+                  <p className="text-xs text-gray-500">
+                    Allow users to upload multiple files at once
+                  </p>
+                </div>
+
+                {/* Display Options */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Display Options</label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={fieldConfig?.show_preview !== undefined ? fieldConfig.show_preview : true}
+                        onChange={(e) => {
+                          const currentConfig = fieldConfig || {};
+                          setFieldConfig({
+                            ...currentConfig,
+                            show_preview: e.target.checked
+                          });
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Show Preview</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={fieldConfig?.show_download !== undefined ? fieldConfig.show_download : true}
+                        onChange={(e) => {
+                          const currentConfig = fieldConfig || {};
+                          setFieldConfig({
+                            ...currentConfig,
+                            show_download: e.target.checked
+                          });
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Show Download</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={fieldConfig?.show_delete !== undefined ? fieldConfig.show_delete : true}
+                        onChange={(e) => {
+                          const currentConfig = fieldConfig || {};
+                          setFieldConfig({
+                            ...currentConfig,
+                            show_delete: e.target.checked
+                          });
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Show Delete</span>
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Control which UI elements are displayed for uploaded files
+                  </p>
                 </div>
               </div>
             )}
