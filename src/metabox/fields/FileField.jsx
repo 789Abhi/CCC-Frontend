@@ -56,16 +56,30 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     // Handle array of files
                     const processedFiles = parsedValue.map(file => {
                         if (file && typeof file === 'object') {
-                            return {
-                                id: file.id || file.ID || file.file_id,
-                                name: file.name || file.filename || file.title || 'Unknown File',
-                                type: file.type || file.mime_type || 'application/octet-stream',
-                                size: file.size || file.filesize || 0,
-                                size_formatted: file.size_formatted || formatFileSize(file.size || 0),
-                                url: file.url || file.guid || '',
-                                thumbnail: file.thumbnail || file.medium || file.url || file.guid || '',
-                                is_media_library: true
-                            };
+                            // Check if it's a media library file (has numeric ID)
+                            if (file.id && !isNaN(file.id) && file.id > 0) {
+                                return {
+                                    id: file.id,
+                                    name: file.name || file.filename || file.title || 'Unknown File',
+                                    type: file.type || file.mime_type || 'application/octet-stream',
+                                    size: file.size || file.filesize || 0,
+                                    size_formatted: file.size_formatted || formatFileSize(file.size || 0),
+                                    url: file.url || file.guid || '',
+                                    thumbnail: file.thumbnail || file.medium || file.url || file.guid || '',
+                                    is_media_library: true
+                                };
+                            } else {
+                                // It's a temporary uploaded file
+                                return {
+                                    id: file.temp_id || file.id,
+                                    name: file.name || 'Unknown File',
+                                    type: file.type || 'application/octet-stream',
+                                    size: file.size || 0,
+                                    size_formatted: file.size_formatted || formatFileSize(file.size || 0),
+                                    url: file.url || '',
+                                    is_uploaded: true
+                                };
+                            }
                         }
                         return file;
                     }).filter(Boolean);
@@ -74,19 +88,34 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     setFiles(processedFiles);
                 } else if (parsedValue && typeof parsedValue === 'object') {
                     // Handle single file
-                    const processedFile = {
-                        id: parsedValue.id || parsedValue.ID || parsedValue.file_id,
-                        name: parsedValue.name || parsedValue.filename || parsedValue.title || 'Unknown File',
-                        type: parsedValue.type || parsedValue.mime_type || 'application/octet-stream',
-                        size: parsedValue.size || parsedValue.filesize || 0,
-                        size_formatted: parsedValue.size_formatted || formatFileSize(parsedValue.size || 0),
-                        url: parsedValue.url || parsedValue.guid || '',
-                        thumbnail: parsedValue.thumbnail || parsedValue.medium || parsedValue.url || parsedValue.guid || '',
-                        is_media_library: true
-                    };
-                    
-                    console.log('FileField processed single file:', processedFile);
-                    setFiles([processedFile]);
+                    if (parsedValue.id && !isNaN(parsedValue.id) && parsedValue.id > 0) {
+                        // It's a media library file
+                        const processedFile = {
+                            id: parsedValue.id,
+                            name: parsedValue.name || parsedValue.filename || parsedValue.title || 'Unknown File',
+                            type: parsedValue.type || parsedValue.mime_type || 'application/octet-stream',
+                            size: parsedValue.size || parsedValue.filesize || 0,
+                            size_formatted: parsedValue.size_formatted || formatFileSize(parsedValue.size || 0),
+                            url: parsedValue.url || parsedValue.guid || '',
+                            thumbnail: parsedValue.thumbnail || parsedValue.medium || parsedValue.url || parsedValue.guid || '',
+                            is_media_library: true
+                        };
+                        console.log('FileField processed single media library file:', processedFile);
+                        setFiles([processedFile]);
+                    } else {
+                        // It's a temporary uploaded file
+                        const processedFile = {
+                            id: parsedValue.temp_id || parsedValue.id,
+                            name: parsedValue.name || 'Unknown File',
+                            type: parsedValue.type || 'application/octet-stream',
+                            size: parsedValue.size || 0,
+                            size_formatted: parsedValue.size_formatted || formatFileSize(parsedValue.size || 0),
+                            url: parsedValue.url || '',
+                            is_uploaded: true
+                        };
+                        console.log('FileField processed single uploaded file:', processedFile);
+                        setFiles([processedFile]);
+                    }
                 }
             } catch (error) {
                 console.error('Error parsing file field value:', error);
@@ -235,9 +264,10 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         }
 
         try {
-            // Simulate file upload - in real implementation, you'd upload to server
+            // For now, we'll simulate file upload and store file info
+            // In a real implementation, you'd upload to server and get back file IDs
             const uploadedFileData = validFiles.map(file => ({
-                id: Date.now() + Math.random(),
+                id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 name: file.name,
                 type: file.type,
                 size: file.size,
@@ -253,24 +283,25 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                 setFiles(uploadedFileData);
             }
 
-            // Notify parent component with consistent data structure
+            // For uploaded files, we need to handle them differently since they're not in media library yet
+            // We'll store the file object temporarily and handle actual upload later
             if (multiple) {
                 const filesForDB = uploadedFileData.map(file => ({
-                    id: file.id,
-                    url: file.url,
-                    type: file.type,
+                    temp_id: file.id,
                     name: file.name,
-                    size: file.size
+                    type: file.type,
+                    size: file.size,
+                    is_temp: true
                 }));
                 onChange([...files, ...filesForDB]);
             } else {
                 const fileForDB = uploadedFileData[0];
                 onChange({
-                    id: fileForDB.id,
-                    url: fileForDB.url,
-                    type: fileForDB.type,
+                    temp_id: fileForDB.id,
                     name: fileForDB.name,
-                    size: fileForDB.size
+                    type: fileForDB.type,
+                    size: fileForDB.size,
+                    is_temp: true
                 });
             }
 
@@ -322,22 +353,47 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         
         // Send consistent data structure for database storage
         if (multiple) {
-            const filesForDB = updatedFiles.map(file => ({
-                id: file.id,
-                url: file.url,
-                type: file.type,
-                name: file.name,
-                size: file.size
-            }));
+            const filesForDB = updatedFiles.map(file => {
+                if (file.is_media_library) {
+                    return {
+                        id: file.id,
+                        url: file.url,
+                        type: file.type,
+                        name: file.name
+                    };
+                } else {
+                    return {
+                        temp_id: file.id,
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        is_temp: true
+                    };
+                }
+            });
             onChange(filesForDB);
         } else {
-            onChange(updatedFiles.length > 0 ? {
-                id: updatedFiles[0].id,
-                url: updatedFiles[0].url,
-                type: updatedFiles[0].type,
-                name: updatedFiles[0].name,
-                size: updatedFiles[0].size
-            } : '');
+            if (updatedFiles.length > 0) {
+                const file = updatedFiles[0];
+                if (file.is_media_library) {
+                    onChange({
+                        id: file.id,
+                        url: file.url,
+                        type: file.type,
+                        name: file.name
+                    });
+                } else {
+                    onChange({
+                        temp_id: file.id,
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        is_temp: true
+                    });
+                }
+            } else {
+                onChange('');
+            }
         }
         
         if (fileToRemove) {
@@ -455,7 +511,8 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                         const filesForDB = selectedFiles.map(file => ({
                             id: file.id,
                             url: file.url,
-                            type: file.type
+                            type: file.type,
+                            name: file.name
                         }));
                         onChange([...files, ...filesForDB]);
                         showSuccessMessage(`${selectedFiles.length} files added from media library.`);
@@ -466,7 +523,8 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                         onChange({
                             id: fileForDB.id,
                             url: fileForDB.url,
-                            type: fileForDB.type
+                            type: fileForDB.type,
+                            name: fileForDB.name
                         });
                         showSuccessMessage(`1 file added from media library.`);
                     }
