@@ -15,6 +15,7 @@ import ColorField from '../fields/ColorField';
 import LinkField from '../fields/LinkField';
 import EmailField from '../fields/EmailField';
 import NumberField from '../fields/NumberField';
+import RangeField from '../fields/RangeField';
 import RepeaterField from '../fields/RepeaterField';
 
 function ToggleSwitch({ checked, onChange }) {
@@ -236,6 +237,27 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                   };
                   return (
                     <NumberField
+                      key={field.id}
+                      label={field.label}
+                      fieldName={field.name}
+                      fieldConfig={field.config || {}}
+                      fieldValue={value}
+                      fieldRequired={isRequired}
+                      onChange={handleChange}
+                    />
+                  );
+                }
+                if (field.type === 'range') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  const value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                  const handleChange = val => {
+                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                  };
+                  return (
+                    <RangeField
                       key={field.id}
                       label={field.label}
                       fieldName={field.name}

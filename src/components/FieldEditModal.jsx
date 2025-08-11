@@ -105,6 +105,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "link",
     "email",
     "number",
+    "range",
     "repeater",
     "wysiwyg",
     "color",
@@ -219,6 +220,24 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 max_value: null,
                 prepend: '',
                 append: ''
+              });
+            }
+          } else if (field.type === 'range' && field.config) {
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              setFieldConfig({
+                min_value: config.min_value || 0,
+                max_value: config.max_value || 100,
+                prepend: config.prepend || '',
+                append: config.append || 'px'
+              });
+            } catch (e) {
+              console.error("Error parsing range config:", e);
+              setFieldConfig({
+                min_value: 0,
+                max_value: 100,
+                prepend: '',
+                append: 'px'
               });
             }
           }
@@ -717,6 +736,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             append: fieldConfig?.append || ''
           }
           console.log("Number field config for preventDatabaseSave:", fieldData.config);
+        } else if (type === "range") {
+          fieldData.config = {
+            min_value: fieldConfig?.min_value || 0,
+            max_value: fieldConfig?.max_value || 100,
+            prepend: fieldConfig?.prepend || '',
+            append: fieldConfig?.append || 'px'
+          }
+          console.log("Range field config for preventDatabaseSave:", fieldData.config);
         }
 
         onSave(fieldData)
@@ -836,6 +863,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           append: fieldConfig?.append || ''
         }
         console.log("Number field config being sent:", config);
+        formData.append("field_config", JSON.stringify(config))
+      } else if (type === "range") {
+        const config = {
+          min_value: fieldConfig?.min_value || 0,
+          max_value: fieldConfig?.max_value || 100,
+          prepend: fieldConfig?.prepend || '',
+          append: fieldConfig?.append || 'px'
+        }
+        console.log("Range field config being sent:", config);
         formData.append("field_config", JSON.stringify(config))
       }
 
@@ -1640,6 +1676,115 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     />
                     <p className="text-xs text-gray-500">
                       Text to display after the input field
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Range Field Settings */}
+            {type === "range" && (
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">Range Field Settings</h4>
+                
+                {/* Min/Max Values */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="rangeMinValue" className="block text-sm font-medium text-gray-700">
+                      Minimum Value
+                    </label>
+                    <input
+                      id="rangeMinValue"
+                      type="number"
+                      value={fieldConfig?.min_value || 0}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          min_value: e.target.value ? parseFloat(e.target.value) : 0
+                        });
+                      }}
+                      placeholder="0"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      disabled={isSubmitting}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Sets the lowest allowed value for the range slider
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="rangeMaxValue" className="block text-sm font-medium text-gray-700">
+                      Maximum Value
+                    </label>
+                    <input
+                      id="rangeMaxValue"
+                      type="number"
+                      value={fieldConfig?.max_value || 100}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          max_value: e.target.value ? parseFloat(e.target.value) : 100
+                        });
+                      }}
+                      placeholder="100"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      disabled={isSubmitting}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Sets the highest allowed value for the range slider
+                    </p>
+                  </div>
+                </div>
+
+                {/* Prepend and Append */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="rangePrependValue" className="block text-sm font-medium text-gray-700">
+                      Prepend Text
+                    </label>
+                    <input
+                      id="rangePrependValue"
+                      type="text"
+                      value={fieldConfig?.prepend || ''}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          prepend: e.target.value
+                        });
+                      }}
+                      placeholder="e.g., A, Size, etc."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      disabled={isSubmitting}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Text to display before the range slider (e.g., "A" for "Amount")
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="rangeAppendValue" className="block text-sm font-medium text-gray-700">
+                      Append Text
+                    </label>
+                    <input
+                      id="rangeAppendValue"
+                      type="text"
+                      value={fieldConfig?.append || 'px'}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          append: e.target.value
+                        });
+                      }}
+                      placeholder="e.g., px, %, kg, etc."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      disabled={isSubmitting}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Unit to display after the numeric input (default: px)
                     </p>
                   </div>
                 </div>
