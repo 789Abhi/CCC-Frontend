@@ -42,6 +42,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
     }, []);
 
     useEffect(() => {
+        console.log('FileField useEffect - fieldValue:', fieldValue);
         if (fieldValue) {
             try {
                 let parsedValue = fieldValue;
@@ -49,10 +50,43 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     parsedValue = JSON.parse(fieldValue);
                 }
                 
+                console.log('FileField parsed value:', parsedValue);
+                
                 if (Array.isArray(parsedValue)) {
-                    setFiles(parsedValue);
-                } else if (parsedValue) {
-                    setFiles([parsedValue]);
+                    // Handle array of files
+                    const processedFiles = parsedValue.map(file => {
+                        if (file && typeof file === 'object') {
+                            return {
+                                id: file.id || file.ID || file.file_id,
+                                name: file.name || file.filename || file.title || 'Unknown File',
+                                type: file.type || file.mime_type || 'application/octet-stream',
+                                size: file.size || file.filesize || 0,
+                                size_formatted: file.size_formatted || formatFileSize(file.size || 0),
+                                url: file.url || file.guid || '',
+                                thumbnail: file.thumbnail || file.medium || file.url || file.guid || '',
+                                is_media_library: true
+                            };
+                        }
+                        return file;
+                    }).filter(Boolean);
+                    
+                    console.log('FileField processed files:', processedFiles);
+                    setFiles(processedFiles);
+                } else if (parsedValue && typeof parsedValue === 'object') {
+                    // Handle single file
+                    const processedFile = {
+                        id: parsedValue.id || parsedValue.ID || parsedValue.file_id,
+                        name: parsedValue.name || parsedValue.filename || parsedValue.title || 'Unknown File',
+                        type: parsedValue.type || parsedValue.mime_type || 'application/octet-stream',
+                        size: parsedValue.size || parsedValue.filesize || 0,
+                        size_formatted: parsedValue.size_formatted || formatFileSize(parsedValue.size || 0),
+                        url: parsedValue.url || parsedValue.guid || '',
+                        thumbnail: parsedValue.thumbnail || parsedValue.medium || parsedValue.url || parsedValue.guid || '',
+                        is_media_library: true
+                    };
+                    
+                    console.log('FileField processed single file:', processedFile);
+                    setFiles([processedFile]);
                 }
             } catch (error) {
                 console.error('Error parsing file field value:', error);
@@ -219,9 +253,26 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                 setFiles(uploadedFileData);
             }
 
-            // Notify parent component
-            const newValue = multiple ? [...files, ...uploadedFileData] : uploadedFileData;
-            onChange(newValue);
+            // Notify parent component with consistent data structure
+            if (multiple) {
+                const filesForDB = uploadedFileData.map(file => ({
+                    id: file.id,
+                    url: file.url,
+                    type: file.type,
+                    name: file.name,
+                    size: file.size
+                }));
+                onChange([...files, ...filesForDB]);
+            } else {
+                const fileForDB = uploadedFileData[0];
+                onChange({
+                    id: fileForDB.id,
+                    url: fileForDB.url,
+                    type: fileForDB.type,
+                    name: fileForDB.name,
+                    size: fileForDB.size
+                });
+            }
 
             // Show success message
             if (validFiles.length > 1) {
@@ -268,7 +319,26 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         const fileToRemove = files.find(file => file.id === fileId);
         const updatedFiles = files.filter(file => file.id !== fileId);
         setFiles(updatedFiles);
-        onChange(updatedFiles);
+        
+        // Send consistent data structure for database storage
+        if (multiple) {
+            const filesForDB = updatedFiles.map(file => ({
+                id: file.id,
+                url: file.url,
+                type: file.type,
+                name: file.name,
+                size: file.size
+            }));
+            onChange(filesForDB);
+        } else {
+            onChange(updatedFiles.length > 0 ? {
+                id: updatedFiles[0].id,
+                url: updatedFiles[0].url,
+                type: updatedFiles[0].type,
+                name: updatedFiles[0].name,
+                size: updatedFiles[0].size
+            } : '');
+        }
         
         if (fileToRemove) {
             showSuccessMessage(`"${fileToRemove.name}" removed successfully.`);
@@ -368,20 +438,36 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                         size: fileSize,
                         size_formatted: attachment.get('filesizeHumanReadable') || formatFileSize(fileSize),
                         url: attachment.get('url'),
-                        thumbnail: attachment.get('sizes')?.thumbnail?.url || attachment.get('url'),
+                        thumbnail: attachment.get('sizes')?.thumbnail?.url || 
+                                  attachment.get('sizes')?.medium?.url || 
+                                  attachment.get('sizes')?.small?.url || 
+                                  attachment.get('url'),
                         is_media_library: true
                     };
+                    
                     selectedFiles.push(fileData);
                 });
 
                 if (selectedFiles.length > 0) {
                     if (multiple) {
                         setFiles(prev => [...prev, ...selectedFiles]);
-                        onChange([...files, ...selectedFiles]);
+                        // Send only the essential data for database storage
+                        const filesForDB = selectedFiles.map(file => ({
+                            id: file.id,
+                            url: file.url,
+                            type: file.type
+                        }));
+                        onChange([...files, ...filesForDB]);
                         showSuccessMessage(`${selectedFiles.length} files added from media library.`);
                     } else {
                         setFiles(selectedFiles);
-                        onChange(selectedFiles);
+                        // Send only the essential data for database storage
+                        const fileForDB = selectedFiles[0];
+                        onChange({
+                            id: fileForDB.id,
+                            url: fileForDB.url,
+                            type: fileForDB.type
+                        });
                         showSuccessMessage(`1 file added from media library.`);
                     }
                     setError(''); // Clear any previous errors
@@ -443,12 +529,27 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
 
     const renderFilePreview = (file) => {
         if (file.type.startsWith('image/')) {
+            // Try different image sources for media library files
+            let imageSrc = file.url;
+            if (file.thumbnail && file.thumbnail !== file.url) {
+                imageSrc = file.thumbnail;
+            } else if (file.is_media_library && file.url) {
+                // For media library files, try to get a smaller size
+                imageSrc = file.url;
+            }
+            
             return (
                 <div className="relative group">
                     <img 
-                        src={file.thumbnail || file.url} 
+                        src={imageSrc} 
                         alt={file.name}
                         className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                        onError={(e) => {
+                            // Fallback to original URL if thumbnail fails
+                            if (e.target.src !== file.url) {
+                                e.target.src = file.url;
+                            }
+                        }}
                     />
                     {show_delete && (
                         <button
