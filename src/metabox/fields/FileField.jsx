@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, File, Image, Video, Music, Archive, Download, Trash2, X, Plus, FileText } from 'lucide-react';
+import { Upload, File, Image, Video, Music, Archive, Download, Trash2, X, Plus, FileText, FolderOpen } from 'lucide-react';
 
 const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, onChange }) => {
     const [files, setFiles] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [isOpeningMedia, setIsOpeningMedia] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+    const [expandedFiles, setExpandedFiles] = useState(new Set());
     const fileInputRef = useRef(null);
     const dropZoneRef = useRef(null);
 
@@ -18,6 +21,25 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         show_download = true,
         show_delete = true
     } = fieldConfig || {};
+
+    // Check if WordPress media library is available
+    useEffect(() => {
+        const checkMediaLibrary = () => {
+            if (typeof wp === 'undefined' || !wp.media) {
+                console.warn('WordPress media library not available');
+                setError('WordPress media library is not available. Please refresh the page and try again.');
+            } else {
+                setError('');
+            }
+        };
+
+        // Check immediately
+        checkMediaLibrary();
+
+        // Check again after a short delay to ensure scripts are loaded
+        const timer = setTimeout(checkMediaLibrary, 1000);
+        return () => clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         if (fieldValue) {
@@ -40,6 +62,60 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
             setFiles([]);
         }
     }, [fieldValue]);
+
+    // Validate that media library files still exist
+    useEffect(() => {
+        const validateMediaFiles = async () => {
+            const mediaFiles = files.filter(file => file.is_media_library);
+            if (mediaFiles.length === 0) return;
+
+            const validFiles = [];
+            const invalidFiles = [];
+
+            for (const file of mediaFiles) {
+                try {
+                    // Check if the file still exists in the media library
+                    if (typeof wp !== 'undefined' && wp.media) {
+                        // For now, we'll assume the file exists if we have an ID
+                        // In a real implementation, you might want to make an AJAX call to verify
+                        if (file.id && file.id > 0) {
+                            validFiles.push(file);
+                        } else {
+                            invalidFiles.push(file);
+                        }
+                    } else {
+                        validFiles.push(file);
+                    }
+                } catch (error) {
+                    console.error('Error validating media file:', error);
+                    invalidFiles.push(file);
+                }
+            }
+
+            if (invalidFiles.length > 0) {
+                console.warn('Some media library files are no longer available:', invalidFiles);
+                // Remove invalid files
+                const updatedFiles = files.filter(file => !invalidFiles.includes(file));
+                setFiles(updatedFiles);
+                onChange(updatedFiles);
+            }
+        };
+
+        validateMediaFiles();
+    }, [files, onChange]);
+
+    const showSuccessMessage = (message) => {
+        setSuccessMessage(message);
+        setError('');
+        setTimeout(() => {
+            setSuccessMessage('');
+        }, 3000);
+    };
+
+    const showErrorMessage = (message) => {
+        setError(message);
+        setSuccessMessage('');
+    };
 
     const getFileIcon = (fileType) => {
         if (fileType.startsWith('image/')) return <Image size={20} className="text-blue-500" />;
@@ -103,6 +179,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
     const handleFileUpload = async (uploadedFiles) => {
         setIsUploading(true);
         setError('');
+        setSuccessMessage('');
 
         const fileArray = Array.from(uploadedFiles);
         const validFiles = [];
@@ -118,7 +195,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         }
 
         if (errors.length > 0) {
-            setError(errors.join(', '));
+            showErrorMessage(errors.join(', '));
             setIsUploading(false);
             return;
         }
@@ -146,8 +223,15 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
             const newValue = multiple ? [...files, ...uploadedFileData] : uploadedFileData;
             onChange(newValue);
 
+            // Show success message
+            if (validFiles.length > 1) {
+                showSuccessMessage(`${validFiles.length} files uploaded successfully.`);
+            } else {
+                showSuccessMessage('File uploaded successfully.');
+            }
+
         } catch (error) {
-            setError('Upload failed: ' + error.message);
+            showErrorMessage('Upload failed: ' + error.message);
         } finally {
             setIsUploading(false);
         }
@@ -181,9 +265,14 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
     };
 
     const removeFile = (fileId) => {
+        const fileToRemove = files.find(file => file.id === fileId);
         const updatedFiles = files.filter(file => file.id !== fileId);
         setFiles(updatedFiles);
         onChange(updatedFiles);
+        
+        if (fileToRemove) {
+            showSuccessMessage(`"${fileToRemove.name}" removed successfully.`);
+        }
     };
 
     const downloadFile = (file) => {
@@ -197,8 +286,159 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         }
     };
 
+    const previewFile = (file) => {
+        if (file.url) {
+            window.open(file.url, '_blank');
+        }
+    };
+
     const openFileModal = () => {
         fileInputRef.current?.click();
+    };
+
+    const openMediaLibrary = () => {
+        setIsOpeningMedia(true);
+        setError('');
+        
+        // Check if WordPress media uploader is available
+        if (typeof wp !== 'undefined' && wp.media) {
+            const frame = wp.media({
+                title: 'Select Files',
+                button: {
+                    text: 'Use these files'
+                },
+                multiple: multiple,
+                library: {
+                    type: allowed_types.map(type => {
+                        switch(type) {
+                            case 'image': return 'image';
+                            case 'video': return 'video';
+                            case 'audio': return 'audio';
+                            case 'document': return 'application';
+                            case 'archive': return 'application';
+                            default: return '';
+                        }
+                    }).filter(Boolean)
+                }
+            });
+
+            frame.on('select', () => {
+                const selection = frame.state().get('selection');
+                const selectedFiles = [];
+
+                selection.map(attachment => {
+                    // Validate file type based on allowed_types
+                    const mimeType = attachment.get('mime_type');
+                    let isAllowed = false;
+                    
+                    if (allowed_types.includes('image') && mimeType.startsWith('image/')) isAllowed = true;
+                    if (allowed_types.includes('video') && mimeType.startsWith('video/')) isAllowed = true;
+                    if (allowed_types.includes('audio') && mimeType.startsWith('audio/')) isAllowed = true;
+                    if (allowed_types.includes('document') && (
+                        mimeType === 'application/pdf' ||
+                        mimeType.includes('document') ||
+                        mimeType.includes('word') ||
+                        mimeType.includes('excel') ||
+                        mimeType === 'text/plain'
+                    )) isAllowed = true;
+                    if (allowed_types.includes('archive') && (
+                        mimeType.includes('zip') ||
+                        mimeType.includes('rar') ||
+                        mimeType.includes('tar') ||
+                        mimeType.includes('gzip')
+                    )) isAllowed = true;
+
+                    if (!isAllowed) {
+                        showErrorMessage(`File type ${mimeType} is not allowed for this field`);
+                        return;
+                    }
+
+                    // Validate file size
+                    const fileSize = attachment.get('filesizeInBytes') || 0;
+                    const maxSizeBytes = max_file_size * 1024 * 1024;
+                    if (fileSize > maxSizeBytes) {
+                        showErrorMessage(`File size exceeds ${max_file_size}MB limit`);
+                        return;
+                    }
+
+                    const fileData = {
+                        id: attachment.id,
+                        name: attachment.get('filename') || attachment.get('title'),
+                        type: mimeType,
+                        size: fileSize,
+                        size_formatted: attachment.get('filesizeHumanReadable') || formatFileSize(fileSize),
+                        url: attachment.get('url'),
+                        thumbnail: attachment.get('sizes')?.thumbnail?.url || attachment.get('url'),
+                        is_media_library: true
+                    };
+                    selectedFiles.push(fileData);
+                });
+
+                if (selectedFiles.length > 0) {
+                    if (multiple) {
+                        setFiles(prev => [...prev, ...selectedFiles]);
+                        onChange([...files, ...selectedFiles]);
+                        showSuccessMessage(`${selectedFiles.length} files added from media library.`);
+                    } else {
+                        setFiles(selectedFiles);
+                        onChange(selectedFiles);
+                        showSuccessMessage(`1 file added from media library.`);
+                    }
+                    setError(''); // Clear any previous errors
+                }
+                
+                setIsOpeningMedia(false);
+            });
+
+            frame.on('close', () => {
+                setIsOpeningMedia(false);
+            });
+
+            frame.open();
+        } else {
+            showErrorMessage('WordPress media library is not available. Please refresh the page and try again.');
+            setIsOpeningMedia(false);
+        }
+    };
+
+    const toggleFileExpansion = (fileId) => {
+        const newExpanded = new Set(expandedFiles);
+        if (newExpanded.has(fileId)) {
+            newExpanded.delete(fileId);
+        } else {
+            newExpanded.add(fileId);
+        }
+        setExpandedFiles(newExpanded);
+    };
+
+    const renderFileDetails = (file) => {
+        if (!expandedFiles.has(file.id)) return null;
+
+        return (
+            <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200 text-xs text-gray-600 space-y-1">
+                <div className="grid grid-cols-2 gap-2">
+                    <div>
+                        <span className="font-medium">Type:</span> {file.type}
+                    </div>
+                    <div>
+                        <span className="font-medium">Size:</span> {file.size_formatted}
+                    </div>
+                    {file.is_media_library && (
+                        <div>
+                            <span className="font-medium">ID:</span> {file.id}
+                        </div>
+                    )}
+                    {file.url && (
+                        <div className="col-span-2">
+                            <span className="font-medium">URL:</span>
+                            <div className="truncate text-gray-500" title={file.url}>
+                                {file.url}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
     };
 
     const renderFilePreview = (file) => {
@@ -206,7 +446,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
             return (
                 <div className="relative group">
                     <img 
-                        src={file.url} 
+                        src={file.thumbnail || file.url} 
                         alt={file.name}
                         className="w-20 h-20 object-cover rounded-lg border border-gray-200"
                     />
@@ -242,6 +482,24 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
             );
         }
 
+        if (file.type.startsWith('audio/')) {
+            return (
+                <div className="relative group">
+                    <div className="w-20 h-20 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                        <Music size={24} className="text-green-500" />
+                    </div>
+                    {show_delete && (
+                        <button
+                            onClick={() => removeFile(file.id)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                            <X size={12} />
+                        </button>
+                    )}
+                </div>
+            );
+        }
+
         return (
             <div className="relative group">
                 <div className="w-20 h-20 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
@@ -254,6 +512,79 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     >
                         <X size={12} />
                     </button>
+                )}
+            </div>
+        );
+    };
+
+    const truncateFileName = (fileName, maxLength = 25) => {
+        if (fileName.length <= maxLength) return fileName;
+        const extension = fileName.split('.').pop();
+        const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+        const truncatedName = nameWithoutExt.substring(0, maxLength - extension.length - 3);
+        return `${truncatedName}...${extension}`;
+    };
+
+    const getFileSummary = () => {
+        if (files.length === 0) return null;
+
+        const totalSize = files.reduce((sum, file) => sum + (file.size || 0), 0);
+        const fileTypes = files.reduce((acc, file) => {
+            const type = file.type.split('/')[0] || 'unknown';
+            acc[type] = (acc[type] || 0) + 1;
+            return acc;
+        }, {});
+
+        return {
+            count: files.length,
+            totalSize: formatFileSize(totalSize),
+            fileTypes
+        };
+    };
+
+    const renderFileSummary = () => {
+        const summary = getFileSummary();
+        if (!summary) return null;
+
+        return (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <div className="flex justify-between items-center text-sm">
+                    <div className="text-blue-800">
+                        <span className="font-medium">{summary.count}</span> file{summary.count !== 1 ? 's' : ''} selected
+                    </div>
+                    <div className="text-blue-600">
+                        Total size: <span className="font-medium">{summary.totalSize}</span>
+                    </div>
+                </div>
+                <div className="mt-2 text-xs text-blue-600">
+                    {Object.entries(summary.fileTypes).map(([type, count]) => (
+                        <span key={type} className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2 mb-1">
+                            {type}: {count}
+                        </span>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
+    const renderFileInfo = (file) => {
+        return (
+            <div className="text-center space-y-1">
+                <p className="text-sm font-medium text-gray-900" title={file.name}>
+                    {truncateFileName(file.name)}
+                </p>
+                <p className="text-xs text-gray-500">
+                    {file.size_formatted}
+                </p>
+                {file.is_media_library && (
+                    <p className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                        Media Library
+                    </p>
+                )}
+                {file.type && (
+                    <p className="text-xs text-gray-400">
+                        {file.type.split('/')[1]?.toUpperCase() || 'FILE'}
+                    </p>
                 )}
             </div>
         );
@@ -315,6 +646,35 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     />
                 </div>
 
+                {/* Media Library Button */}
+                <div className="text-center">
+                    <button
+                        type="button"
+                        onClick={openMediaLibrary}
+                        disabled={isOpeningMedia}
+                        className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium transition-colors ${
+                            isOpeningMedia 
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                : 'text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                        }`}
+                    >
+                        {isOpeningMedia ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 mr-2"></div>
+                                Opening Media Library...
+                            </>
+                        ) : (
+                            <>
+                                <FolderOpen size={16} className="mr-2" />
+                                Choose from Media Library
+                            </>
+                        )}
+                    </button>
+                    <p className="text-xs text-gray-500 mt-1">
+                        Select existing files from your WordPress media library
+                    </p>
+                </div>
+
                 {/* Error Message */}
                 {error && (
                     <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
@@ -329,12 +689,37 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     </div>
                 )}
 
+                {/* Success Message */}
+                {successMessage && (
+                    <div className="text-sm text-green-600 bg-green-50 p-3 rounded-lg">
+                        {successMessage}
+                    </div>
+                )}
+
                 {/* File List */}
                 {files.length > 0 && (
                     <div className="space-y-3">
-                        <h4 className="text-sm font-medium text-gray-700">
-                            {multiple ? 'Uploaded Files' : 'Uploaded File'} ({files.length})
-                        </h4>
+                        {/* File Summary */}
+                        {renderFileSummary()}
+                        
+                        <div className="flex justify-between items-center">
+                            <h4 className="text-sm font-medium text-gray-700">
+                                {multiple ? 'Selected Files' : 'Selected File'} ({files.length})
+                            </h4>
+                            {multiple && files.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setFiles([]);
+                                        onChange([]);
+                                        showSuccessMessage('All files cleared successfully.');
+                                    }}
+                                    className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                                >
+                                    Clear All
+                                </button>
+                            )}
+                        </div>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {files.map((file) => (
@@ -348,16 +733,35 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                                     
                                     {/* File Info */}
                                     <div className="text-center space-y-1">
-                                        <p className="text-sm font-medium text-gray-900 truncate" title={file.name}>
-                                            {file.name}
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                            {file.size_formatted}
-                                        </p>
+                                        {renderFileInfo(file)}
                                     </div>
                                     
                                     {/* File Actions */}
                                     <div className="flex justify-center space-x-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleFileExpansion(file.id)}
+                                            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                                            title={expandedFiles.has(file.id) ? "Hide details" : "Show details"}
+                                        >
+                                            {expandedFiles.has(file.id) ? (
+                                                <span className="text-xs">−</span>
+                                            ) : (
+                                                <span className="text-xs">+</span>
+                                            )}
+                                        </button>
+                                        
+                                        {show_preview && (
+                                            <button
+                                                type="button"
+                                                onClick={() => previewFile(file)}
+                                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                title="Preview file"
+                                            >
+                                                <FileText size={16} />
+                                            </button>
+                                        )}
+                                        
                                         {show_download && (
                                             <button
                                                 type="button"
@@ -380,6 +784,9 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                                             </button>
                                         )}
                                     </div>
+                                    
+                                    {/* File Details */}
+                                    {renderFileDetails(file)}
                                 </div>
                             ))}
                         </div>
