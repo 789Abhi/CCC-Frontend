@@ -229,7 +229,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 min_value: config.min_value || 0,
                 max_value: config.max_value || 100,
                 prepend: config.prepend || '',
-                append: config.append || 'px'
+                append: config.append || ''
               });
             } catch (e) {
               console.error("Error parsing range config:", e);
@@ -237,7 +237,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 min_value: 0,
                 max_value: 100,
                 prepend: '',
-                append: 'px'
+                append: ''
               });
             }
           }
@@ -741,7 +741,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             min_value: fieldConfig?.min_value || 0,
             max_value: fieldConfig?.max_value || 100,
             prepend: fieldConfig?.prepend || '',
-            append: fieldConfig?.append || 'px'
+            append: fieldConfig?.append || ''
           }
           console.log("Range field config for preventDatabaseSave:", fieldData.config);
         }
@@ -869,7 +869,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           min_value: fieldConfig?.min_value || 0,
           max_value: fieldConfig?.max_value || 100,
           prepend: fieldConfig?.prepend || '',
-          append: fieldConfig?.append || 'px'
+          append: fieldConfig?.append || ''
         }
         console.log("Range field config being sent:", config);
         formData.append("field_config", JSON.stringify(config))
@@ -1771,7 +1771,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <input
                       id="rangeAppendValue"
                       type="text"
-                      value={fieldConfig?.append || 'px'}
+                      value={fieldConfig?.append || ''}
                       onChange={(e) => {
                         const currentConfig = fieldConfig || {};
                         setFieldConfig({
@@ -1784,7 +1784,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       disabled={isSubmitting}
                     />
                     <p className="text-xs text-gray-500">
-                      Unit to display after the numeric input (default: px)
+                      Unit to display after the numeric input (optional)
                     </p>
                   </div>
                 </div>

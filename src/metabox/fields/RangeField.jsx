@@ -12,7 +12,7 @@ const RangeField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, 
     const minValue = fieldConfig?.min_value ?? 0;
     const maxValue = fieldConfig?.max_value ?? 100;
     const prependText = fieldConfig?.prepend ?? '';
-    const appendText = fieldConfig?.append ?? 'px';
+    const appendText = fieldConfig?.append ?? '';
 
     useEffect(() => {
         if (fieldValue) {
