@@ -461,6 +461,14 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                 const selectedFiles = [];
 
                 selection.map(attachment => {
+                    console.log('FileField: Processing attachment:', attachment);
+                    console.log('FileField: Attachment ID:', attachment.id);
+                    console.log('FileField: Attachment filename:', attachment.get('filename'));
+                    console.log('FileField: Attachment title:', attachment.get('title'));
+                    console.log('FileField: Attachment URL:', attachment.get('url'));
+                    console.log('FileField: Attachment mime type:', attachment.get('mime_type'));
+                    console.log('FileField: Attachment sizes:', attachment.get('sizes'));
+                    
                     // Validate file type based on allowed_types
                     const mimeType = attachment.get('mime_type');
                     let isAllowed = false;
@@ -482,6 +490,8 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                         mimeType.includes('gzip')
                     )) isAllowed = true;
 
+                    console.log('FileField: File type allowed:', isAllowed);
+
                     if (!isAllowed) {
                         showErrorMessage(`File type ${mimeType} is not allowed for this field`);
                         return;
@@ -490,6 +500,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     // Validate file size
                     const fileSize = attachment.get('filesizeInBytes') || 0;
                     const maxSizeBytes = max_file_size * 1024 * 1024;
+                    console.log('FileField: File size:', fileSize, 'Max allowed:', maxSizeBytes);
                     if (fileSize > maxSizeBytes) {
                         showErrorMessage(`File size exceeds ${max_file_size}MB limit`);
                         return;
@@ -509,8 +520,11 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                         is_media_library: true
                     };
                     
+                    console.log('FileField: Created file data:', fileData);
                     selectedFiles.push(fileData);
                 });
+
+                console.log('FileField: Final selected files array:', selectedFiles);
 
                 if (selectedFiles.length > 0) {
                     console.log('FileField: Media library files selected:', selectedFiles);
@@ -528,6 +542,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                             is_media_library: true
                         }));
                         console.log('FileField: Sending multiple files to onChange:', filesForDB);
+                        console.log('FileField: onChange function available:', typeof onChange === 'function');
                         onChange([...files, ...filesForDB]);
                         showSuccessMessage(`${selectedFiles.length} files added from media library.`);
                     } else {
@@ -545,6 +560,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                             is_media_library: true
                         };
                         console.log('FileField: Sending single file to onChange:', fileData);
+                        console.log('FileField: onChange function available:', typeof onChange === 'function');
                         onChange(fileData);
                         showSuccessMessage(`1 file added from media library.`);
                     }
