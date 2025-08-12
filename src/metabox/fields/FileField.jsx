@@ -507,24 +507,32 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                 if (selectedFiles.length > 0) {
                     if (multiple) {
                         setFiles(prev => [...prev, ...selectedFiles]);
-                        // Send only the essential data for database storage
+                        // Send complete file data for database storage
                         const filesForDB = selectedFiles.map(file => ({
                             id: file.id,
                             url: file.url,
                             type: file.type,
-                            name: file.name
+                            name: file.name,
+                            size: file.size,
+                            size_formatted: file.size_formatted,
+                            thumbnail: file.thumbnail,
+                            is_media_library: true
                         }));
                         onChange([...files, ...filesForDB]);
                         showSuccessMessage(`${selectedFiles.length} files added from media library.`);
                     } else {
                         setFiles(selectedFiles);
-                        // Send only the essential data for database storage
+                        // Send complete file data for database storage
                         const fileForDB = selectedFiles[0];
                         onChange({
                             id: fileForDB.id,
                             url: fileForDB.url,
                             type: fileForDB.type,
-                            name: fileForDB.name
+                            name: fileForDB.name,
+                            size: fileForDB.size,
+                            size_formatted: fileForDB.size_formatted,
+                            thumbnail: fileForDB.thumbnail,
+                            is_media_library: true
                         });
                         showSuccessMessage(`1 file added from media library.`);
                     }
