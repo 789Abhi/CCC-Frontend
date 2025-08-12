@@ -426,8 +426,13 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         setIsOpeningMedia(true);
         setError('');
         
+        console.log('FileField: Opening media library...');
+        console.log('FileField: wp available:', typeof wp !== 'undefined');
+        console.log('FileField: wp.media available:', typeof wp !== 'undefined' && wp.media);
+        
         // Check if WordPress media uploader is available
         if (typeof wp !== 'undefined' && wp.media) {
+            console.log('FileField: Creating media frame...');
             const frame = wp.media({
                 title: 'Select Files',
                 button: {
@@ -449,7 +454,10 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
             });
 
             frame.on('select', () => {
+                console.log('FileField: Media frame select event triggered');
                 const selection = frame.state().get('selection');
+                console.log('FileField: Selection:', selection);
+                console.log('FileField: Selection count:', selection.length);
                 const selectedFiles = [];
 
                 selection.map(attachment => {
@@ -505,6 +513,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                 });
 
                 if (selectedFiles.length > 0) {
+                    console.log('FileField: Media library files selected:', selectedFiles);
                     if (multiple) {
                         setFiles(prev => [...prev, ...selectedFiles]);
                         // Send complete file data for database storage
@@ -518,13 +527,14 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                             thumbnail: file.thumbnail,
                             is_media_library: true
                         }));
+                        console.log('FileField: Sending multiple files to onChange:', filesForDB);
                         onChange([...files, ...filesForDB]);
                         showSuccessMessage(`${selectedFiles.length} files added from media library.`);
                     } else {
                         setFiles(selectedFiles);
                         // Send complete file data for database storage
                         const fileForDB = selectedFiles[0];
-                        onChange({
+                        const fileData = {
                             id: fileForDB.id,
                             url: fileForDB.url,
                             type: fileForDB.type,
@@ -533,7 +543,9 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                             size_formatted: fileForDB.size_formatted,
                             thumbnail: fileForDB.thumbnail,
                             is_media_library: true
-                        });
+                        };
+                        console.log('FileField: Sending single file to onChange:', fileData);
+                        onChange(fileData);
                         showSuccessMessage(`1 file added from media library.`);
                     }
                     setError(''); // Clear any previous errors
