@@ -469,8 +469,62 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     console.log('FileField: Attachment mime type:', attachment.get('mime_type'));
                     console.log('FileField: Attachment sizes:', attachment.get('sizes'));
                     
+                    // Get MIME type - try multiple methods
+                    let mimeType = attachment.get('mime_type');
+                    if (!mimeType) {
+                        // Try to get from attributes
+                        mimeType = attachment.attributes.mime_type;
+                    }
+                    if (!mimeType) {
+                        // Try to get from changed attributes
+                        mimeType = attachment.changed.mime_type;
+                    }
+                    if (!mimeType) {
+                        // Fallback based on file extension
+                        const filename = attachment.get('filename') || '';
+                        const ext = filename.split('.').pop().toLowerCase();
+                        switch(ext) {
+                            case 'jpg':
+                            case 'jpeg':
+                            case 'png':
+                            case 'gif':
+                            case 'webp':
+                                mimeType = 'image/' + (ext === 'jpg' ? 'jpeg' : ext);
+                                break;
+                            case 'mp4':
+                            case 'avi':
+                            case 'mov':
+                            case 'wmv':
+                                mimeType = 'video/' + ext;
+                                break;
+                            case 'mp3':
+                            case 'wav':
+                            case 'ogg':
+                                mimeType = 'audio/' + ext;
+                                break;
+                            case 'pdf':
+                                mimeType = 'application/pdf';
+                                break;
+                            case 'doc':
+                            case 'docx':
+                                mimeType = 'application/msword';
+                                break;
+                            case 'xls':
+                            case 'xlsx':
+                                mimeType = 'application/vnd.ms-excel';
+                                break;
+                            case 'zip':
+                            case 'rar':
+                                mimeType = 'application/' + ext;
+                                break;
+                            default:
+                                mimeType = 'application/octet-stream';
+                        }
+                    }
+                    
+                    console.log('FileField: Final MIME type:', mimeType);
+                    
                     // Validate file type based on allowed_types
-                    const mimeType = attachment.get('mime_type');
                     let isAllowed = false;
                     
                     if (allowed_types.includes('image') && mimeType.startsWith('image/')) isAllowed = true;
@@ -497,8 +551,37 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                         return;
                     }
 
-                    // Validate file size
-                    const fileSize = attachment.get('filesizeInBytes') || 0;
+                    // Get file size - try multiple methods
+                    let fileSize = attachment.get('filesizeInBytes') || 0;
+                    if (!fileSize) {
+                        // Try to get from attributes
+                        fileSize = attachment.attributes.filesizeInBytes || 0;
+                    }
+                    if (!fileSize) {
+                        // Try to get from changed attributes
+                        fileSize = attachment.changed.filesizeInBytes || 0;
+                    }
+                    if (!fileSize) {
+                        // Try to get from other size properties
+                        fileSize = attachment.get('filesize') || 0;
+                    }
+                    if (!fileSize) {
+                        // Try to get from attributes
+                        fileSize = attachment.attributes.filesize || 0;
+                    }
+                    if (!fileSize) {
+                        // Try to get from changed attributes
+                        fileSize = attachment.changed.filesize || 0;
+                    }
+                    
+                    // If still no file size, try to get from the full size image
+                    if (!fileSize && attachment.get('sizes') && attachment.get('sizes').full) {
+                        // This is a rough estimate - we'll use a default size
+                        fileSize = 1024 * 1024; // 1MB default
+                    }
+                    
+                    console.log('FileField: Final file size:', fileSize);
+                    
                     const maxSizeBytes = max_file_size * 1024 * 1024;
                     console.log('FileField: File size:', fileSize, 'Max allowed:', maxSizeBytes);
                     if (fileSize > maxSizeBytes) {
@@ -543,6 +626,8 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                         }));
                         console.log('FileField: Sending multiple files to onChange:', filesForDB);
                         console.log('FileField: onChange function available:', typeof onChange === 'function');
+                        console.log('FileField: Current files state:', files);
+                        console.log('FileField: Calling onChange with:', [...files, ...filesForDB]);
                         onChange([...files, ...filesForDB]);
                         showSuccessMessage(`${selectedFiles.length} files added from media library.`);
                     } else {
@@ -561,10 +646,13 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                         };
                         console.log('FileField: Sending single file to onChange:', fileData);
                         console.log('FileField: onChange function available:', typeof onChange === 'function');
+                        console.log('FileField: Calling onChange with:', fileData);
                         onChange(fileData);
                         showSuccessMessage(`1 file added from media library.`);
                     }
                     setError(''); // Clear any previous errors
+                } else {
+                    console.log('FileField: No valid files selected after processing');
                 }
                 
                 setIsOpeningMedia(false);
