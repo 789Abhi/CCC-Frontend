@@ -665,6 +665,9 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                   );
                 }
                 if (field.type === 'user') {
+                  console.log('ComponentItem: Rendering UserField for field:', field);
+                  console.log('ComponentItem: Field config:', field.config);
+                  
                   const isRequired = field.required || false;
                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
                   const multiple = field.config && field.config.multiple;
@@ -676,6 +679,15 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                   if (multiple && typeof value === 'string' && value) {
                     value = value.split(',').map(id => id.trim()).filter(id => id);
                   }
+                  
+                  console.log('ComponentItem: UserField props:', { 
+                    label: field.label, 
+                    value, 
+                    multiple, 
+                    required: isRequired, 
+                    roleFilter: field.config?.role_filter || [], 
+                    returnType: field.config?.return_type || 'id' 
+                  });
                   
                   const handleChange = val => {
                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
