@@ -55,13 +55,17 @@ function UserField({
         
         const data = await response.json();
         console.log('UserField: Response data:', data);
+        console.log('UserField: Response data type:', typeof data);
+        console.log('UserField: Response data.data:', data.data);
+        console.log('UserField: Response data.data type:', typeof data.data);
+        console.log('UserField: Response data.data is array:', Array.isArray(data.data));
         
-        if (data.success && Array.isArray(data.data)) {
+        if (data.data && Array.isArray(data.data)) {
           setUsers(data.data);
           console.log('UserField: Users loaded successfully:', data.data.length);
         } else {
           console.error('UserField: Failed to load users:', data);
-          setErrorMessage(data.data || 'Failed to load users');
+          setErrorMessage('Failed to load users');
         }
       } catch (error) {
         console.error('Error loading users:', error);
