@@ -142,7 +142,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
     const getFileIcon = (fileType) => {
         if (fileType.startsWith('image/')) return <Image size={20} className="text-blue-500" />;
         if (fileType.startsWith('video/')) return <Video size={20} className="text-red-500" />;
-        if (fileType.startsWith('audio/')) return <Music size={20} className="text-green-500" />;
+        if (fileType.startsWith('audio/')) return <Music size={20} className="text-green-600" />;
         if (fileType === 'application/pdf') return <FileText size={20} className="text-red-600" />;
         if (fileType.includes('document') || fileType.includes('word') || fileType.includes('excel')) {
             return <File size={20} className="text-blue-600" />;
