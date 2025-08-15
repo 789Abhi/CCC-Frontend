@@ -59,13 +59,23 @@ function UserField({
         console.log('UserField: Response data.data:', data.data);
         console.log('UserField: Response data.data type:', typeof data.data);
         console.log('UserField: Response data.data is array:', Array.isArray(data.data));
+        console.log('UserField: Response data.data.data:', data.data?.data);
+        console.log('UserField: Response data.data.data is array:', Array.isArray(data.data?.data));
         
+        // Handle nested response structure from WordPress
+        let usersArray = null;
         if (data.data && Array.isArray(data.data)) {
-          setUsers(data.data);
-          console.log('UserField: Users loaded successfully:', data.data.length);
+          usersArray = data.data;
+        } else if (data.data && data.data.data && Array.isArray(data.data.data)) {
+          usersArray = data.data.data;
+        }
+        
+        if (usersArray) {
+          setUsers(usersArray);
+          console.log('UserField: Users loaded successfully:', usersArray.length);
         } else {
-          console.error('UserField: Failed to load users:', data);
-          setErrorMessage('Failed to load users');
+          console.error('UserField: Failed to load users - unexpected response structure:', data);
+          setErrorMessage('Failed to load users - unexpected response structure');
         }
       } catch (error) {
         console.error('Error loading users:', error);
