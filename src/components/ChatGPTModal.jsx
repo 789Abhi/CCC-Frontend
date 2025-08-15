@@ -181,6 +181,7 @@ Please return ONLY the JSON response, no additional text.`;
         "radio",
         "wysiwyg",
         "repeater",
+        "user",
       ];
       const fieldTypeMapping = {
         number: "text",
@@ -200,6 +201,10 @@ Please return ONLY the JSON response, no additional text.`;
         editor: "wysiwyg",
         repeater: "repeater",
         repeat: "repeater",
+        user: "user",
+        users: "user",
+        "user_select": "user",
+        "user_picker": "user",
       };
 
       const normalizedFields = componentData.fields.map((field, index) => {
@@ -240,21 +245,47 @@ Please return ONLY the JSON response, no additional text.`;
             options.push({ value: i.toString(), label: i.toString() });
           }
           normalizedField.config = { options };
+        } else if (normalizedField.type === "user") {
+          // Handle user field configuration
+          normalizedField.config = {
+            role_filter: field.roles || field.role_filter || [],
+            multiple: field.multiple || field.multi || false,
+            return_type: field.return_type || field.return_format || 'id',
+            searchable: field.searchable !== undefined ? field.searchable : true,
+            orderby: field.orderby || field.order_by || 'display_name',
+            order: field.order || 'ASC'
+          };
         } else if (normalizedField.type === "repeater" && field.children) {
           // Handle repeater field with nested children from ChatGPT
           const nestedFields = field.children.map(
-            (child, childIndex) => ({
-              label:
-                child.label || child.name || `Nested Field ${childIndex + 1}`,
-              name:
-                child.name ||
-                child.label?.toLowerCase().replace(/\s+/g, "_") ||
-                `nested_field_${childIndex + 1}`,
-              type: fieldTypeMapping[child.type?.toLowerCase()] || "text",
-              required: child.required || false,
-              placeholder: child.placeholder || "",
-              config: {},
-            })
+            (child, childIndex) => {
+              const nestedField = {
+                label:
+                  child.label || child.name || `Nested Field ${childIndex + 1}`,
+                name:
+                  child.name ||
+                  child.label?.toLowerCase().replace(/\s+/g, "_") ||
+                  `nested_field_${childIndex + 1}`,
+                type: fieldTypeMapping[child.type?.toLowerCase()] || "text",
+                required: child.required || false,
+                placeholder: child.placeholder || "",
+                config: {},
+              };
+
+              // Handle nested user field configuration
+              if (nestedField.type === "user") {
+                nestedField.config = {
+                  role_filter: child.roles || child.role_filter || [],
+                  multiple: child.multiple || child.multi || false,
+                  return_type: child.return_type || child.return_format || 'id',
+                  searchable: child.searchable !== undefined ? child.searchable : true,
+                  orderby: child.orderby || child.order_by || 'display_name',
+                  order: child.order || 'ASC'
+                };
+              }
+
+              return nestedField;
+            }
           );
           
           // Store nested fields in the config for the repeater field

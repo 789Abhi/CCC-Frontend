@@ -18,6 +18,7 @@ import NumberField from '../fields/NumberField';
 import RangeField from '../fields/RangeField';
 import FileField from '../fields/FileField';
 import RepeaterField from '../fields/RepeaterField';
+import UserField from '../fields/UserField';
 
 function ToggleSwitch({ checked, onChange }) {
   return (
@@ -660,6 +661,37 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                       fieldId={field.id}
                       instanceId={component.instance_id}
                       children={field.children || []}
+                    />
+                  );
+                }
+                if (field.type === 'user') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  const multiple = field.config && field.config.multiple;
+                  let value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || (multiple ? [] : '')));
+                  
+                  // Handle multiple user selection
+                  if (multiple && typeof value === 'string' && value) {
+                    value = value.split(',').map(id => id.trim()).filter(id => id);
+                  }
+                  
+                  const handleChange = val => {
+                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                  };
+                  
+                  return (
+                    <UserField
+                      key={field.id}
+                      label={field.label}
+                      value={value}
+                      onChange={handleChange}
+                      multiple={multiple}
+                      required={isRequired}
+                      error={isRequired && (multiple ? !value?.length : !value)}
+                      roleFilter={field.config?.role_filter || []}
+                      returnType={field.config?.return_type || 'id'}
                     />
                   );
                 }

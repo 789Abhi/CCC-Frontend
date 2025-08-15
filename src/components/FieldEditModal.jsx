@@ -89,6 +89,16 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   // Number field configuration state
   const [fieldConfig, setFieldConfig] = useState({});
 
+  // User field configuration state
+  const [userConfig, setUserConfig] = useState({
+    role_filter: [],
+    multiple: false,
+    return_type: 'id',
+    searchable: true,
+    orderby: 'display_name',
+    order: 'ASC'
+  });
+
   // Available post types and taxonomies for relationship field
   const [availablePostTypes, setAvailablePostTypes] = useState([]);
   const [availableTaxonomies, setAvailableTaxonomies] = useState([]);
@@ -102,7 +112,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "video",
     "oembed",
     "relationship",
-            "link",
+        "link",
         "email",
         "number",
         "range",
@@ -113,6 +123,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "select",
     "checkbox",
     "radio",
+    "user",
   ]
 
   useEffect(() => {
@@ -265,6 +276,28 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 show_delete: true
               });
             }
+          } else if (field.type === 'user' && field.config) {
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              setUserConfig({
+                role_filter: config.role_filter || [],
+                multiple: config.multiple || false,
+                return_type: config.return_type || 'id',
+                searchable: config.searchable !== undefined ? config.searchable : true,
+                orderby: config.orderby || 'display_name',
+                order: config.order || 'ASC'
+              });
+            } catch (e) {
+              console.error("Error parsing user config:", e);
+              setUserConfig({
+                role_filter: [],
+                multiple: false,
+                return_type: 'id',
+                searchable: true,
+                orderby: 'display_name',
+                order: 'ASC'
+              });
+            }
           }
           
           if (field.type === 'select' && field.config) {
@@ -351,6 +384,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         post_types: ['post', 'page'],
         show_target: true,
         show_title: true
+      });
+      setUserConfig({
+        role_filter: [],
+        multiple: false,
+        return_type: 'id',
+        searchable: true,
+        orderby: 'display_name',
+        order: 'ASC'
       });
     }
 
@@ -780,6 +821,16 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             show_delete: fieldConfig?.show_delete !== undefined ? fieldConfig?.show_delete : true
           }
           console.log("File field config for preventDatabaseSave:", fieldData.config);
+        } else if (type === "user") {
+          fieldData.config = {
+            role_filter: userConfig.role_filter || [],
+            multiple: userConfig.multiple || false,
+            return_type: userConfig.return_type || 'id',
+            searchable: userConfig.searchable !== undefined ? userConfig.searchable : true,
+            orderby: userConfig.orderby || 'display_name',
+            order: userConfig.order || 'ASC'
+          }
+          console.log("User field config for preventDatabaseSave:", fieldData.config);
         }
 
         onSave(fieldData)
@@ -847,6 +898,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               }
               processedField.config = {
                 options: optionsObject
+              }
+            } else if (field.type === 'user') {
+              processedField.config = {
+                role_filter: field.config?.role_filter || [],
+                multiple: field.config?.multiple || false,
+                return_type: field.config?.return_type || 'id',
+                searchable: field.config?.searchable !== undefined ? field.config?.searchable : true,
+                orderby: field.config?.orderby || 'display_name',
+                order: field.config?.order || 'ASC'
               }
             }
             
@@ -920,6 +980,17 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           show_delete: fieldConfig?.show_delete !== undefined ? fieldConfig?.show_delete : true
         }
         console.log("File field config being sent:", config);
+        formData.append("field_config", JSON.stringify(config))
+      } else if (type === "user") {
+        const config = {
+          role_filter: userConfig.role_filter || [],
+          multiple: userConfig.multiple || false,
+          return_type: userConfig.return_type || 'id',
+          searchable: userConfig.searchable !== undefined ? userConfig.searchable : true,
+          orderby: userConfig.orderby || 'display_name',
+          order: userConfig.order || 'ASC'
+        }
+        console.log("User field config being sent:", config);
         formData.append("field_config", JSON.stringify(config))
       }
 
@@ -2009,6 +2080,128 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   <p className="text-xs text-gray-500">
                     Control which UI elements are displayed for uploaded files
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* User Field Settings */}
+            {type === "user" && (
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">User Field Settings</h4>
+
+                {/* Multiple Selection */}
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={userConfig.multiple}
+                      onChange={(e) => setUserConfig(prev => ({ ...prev, multiple: e.target.checked }))}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Allow Multiple Selection</span>
+                  </label>
+                  <p className="text-xs text-gray-500">Users can select multiple users if enabled</p>
+                </div>
+
+                {/* Return Type */}
+                <div className="space-y-2">
+                  <label htmlFor="userReturnType" className="block text-sm font-medium text-gray-700">
+                    Return Type
+                  </label>
+                  <select
+                    id="userReturnType"
+                    value={userConfig.return_type}
+                    onChange={(e) => setUserConfig(prev => ({ ...prev, return_type: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="id">User ID only</option>
+                    <option value="object">Full User Object</option>
+                    <option value="array">User Data Array</option>
+                  </select>
+                  <p className="text-xs text-gray-500">Format of the returned user data</p>
+                </div>
+
+                {/* Searchable */}
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={userConfig.searchable}
+                      onChange={(e) => setUserConfig(prev => ({ ...prev, searchable: e.target.checked }))}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Enable Search</span>
+                  </label>
+                  <p className="text-xs text-gray-500">Allow users to search through the user list</p>
+                </div>
+
+                {/* Order By */}
+                <div className="space-y-2">
+                  <label htmlFor="userOrderBy" className="block text-sm font-medium text-gray-700">
+                    Order By
+                  </label>
+                  <select
+                    id="userOrderBy"
+                    value={userConfig.orderby}
+                    onChange={(e) => setUserConfig(prev => ({ ...prev, orderby: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="display_name">Display Name</option>
+                    <option value="user_login">Username</option>
+                    <option value="user_email">Email</option>
+                    <option value="user_registered">Registration Date</option>
+                  </select>
+                  <p className="text-xs text-gray-500">How to sort the user list</p>
+                </div>
+
+                {/* Order */}
+                <div className="space-y-2">
+                  <label htmlFor="userOrder" className="block text-sm font-medium text-gray-700">
+                    Order
+                  </label>
+                  <select
+                    id="userOrder"
+                    value={userConfig.order}
+                    onChange={(e) => setUserConfig(prev => ({ ...prev, order: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="ASC">Ascending (A-Z)</option>
+                    <option value="DESC">Descending (Z-A)</option>
+                  </select>
+                  <p className="text-xs text-gray-500">Sort order for the user list</p>
+                </div>
+
+                {/* Role Filter */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Role Filter
+                  </label>
+                  <div className="space-y-2">
+                    {['administrator', 'editor', 'author', 'contributor', 'subscriber'].map(role => (
+                      <label key={role} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={userConfig.role_filter.includes(role)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setUserConfig(prev => ({
+                                ...prev,
+                                role_filter: [...prev.role_filter, role]
+                              }));
+                            } else {
+                              setUserConfig(prev => ({
+                                ...prev,
+                                role_filter: prev.role_filter.filter(r => r !== role)
+                              }));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 capitalize">{role}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">Limit user selection to specific roles (leave empty for all roles)</p>
                 </div>
               </div>
             )}
