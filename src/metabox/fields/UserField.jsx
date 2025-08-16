@@ -142,14 +142,21 @@ function UserField({
     onChange(newValue);
   };
 
-  // Handle multiple selection change
-  const handleMultipleSelectionChange = (e) => {
-    const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
-    console.log('UserField: Multiple selection changed to:', selectedOptions);
-    console.log('UserField: Previous values were:', localValue);
-    
-    setLocalValue(selectedOptions);
-    onChange(selectedOptions);
+  // Handle checkbox change for multiple selection
+  const handleCheckboxChange = (userId, checked) => {
+    if (multiple) {
+      let newValues;
+      if (checked) {
+        // Add user to selection
+        newValues = [...localValue, userId];
+      } else {
+        // Remove user from selection
+        newValues = localValue.filter(id => id !== userId);
+      }
+      console.log('UserField: Checkbox selection changed:', { userId, checked, newValues });
+      setLocalValue(newValues);
+      onChange(newValues);
+    }
   };
 
   // Remove user from multiple selection
@@ -215,26 +222,27 @@ function UserField({
           No users found
         </div>
       ) : multiple ? (
-        // Multiple selection interface
+        // Checkbox-based multiple selection interface
         <div>
-          <select
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            multiple
-            value={localValue}
-            onChange={handleMultipleSelectionChange}
-            required={required}
-            size="4"
-          >
+          <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-white">
             {users.map(user => (
-              <option key={user.ID} value={user.ID}>
-                {user.display_name} ({user.user_email})
-              </option>
+              <label key={user.ID} className="flex items-center space-x-3 py-2 hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={localValue.includes(user.ID)}
+                  onChange={(e) => handleCheckboxChange(user.ID, e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="text-sm text-gray-900">
+                  {user.display_name} ({user.user_email})
+                </span>
+              </label>
             ))}
-          </select>
+          </div>
           
           {/* Show selected users as tags */}
           {localValue.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {localValue.map(userId => (
                 <span 
                   key={userId}
@@ -253,8 +261,8 @@ function UserField({
             </div>
           )}
           
-          <p className="text-xs text-gray-500 mt-1">
-            Hold Ctrl (or Cmd on Mac) to select multiple users
+          <p className="text-xs text-gray-500 mt-2">
+            Check the boxes to select multiple users
           </p>
         </div>
       ) : (
