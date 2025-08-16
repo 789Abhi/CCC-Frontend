@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 const UserField = ({ 
   label, 
@@ -14,6 +14,7 @@ const UserField = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef(null);
   
   // Get cccData from window object
   const cccData = window.cccData;
@@ -57,6 +58,11 @@ const UserField = ({
 
   // Load users from WordPress
   const loadUsers = useCallback(async () => {
+    console.log('UserField: loadUsers called');
+    console.log('UserField: cccData available:', !!cccData);
+    console.log('UserField: cccData.ajaxUrl:', cccData?.ajaxUrl);
+    console.log('UserField: cccData.nonce:', cccData?.nonce);
+    
     if (!cccData || !cccData.ajaxUrl || !cccData.nonce) {
       console.error('UserField: cccData not available');
       return;
@@ -70,6 +76,8 @@ const UserField = ({
         role_filter: JSON.stringify(roleFilter)
       });
 
+      console.log('UserField: Making AJAX request with body:', requestBody.toString());
+
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         body: requestBody,
@@ -79,10 +87,15 @@ const UserField = ({
       });
 
       const data = await response.json();
+      console.log('UserField: AJAX response received:', data);
+      console.log('UserField: Response success:', data.success);
+      console.log('UserField: Response data:', data.data);
+      console.log('UserField: Response data is array:', Array.isArray(data.data));
       
       if (data.success && data.data && Array.isArray(data.data)) {
+        console.log('UserField: Setting users state with:', data.data);
         setUsers(data.data);
-        console.log('UserField: Loaded users:', data.data);
+        console.log('UserField: Users state set, length:', data.data.length);
       } else {
         console.error('UserField: Failed to load users:', data);
       }
@@ -95,10 +108,25 @@ const UserField = ({
 
   // Load users when component mounts
   useEffect(() => {
+    console.log('UserField: useEffect triggered, cccData available:', !!cccData);
     if (cccData) {
       loadUsers();
     }
   }, [loadUsers]);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Handle single selection change
   const handleSingleSelectionChange = (e) => {
@@ -133,6 +161,11 @@ const UserField = ({
 
   // Get selected count for dropdown button
   const selectedCount = multiple ? localValue.length : 0;
+
+  console.log('UserField: Component render - users length:', users.length);
+  console.log('UserField: Component render - users:', users);
+  console.log('UserField: Component render - isLoading:', isLoading);
+  console.log('UserField: Component render - multiple:', multiple);
 
   // If cccData is not available yet, show loading state
   if (!cccData) {
@@ -177,7 +210,7 @@ const UserField = ({
         </select>
       ) : (
         // Multiple selection interface with dropdown and checkboxes
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
           <button
             type="button"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -232,6 +265,13 @@ const UserField = ({
       {isLoading && (
         <div className="text-sm text-gray-500 mt-1">Loading users...</div>
       )}
+
+      {/* Debug info */}
+      <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-50 rounded">
+        Debug: {users.length} users loaded, Role Filter: {roleFilter.join(', ') || 'none'}, 
+        Local Value: {JSON.stringify(localValue)}, Prop Value: {JSON.stringify(value)}, 
+        Multiple: {multiple ? 'Yes' : 'No'}, Loading: {isLoading ? 'Yes' : 'No'}
+      </div>
     </div>
   );
 };
