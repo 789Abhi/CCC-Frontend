@@ -145,18 +145,19 @@ const UserField = ({
   // Handle checkbox change for multiple selection
   const handleCheckboxChange = (userId, checked) => {
     if (multiple) {
+      const idNum = Number(userId);
       let newValues;
       if (checked) {
         // Add user to selection
-        newValues = [...localValue, userId];
+        newValues = [...localValue, idNum];
       } else {
         // Remove user from selection
-        newValues = localValue.filter(id => id !== userId);
+        newValues = localValue.filter(id => Number(id) !== idNum);
       }
-      
-      // Ensure we only have clean integers
-      newValues = newValues.filter(v => Number.isInteger(v)).sort((a, b) => a - b);
-      
+
+      // Normalize to unique integers, keep only valid numbers
+      newValues = Array.from(new Set(newValues.map(n => Number(n)))).filter(n => Number.isInteger(n)).sort((a, b) => a - b);
+
       setLocalValue(newValues);
       onChange(newValues);
     }
@@ -164,7 +165,8 @@ const UserField = ({
 
   // Helper function to check if a user is selected
   const isUserSelected = (userId) => {
-    return localValue.includes(userId);
+    const idNum = Number(userId);
+    return localValue.some(v => Number(v) === idNum);
   };
 
   // Filter users based on search term
