@@ -20,12 +20,39 @@ function UserField({
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [localValue, setLocalValue] = useState(multiple ? (Array.isArray(value) ? value : (value ? [value] : [])) : (value || ''));
+  const [localValue, setLocalValue] = useState(() => {
+    if (multiple) {
+      // Handle case where value might be a JSON string
+      if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          console.warn('UserField: Failed to parse JSON value:', value, e);
+          return [];
+        }
+      }
+      return Array.isArray(value) ? value : (value ? [value] : []);
+    } else {
+      return value || '';
+    }
+  });
 
   // Update local value when prop changes
   useEffect(() => {
     if (multiple) {
-      setLocalValue(Array.isArray(value) ? value : (value ? [value] : []));
+      // Handle case where value might be a JSON string
+      if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(value);
+          setLocalValue(Array.isArray(parsed) ? parsed : []);
+        } catch (e) {
+          console.warn('UserField: Failed to parse JSON value:', value, e);
+          setLocalValue([]);
+        }
+      } else {
+        setLocalValue(Array.isArray(value) ? value : (value ? [value] : []));
+      }
     } else {
       setLocalValue(value || '');
     }
@@ -97,21 +124,13 @@ function UserField({
     } finally {
       setIsLoading(false);
     }
-  }, [roleFilter]);
+  }, [roleFilter, cccData]);
 
   useEffect(() => {
     if (cccData) {
       loadUsers();
     }
-  }, [loadUsers, cccData]);
-
-  // If we have saved values but no users loaded, ensure we load all users
-  useEffect(() => {
-    if (localValue && localValue.length > 0 && users.length === 0 && !isLoading) {
-      console.log('UserField: Have saved values but no users loaded, triggering load');
-      loadUsers();
-    }
-  }, [localValue, users.length, isLoading, loadUsers]);
+  }, [loadUsers]);
 
   // Handle single selection change
   const handleSingleSelectionChange = (e) => {
@@ -154,56 +173,8 @@ function UserField({
       return `Loading user ${userId}...`;
     }
     
-    // If user not found in loaded users, try to fetch this specific user
-    if (cccData.ajaxUrl && cccData.nonce) {
-      // This will trigger a fetch for the missing user
-      fetchMissingUser(userId);
-      return `Loading user ${userId}...`;
-    }
-    
     return `User ${userId}`;
   };
-
-  // Fetch a specific user if not already loaded
-  const fetchMissingUser = async (userId) => {
-    try {
-      const requestBody = new URLSearchParams({
-        action: 'ccc_get_users',
-        nonce: cccData.nonce,
-        user_id: userId // Add specific user ID parameter
-      });
-
-      const response = await fetch(cccData.ajaxUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: requestBody
-      });
-
-      const data = await response.json();
-      if (data.success && data.data && Array.isArray(data.data)) {
-        // Add the new user to the users array
-        setUsers(prevUsers => {
-          const existingUser = prevUsers.find(u => u.ID == userId);
-          if (!existingUser) {
-            return [...prevUsers, ...data.data];
-          }
-          return prevUsers;
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching missing user:', error);
-    }
-  };
-
-  // If we have saved values but no users loaded, ensure we load all users
-  useEffect(() => {
-    if (localValue && localValue.length > 0 && users.length === 0 && !isLoading) {
-      console.log('UserField: Have saved values but no users loaded, triggering load');
-      loadUsers();
-    }
-  }, [localValue, users.length, isLoading, loadUsers]);
 
   // If cccData is not available yet, show loading state
   if (!cccData) {
