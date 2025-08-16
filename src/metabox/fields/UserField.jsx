@@ -102,11 +102,21 @@ const UserField = ({
       console.log('UserField: Response data type:', typeof data.data);
       console.log('UserField: Response data is array:', Array.isArray(data.data));
       
+      // Handle WordPress's nested response structure
+      let usersArray = null;
       if (data.success && data.data && Array.isArray(data.data)) {
-        console.log('UserField: Setting users state with:', data.data);
-        setUsers(data.data);
+        // Direct array structure
+        usersArray = data.data;
+      } else if (data.success && data.data && data.data.data && Array.isArray(data.data.data)) {
+        // Nested structure: data.data.data
+        usersArray = data.data.data;
+      }
+      
+      if (usersArray) {
+        console.log('UserField: Setting users state with:', usersArray);
+        setUsers(usersArray);
       } else {
-        console.error('UserField: Failed to load users:', data);
+        console.error('UserField: Failed to load users - unexpected response structure:', data);
       }
     } catch (error) {
       console.error('UserField: Error loading users:', error);
@@ -191,11 +201,6 @@ const UserField = ({
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
-      
-      {/* Debug info */}
-      <div className="text-xs text-gray-400 mb-2 p-2 bg-gray-50 rounded">
-        Debug: {users.length} users loaded, Local Value: {JSON.stringify(localValue)}, Multiple: {multiple ? 'Yes' : 'No'}
-      </div>
       
       {multiple ? (
         <div className="relative" ref={dropdownRef}>
