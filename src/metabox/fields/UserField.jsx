@@ -157,12 +157,19 @@ const UserField = ({
         newValues = [...localValue, userId];
       } else {
         // Remove user from selection
-        newValues = localValue.filter(id => id !== userId);
+        newValues = localValue.filter(id => id != userId); // Use != for loose comparison
       }
-      console.log('UserField: Checkbox selection changed:', { userId, checked, newValues });
+      console.log('UserField: Checkbox selection changed:', { userId, checked, newValues, currentLocalValue: localValue });
       setLocalValue(newValues);
       onChange(newValues);
     }
+  };
+
+  // Helper function to check if a user is selected
+  const isUserSelected = (userId) => {
+    const selected = localValue.some(id => id == userId); // Use == for loose comparison
+    console.log('UserField: Checking if user selected:', { userId, localValue, selected });
+    return selected;
   };
 
   // Filter users based on search term
@@ -254,7 +261,7 @@ const UserField = ({
                     <label key={user.ID} className="flex items-center p-2 hover:bg-gray-50 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={localValue.includes(user.ID)}
+                        checked={isUserSelected(user.ID)}
                         onChange={(e) => handleCheckboxChange(user.ID, e.target.checked)}
                         className="mr-2 text-blue-600 focus:ring-blue-500"
                       />
