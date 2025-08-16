@@ -68,6 +68,10 @@ const UserField = ({
 
   // Load users from WordPress
   const loadUsers = useCallback(async () => {
+    console.log('UserField: loadUsers called');
+    console.log('UserField: window.cccData available:', !!window.cccData);
+    console.log('UserField: window.cccData:', window.cccData);
+    
     if (!window.cccData || !window.cccData.ajaxUrl) {
       console.error('UserField: cccData not available');
       return;
@@ -79,14 +83,27 @@ const UserField = ({
       formData.append('nonce', window.cccData.nonce);
       formData.append('role_filter', JSON.stringify(roleFilter));
 
+      console.log('UserField: Making AJAX request to:', window.cccData.ajaxUrl);
+      console.log('UserField: Request data:', {
+        action: 'ccc_get_users',
+        nonce: window.cccData.nonce,
+        role_filter: JSON.stringify(roleFilter)
+      });
+
       const response = await fetch(window.cccData.ajaxUrl, {
         method: 'POST',
         body: formData
       });
 
       const data = await response.json();
+      console.log('UserField: Raw response:', data);
+      console.log('UserField: Response success:', data.success);
+      console.log('UserField: Response data:', data.data);
+      console.log('UserField: Response data type:', typeof data.data);
+      console.log('UserField: Response data is array:', Array.isArray(data.data));
       
       if (data.success && data.data && Array.isArray(data.data)) {
+        console.log('UserField: Setting users state with:', data.data);
         setUsers(data.data);
       } else {
         console.error('UserField: Failed to load users:', data);
@@ -164,12 +181,21 @@ const UserField = ({
     return <div className="mb-4">Loading users...</div>;
   }
 
+  console.log('UserField: Rendering with users:', users);
+  console.log('UserField: Rendering with localValue:', localValue);
+  console.log('UserField: Rendering with multiple:', multiple);
+
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-2">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
+      
+      {/* Debug info */}
+      <div className="text-xs text-gray-400 mb-2 p-2 bg-gray-50 rounded">
+        Debug: {users.length} users loaded, Local Value: {JSON.stringify(localValue)}, Multiple: {multiple ? 'Yes' : 'No'}
+      </div>
       
       {multiple ? (
         <div className="relative" ref={dropdownRef}>
