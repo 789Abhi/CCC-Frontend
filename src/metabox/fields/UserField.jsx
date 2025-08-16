@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const UserField = ({ 
   label, 
@@ -11,152 +11,96 @@ const UserField = ({
   returnType = 'id' 
 }) => {
   const [users, setUsers] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
-  
-  // Get cccData from window object
-  const cccData = window.cccData;
 
-  // Initialize localValue with proper JSON parsing for multiple selection
+  // Initialize localValue with proper parsing
   const [localValue, setLocalValue] = useState(() => {
-    console.log('UserField: Initializing localValue with value:', value);
-    console.log('UserField: Value type:', typeof value);
-    console.log('UserField: Multiple:', multiple);
-    
     if (multiple) {
-      // Handle case where value might be a JSON string
+      // For multiple selection, ensure we always have a clean array of integers
       if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
         try {
           const parsed = JSON.parse(value);
-          console.log('UserField: Parsed JSON value:', parsed);
-          return Array.isArray(parsed) ? parsed : [];
+          return Array.isArray(parsed) ? parsed.filter(v => Number.isInteger(Number(v))).map(Number) : [];
         } catch (e) {
-          console.warn('UserField: Failed to parse JSON value:', value, e);
           return [];
         }
       }
-      // If value is already an array, use it directly
       if (Array.isArray(value)) {
-        console.log('UserField: Value is already an array:', value);
-        return value;
+        return value.filter(v => Number.isInteger(Number(v))).map(Number);
       }
-      // If value is a single number/string, convert to array
-      if (value && value !== '') {
-        console.log('UserField: Converting single value to array:', value);
-        return [value];
-      }
-      console.log('UserField: No value, returning empty array');
       return [];
     }
-    return value || '';
+    // For single selection, ensure we have a single integer or empty string
+    if (value && Number.isInteger(Number(value))) {
+      return Number(value);
+    }
+    return '';
   });
 
   // Update local value when prop changes
   useEffect(() => {
-    console.log('UserField: useEffect triggered - value changed:', value);
-    console.log('UserField: New value type:', typeof value);
-    console.log('UserField: Multiple:', multiple);
-    
     if (multiple) {
-      let newValue;
       if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
         try {
           const parsed = JSON.parse(value);
-          newValue = Array.isArray(parsed) ? parsed : [];
-          console.log('UserField: Parsed new value:', newValue);
+          const cleanArray = Array.isArray(parsed) ? parsed.filter(v => Number.isInteger(Number(v))).map(Number) : [];
+          setLocalValue(cleanArray);
         } catch (e) {
-          console.warn('UserField: Failed to parse new JSON value:', value, e);
-          newValue = [];
+          setLocalValue([]);
         }
       } else if (Array.isArray(value)) {
-        newValue = value;
-        console.log('UserField: New value is already array:', newValue);
-      } else if (value && value !== '') {
-        newValue = [value];
-        console.log('UserField: Converting new single value to array:', newValue);
+        const cleanArray = value.filter(v => Number.isInteger(Number(v))).map(Number);
+        setLocalValue(cleanArray);
       } else {
-        newValue = [];
-        console.log('UserField: New value is empty, setting empty array');
+        setLocalValue([]);
       }
-      
-      console.log('UserField: Setting localValue to:', newValue);
-      setLocalValue(newValue);
     } else {
-      console.log('UserField: Single selection, setting localValue to:', value || '');
-      setLocalValue(value || '');
+      if (value && Number.isInteger(Number(value))) {
+        setLocalValue(Number(value));
+      } else {
+        setLocalValue('');
+      }
     }
   }, [value, multiple]);
 
   // Load users from WordPress
   const loadUsers = useCallback(async () => {
-    console.log('UserField: loadUsers called');
-    console.log('UserField: cccData available:', !!cccData);
-    console.log('UserField: cccData.ajaxUrl:', cccData?.ajaxUrl);
-    console.log('UserField: cccData.nonce:', cccData?.nonce);
-    
-    if (!cccData || !cccData.ajaxUrl || !cccData.nonce) {
+    if (!window.cccData || !window.cccData.ajaxUrl) {
       console.error('UserField: cccData not available');
       return;
     }
 
-    setIsLoading(true);
     try {
-      const requestBody = new URLSearchParams({
-        action: 'ccc_get_users',
-        nonce: cccData.nonce,
-        role_filter: JSON.stringify(roleFilter)
-      });
+      const formData = new FormData();
+      formData.append('action', 'ccc_get_users');
+      formData.append('nonce', window.cccData.nonce);
+      formData.append('role_filter', JSON.stringify(roleFilter));
 
-      console.log('UserField: Making AJAX request with body:', requestBody.toString());
-
-      const response = await fetch(cccData.ajaxUrl, {
+      const response = await fetch(window.cccData.ajaxUrl, {
         method: 'POST',
-        body: requestBody,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+        body: formData
       });
 
       const data = await response.json();
-      console.log('UserField: AJAX response received:', data);
-      console.log('UserField: Response success:', data.success);
-      console.log('UserField: Response data:', data.data);
-      console.log('UserField: Response data is array:', Array.isArray(data.data));
-      console.log('UserField: Response data.data:', data.data?.data);
-      console.log('UserField: Response data.data is array:', Array.isArray(data.data?.data));
       
-      // Handle WordPress's nested response structure
-      let usersArray = null;
       if (data.success && data.data && Array.isArray(data.data)) {
-        // Direct array structure
-        usersArray = data.data;
-      } else if (data.success && data.data && data.data.data && Array.isArray(data.data.data)) {
-        // Nested structure: data.data.data
-        usersArray = data.data.data;
-      }
-      
-      if (usersArray) {
-        console.log('UserField: Setting users state with:', usersArray);
-        setUsers(usersArray);
-        console.log('UserField: Users state set, length:', usersArray.length);
+        setUsers(data.data);
       } else {
-        console.error('UserField: Failed to load users - unexpected response structure:', data);
+        console.error('UserField: Failed to load users:', data);
       }
     } catch (error) {
       console.error('UserField: Error loading users:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [roleFilter, cccData]);
+  }, [roleFilter]);
 
-  // Load users when component mounts
+  // Load users on component mount
   useEffect(() => {
-    console.log('UserField: useEffect triggered, cccData available:', !!cccData);
-    if (cccData) {
-      loadUsers();
-    }
+    loadUsers();
   }, [loadUsers]);
 
   // Handle click outside to close dropdown
@@ -168,18 +112,8 @@ const UserField = ({
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Handle single selection change
-  const handleSingleSelectionChange = (e) => {
-    const selectedValue = e.target.value;
-    console.log('UserField: Single selection changed to:', selectedValue);
-    setLocalValue(selectedValue);
-    onChange(selectedValue);
-  };
 
   // Handle checkbox change for multiple selection
   const handleCheckboxChange = (userId, checked) => {
@@ -190,31 +124,20 @@ const UserField = ({
         newValues = [...localValue, userId];
       } else {
         // Remove user from selection
-        newValues = localValue.filter(id => id != userId); // Use != for loose comparison
+        newValues = localValue.filter(id => id !== userId);
       }
-      console.log('UserField: Checkbox selection changed:', { 
-        userId, 
-        checked, 
-        newValues, 
-        currentLocalValue: localValue,
-        userIdType: typeof userId,
-        localValueTypes: localValue.map(v => typeof v)
-      });
       
-      // Update local state first
+      // Ensure we only have clean integers
+      newValues = newValues.filter(v => Number.isInteger(v)).sort((a, b) => a - b);
+      
       setLocalValue(newValues);
-      
-      // Then call the parent onChange
-      console.log('UserField: Calling onChange with:', newValues);
       onChange(newValues);
     }
   };
 
   // Helper function to check if a user is selected
   const isUserSelected = (userId) => {
-    const selected = localValue.some(id => id == userId); // Use == for loose comparison
-    console.log('UserField: Checking if user selected:', { userId, localValue, selected });
-    return selected;
+    return localValue.includes(userId);
   };
 
   // Filter users based on search term
@@ -223,27 +146,22 @@ const UserField = ({
     user.user_email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Get selected count for dropdown button
-  const selectedCount = multiple ? localValue.length : 0;
+  // Get display text for dropdown button
+  const getDropdownText = () => {
+    if (multiple) {
+      if (localValue.length === 0) {
+        return 'Select users...';
+      }
+      if (localValue.length === 1) {
+        return '1 user selected';
+      }
+      return `${localValue.length} users selected`;
+    }
+    return 'Select user...';
+  };
 
-  console.log('UserField: Component render - users length:', users.length);
-  console.log('UserField: Component render - users:', users);
-  console.log('UserField: Component render - isLoading:', isLoading);
-  console.log('UserField: Component render - multiple:', multiple);
-
-  // If cccData is not available yet, show loading state
-  if (!cccData) {
-    return (
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
-        </label>
-        <div className="text-sm text-gray-500 p-2 bg-gray-100 rounded border border-gray-300">
-          Loading user field configuration...
-        </div>
-      </div>
-    );
+  if (isLoading) {
+    return <div className="mb-4">Loading users...</div>;
   }
 
   return (
@@ -253,57 +171,41 @@ const UserField = ({
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       
-      {error && (
-        <div className="text-red-500 text-sm mb-2">{error}</div>
-      )}
-
-      {!multiple ? (
-        // Single selection interface
-        <select
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          value={localValue}
-          onChange={handleSingleSelectionChange}
-          required={required}
-        >
-          <option value="">Select a user...</option>
-          {users.map(user => (
-            <option key={user.ID} value={user.ID}>
-              {user.display_name} ({user.user_email})
-            </option>
-          ))}
-        </select>
-      ) : (
-        // Multiple selection interface with dropdown and checkboxes
+      {multiple ? (
         <div className="relative" ref={dropdownRef}>
+          {/* Dropdown Button */}
           <button
             type="button"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-left bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            {selectedCount > 0 ? `${selectedCount} user(s) selected` : 'Select users...'}
-            <span className="absolute right-2 top-1/2 transform -translate-y-1/2">
-              ▼
-            </span>
+            {getDropdownText()}
           </button>
-          
+
+          {/* Dropdown Content */}
           {isDropdownOpen && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-              {/* Search input */}
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+              {/* Search Input */}
               <div className="p-2 border-b border-gray-200">
                 <input
                   type="text"
                   placeholder="Search users..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              
-              {/* User checkboxes */}
-              <div className="p-2">
-                {filteredUsers.length > 0 ? (
+
+              {/* User List */}
+              <div className="py-1">
+                {filteredUsers.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-gray-500">No users found</div>
+                ) : (
                   filteredUsers.map(user => (
-                    <label key={user.ID} className="flex items-center p-2 hover:bg-gray-50 cursor-pointer">
+                    <label
+                      key={user.ID}
+                      className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                    >
                       <input
                         type="checkbox"
                         checked={isUserSelected(user.ID)}
@@ -315,27 +217,31 @@ const UserField = ({
                       </span>
                     </label>
                   ))
-                ) : (
-                  <div className="text-gray-500 text-sm p-2 text-center">
-                    {searchTerm ? 'No users found' : 'No users available'}
-                  </div>
                 )}
               </div>
             </div>
           )}
         </div>
-      )}
-      
-      {isLoading && (
-        <div className="text-sm text-gray-500 mt-1">Loading users...</div>
+      ) : (
+        <select
+          value={localValue || ''}
+          onChange={(e) => {
+            const newValue = e.target.value ? Number(e.target.value) : '';
+            setLocalValue(newValue);
+            onChange(newValue);
+          }}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Select a user...</option>
+          {users.map(user => (
+            <option key={user.ID} value={user.ID}>
+              {user.display_name} ({user.user_email})
+            </option>
+          ))}
+        </select>
       )}
 
-      {/* Debug info */}
-      <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-50 rounded">
-        Debug: {users.length} users loaded, Role Filter: {roleFilter.join(', ') || 'none'}, 
-        Local Value: {JSON.stringify(localValue)}, Prop Value: {JSON.stringify(value)}, 
-        Multiple: {multiple ? 'Yes' : 'No'}, Loading: {isLoading ? 'Yes' : 'No'}
-      </div>
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
     </div>
   );
 };
