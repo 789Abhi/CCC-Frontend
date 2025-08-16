@@ -17,6 +17,12 @@ function UserField({
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [localValue, setLocalValue] = useState(value || '');
+
+  // Update local value when prop changes
+  useEffect(() => {
+    setLocalValue(value || '');
+  }, [value]);
 
   // Load users from WordPress
   useEffect(() => {
@@ -90,6 +96,19 @@ function UserField({
     loadUsers();
   }, [roleFilter]);
 
+  // Handle selection change
+  const handleSelectionChange = (e) => {
+    const newValue = e.target.value;
+    console.log('UserField: Selection changed to:', newValue);
+    console.log('UserField: Previous value was:', localValue);
+    
+    // Update local state immediately for instant visual feedback
+    setLocalValue(newValue);
+    
+    // Call parent onChange
+    onChange(newValue);
+  };
+
   // If cccData is not available, show error message
   if (typeof cccData === 'undefined') {
     return (
@@ -108,7 +127,7 @@ function UserField({
   }
 
   return (
-    <div className="mb-4" key={`userfield-${value || 'empty'}`}>
+    <div className="mb-4">
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-1">
           {label}
@@ -131,13 +150,8 @@ function UserField({
       ) : (
         <select
           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          value={value || ''}
-          onChange={(e) => {
-            const newValue = e.target.value;
-            console.log('UserField: Selection changed to:', newValue);
-            console.log('UserField: Previous value was:', value);
-            onChange(newValue);
-          }}
+          value={localValue}
+          onChange={handleSelectionChange}
           required={required}
         >
           <option value="">-- Select User --</option>
@@ -153,7 +167,7 @@ function UserField({
       
       {/* Debug info - remove this in production */}
       <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-50 rounded">
-        Debug: {users.length} users loaded, Role Filter: {roleFilter.join(', ') || 'none'}
+        Debug: {users.length} users loaded, Role Filter: {roleFilter.join(', ') || 'none'}, Local Value: {localValue}, Prop Value: {value}
       </div>
     </div>
   );
