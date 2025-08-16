@@ -21,37 +21,70 @@ const UserField = ({
 
   // Initialize localValue with proper JSON parsing for multiple selection
   const [localValue, setLocalValue] = useState(() => {
+    console.log('UserField: Initializing localValue with value:', value);
+    console.log('UserField: Value type:', typeof value);
+    console.log('UserField: Multiple:', multiple);
+    
     if (multiple) {
       // Handle case where value might be a JSON string
       if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
         try {
           const parsed = JSON.parse(value);
+          console.log('UserField: Parsed JSON value:', parsed);
           return Array.isArray(parsed) ? parsed : [];
         } catch (e) {
           console.warn('UserField: Failed to parse JSON value:', value, e);
           return [];
         }
       }
-      return Array.isArray(value) ? value : (value ? [value] : []);
+      // If value is already an array, use it directly
+      if (Array.isArray(value)) {
+        console.log('UserField: Value is already an array:', value);
+        return value;
+      }
+      // If value is a single number/string, convert to array
+      if (value && value !== '') {
+        console.log('UserField: Converting single value to array:', value);
+        return [value];
+      }
+      console.log('UserField: No value, returning empty array');
+      return [];
     }
     return value || '';
   });
 
   // Update local value when prop changes
   useEffect(() => {
+    console.log('UserField: useEffect triggered - value changed:', value);
+    console.log('UserField: New value type:', typeof value);
+    console.log('UserField: Multiple:', multiple);
+    
     if (multiple) {
+      let newValue;
       if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
         try {
           const parsed = JSON.parse(value);
-          setLocalValue(Array.isArray(parsed) ? parsed : []);
+          newValue = Array.isArray(parsed) ? parsed : [];
+          console.log('UserField: Parsed new value:', newValue);
         } catch (e) {
-          console.warn('UserField: Failed to parse JSON value:', value, e);
-          setLocalValue([]);
+          console.warn('UserField: Failed to parse new JSON value:', value, e);
+          newValue = [];
         }
+      } else if (Array.isArray(value)) {
+        newValue = value;
+        console.log('UserField: New value is already array:', newValue);
+      } else if (value && value !== '') {
+        newValue = [value];
+        console.log('UserField: Converting new single value to array:', newValue);
       } else {
-        setLocalValue(Array.isArray(value) ? value : (value ? [value] : []));
+        newValue = [];
+        console.log('UserField: New value is empty, setting empty array');
       }
+      
+      console.log('UserField: Setting localValue to:', newValue);
+      setLocalValue(newValue);
     } else {
+      console.log('UserField: Single selection, setting localValue to:', value || '');
       setLocalValue(value || '');
     }
   }, [value, multiple]);
@@ -159,8 +192,20 @@ const UserField = ({
         // Remove user from selection
         newValues = localValue.filter(id => id != userId); // Use != for loose comparison
       }
-      console.log('UserField: Checkbox selection changed:', { userId, checked, newValues, currentLocalValue: localValue });
+      console.log('UserField: Checkbox selection changed:', { 
+        userId, 
+        checked, 
+        newValues, 
+        currentLocalValue: localValue,
+        userIdType: typeof userId,
+        localValueTypes: localValue.map(v => typeof v)
+      });
+      
+      // Update local state first
       setLocalValue(newValues);
+      
+      // Then call the parent onChange
+      console.log('UserField: Calling onChange with:', newValues);
       onChange(newValues);
     }
   };
