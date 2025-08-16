@@ -17,12 +17,16 @@ function UserField({
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [localValue, setLocalValue] = useState(value || '');
+  const [localValue, setLocalValue] = useState(multiple ? (Array.isArray(value) ? value : (value ? [value] : [])) : (value || ''));
 
   // Update local value when prop changes
   useEffect(() => {
-    setLocalValue(value || '');
-  }, [value]);
+    if (multiple) {
+      setLocalValue(Array.isArray(value) ? value : (value ? [value] : []));
+    } else {
+      setLocalValue(value || '');
+    }
+  }, [value, multiple]);
 
   // Load users from WordPress
   useEffect(() => {
@@ -96,17 +100,39 @@ function UserField({
     loadUsers();
   }, [roleFilter]);
 
-  // Handle selection change
-  const handleSelectionChange = (e) => {
+  // Handle single selection change
+  const handleSingleSelectionChange = (e) => {
     const newValue = e.target.value;
-    console.log('UserField: Selection changed to:', newValue);
+    console.log('UserField: Single selection changed to:', newValue);
     console.log('UserField: Previous value was:', localValue);
     
-    // Update local state immediately for instant visual feedback
     setLocalValue(newValue);
-    
-    // Call parent onChange
     onChange(newValue);
+  };
+
+  // Handle multiple selection change
+  const handleMultipleSelectionChange = (e) => {
+    const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
+    console.log('UserField: Multiple selection changed to:', selectedOptions);
+    console.log('UserField: Previous values were:', localValue);
+    
+    setLocalValue(selectedOptions);
+    onChange(selectedOptions);
+  };
+
+  // Remove user from multiple selection
+  const removeUser = (userId) => {
+    const newValues = localValue.filter(id => id !== userId);
+    console.log('UserField: Removing user', userId, 'New values:', newValues);
+    
+    setLocalValue(newValues);
+    onChange(newValues);
+  };
+
+  // Get user display info
+  const getUserDisplay = (userId) => {
+    const user = users.find(u => u.ID == userId);
+    return user ? `${user.display_name} (${user.user_email})` : `User ${userId}`;
   };
 
   // If cccData is not available, show error message
@@ -147,11 +173,55 @@ function UserField({
         <div className="text-sm text-gray-500 p-2 bg-gray-100 rounded border border-gray-300">
           No users found
         </div>
+      ) : multiple ? (
+        // Multiple selection interface
+        <div>
+          <select
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            multiple
+            value={localValue}
+            onChange={handleMultipleSelectionChange}
+            required={required}
+            size="4"
+          >
+            {users.map(user => (
+              <option key={user.ID} value={user.ID}>
+                {user.display_name} ({user.user_email})
+              </option>
+            ))}
+          </select>
+          
+          {/* Show selected users as tags */}
+          {localValue.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {localValue.map(userId => (
+                <span 
+                  key={userId}
+                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"
+                >
+                  {getUserDisplay(userId)}
+                  <button
+                    type="button"
+                    onClick={() => removeUser(userId)}
+                    className="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          
+          <p className="text-xs text-gray-500 mt-1">
+            Hold Ctrl (or Cmd on Mac) to select multiple users
+          </p>
+        </div>
       ) : (
+        // Single selection interface
         <select
           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           value={localValue}
-          onChange={handleSelectionChange}
+          onChange={handleSingleSelectionChange}
           required={required}
         >
           <option value="">-- Select User --</option>
@@ -167,7 +237,9 @@ function UserField({
       
       {/* Debug info - remove this in production */}
       <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-50 rounded">
-        Debug: {users.length} users loaded, Role Filter: {roleFilter.join(', ') || 'none'}, Local Value: {localValue}, Prop Value: {value}
+        Debug: {users.length} users loaded, Role Filter: {roleFilter.join(', ') || 'none'}, 
+        Local Value: {JSON.stringify(localValue)}, Prop Value: {JSON.stringify(value)}, 
+        Multiple: {multiple ? 'Yes' : 'No'}
       </div>
     </div>
   );
