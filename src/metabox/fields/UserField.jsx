@@ -166,7 +166,15 @@ const UserField = ({
   // Helper function to check if a user is selected
   const isUserSelected = (userId) => {
     const idNum = Number(userId);
-    return localValue.some(v => Number(v) === idNum);
+    const selected = localValue.some(v => Number(v) === idNum);
+    console.log('UserField: isUserSelected check:', { 
+      userId, 
+      idNum, 
+      localValue, 
+      localValueMapped: localValue.map(v => ({original: v, asNumber: Number(v)})), 
+      selected 
+    });
+    return selected;
   };
 
   // Filter users based on search term
@@ -196,6 +204,7 @@ const UserField = ({
   console.log('UserField: Rendering with users:', users);
   console.log('UserField: Rendering with localValue:', localValue);
   console.log('UserField: Rendering with multiple:', multiple);
+  console.log('UserField: Original value prop:', value);
 
   return (
     <div className="mb-4">
@@ -206,6 +215,10 @@ const UserField = ({
       
       {multiple ? (
         <div className="relative" ref={dropdownRef}>
+          {/* Debug info */}
+          <div className="text-xs text-gray-400 mb-2 p-2 bg-gray-50 rounded">
+            Debug: localValue={JSON.stringify(localValue)}, value prop={JSON.stringify(value)}, users={users.length}
+          </div>
           {/* Dropdown Button */}
           <button
             type="button"
