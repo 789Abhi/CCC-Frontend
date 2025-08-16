@@ -1,25 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
-function UserField({ 
+const UserField = ({ 
   label, 
   value, 
   onChange, 
   multiple = false, 
   required = false, 
-  error,
-  roleFilter = [],
-  returnType = 'id'
-}) {
-  console.log('UserField: Component rendered with props:', { label, value, multiple, required, roleFilter, returnType });
-  console.log('UserField: Current value:', value);
-  console.log('UserField: Value type:', typeof value);
-  
-  // Access global cccData
-  const cccData = window.cccData;
-  
+  error = null, 
+  roleFilter = [], 
+  returnType = 'id' 
+}) => {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Get cccData from window object
+  const cccData = window.cccData;
+
+  // Initialize localValue with proper JSON parsing for multiple selection
   const [localValue, setLocalValue] = useState(() => {
     if (multiple) {
       // Handle case where value might be a JSON string
@@ -33,15 +32,13 @@ function UserField({
         }
       }
       return Array.isArray(value) ? value : (value ? [value] : []);
-    } else {
-      return value || '';
     }
+    return value || '';
   });
 
   // Update local value when prop changes
   useEffect(() => {
     if (multiple) {
-      // Handle case where value might be a JSON string
       if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
         try {
           const parsed = JSON.parse(value);
@@ -60,72 +57,43 @@ function UserField({
 
   // Load users from WordPress
   const loadUsers = useCallback(async () => {
-    console.log('UserField: Loading users...');
-    console.log('UserField: cccData available:', typeof cccData !== 'undefined');
-    
-    if (typeof cccData === 'undefined') {
-      console.error('UserField: cccData is not available');
-      setErrorMessage('cccData not available - cannot load users');
+    if (!cccData || !cccData.ajaxUrl || !cccData.nonce) {
+      console.error('UserField: cccData not available');
       return;
     }
-    
+
     setIsLoading(true);
-    setErrorMessage('');
-    
     try {
       const requestBody = new URLSearchParams({
         action: 'ccc_get_users',
         nonce: cccData.nonce,
         role_filter: JSON.stringify(roleFilter)
       });
-      
-      console.log('UserField: Making AJAX request to:', cccData.ajaxUrl);
-      console.log('UserField: Request body:', requestBody.toString());
-      console.log('UserField: Nonce being sent:', cccData.nonce);
-      
+
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
+        body: requestBody,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: requestBody
       });
-      
-      console.log('UserField: Response status:', response.status);
-      console.log('UserField: Response headers:', response.headers);
-      
+
       const data = await response.json();
-      console.log('UserField: Response data:', data);
-      console.log('UserField: Response data type:', typeof data);
-      console.log('UserField: Response data.data:', data.data);
-      console.log('UserField: Response data.data type:', typeof data.data);
-      console.log('UserField: Response data.data is array:', Array.isArray(data.data));
-      console.log('UserField: Response data.data.data:', data.data?.data);
-      console.log('UserField: Response data.data.data is array:', Array.isArray(data.data?.data));
       
-      // Handle nested response structure from WordPress
-      let usersArray = null;
-      if (data.data && Array.isArray(data.data)) {
-        usersArray = data.data;
-      } else if (data.data && data.data.data && Array.isArray(data.data.data)) {
-        usersArray = data.data.data;
-      }
-      
-      if (usersArray) {
-        setUsers(usersArray);
-        console.log('UserField: Users loaded successfully:', usersArray.length);
+      if (data.success && data.data && Array.isArray(data.data)) {
+        setUsers(data.data);
+        console.log('UserField: Loaded users:', data.data);
       } else {
-        console.error('UserField: Failed to load users - unexpected response structure:', data);
-        setErrorMessage('Failed to load users - unexpected response structure');
+        console.error('UserField: Failed to load users:', data);
       }
     } catch (error) {
-      console.error('Error loading users:', error);
-      setErrorMessage('Error connecting to server');
+      console.error('UserField: Error loading users:', error);
     } finally {
       setIsLoading(false);
     }
   }, [roleFilter, cccData]);
 
+  // Load users when component mounts
   useEffect(() => {
     if (cccData) {
       loadUsers();
@@ -134,12 +102,10 @@ function UserField({
 
   // Handle single selection change
   const handleSingleSelectionChange = (e) => {
-    const newValue = e.target.value;
-    console.log('UserField: Single selection changed to:', newValue);
-    console.log('UserField: Previous value was:', localValue);
-    
-    setLocalValue(newValue);
-    onChange(newValue);
+    const selectedValue = e.target.value;
+    console.log('UserField: Single selection changed to:', selectedValue);
+    setLocalValue(selectedValue);
+    onChange(selectedValue);
   };
 
   // Handle checkbox change for multiple selection
@@ -159,40 +125,23 @@ function UserField({
     }
   };
 
-  // Remove user from multiple selection
-  const removeUser = (userId) => {
-    const newValues = localValue.filter(id => id !== userId);
-    console.log('UserField: Removing user', userId, 'New values:', newValues);
-    
-    setLocalValue(newValues);
-    onChange(newValues);
-  };
+  // Filter users based on search term
+  const filteredUsers = users.filter(user => 
+    user.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.user_email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  // Get user display info
-  const getUserDisplay = (userId) => {
-    const user = users.find(u => u.ID == userId);
-    if (user) {
-      return `${user.display_name} (${user.user_email})`;
-    }
-    
-    // If users are still loading, show loading state
-    if (isLoading) {
-      return `Loading user ${userId}...`;
-    }
-    
-    return `User ${userId}`;
-  };
+  // Get selected count for dropdown button
+  const selectedCount = multiple ? localValue.length : 0;
 
   // If cccData is not available yet, show loading state
   if (!cccData) {
     return (
       <div className="mb-4">
-        {label && (
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {label}
-            {required && <span className="text-red-500 ml-1">*</span>}
-          </label>
-        )}
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
         <div className="text-sm text-gray-500 p-2 bg-gray-100 rounded border border-gray-300">
           Loading user field configuration...
         </div>
@@ -202,70 +151,16 @@ function UserField({
 
   return (
     <div className="mb-4">
-      {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
-        </label>
-      )}
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </label>
       
-      {isLoading ? (
-        <div className="text-sm text-gray-500 p-2 bg-gray-100 rounded border border-gray-300">
-          Loading users...
-        </div>
-      ) : errorMessage ? (
-        <div className="text-sm text-red-500 p-2 bg-red-100 rounded border border-red-300">
-          {errorMessage}
-        </div>
-      ) : users.length === 0 ? (
-        <div className="text-sm text-gray-500 p-2 bg-gray-100 rounded border border-gray-300">
-          No users found
-        </div>
-      ) : multiple ? (
-        // Checkbox-based multiple selection interface
-        <div>
-          <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-white">
-            {users.map(user => (
-              <label key={user.ID} className="flex items-center space-x-3 py-2 hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={localValue.includes(user.ID)}
-                  onChange={(e) => handleCheckboxChange(user.ID, e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span className="text-sm text-gray-900">
-                  {user.display_name} ({user.user_email})
-                </span>
-              </label>
-            ))}
-          </div>
-          
-          {/* Show selected users as tags */}
-          {localValue.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {localValue.map(userId => (
-                <span 
-                  key={userId}
-                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"
-                >
-                  {getUserDisplay(userId)}
-                  <button
-                    type="button"
-                    onClick={() => removeUser(userId)}
-                    className="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-          
-          <p className="text-xs text-gray-500 mt-2">
-            Check the boxes to select multiple users
-          </p>
-        </div>
-      ) : (
+      {error && (
+        <div className="text-red-500 text-sm mb-2">{error}</div>
+      )}
+
+      {!multiple ? (
         // Single selection interface
         <select
           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -273,25 +168,72 @@ function UserField({
           onChange={handleSingleSelectionChange}
           required={required}
         >
-          <option value="">-- Select User --</option>
+          <option value="">Select a user...</option>
           {users.map(user => (
             <option key={user.ID} value={user.ID}>
               {user.display_name} ({user.user_email})
             </option>
           ))}
         </select>
+      ) : (
+        // Multiple selection interface with dropdown and checkboxes
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-left bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            {selectedCount > 0 ? `${selectedCount} user(s) selected` : 'Select users...'}
+            <span className="absolute right-2 top-1/2 transform -translate-y-1/2">
+              ▼
+            </span>
+          </button>
+          
+          {isDropdownOpen && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {/* Search input */}
+              <div className="p-2 border-b border-gray-200">
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              {/* User checkboxes */}
+              <div className="p-2">
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map(user => (
+                    <label key={user.ID} className="flex items-center p-2 hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={localValue.includes(user.ID)}
+                        onChange={(e) => handleCheckboxChange(user.ID, e.target.checked)}
+                        className="mr-2 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">
+                        {user.display_name} ({user.user_email})
+                      </span>
+                    </label>
+                  ))
+                ) : (
+                  <div className="text-gray-500 text-sm p-2 text-center">
+                    {searchTerm ? 'No users found' : 'No users available'}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       )}
       
-      {error && <div className="text-xs text-red-500 mt-1">This field is required.</div>}
-      
-      {/* Debug info - remove this in production */}
-      <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-50 rounded">
-        Debug: {users.length} users loaded, Role Filter: {roleFilter.join(', ') || 'none'}, 
-        Local Value: {JSON.stringify(localValue)}, Prop Value: {JSON.stringify(value)}, 
-        Multiple: {multiple ? 'Yes' : 'No'}
-      </div>
+      {isLoading && (
+        <div className="text-sm text-gray-500 mt-1">Loading users...</div>
+      )}
     </div>
   );
-}
+};
 
 export default UserField; 
