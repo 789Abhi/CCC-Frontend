@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 function UserField({ 
   label, 
@@ -13,6 +13,9 @@ function UserField({
   console.log('UserField: Component rendered with props:', { label, value, multiple, required, roleFilter, returnType });
   console.log('UserField: Current value:', value);
   console.log('UserField: Value type:', typeof value);
+  
+  // Access global cccData
+  const cccData = window.cccData;
   
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,76 +32,86 @@ function UserField({
   }, [value, multiple]);
 
   // Load users from WordPress
-  useEffect(() => {
-    const loadUsers = async () => {
-      console.log('UserField: Loading users...');
-      console.log('UserField: cccData available:', typeof cccData !== 'undefined');
+  const loadUsers = useCallback(async () => {
+    console.log('UserField: Loading users...');
+    console.log('UserField: cccData available:', typeof cccData !== 'undefined');
+    
+    if (typeof cccData === 'undefined') {
+      console.error('UserField: cccData is not available');
+      setErrorMessage('cccData not available - cannot load users');
+      return;
+    }
+    
+    setIsLoading(true);
+    setErrorMessage('');
+    
+    try {
+      const requestBody = new URLSearchParams({
+        action: 'ccc_get_users',
+        nonce: cccData.nonce,
+        role_filter: JSON.stringify(roleFilter)
+      });
       
-      if (typeof cccData === 'undefined') {
-        console.error('UserField: cccData is not available');
-        setErrorMessage('cccData not available - cannot load users');
-        return;
+      console.log('UserField: Making AJAX request to:', cccData.ajaxUrl);
+      console.log('UserField: Request body:', requestBody.toString());
+      console.log('UserField: Nonce being sent:', cccData.nonce);
+      
+      const response = await fetch(cccData.ajaxUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: requestBody
+      });
+      
+      console.log('UserField: Response status:', response.status);
+      console.log('UserField: Response headers:', response.headers);
+      
+      const data = await response.json();
+      console.log('UserField: Response data:', data);
+      console.log('UserField: Response data type:', typeof data);
+      console.log('UserField: Response data.data:', data.data);
+      console.log('UserField: Response data.data type:', typeof data.data);
+      console.log('UserField: Response data.data is array:', Array.isArray(data.data));
+      console.log('UserField: Response data.data.data:', data.data?.data);
+      console.log('UserField: Response data.data.data is array:', Array.isArray(data.data?.data));
+      
+      // Handle nested response structure from WordPress
+      let usersArray = null;
+      if (data.data && Array.isArray(data.data)) {
+        usersArray = data.data;
+      } else if (data.data && data.data.data && Array.isArray(data.data.data)) {
+        usersArray = data.data.data;
       }
       
-      setIsLoading(true);
-      setErrorMessage('');
-      
-      try {
-        const requestBody = new URLSearchParams({
-          action: 'ccc_get_users',
-          nonce: cccData.nonce,
-          role_filter: JSON.stringify(roleFilter)
-        });
-        
-        console.log('UserField: Making AJAX request to:', cccData.ajaxUrl);
-        console.log('UserField: Request body:', requestBody.toString());
-        console.log('UserField: Nonce being sent:', cccData.nonce);
-        
-        const response = await fetch(cccData.ajaxUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: requestBody
-        });
-        
-        console.log('UserField: Response status:', response.status);
-        console.log('UserField: Response headers:', response.headers);
-        
-        const data = await response.json();
-        console.log('UserField: Response data:', data);
-        console.log('UserField: Response data type:', typeof data);
-        console.log('UserField: Response data.data:', data.data);
-        console.log('UserField: Response data.data type:', typeof data.data);
-        console.log('UserField: Response data.data is array:', Array.isArray(data.data));
-        console.log('UserField: Response data.data.data:', data.data?.data);
-        console.log('UserField: Response data.data.data is array:', Array.isArray(data.data?.data));
-        
-        // Handle nested response structure from WordPress
-        let usersArray = null;
-        if (data.data && Array.isArray(data.data)) {
-          usersArray = data.data;
-        } else if (data.data && data.data.data && Array.isArray(data.data.data)) {
-          usersArray = data.data.data;
-        }
-        
-        if (usersArray) {
-          setUsers(usersArray);
-          console.log('UserField: Users loaded successfully:', usersArray.length);
-        } else {
-          console.error('UserField: Failed to load users - unexpected response structure:', data);
-          setErrorMessage('Failed to load users - unexpected response structure');
-        }
-      } catch (error) {
-        console.error('Error loading users:', error);
-        setErrorMessage('Error connecting to server');
-      } finally {
-        setIsLoading(false);
+      if (usersArray) {
+        setUsers(usersArray);
+        console.log('UserField: Users loaded successfully:', usersArray.length);
+      } else {
+        console.error('UserField: Failed to load users - unexpected response structure:', data);
+        setErrorMessage('Failed to load users - unexpected response structure');
       }
-    };
-
-    loadUsers();
+    } catch (error) {
+      console.error('Error loading users:', error);
+      setErrorMessage('Error connecting to server');
+    } finally {
+      setIsLoading(false);
+    }
   }, [roleFilter]);
+
+  useEffect(() => {
+    if (cccData) {
+      loadUsers();
+    }
+  }, [loadUsers, cccData]);
+
+  // If we have saved values but no users loaded, ensure we load all users
+  useEffect(() => {
+    if (localValue && localValue.length > 0 && users.length === 0 && !isLoading) {
+      console.log('UserField: Have saved values but no users loaded, triggering load');
+      loadUsers();
+    }
+  }, [localValue, users.length, isLoading, loadUsers]);
 
   // Handle single selection change
   const handleSingleSelectionChange = (e) => {
@@ -132,11 +145,68 @@ function UserField({
   // Get user display info
   const getUserDisplay = (userId) => {
     const user = users.find(u => u.ID == userId);
-    return user ? `${user.display_name} (${user.user_email})` : `User ${userId}`;
+    if (user) {
+      return `${user.display_name} (${user.user_email})`;
+    }
+    
+    // If users are still loading, show loading state
+    if (isLoading) {
+      return `Loading user ${userId}...`;
+    }
+    
+    // If user not found in loaded users, try to fetch this specific user
+    if (cccData.ajaxUrl && cccData.nonce) {
+      // This will trigger a fetch for the missing user
+      fetchMissingUser(userId);
+      return `Loading user ${userId}...`;
+    }
+    
+    return `User ${userId}`;
   };
 
-  // If cccData is not available, show error message
-  if (typeof cccData === 'undefined') {
+  // Fetch a specific user if not already loaded
+  const fetchMissingUser = async (userId) => {
+    try {
+      const requestBody = new URLSearchParams({
+        action: 'ccc_get_users',
+        nonce: cccData.nonce,
+        user_id: userId // Add specific user ID parameter
+      });
+
+      const response = await fetch(cccData.ajaxUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: requestBody
+      });
+
+      const data = await response.json();
+      if (data.success && data.data && Array.isArray(data.data)) {
+        // Add the new user to the users array
+        setUsers(prevUsers => {
+          const existingUser = prevUsers.find(u => u.ID == userId);
+          if (!existingUser) {
+            return [...prevUsers, ...data.data];
+          }
+          return prevUsers;
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching missing user:', error);
+    }
+  };
+
+  // If we have saved values but no users loaded, ensure we load all users
+  useEffect(() => {
+    if (localValue && localValue.length > 0 && users.length === 0 && !isLoading) {
+      console.log('UserField: Have saved values but no users loaded, triggering load');
+      loadUsers();
+    }
+  }, [localValue, users.length, isLoading, loadUsers]);
+
+  // If cccData is not available yet, show loading state
+  if (!cccData) {
     return (
       <div className="mb-4">
         {label && (
@@ -145,8 +215,8 @@ function UserField({
             {required && <span className="text-red-500 ml-1">*</span>}
           </label>
         )}
-        <div className="text-sm text-red-500 p-2 bg-red-100 rounded border border-red-300">
-          User field not available - cccData missing. Please refresh the page.
+        <div className="text-sm text-gray-500 p-2 bg-gray-100 rounded border border-gray-300">
+          Loading user field configuration...
         </div>
       </div>
     );
