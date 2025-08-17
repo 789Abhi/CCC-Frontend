@@ -18,29 +18,19 @@ const UserField = ({
 
   // Initialize localValue with proper parsing
   const [localValue, setLocalValue] = useState(() => {
-    console.log('UserField: Initializing localValue with value:', value);
-    console.log('UserField: Value type:', typeof value);
-    console.log('UserField: Multiple:', multiple);
-    
     if (multiple) {
       // For multiple selection, ensure we always have a clean array of integers
       if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
         try {
           const parsed = JSON.parse(value);
-          const result = Array.isArray(parsed) ? parsed.filter(v => Number.isInteger(Number(v))).map(Number) : [];
-          console.log('UserField: Initial parsed result:', result);
-          return result;
+          return Array.isArray(parsed) ? parsed.map(Number) : [];
         } catch (e) {
-          console.warn('UserField: Failed to parse initial JSON value:', value, e);
           return [];
         }
       }
       if (Array.isArray(value)) {
-        const result = value.filter(v => Number.isInteger(Number(v))).map(Number);
-        console.log('UserField: Initial array result:', result);
-        return result;
+        return value.map(Number);
       }
-      console.log('UserField: No initial value, returning empty array');
       return [];
     }
     // For single selection, ensure we have a single integer or empty string
@@ -52,33 +42,23 @@ const UserField = ({
 
   // Update local value when prop changes
   useEffect(() => {
-    console.log('UserField: useEffect triggered - value changed:', value);
-    console.log('UserField: New value type:', typeof value);
-    console.log('UserField: Multiple:', multiple);
-    
     if (multiple) {
       let newValue;
       if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
         try {
           const parsed = JSON.parse(value);
-          newValue = Array.isArray(parsed) ? parsed.filter(v => Number.isInteger(Number(v))).map(Number) : [];
-          console.log('UserField: Parsed new value:', newValue);
+          newValue = Array.isArray(parsed) ? parsed.map(Number) : [];
         } catch (e) {
-          console.warn('UserField: Failed to parse new JSON value:', value, e);
           newValue = [];
         }
       } else if (Array.isArray(value)) {
-        newValue = value.filter(v => Number.isInteger(Number(v))).map(Number);
-        console.log('UserField: New value is already array:', newValue);
+        newValue = value.map(Number);
       } else if (value && value !== '') {
         newValue = [Number(value)];
-        console.log('UserField: Converting new single value to array:', newValue);
       } else {
         newValue = [];
-        console.log('UserField: New value is empty, setting empty array');
       }
       
-      console.log('UserField: Setting localValue to:', newValue);
       setLocalValue(newValue);
     } else {
       if (value && Number.isInteger(Number(value))) {
@@ -189,15 +169,7 @@ const UserField = ({
   // Helper function to check if a user is selected
   const isUserSelected = (userId) => {
     const idNum = Number(userId);
-    const selected = localValue.some(v => Number(v) === idNum);
-    console.log('UserField: isUserSelected check:', { 
-      userId, 
-      idNum, 
-      localValue, 
-      localValueMapped: localValue.map(v => ({original: v, asNumber: Number(v)})), 
-      selected 
-    });
-    return selected;
+    return localValue.some(v => Number(v) === idNum);
   };
 
   // Filter users based on search term
@@ -224,11 +196,6 @@ const UserField = ({
     return <div className="mb-4">Loading users...</div>;
   }
 
-  console.log('UserField: Rendering with users:', users);
-  console.log('UserField: Rendering with localValue:', localValue);
-  console.log('UserField: Rendering with multiple:', multiple);
-  console.log('UserField: Original value prop:', value);
-
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -238,10 +205,6 @@ const UserField = ({
       
       {multiple ? (
         <div className="relative" ref={dropdownRef}>
-          {/* Debug info */}
-          <div className="text-xs text-gray-400 mb-2 p-2 bg-gray-50 rounded">
-            Debug: localValue={JSON.stringify(localValue)}, value prop={JSON.stringify(value)}, users={users.length}
-          </div>
           {/* Dropdown Button */}
           <button
             type="button"
