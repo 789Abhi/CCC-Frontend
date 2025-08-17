@@ -18,19 +18,29 @@ const UserField = ({
 
   // Initialize localValue with proper parsing
   const [localValue, setLocalValue] = useState(() => {
+    console.log('UserField: Initializing localValue with value:', value);
+    console.log('UserField: Value type:', typeof value);
+    console.log('UserField: Multiple:', multiple);
+    
     if (multiple) {
       // For multiple selection, ensure we always have a clean array of integers
       if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
         try {
           const parsed = JSON.parse(value);
-          return Array.isArray(parsed) ? parsed.filter(v => Number.isInteger(Number(v))).map(Number) : [];
+          const result = Array.isArray(parsed) ? parsed.filter(v => Number.isInteger(Number(v))).map(Number) : [];
+          console.log('UserField: Initial parsed result:', result);
+          return result;
         } catch (e) {
+          console.warn('UserField: Failed to parse initial JSON value:', value, e);
           return [];
         }
       }
       if (Array.isArray(value)) {
-        return value.filter(v => Number.isInteger(Number(v))).map(Number);
+        const result = value.filter(v => Number.isInteger(Number(v))).map(Number);
+        console.log('UserField: Initial array result:', result);
+        return result;
       }
+      console.log('UserField: No initial value, returning empty array');
       return [];
     }
     // For single selection, ensure we have a single integer or empty string
@@ -42,21 +52,34 @@ const UserField = ({
 
   // Update local value when prop changes
   useEffect(() => {
+    console.log('UserField: useEffect triggered - value changed:', value);
+    console.log('UserField: New value type:', typeof value);
+    console.log('UserField: Multiple:', multiple);
+    
     if (multiple) {
+      let newValue;
       if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
         try {
           const parsed = JSON.parse(value);
-          const cleanArray = Array.isArray(parsed) ? parsed.filter(v => Number.isInteger(Number(v))).map(Number) : [];
-          setLocalValue(cleanArray);
+          newValue = Array.isArray(parsed) ? parsed.filter(v => Number.isInteger(Number(v))).map(Number) : [];
+          console.log('UserField: Parsed new value:', newValue);
         } catch (e) {
-          setLocalValue([]);
+          console.warn('UserField: Failed to parse new JSON value:', value, e);
+          newValue = [];
         }
       } else if (Array.isArray(value)) {
-        const cleanArray = value.filter(v => Number.isInteger(Number(v))).map(Number);
-        setLocalValue(cleanArray);
+        newValue = value.filter(v => Number.isInteger(Number(v))).map(Number);
+        console.log('UserField: New value is already array:', newValue);
+      } else if (value && value !== '') {
+        newValue = [Number(value)];
+        console.log('UserField: Converting new single value to array:', newValue);
       } else {
-        setLocalValue([]);
+        newValue = [];
+        console.log('UserField: New value is empty, setting empty array');
       }
+      
+      console.log('UserField: Setting localValue to:', newValue);
+      setLocalValue(newValue);
     } else {
       if (value && Number.isInteger(Number(value))) {
         setLocalValue(Number(value));
