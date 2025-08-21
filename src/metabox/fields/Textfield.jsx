@@ -1,6 +1,21 @@
 import React from 'react';
 
 function Textfield({ label, value, onChange, placeholder, required, error }) {
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    console.log('TextField onChange:', { 
+      field: label, 
+      oldValue: value, 
+      newValue: newValue, 
+      length: newValue.length,
+      words: newValue.split(' ').length
+    });
+    
+    if (onChange) {
+      onChange(newValue);
+    }
+  };
+
   return (
     <div className="mb-4">
       {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}{required && <span className="text-red-500 ml-1">*</span>}</label>}
@@ -9,11 +24,22 @@ function Textfield({ label, value, onChange, placeholder, required, error }) {
         className={`mt-2 block w-full border rounded-md !shadow-sm focus:ring focus:ring-opacity-50 px-3 py-2 text-base ${error ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-blue-400'}`}
         placeholder={placeholder}
         value={value || ''}
-        onChange={e => onChange && onChange(e.target.value)}
+        onChange={handleChange}
         required={required}
         aria-invalid={error ? 'true' : undefined}
+        // Ensure no input constraints
+        maxLength=""
+        minLength=""
+        spellCheck="true"
+        autoComplete="off"
       />
       {error && <div className="text-xs text-red-500 mt-1">This field is required.</div>}
+      {/* Debug info */}
+      {window.CCC_DEBUG_COMPONENTS && (
+        <div className="text-xs text-gray-500 mt-1">
+          Debug: Value length: {value?.length || 0}, Words: {value?.split(' ').length || 0}
+        </div>
+      )}
     </div>
   );
 }

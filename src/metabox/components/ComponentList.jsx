@@ -137,10 +137,29 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
 
   // Use the fieldValuesByInstance passed from parent instead of local state
   const handleFieldChange = (instance_id, field_name, value) => {
+    console.log('ComponentList handleFieldChange:', {
+      instance_id,
+      field_name,
+      value,
+      valueType: typeof value,
+      valueLength: value?.length || 0,
+      valueWords: value?.split(' ').length || 0,
+      currentFieldValues: fieldValuesByInstance,
+      timestamp: new Date().toISOString()
+    });
+    
     const updated = { ...(fieldValuesByInstance || {}) };
     if (!updated[instance_id]) updated[instance_id] = {};
     updated[instance_id][field_name] = value;
-    if (onFieldValuesChange) onFieldValuesChange(updated);
+    
+    console.log('Updated field values:', updated);
+    
+    if (onFieldValuesChange) {
+      console.log('Calling onFieldValuesChange with updated values');
+      onFieldValuesChange(updated);
+    } else {
+      console.warn('onFieldValuesChange is not defined');
+    }
   };
 
   return (

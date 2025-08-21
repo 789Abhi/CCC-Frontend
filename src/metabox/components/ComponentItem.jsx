@@ -116,9 +116,21 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
   }, [isExpanded, component.id, component.instance_id, postId]);
 
   const handleFieldChange = (fieldName, value) => {
-    console.log('ComponentItem handleFieldChange', { instance_id: component.instance_id, fieldName, value });
+    console.log('ComponentItem handleFieldChange', { 
+      instance_id: component.instance_id, 
+      fieldName, 
+      value,
+      valueType: typeof value,
+      valueLength: value?.length || 0,
+      valueWords: value?.split(' ').length || 0,
+      timestamp: new Date().toISOString()
+    });
+    
     if (onFieldChange) {
+      console.log('Calling onFieldChange with:', { instance_id: component.instance_id, fieldName, value });
       onFieldChange(component.instance_id, fieldName, value);
+    } else {
+      console.warn('onFieldChange is not defined for component:', component.instance_id);
     }
   };
 
@@ -171,7 +183,23 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
               {fields.map(field => {
                 if (field.type === 'text') {
                   const isRequired = field.required || false;
-                  const value = fieldValues?.[component.instance_id]?.[field.id] ?? field.value ?? '';
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  const value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                  
+                  // Debug logging for text fields
+                  console.log('TextField rendering:', {
+                    fieldId: field.id,
+                    fieldName: field.name,
+                    instanceId: component.instance_id,
+                    fieldValues: fieldValues,
+                    instanceFieldValues: instanceFieldValues,
+                    finalValue: value,
+                    valueType: typeof value,
+                    valueLength: value?.length || 0
+                  });
+                  
                   return (
                     <TextField
                       key={field.id}
@@ -180,7 +208,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                       onChange={val => handleFieldChange(field.id, val)}
                       placeholder={field.placeholder}
                       required={isRequired}
-                      error={isRequired && !value.trim()}
+                      error={isRequired && !value?.trim()}
                     />
                   );
                 }

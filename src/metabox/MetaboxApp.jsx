@@ -22,11 +22,14 @@ function MetaboxApp() {
   // Ensure unsaved changes are tracked when a field value changes
   const handleFieldValuesChange = useCallback((values) => {
     console.log('CCC DEBUG: Field values changed - keys:', Object.keys(values).length);
+    console.log('CCC DEBUG: New field values:', values);
+    
     // Prevent infinite loop by checking if values actually changed
     const currentValues = fieldValuesRef.current;
     const valuesChanged = JSON.stringify(currentValues) !== JSON.stringify(values);
     
     if (valuesChanged) {
+      console.log('CCC DEBUG: Values changed, updating state');
       fieldValuesRef.current = values;
       setFieldValuesByInstance(values);
       setHasUnsavedChanges(true);
