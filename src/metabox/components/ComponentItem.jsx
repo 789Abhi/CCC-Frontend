@@ -87,7 +87,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
       console.log('ComponentItem: Loading fields for component:', component.name, 'instance:', component.instance_id);
       fetch(cccData.ajaxUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x/www-form-urlencoded' },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           action: 'ccc_get_component_fields',
           nonce: cccData.nonce,
