@@ -84,9 +84,10 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
   useEffect(() => {
     if (isExpanded && fields.length === 0 && component.id && component.instance_id) {
       setLoadingFields(true);
+      console.log('ComponentItem: Loading fields for component:', component.name, 'instance:', component.instance_id);
       fetch(cccData.ajaxUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: { 'Content-Type': 'application/x/www-form-urlencoded' },
         body: new URLSearchParams({
           action: 'ccc_get_component_fields',
           nonce: cccData.nonce,
@@ -108,12 +109,26 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
             fieldArr = data.data.fields;
           }
           console.log('CCC: Fields loaded for component', component.name, fieldArr);
+          console.log('CCC: Field values from backend:', fieldValues);
           setFields(fieldArr);
         })
-        .catch(() => setFields([]))
+        .catch((error) => {
+          console.error('CCC: Error loading fields:', error);
+          setFields([]);
+        })
         .finally(() => setLoadingFields(false));
     }
-  }, [isExpanded, component.id, component.instance_id, postId]);
+  }, [isExpanded, component.id, component.instance_id, postId, fieldValues]);
+
+  // Debug fieldValues changes
+  useEffect(() => {
+    console.log('ComponentItem fieldValues changed:', {
+      componentId: component.id,
+      instanceId: component.instance_id,
+      fieldValues: fieldValues,
+      instanceFieldValues: fieldValues?.[component.instance_id]
+    });
+  }, [fieldValues, component.id, component.instance_id]);
 
   const handleFieldChange = (fieldName, value) => {
     console.log('ComponentItem handleFieldChange', { 
@@ -200,12 +215,25 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                     valueLength: value?.length || 0
                   });
                   
+                  const handleChange = val => {
+                    console.log('TextField handleChange called with:', val);
+                    console.log('TextField handleChange - onFieldChange defined:', !!onFieldChange);
+                    console.log('TextField handleChange - component.instance_id:', component.instance_id);
+                    console.log('TextField handleChange - field.id:', field.id);
+                    if (onFieldChange) {
+                      console.log('TextField calling onFieldChange...');
+                      onFieldChange(component.instance_id, field.id, val);
+                    } else {
+                      console.error('TextField onFieldChange is not defined!');
+                    }
+                  };
+                  
                   return (
                     <TextField
                       key={field.id}
                       label={field.label}
                       value={value}
-                      onChange={val => handleFieldChange(field.id, val)}
+                      onChange={handleChange}
                       placeholder={field.placeholder}
                       required={isRequired}
                       error={isRequired && !value?.trim()}

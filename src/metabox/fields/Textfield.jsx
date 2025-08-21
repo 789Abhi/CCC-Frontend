@@ -3,18 +3,31 @@ import React from 'react';
 function Textfield({ label, value, onChange, placeholder, required, error }) {
   const handleChange = (e) => {
     const newValue = e.target.value;
-    console.log('TextField onChange:', { 
+    console.log('TextField handleChange triggered:', { 
       field: label, 
       oldValue: value, 
       newValue: newValue, 
       length: newValue.length,
-      words: newValue.split(' ').length
+      words: newValue.split(' ').length,
+      timestamp: new Date().toISOString()
     });
     
     if (onChange) {
+      console.log('TextField calling onChange with:', newValue);
       onChange(newValue);
+    } else {
+      console.warn('TextField onChange is not defined!');
     }
   };
+
+  console.log('TextField render:', {
+    label,
+    value,
+    valueType: typeof value,
+    valueLength: value?.length || 0,
+    onChangeDefined: !!onChange,
+    timestamp: new Date().toISOString()
+  });
 
   return (
     <div className="mb-4">
