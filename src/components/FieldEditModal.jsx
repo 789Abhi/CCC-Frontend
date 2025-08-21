@@ -62,9 +62,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     autoplay: false,
     muted: false,
     loop: false,
-    download: true,
-    fullscreen: true,
-    pictureInPicture: true
+    download: true
   });
 
   // Relationship field configuration state
@@ -177,9 +175,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 autoplay: false,
                 muted: false,
                 loop: false,
-                download: true,
-                fullscreen: true,
-                pictureInPicture: true
+                download: true
               });
             } catch (e) {
               setVideoReturnType('url');
@@ -189,9 +185,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 autoplay: false,
                 muted: false,
                 loop: false,
-                download: true,
-                fullscreen: true,
-                pictureInPicture: true
+                download: true
               });
             }
           } else if (field.type === 'link' && field.config) {
@@ -1415,9 +1409,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       { key: 'autoplay', label: 'Autoplay', description: 'Start video automatically (requires muted)' },
                       { key: 'muted', label: 'Muted', description: 'Start video muted (auto-enabled with autoplay)' },
                       { key: 'loop', label: 'Loop', description: 'Repeat video continuously' },
-                      { key: 'download', label: 'Download Button', description: 'Show download option' },
-                      { key: 'fullscreen', label: 'Fullscreen', description: 'Allow fullscreen mode' },
-                      { key: 'pictureInPicture', label: 'Picture in Picture', description: 'Enable PiP mode' }
+                      { key: 'download', label: 'Download Button', description: 'Show download option' }
                     ].map((option) => (
                       <div key={option.key} className="flex items-center gap-2">
                         <input

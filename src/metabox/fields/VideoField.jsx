@@ -21,9 +21,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
     autoplay: false,
     muted: false,
     loop: false,
-    download: true,
-    fullscreen: true,
-    pictureInPicture: true
+    download: true
   };
 
   // Load saved video data when component mounts or value changes
@@ -380,7 +378,6 @@ function VideoField({ label, value, onChange, required = false, error, config = 
             className="rounded-lg ccc-video-preview"
             style={{ border: 'none' }}
             {...(playerOptions.download ? {} : { controlsList: 'nodownload' })}
-            {...(playerOptions.fullscreen ? {} : { disablePictureInPicture: !playerOptions.pictureInPicture })}
           >
             <source src={videoData.url} type="video/mp4" />
             <source src={videoData.url} type="video/webm" />
