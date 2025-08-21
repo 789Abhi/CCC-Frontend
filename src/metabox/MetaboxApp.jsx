@@ -24,18 +24,10 @@ function MetaboxApp() {
     console.log('CCC DEBUG: Field values changed - keys:', Object.keys(values).length);
     console.log('CCC DEBUG: New field values:', values);
     
-    // Prevent infinite loop by checking if values actually changed
-    const currentValues = fieldValuesRef.current;
-    const valuesChanged = JSON.stringify(currentValues) !== JSON.stringify(values);
-    
-    if (valuesChanged) {
-      console.log('CCC DEBUG: Values changed, updating state');
-      fieldValuesRef.current = values;
-      setFieldValuesByInstance(values);
-      setHasUnsavedChanges(true);
-    } else {
-      console.log('CCC DEBUG: Field values unchanged, skipping update');
-    }
+    // Always update the state to ensure real-time updates
+    fieldValuesRef.current = values;
+    setFieldValuesByInstance(values);
+    setHasUnsavedChanges(true);
   }, []); // Empty dependency array to prevent re-creation
 
   // Get post ID from WordPress
