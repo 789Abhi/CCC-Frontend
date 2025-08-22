@@ -187,6 +187,12 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
   }, []);
 
   const loadAvailablePosts = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoading) {
+      console.log('RelationshipField: Already loading, skipping duplicate call');
+      return;
+    }
+    
     setIsLoading(true);
     try {
       if (typeof cccData === 'undefined') {
@@ -235,7 +241,7 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm, postTypeFilter, taxonomyFilter, filter_post_types, filter_post_status, filter_taxonomy]); // Remove selectedPosts dependency
+  }, [searchTerm, postTypeFilter, taxonomyFilter, filter_post_types, filter_post_status, filter_taxonomy, isLoading]); // Add isLoading to prevent multiple calls
 
   const addPost = useCallback((post) => {
     const currentSelectedPosts = selectedPostsRef.current;
@@ -290,11 +296,14 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
   // Load available posts when filters change - debounced
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      loadAvailablePosts();
-    }, 300);
+      // Only load if we're not already loading
+      if (!isLoading) {
+        loadAvailablePosts();
+      }
+    }, 500); // Increased debounce time
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, postTypeFilter, taxonomyFilter, loadAvailablePosts]);
+  }, [searchTerm, postTypeFilter, taxonomyFilter, isLoading]); // Add isLoading to prevent calls while loading
 
   // Update taxonomies when post type changes
   useEffect(() => {
@@ -304,7 +313,7 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
       fetchAvailableTaxonomies();
     }
     setTaxonomyFilter('');
-  }, [postTypeFilter, fetchTaxonomiesForPostType, fetchAvailableTaxonomies]);
+  }, [postTypeFilter]); // Remove fetchTaxonomiesForPostType and fetchAvailableTaxonomies from deps
 
   // Initialize selected posts from value - only when value changes
   useEffect(() => {
@@ -314,7 +323,7 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
         fetchPostDetails(postIds);
       }
     }
-  }, [value, fetchPostDetails]);
+  }, [value]); // Remove fetchPostDetails from deps
 
   // Update parent when selected posts change - debounced to prevent loops
   useEffect(() => {
@@ -324,10 +333,11 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
         const valueToSend = return_format === 'id' ? postIds : postIds.join(',');
         
         // Only call onChange if the value has actually changed and is not empty
-        if (valueToSend !== value) {
+        if (valueToSend !== value && valueToSend !== '') {
+          console.log('RelationshipField: Calling onChange with new value:', valueToSend);
           onChange(valueToSend);
         }
-      }, 100);
+      }, 200); // Increased debounce time
 
       return () => clearTimeout(timeoutId);
     }
@@ -344,16 +354,19 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
 
   // Memoize the render to prevent unnecessary re-renders
   const renderContent = useMemo(() => {
-    console.log('RelationshipField: Rendering with state:', {
-      availablePosts: availablePosts.length,
-      availablePostTypes: availablePostTypes.length,
-      availableTaxonomies: availableTaxonomies.length,
-      selectedPosts: selectedPosts.length,
-      isLoading,
-      searchTerm,
-      postTypeFilter,
-      taxonomyFilter
-    });
+    // Only log when there are significant changes to reduce noise
+    if (availablePosts.length > 0 || selectedPosts.length > 0) {
+      console.log('RelationshipField: Rendering with state:', {
+        availablePosts: availablePosts.length,
+        availablePostTypes: availablePostTypes.length,
+        availableTaxonomies: availableTaxonomies.length,
+        selectedPosts: selectedPosts.length,
+        isLoading,
+        searchTerm,
+        postTypeFilter,
+        taxonomyFilter
+      });
+    }
 
     return (
       <div className="mb-4">
