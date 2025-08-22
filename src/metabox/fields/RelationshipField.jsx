@@ -312,12 +312,16 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
       const timeoutId = setTimeout(() => {
         const postIds = Array.isArray(selectedPosts) ? selectedPosts.map(post => post.id) : [];
         const valueToSend = return_format === 'id' ? postIds : postIds.join(',');
-        onChange(valueToSend);
+        
+        // Only call onChange if the value has actually changed and is not empty
+        if (valueToSend !== value) {
+          onChange(valueToSend);
+        }
       }, 100);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [selectedPosts, onChange, return_format]);
+  }, [selectedPosts, onChange, return_format, value]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

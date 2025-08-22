@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -136,31 +136,29 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
   };
 
   // Use the fieldValuesByInstance passed from parent instead of local state
-  const handleFieldChange = (instance_id, field_name, value) => {
-    console.log('ComponentList handleFieldChange:', {
-      instance_id,
-      field_name,
-      value,
-      valueType: typeof value,
-      valueLength: value?.length || 0,
-      valueWords: value?.split(' ').length || 0,
-      currentFieldValues: fieldValuesByInstance,
-      timestamp: new Date().toISOString()
-    });
-    
-    const updated = { ...(fieldValuesByInstance || {}) };
-    if (!updated[instance_id]) updated[instance_id] = {};
-    updated[instance_id][field_name] = value;
-    
-    console.log('Updated field values:', updated);
-    
-    if (onFieldValuesChange) {
-      console.log('Calling onFieldValuesChange with updated values');
-      onFieldValuesChange(updated);
-    } else {
-      console.warn('onFieldValuesChange is not defined');
+  const handleFieldChange = useCallback((instance_id, field_name, value) => {
+    // Only update if the value has actually changed
+    const currentValue = fieldValuesByInstance?.[instance_id]?.[field_name];
+    if (currentValue !== value) {
+      console.log('ComponentList handleFieldChange:', { instance_id, field_name, value });
+      
+      const updatedFieldValues = {
+        ...fieldValuesByInstance,
+        [instance_id]: {
+          ...fieldValuesByInstance[instance_id],
+          [field_name]: value
+        }
+      };
+      
+      console.log('Updated field values:', updatedFieldValues);
+      // setFieldValues(updatedFieldValues); // This line was removed as per the edit hint
+      
+      if (onFieldValuesChange) {
+        console.log('Calling onFieldValuesChange with updated values');
+        onFieldValuesChange(updatedFieldValues);
+      }
     }
-  };
+  }, [fieldValuesByInstance, onFieldValuesChange]);
 
   return (
     <div>

@@ -126,32 +126,40 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
 
   // Debug fieldValues changes
   useEffect(() => {
-    console.log('ComponentItem fieldValues changed:', {
-      componentId: component.id,
-      instanceId: component.instance_id,
-      fieldValues: fieldValues,
-      instanceFieldValues: fieldValues?.[component.instance_id]
-    });
+    // Only log when fieldValues actually change, not on every render
+    if (fieldValues && Object.keys(fieldValues).length > 0) {
+      console.log('ComponentItem fieldValues changed:', {
+        componentId: component.id,
+        instanceId: component.instance_id,
+        fieldValues: fieldValues,
+        instanceFieldValues: fieldValues?.[component.instance_id]
+      });
+    }
   }, [fieldValues, component.id, component.instance_id]);
 
-  const handleFieldChange = useCallback((fieldName, value) => {
-    console.log('ComponentItem handleFieldChange', { 
-      instance_id: component.instance_id, 
-      fieldName, 
-      value,
-      valueType: typeof value,
-      valueLength: value?.length || 0,
-      valueWords: value?.split(' ').length || 0,
-      timestamp: new Date().toISOString()
-    });
+  const handleFieldChange = (fieldName, value) => {
+    // Only log significant changes to reduce noise
+    if (value && value.length > 0) {
+      console.log('ComponentItem handleFieldChange', { 
+        instance_id: component.instance_id, 
+        fieldName, 
+        value,
+        valueType: typeof value,
+        valueLength: value?.length || 0,
+        valueWords: value?.split(' ').length || 0,
+        timestamp: new Date().toISOString()
+      });
+    }
     
     if (onFieldChange) {
-      console.log('Calling onFieldChange with:', { instance_id: component.instance_id, fieldName, value });
-      onFieldChange(component.instance_id, fieldName, value);
-    } else {
-      console.warn('onFieldChange is not defined for component:', component.instance_id);
+      // Only call onFieldChange if the value has actually changed
+      const currentValue = fieldValues?.[component.instance_id]?.[fieldName];
+      if (currentValue !== value) {
+        console.log('Calling onFieldChange with:', { instance_id: component.instance_id, fieldName, value });
+        onFieldChange(component.instance_id, fieldName, value);
+      }
     }
-  }, [onFieldChange, component.instance_id]);
+  };
 
   return (
     <div

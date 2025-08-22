@@ -21,13 +21,19 @@ function MetaboxApp() {
 
   // Ensure unsaved changes are tracked when a field value changes
   const handleFieldValuesChange = useCallback((values) => {
-    console.log('CCC DEBUG: Field values changed - keys:', Object.keys(values).length);
-    console.log('CCC DEBUG: New field values:', values);
+    // Only update if values have actually changed
+    const currentValues = fieldValuesRef.current;
+    const hasChanged = JSON.stringify(currentValues) !== JSON.stringify(values);
     
-    // Always update the state to ensure real-time updates
-    fieldValuesRef.current = values;
-    setFieldValuesByInstance(values);
-    setHasUnsavedChanges(true);
+    if (hasChanged) {
+      console.log('CCC DEBUG: Field values changed - keys:', Object.keys(values).length);
+      console.log('CCC DEBUG: New field values:', values);
+      
+      // Always update the state to ensure real-time updates
+      fieldValuesRef.current = values;
+      setFieldValuesByInstance(values);
+      setHasUnsavedChanges(true);
+    }
   }, []); // Empty dependency array to prevent re-creation
 
   // Get post ID from WordPress
