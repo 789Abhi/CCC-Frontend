@@ -289,7 +289,12 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
                       key={field.id}
                       label={field.label}
                       fieldName={field.name}
-                      fieldConfig={field.config || {}}
+                      fieldConfig={{
+                        ...field.config,
+                        field_id: field.id,
+                        post_id: postId,
+                        instance_id: component.instance_id
+                      }}
                       fieldValue={value}
                       fieldRequired={isRequired}
                       onChange={handleChange}
@@ -310,7 +315,12 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
                       key={field.id}
                       label={field.label}
                       fieldName={field.name}
-                      fieldConfig={field.config || {}}
+                      fieldConfig={{
+                        ...field.config,
+                        field_id: field.id,
+                        post_id: postId,
+                        instance_id: component.instance_id
+                      }}
                       fieldValue={value}
                       fieldRequired={isRequired}
                       onChange={handleChange}
@@ -331,7 +341,12 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
                       key={field.id}
                       label={field.label}
                       fieldName={field.name}
-                      fieldConfig={field.config || {}}
+                      fieldConfig={{
+                        ...field.config,
+                        field_id: field.id,
+                        post_id: postId,
+                        instance_id: component.instance_id
+                      }}
                       fieldValue={value}
                       fieldRequired={isRequired}
                       onChange={handleChange}
@@ -352,7 +367,12 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
                       key={field.id}
                       label={field.label}
                       fieldName={field.name}
-                      fieldConfig={field.config || {}}
+                      fieldConfig={{
+                        ...field.config,
+                        field_id: field.id,
+                        post_id: postId,
+                        instance_id: component.instance_id
+                      }}
                       fieldValue={value}
                       fieldRequired={isRequired}
                       onChange={handleChange}
