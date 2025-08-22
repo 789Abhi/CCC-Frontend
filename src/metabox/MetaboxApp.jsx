@@ -5,7 +5,8 @@ import toast from 'react-hot-toast';
 import { AlertTriangle } from 'lucide-react';
 
 function MetaboxApp() {
-  console.log('CCC DEBUG: MetaboxApp function running - Component ID:', Math.random().toString(36).substr(2, 9));
+  // Remove the random ID generation that causes re-renders
+  console.log('CCC DEBUG: MetaboxApp function running');
   const [components, setComponents] = useState([]); // { ...component, isHidden, isPendingDelete }
   const [isLoading, setIsLoading] = useState(true);
   const [availableComponents, setAvailableComponents] = useState([]);
@@ -30,7 +31,6 @@ function MetaboxApp() {
     
     if (hasChanged) {
       console.log('CCC DEBUG: Field values changed - keys:', Object.keys(values).length);
-      console.log('CCC DEBUG: New field values:', values);
       
       // Always update the state to ensure real-time updates
       fieldValuesRef.current = values;

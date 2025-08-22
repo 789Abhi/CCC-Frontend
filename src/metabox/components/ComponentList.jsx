@@ -150,11 +150,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
         }
       };
       
-      console.log('Updated field values:', updatedFieldValues);
-      // setFieldValues(updatedFieldValues); // This line was removed as per the edit hint
-      
       if (onFieldValuesChange) {
-        console.log('Calling onFieldValuesChange with updated values');
         onFieldValuesChange(updatedFieldValues);
       }
     }

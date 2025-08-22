@@ -88,7 +88,9 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
   useEffect(() => {
     if (isExpanded && fields.length === 0 && component.id && component.instance_id) {
       setLoadingFields(true);
-      console.log('ComponentItem: Loading fields for component:', component.name, 'instance:', component.instance_id);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('ComponentItem: Loading fields for component:', component.name, 'instance:', component.instance_id);
+      }
       fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -112,8 +114,9 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
           } else if (data.data && Array.isArray(data.data.fields)) {
             fieldArr = data.data.fields;
           }
-          console.log('CCC: Fields loaded for component', component.name, fieldArr);
-          console.log('CCC: Field values from backend:', fieldValues);
+                     if (process.env.NODE_ENV === 'development') {
+             console.log('CCC: Fields loaded for component', component.name, fieldArr.length, 'fields');
+           }
           setFields(fieldArr);
         })
         .catch((error) => {
@@ -124,42 +127,27 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
     }
   }, [isExpanded, component.id, component.instance_id, postId, fieldValues]);
 
-  // Debug fieldValues changes
+  // Debug fieldValues changes - only log significant changes
   useEffect(() => {
     // Only log when fieldValues actually change, not on every render
     if (fieldValues && Object.keys(fieldValues).length > 0) {
-      console.log('ComponentItem fieldValues changed:', {
-        componentId: component.id,
-        instanceId: component.instance_id,
-        fieldValues: fieldValues,
-        instanceFieldValues: fieldValues?.[component.instance_id]
-      });
+      const instanceValues = fieldValues?.[component.instance_id];
+      if (instanceValues && Object.keys(instanceValues).length > 0) {
+        console.log('ComponentItem fieldValues changed for instance:', component.instance_id, 'fields:', Object.keys(instanceValues).length);
+      }
     }
-  }, [fieldValues, component.id, component.instance_id]);
+  }, [fieldValues, component.instance_id]);
 
-  const handleFieldChange = (fieldName, value) => {
-    // Only log significant changes to reduce noise
-    if (value && value.length > 0) {
-      console.log('ComponentItem handleFieldChange', { 
-        instance_id: component.instance_id, 
-        fieldName, 
-        value,
-        valueType: typeof value,
-        valueLength: value?.length || 0,
-        valueWords: value?.split(' ').length || 0,
-        timestamp: new Date().toISOString()
-      });
-    }
-    
+  const handleFieldChange = useCallback((fieldName, value) => {
     if (onFieldChange) {
       // Only call onFieldChange if the value has actually changed
       const currentValue = fieldValues?.[component.instance_id]?.[fieldName];
       if (currentValue !== value) {
-        console.log('Calling onFieldChange with:', { instance_id: component.instance_id, fieldName, value });
+        console.log('ComponentItem handleFieldChange:', { instance_id: component.instance_id, fieldName, value });
         onFieldChange(component.instance_id, fieldName, value);
       }
     }
-  };
+  }, [onFieldChange, component.instance_id, fieldValues]);
 
   return (
     <div
@@ -215,17 +203,10 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
                     ? instanceFieldValues[field.id]
                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
                   
-                  // Debug logging for text fields
-                  console.log('TextField rendering:', {
-                    fieldId: field.id,
-                    fieldName: field.name,
-                    instanceId: component.instance_id,
-                    fieldValues: fieldValues,
-                    instanceFieldValues: instanceFieldValues,
-                    finalValue: value,
-                    valueType: typeof value,
-                    valueLength: value?.length || 0
-                  });
+                                     // Debug logging for text fields - only log once per field
+                   if (process.env.NODE_ENV === 'development') {
+                     console.log('TextField rendering:', field.id, field.name, 'value:', value);
+                   }
                   
                   const handleChange = val => {
                     console.log('TextField handleChange called with:', val);
@@ -591,18 +572,15 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
                     />
                   );
                 }
-                if (field.type === 'oembed') {
-                  console.log('CCC DEBUG: ComponentItem rendering oembed field:', field.id, field.label);
-                  const isRequired = field.required || false;
-                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
-                  const value = instanceFieldValues[field.id] !== undefined
-                    ? instanceFieldValues[field.id]
-                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
-                  console.log('CCC DEBUG: ComponentItem oembed field value:', value);
-                  const handleChange = val => {
-                    console.log('CCC DEBUG: ComponentItem oembed field onChange called with:', val);
-                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
-                  };
+                                 if (field.type === 'oembed') {
+                   const isRequired = field.required || false;
+                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                   const value = instanceFieldValues[field.id] !== undefined
+                     ? instanceFieldValues[field.id]
+                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                   const handleChange = val => {
+                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                   };
                   return (
                     <OembedField
                       key={field.id}
@@ -613,18 +591,15 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
                     />
                   );
                 }
-                if (field.type === 'relationship') {
-                  console.log('CCC DEBUG: ComponentItem rendering relationship field:', field.id, field.label);
-                  const isRequired = field.required || false;
-                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
-                  const value = instanceFieldValues[field.id] !== undefined
-                    ? instanceFieldValues[field.id]
-                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
-                  console.log('CCC DEBUG: ComponentItem relationship field value:', value);
-                  const handleChange = val => {
-                    console.log('CCC DEBUG: ComponentItem relationship field onChange called with:', val);
-                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
-                  };
+                                 if (field.type === 'relationship') {
+                   const isRequired = field.required || false;
+                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                   const value = instanceFieldValues[field.id] !== undefined
+                     ? instanceFieldValues[field.id]
+                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                   const handleChange = val => {
+                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                   };
                   return (
                     <RelationshipField
                       key={field.id}
@@ -635,18 +610,15 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
                     />
                   );
                 }
-                if (field.type === 'link') {
-                  console.log('CCC DEBUG: ComponentItem rendering link field:', field.id, field.label);
-                  const isRequired = field.required || false;
-                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
-                  const value = instanceFieldValues[field.id] !== undefined
-                    ? instanceFieldValues[field.id]
-                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
-                  console.log('CCC DEBUG: ComponentItem link field value:', value);
-                  const handleChange = val => {
-                    console.log('CCC DEBUG: ComponentItem link field onChange called with:', val);
-                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
-                  };
+                                 if (field.type === 'link') {
+                   const isRequired = field.required || false;
+                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                   const value = instanceFieldValues[field.id] !== undefined
+                     ? instanceFieldValues[field.id]
+                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                   const handleChange = val => {
+                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                   };
                   return (
                     <LinkField
                       key={field.id}
@@ -758,30 +730,18 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
                     />
                   );
                 }
-                if (field.type === 'user') {
-                  console.log('ComponentItem: Rendering UserField for field:', field);
-                  console.log('ComponentItem: Field config:', field.config);
-                  
-                  const isRequired = field.required || false;
-                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
-                  const multiple = field.config && field.config.multiple;
-                  let value = instanceFieldValues[field.id] !== undefined
-                    ? instanceFieldValues[field.id]
-                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || (multiple ? [] : '')));
-                  
-                  // Handle multiple user selection
-                  if (multiple && typeof value === 'string' && value) {
-                    value = value.split(',').map(id => id.trim()).filter(id => id);
-                  }
-                  
-                  console.log('ComponentItem: UserField props:', { 
-                    label: field.label, 
-                    value, 
-                    multiple, 
-                    required: isRequired, 
-                    roleFilter: field.config?.role_filter || [], 
-                    returnType: field.config?.return_type || 'id' 
-                  });
+                                 if (field.type === 'user') {
+                   const isRequired = field.required || false;
+                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                   const multiple = field.config && field.config.multiple;
+                   let value = instanceFieldValues[field.id] !== undefined
+                     ? instanceFieldValues[field.id]
+                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || (multiple ? [] : '')));
+                   
+                   // Handle multiple user selection
+                   if (multiple && typeof value === 'string' && value) {
+                     value = value.split(',').map(id => id.trim()).filter(id => id);
+                   }
                   
                   const handleChange = val => {
                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
