@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ExternalLink, Eye, EyeOff } from 'lucide-react';
 
-const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
+const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldConfig }) => {
   const [iframeCode, setIframeCode] = useState(value || '');
   const [showPreview, setShowPreview] = useState(false);
   const [error, setError] = useState('');
@@ -25,9 +25,9 @@ const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
         setShowPreview(false);
       }
     }
-  }, [value, iframeCode]);
+  }, [value]); // Remove iframeCode from dependencies to prevent infinite loop
 
-  const handleIframeCodeChange = (e) => {
+  const handleIframeCodeChange = useCallback((e) => {
     const newCode = e.target.value;
     setIframeCode(newCode);
     setError('');
@@ -36,7 +36,11 @@ const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
     if (onChange) {
       onChange(newCode);
     }
-  };
+  }, [onChange]);
+
+  const handlePreviewToggle = useCallback(() => {
+    setShowPreview(prev => !prev);
+  }, []);
 
   const extractIframeSrc = (iframeCode) => {
     const srcMatch = iframeCode.match(/src=["']([^"']+)["']/);
@@ -95,7 +99,7 @@ const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
             <button
               type="button"
               className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
-              onClick={() => setShowPreview(!showPreview)}
+              onClick={handlePreviewToggle}
               title={showPreview ? "Hide Preview" : "Show Preview"}
             >
               {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -163,6 +167,8 @@ const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
       )}
     </div>
   );
-};
+});
+
+OembedField.displayName = 'OembedField';
 
 export default OembedField; 
