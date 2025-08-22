@@ -47,12 +47,21 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
     // Ensure the iframe has proper dimensions
     let processedCode = iframeCode;
     
-    // Add width and height if they don't exist
-    if (!processedCode.includes('width=')) {
-      processedCode = processedCode.replace('<iframe', `<iframe width="100%"`);
-    }
-    if (!processedCode.includes('height=')) {
-      processedCode = processedCode.replace('<iframe', `<iframe height="400"`);
+    // Special handling for Google Maps iframes
+    if (processedCode.includes('google.com/maps/embed')) {
+      // Google Maps needs specific dimensions and styling
+      processedCode = processedCode.replace(/width=["']([^"']*)["']/g, 'width="100%"');
+      processedCode = processedCode.replace(/height=["']([^"']*)["']/g, 'height="450"');
+      // Add responsive styling for Google Maps
+      processedCode = processedCode.replace('<iframe', '<iframe style="border:0; width:100%; height:450px;"');
+    } else {
+      // For other iframes (YouTube, etc.), use standard dimensions
+      if (!processedCode.includes('width=')) {
+        processedCode = processedCode.replace('<iframe', `<iframe width="100%"`);
+      }
+      if (!processedCode.includes('height=')) {
+        processedCode = processedCode.replace('<iframe', `<iframe height="400"`);
+      }
     }
     
     return { __html: processedCode };
@@ -134,7 +143,7 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
             <div
               className="w-full h-full"
               style={{ 
-                minHeight: '400px', 
+                minHeight: '450px', 
                 position: 'relative',
                 overflow: 'visible'
               }}
