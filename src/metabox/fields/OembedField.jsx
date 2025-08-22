@@ -40,28 +40,14 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
            trimmed.includes('</iframe>');
   }, [iframeCode]);
 
-  const processedIframeCode = useMemo(() => {
-    if (!iframeCode || !isValidCode) return null;
-    
-    // Replace width and height attributes if they exist
-    let processedCode = iframeCode;
-    
-    // Replace width attribute
-    processedCode = processedCode.replace(/width=["']([^"']*)["']/g, `width="${width}"`);
-    
-    // Replace height attribute
-    processedCode = processedCode.replace(/height=["']([^"']*)["']/g, `height="${height}"`);
-    
-    // If width/height attributes don't exist, add them
-    if (!processedCode.includes('width=')) {
-      processedCode = processedCode.replace('<iframe', `<iframe width="${width}"`);
-    }
-    if (!processedCode.includes('height=')) {
-      processedCode = processedCode.replace('<iframe', `<iframe height="${height}"`);
-    }
-    
-    return processedCode;
-  }, [iframeCode, isValidCode, width, height]);
+  // Memoize the entire HTML object to prevent re-renders
+  const htmlContent = useMemo(() => {
+    if (!iframeCode || !isValidCode) return { __html: '' };
+    return { __html: iframeCode };
+  }, [iframeCode, isValidCode]);
+
+  // Memoize the style object to prevent re-renders
+  const previewStyle = useMemo(() => ({ minHeight: '400px' }), []);
 
   const iframeSrc = useMemo(() => {
     if (!iframeCode) return null;
@@ -135,8 +121,8 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
           <div className="bg-gray-50 p-4">
             <div
               className="w-full"
-              style={{ minHeight: '400px' }}
-              dangerouslySetInnerHTML={{ __html: processedIframeCode || iframeCode }}
+              style={previewStyle}
+              dangerouslySetInnerHTML={htmlContent}
             />
           </div>
         </div>
