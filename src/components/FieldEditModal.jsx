@@ -215,6 +215,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 unique: config.unique || false,
                 min_value: config.min_value || null,
                 max_value: config.max_value || null,
+                min_length: config.min_length || null,
+                max_length: config.max_length || null,
                 prepend: config.prepend || '',
                 append: config.append || ''
               });
@@ -224,6 +226,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 unique: false,
                 min_value: null,
                 max_value: null,
+                min_length: null,
+                max_length: null,
                 prepend: '',
                 append: ''
               });
@@ -792,6 +796,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             unique: fieldConfig?.unique || false,
             min_value: fieldConfig?.min_value || null,
             max_value: fieldConfig?.max_value || null,
+            min_length: fieldConfig?.min_length || null,
+            max_length: fieldConfig?.max_length || null,
             prepend: fieldConfig?.prepend || '',
             append: fieldConfig?.append || ''
           }
@@ -949,6 +955,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           unique: fieldConfig?.unique || false,
           min_value: fieldConfig?.min_value || null,
           max_value: fieldConfig?.max_value || null,
+          min_length: fieldConfig?.min_length || null,
+          max_length: fieldConfig?.max_length || null,
           prepend: fieldConfig?.prepend || '',
           append: fieldConfig?.append || ''
         }
@@ -1737,6 +1745,59 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                       disabled={isSubmitting}
                     />
+                  </div>
+                </div>
+
+                {/* Character Length Limits */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="minLength" className="block text-sm font-medium text-gray-700">
+                      Minimum Characters
+                    </label>
+                    <input
+                      id="minLength"
+                      type="number"
+                      min="1"
+                      value={fieldConfig?.min_length || ''}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          min_length: e.target.value ? parseInt(e.target.value) : null
+                        });
+                      }}
+                      placeholder="No minimum"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      disabled={isSubmitting}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Minimum number of characters (e.g., 10 for phone numbers)
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="maxLength" className="block text-sm font-medium text-gray-700">
+                      Maximum Characters
+                    </label>
+                    <input
+                      id="maxLength"
+                      type="number"
+                      min="1"
+                      value={fieldConfig?.max_length || ''}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          max_length: e.target.value ? parseInt(e.target.value) : null
+                        });
+                      }}
+                      placeholder="No maximum"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      disabled={isSubmitting}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Maximum number of characters allowed
+                    </p>
                   </div>
                 </div>
 

@@ -14,6 +14,8 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
     const isUniqueRequired = fieldConfig?.unique === true;
     const minValue = fieldConfig?.min_value;
     const maxValue = fieldConfig?.max_value;
+    const minLength = fieldConfig?.min_length;
+    const maxLength = fieldConfig?.max_length;
     const prependText = fieldConfig?.prepend;
     const appendText = fieldConfig?.append;
 
@@ -50,6 +52,16 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
         
         // Check max value if configured
         if (maxValue !== null && maxValue !== undefined && num > maxValue) {
+            return false;
+        }
+        
+        // Check character length constraints
+        const valueStr = numberValue.toString();
+        if (minLength !== null && minLength !== undefined && valueStr.length < minLength) {
+            return false;
+        }
+        
+        if (maxLength !== null && maxLength !== undefined && valueStr.length > maxLength) {
             return false;
         }
         
@@ -183,6 +195,12 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
             if (maxValue !== null && maxValue !== undefined && parseFloat(number) > maxValue) {
                 return `Number must be at most ${maxValue}`;
             }
+            if (minLength !== null && minLength !== undefined && number.length < minLength) {
+                return `Number must be at least ${minLength} characters long`;
+            }
+            if (maxLength !== null && maxLength !== undefined && number.length > maxLength) {
+                return `Number must be no more than ${maxLength} characters long`;
+            }
             return "Please enter a valid number";
         }
         
@@ -241,6 +259,7 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                                 onFocus={handleFocus}
                                 onBlur={handleBlur}
                                 placeholder={fieldConfig?.placeholder || "Enter a number"}
+                                maxLength={maxLength || undefined}
                                 className={`
                                     w-full ${prependText ? 'rounded-l-none' : 'rounded-l-lg'} ${appendText ? 'rounded-r-none' : 'rounded-r-lg'} py-3 border-2 text-gray-900 placeholder-gray-500
                                     transition-all duration-200 ease-in-out
@@ -288,6 +307,7 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                             onFocus={handleFocus}
                             onBlur={handleBlur}
                             placeholder={fieldConfig?.placeholder || "Enter a number"}
+                            maxLength={maxLength || undefined}
                             className={`
                                 w-full pl-4 pr-12 py-3 border-2 rounded-lg text-gray-900 placeholder-gray-500
                                 transition-all duration-200 ease-in-out
@@ -343,6 +363,12 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                 )}
                 {maxValue !== null && maxValue !== undefined && (
                     <p>Maximum value: {maxValue}</p>
+                )}
+                {minLength !== null && minLength !== undefined && (
+                    <p>Minimum characters: {minLength}</p>
+                )}
+                {maxLength !== null && maxLength !== undefined && (
+                    <p>Maximum characters: {maxLength}</p>
                 )}
             </div>
         </div>
