@@ -86,7 +86,13 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
   // Number field configuration state
   const [fieldConfig, setFieldConfig] = useState({
-    number_type: 'normal' // Add default number type
+    unique: false,
+    min_value: null,
+    max_value: null,
+    min_length: null,
+    max_length: null,
+    prepend: '',
+    append: ''
   });
 
   // User field configuration state
@@ -337,71 +343,125 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           setNestedFieldDefinitions([])
         }
       }
-    } else {
-      // Reset form for new field
-      setLabel("")
-      setName("")
-      setType("text")
-      setIsRequired(false)
-      setPlaceholder("")
-      setMaxSets("")
-      setNestedFieldDefinitions([])
-      setFieldOptions([])
-      setWysiwygSettings({
-        media_buttons: true,
-        teeny: false,
-        textarea_rows: 10,
-      })
-      setImageReturnType('url');
-      setSelectMultiple(false);
-      setVideoReturnType('url');
-      setVideoSources(['file', 'youtube', 'vimeo', 'url']);
-      setVideoPlayerOptions({
-        controls: true,
-        autoplay: false,
-        muted: false,
-        loop: false,
-        download: true,
-        fullscreen: true,
-        pictureInPicture: true
-      });
-      setRelationshipConfig({
-        filter_post_types: [],
-        filter_post_status: [],
-        filter_taxonomy: '',
-        filters: ['search', 'post_type'],
-        max_posts: 0,
-        return_format: 'object'
-      });
-      setFieldConfig({
-        unique: false,
-        min_value: null,
-        max_value: null,
-        prepend: '',
-        append: ''
-      });
-      setLinkConfig({
-        link_types: ['internal', 'external'],
-        default_type: 'internal',
-        post_types: ['post', 'page'],
-        show_target: true,
-        show_title: true
-      });
-      setUserConfig({
-        role_filter: [],
-        multiple: false,
-        return_type: 'id',
-        searchable: true,
-        orderby: 'display_name',
-        order: 'ASC'
-      });
-    }
+          } else {
+        // Reset form for new field
+        setLabel("")
+        setName("")
+        setType("text")
+        setIsRequired(false)
+        setPlaceholder("")
+        setMaxSets("")
+        setNestedFieldDefinitions([])
+        setFieldOptions([])
+        setWysiwygSettings({
+          media_buttons: true,
+          teeny: false,
+          textarea_rows: 10,
+        })
+        setImageReturnType('url');
+        setSelectMultiple(false);
+        setVideoReturnType('url');
+        setVideoSources(['file', 'youtube', 'vimeo', 'url']);
+        setVideoPlayerOptions({
+          controls: true,
+          autoplay: false,
+          muted: false,
+          loop: false,
+          download: true,
+          fullscreen: true,
+          pictureInPicture: true
+        });
+        setRelationshipConfig({
+          filter_post_types: [],
+          filter_post_status: [],
+          filter_taxonomy: '',
+          filters: ['search', 'post_type'],
+          max_posts: 0,
+          return_format: 'object'
+        });
+        // Don't set fieldConfig here - let the type-specific useEffect handle it
+        setLinkConfig({
+          link_types: ['internal', 'external'],
+          default_type: 'internal',
+          post_types: ['post', 'page'],
+          show_target: true,
+          show_title: true
+        });
+        setUserConfig({
+          role_filter: [],
+          multiple: false,
+          return_type: 'id',
+          searchable: true,
+          orderby: 'display_name',
+          order: 'ASC'
+        });
+      }
 
     setError("")
     setEditingNestedFieldIndex(null)
     setShowFieldPopup(false)
     setCurrentNestedField(null)
   }, [field, isOpen])
+
+  // Set initial fieldConfig based on initial type
+  useEffect(() => {
+    if (type === 'number') {
+      setFieldConfig({
+        number_type: 'normal',
+        unique: false,
+        min_value: null,
+        max_value: null,
+        min_length: null,
+        max_length: null,
+        prepend: '',
+        append: ''
+      });
+    }
+  }, []); // Run only on mount
+
+  // Reset fieldConfig when type changes
+  useEffect(() => {
+    if (type === 'number') {
+      setFieldConfig({
+        number_type: 'normal',
+        unique: false,
+        min_value: null,
+        max_value: null,
+        min_length: null,
+        max_length: null,
+        prepend: '',
+        append: ''
+      });
+    } else if (type === 'range') {
+      setFieldConfig({
+        min_value: 0,
+        max_value: 100,
+        prepend: '',
+        append: ''
+      });
+    } else if (type === 'file') {
+      setFieldConfig({
+        allowed_types: ['image', 'video', 'document', 'audio', 'archive'],
+        max_file_size: 10,
+        return_type: 'url',
+        multiple: false,
+        show_preview: true,
+        show_download: true,
+        show_delete: true
+      });
+    } else {
+      // For other field types, set a basic config
+      setFieldConfig({
+        unique: false,
+        min_value: null,
+        max_value: null,
+        min_length: null,
+        max_length: null,
+        prepend: '',
+        append: ''
+      });
+    }
+  }, [type]);
 
   // Fetch available post types and taxonomies for relationship field
   useEffect(() => {
