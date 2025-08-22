@@ -131,10 +131,6 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
             </div>
           </div>
           <div className="bg-gray-50 p-4">
-            {/* Debug: Show what HTML is being rendered */}
-            <div className="text-xs text-gray-600 p-2 bg-yellow-100 mb-2">
-              Rendered HTML: {htmlContent.__html.substring(0, 150)}...
-            </div>
             <div
               className="w-full h-full"
               style={{ 
