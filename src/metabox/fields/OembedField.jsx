@@ -16,17 +16,22 @@ const OembedField = ({ field, value, onChange, isSubmitting }) => {
     show_related = false
   } = config;
 
+  // Sync iframeCode state with value prop when it changes (only when value changes from parent)
   useEffect(() => {
-    if (onChange) {
-      console.log('CCC DEBUG: OembedField calling onChange with:', iframeCode);
-      onChange(iframeCode);
+    if (value !== iframeCode) {
+      setIframeCode(value || '');
     }
-  }, [iframeCode, onChange]);
+  }, [value]); // Remove iframeCode from dependencies to prevent infinite loop
 
   const handleIframeCodeChange = (e) => {
     const newCode = e.target.value;
     setIframeCode(newCode);
     setError('');
+    
+    // Call onChange only when user actually changes the input
+    if (onChange) {
+      onChange(newCode);
+    }
   };
 
   const extractIframeSrc = (iframeCode) => {
@@ -63,7 +68,7 @@ const OembedField = ({ field, value, onChange, isSubmitting }) => {
   };
 
   const isValidIframeCode = (code) => {
-    return code.trim().startsWith('<iframe') && code.includes('src=');
+    return code && code.trim().startsWith('<iframe') && code.includes('src=');
   };
 
   return (
@@ -121,7 +126,7 @@ const OembedField = ({ field, value, onChange, isSubmitting }) => {
               {width} × {height}
             </div>
           </div>
-          <div className="bg-gray-50 overflow-hidden">
+          <div className="bg-gray-50 overflow-hidden" style={{ width: width === '100%' ? '100%' : `${width}px`, height: height === '400px' ? '400px' : `${height}px` }}>
             <div
               className="w-full h-full flex items-center justify-center"
               dangerouslySetInnerHTML={{ __html: getProcessedIframeCode() }}
