@@ -45,24 +45,28 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
             return false;
         }
         
-        // Check min value if configured
-        if (minValue !== null && minValue !== undefined && num < minValue) {
+        // Check min value if configured (only for normal number type)
+        if (fieldConfig?.number_type === 'normal' && minValue !== null && minValue !== undefined && num < minValue) {
             return false;
         }
         
-        // Check max value if configured
-        if (maxValue !== null && maxValue !== undefined && num > maxValue) {
+        // Check max value if configured (only for normal number type)
+        if (fieldConfig?.number_type === 'normal' && maxValue !== null && maxValue !== undefined && num > maxValue) {
             return false;
         }
         
-        // Check character length constraints
-        const valueStr = numberValue.toString();
-        if (minLength !== null && minLength !== undefined && valueStr.length < minLength) {
-            return false;
-        }
-        
-        if (maxLength !== null && maxLength !== undefined && valueStr.length > maxLength) {
-            return false;
+        // Check character length constraints (only for phone number type)
+        if (fieldConfig?.number_type === 'phone') {
+            const valueStr = numberValue.toString();
+            if (minLength !== null && minLength !== undefined && valueStr.length < minLength) {
+                return false;
+            }
+            
+            // For phone numbers, allow inputting values that exceed max_length
+            // The max_length is just a guideline, not a strict validation
+            // if (maxLength !== null && maxLength !== undefined && valueStr.length > maxLength) {
+            //     return false;
+            // }
         }
         
         return true;
@@ -199,6 +203,9 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                 return `Number must be at least ${minLength} characters long`;
             }
             if (maxLength !== null && maxLength !== undefined && number.length > maxLength) {
+                if (fieldConfig?.number_type === 'phone') {
+                    return `Number exceeds recommended length of ${maxLength} characters (but is still valid)`;
+                }
                 return `Number must be no more than ${maxLength} characters long`;
             }
             return "Please enter a valid number";
@@ -218,6 +225,19 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
         
         return null;
     };
+
+    const getWarningMessage = () => {
+        // Show warning when phone number exceeds max_length but is still valid
+        if (fieldConfig?.number_type === 'phone' && 
+            maxLength !== null && 
+            maxLength !== undefined && 
+            number && 
+            number.length > maxLength && 
+            isValid) {
+            return `Note: Number exceeds recommended length of ${maxLength} characters`;
+        }
+        return null;
+    }
 
     const getValidationColor = () => {
         if (!isValid) return 'text-red-600';
@@ -350,6 +370,12 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                             <span>{getValidationMessage()}</span>
                         </div>
                     )}
+                    {getWarningMessage() && (
+                        <div className="flex items-center gap-2 text-sm animate-in slide-in-from-top-2 duration-300 text-amber-600">
+                            <AlertTriangle size={16} className="text-amber-600" />
+                            <span>{getWarningMessage()}</span>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -358,17 +384,25 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                     <p className="text-gray-600">{fieldConfig.description}</p>
                 )}
                 <p>Enter a valid number{isUniqueRequired ? ' (must be unique)' : ''}</p>
-                {minValue !== null && minValue !== undefined && (
-                    <p>Minimum value: {minValue}</p>
-                )}
-                {maxValue !== null && maxValue !== undefined && (
-                    <p>Maximum value: {maxValue}</p>
-                )}
-                {minLength !== null && minLength !== undefined && (
-                    <p>Minimum characters: {minLength}</p>
-                )}
-                {maxLength !== null && maxLength !== undefined && (
-                    <p>Maximum characters: {maxLength}</p>
+                
+                {fieldConfig?.number_type === 'normal' ? (
+                    <>
+                        {minValue !== null && minValue !== undefined && (
+                            <p>Minimum value: {minValue}</p>
+                        )}
+                        {maxValue !== null && maxValue !== undefined && (
+                            <p>Maximum value: {maxValue}</p>
+                        )}
+                    </>
+                ) : fieldConfig?.number_type === 'phone' && (
+                    <>
+                        {minLength !== null && minLength !== undefined && (
+                            <p>Minimum characters: {minLength}</p>
+                        )}
+                        {maxLength !== null && maxLength !== undefined && (
+                            <p>Recommended maximum characters: {maxLength} (exceeding this is allowed)</p>
+                        )}
+                    </>
                 )}
             </div>
         </div>

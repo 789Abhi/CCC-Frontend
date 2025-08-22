@@ -85,7 +85,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   });
 
   // Number field configuration state
-  const [fieldConfig, setFieldConfig] = useState({});
+  const [fieldConfig, setFieldConfig] = useState({
+    number_type: 'normal' // Add default number type
+  });
 
   // User field configuration state
   const [userConfig, setUserConfig] = useState({
@@ -212,6 +214,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             try {
               const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
               setFieldConfig({
+                number_type: config.number_type || 'normal',
                 unique: config.unique || false,
                 min_value: config.min_value || null,
                 max_value: config.max_value || null,
@@ -223,6 +226,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             } catch (e) {
               console.error("Error parsing number config:", e);
               setFieldConfig({
+                number_type: 'normal',
                 unique: false,
                 min_value: null,
                 max_value: null,
@@ -793,6 +797,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           fieldData.config = relationshipConfig
         } else if (type === "number") {
           fieldData.config = {
+            number_type: fieldConfig?.number_type || 'normal',
             unique: fieldConfig?.unique || false,
             min_value: fieldConfig?.min_value || null,
             max_value: fieldConfig?.max_value || null,
@@ -952,6 +957,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         formData.append("field_config", JSON.stringify(relationshipConfig))
       } else if (type === "number") {
         const config = {
+          number_type: fieldConfig?.number_type || 'normal',
           unique: fieldConfig?.unique || false,
           min_value: fieldConfig?.min_value || null,
           max_value: fieldConfig?.max_value || null,
@@ -1680,6 +1686,35 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
                 <h4 className="text-sm font-medium text-gray-700">Number Field Settings</h4>
                 
+                {/* Number Type Selection */}
+                <div className="space-y-2">
+                  <label htmlFor="numberType" className="block text-sm font-medium text-gray-700">
+                    Number Type
+                  </label>
+                  <select
+                    id="numberType"
+                    value={fieldConfig?.number_type || 'normal'}
+                    onChange={(e) => {
+                      const currentConfig = fieldConfig || {};
+                      setFieldConfig({
+                        ...currentConfig,
+                        number_type: e.target.value
+                      });
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    <option value="normal">Normal Number</option>
+                    <option value="phone">Phone Number</option>
+                  </select>
+                  <p className="text-xs text-gray-500">
+                    {fieldConfig?.number_type === 'phone' 
+                      ? 'Phone numbers use character length limits instead of value ranges' 
+                      : 'Normal numbers use minimum and maximum value constraints'
+                    }
+                  </p>
+                </div>
+                
                 {/* Unique Number Option */}
                 <div className="space-y-2">
                   <label className="flex items-center gap-2">
@@ -1703,103 +1738,107 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   </p>
                 </div>
 
-                {/* Min/Max Values */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="minValue" className="block text-sm font-medium text-gray-700">
-                      Minimum Value
-                    </label>
-                    <input
-                      id="minValue"
-                      type="number"
-                      value={fieldConfig?.min_value || ''}
-                      onChange={(e) => {
-                        const currentConfig = fieldConfig || {};
-                        setFieldConfig({
-                          ...currentConfig,
-                          min_value: e.target.value ? parseFloat(e.target.value) : null
-                        });
-                      }}
-                      placeholder="No minimum"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      disabled={isSubmitting}
-                    />
+                {/* Min/Max Values - Only show for Normal Number type */}
+                {fieldConfig?.number_type === 'normal' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="minValue" className="block text-sm font-medium text-gray-700">
+                        Minimum Value
+                      </label>
+                      <input
+                        id="minValue"
+                        type="number"
+                        value={fieldConfig?.min_value || ''}
+                        onChange={(e) => {
+                          const currentConfig = fieldConfig || {};
+                          setFieldConfig({
+                            ...currentConfig,
+                            min_value: e.target.value ? parseFloat(e.target.value) : null
+                          });
+                        }}
+                        placeholder="No minimum"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label htmlFor="maxValue" className="block text-sm font-medium text-gray-700">
+                        Maximum Value
+                      </label>
+                      <input
+                        id="maxValue"
+                        type="number"
+                        value={fieldConfig?.max_value || ''}
+                        onChange={(e) => {
+                          const currentConfig = fieldConfig || {};
+                          setFieldConfig({
+                            ...currentConfig,
+                            max_value: e.target.value ? parseFloat(e.target.value) : null
+                          });
+                        }}
+                        placeholder="No maximum"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        disabled={isSubmitting}
+                      />
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <label htmlFor="maxValue" className="block text-sm font-medium text-gray-700">
-                      Maximum Value
-                    </label>
-                    <input
-                      id="maxValue"
-                      type="number"
-                      value={fieldConfig?.max_value || ''}
-                      onChange={(e) => {
-                        const currentConfig = fieldConfig || {};
-                        setFieldConfig({
-                          ...currentConfig,
-                          max_value: e.target.value ? parseFloat(e.target.value) : null
-                        });
-                      }}
-                      placeholder="No maximum"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                </div>
+                )}
 
-                {/* Character Length Limits */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="minLength" className="block text-sm font-medium text-gray-700">
-                      Minimum Characters
-                    </label>
-                    <input
-                      id="minLength"
-                      type="number"
-                      min="1"
-                      value={fieldConfig?.min_length || ''}
-                      onChange={(e) => {
-                        const currentConfig = fieldConfig || {};
-                        setFieldConfig({
-                          ...currentConfig,
-                          min_length: e.target.value ? parseInt(e.target.value) : null
-                        });
-                      }}
-                      placeholder="No minimum"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      disabled={isSubmitting}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Minimum number of characters (e.g., 10 for phone numbers)
-                    </p>
+                {/* Character Length Limits - Only show for Phone Number type */}
+                {fieldConfig?.number_type === 'phone' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="minLength" className="block text-sm font-medium text-gray-700">
+                        Minimum Characters
+                      </label>
+                      <input
+                        id="minLength"
+                        type="number"
+                        min="1"
+                        value={fieldConfig?.min_length || ''}
+                        onChange={(e) => {
+                          const currentConfig = fieldConfig || {};
+                          setFieldConfig({
+                            ...currentConfig,
+                            min_length: e.target.value ? parseInt(e.target.value) : null
+                          });
+                        }}
+                        placeholder="No minimum"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        disabled={isSubmitting}
+                      />
+                      <p className="text-xs text-gray-500">
+                        Minimum number of characters (e.g., 10 for phone numbers)
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label htmlFor="maxLength" className="block text-sm font-medium text-gray-700">
+                        Maximum Characters
+                      </label>
+                      <input
+                        id="maxLength"
+                        type="number"
+                        min="1"
+                        value={fieldConfig?.max_length || ''}
+                        onChange={(e) => {
+                          const currentConfig = fieldConfig || {};
+                          setFieldConfig({
+                            ...currentConfig,
+                            max_length: e.target.value ? parseInt(e.target.value) : null
+                          });
+                        }}
+                        placeholder="No maximum"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        disabled={isSubmitting}
+                      />
+                      <p className="text-xs text-gray-500">
+                        Maximum number of characters allowed
+                      </p>
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <label htmlFor="maxLength" className="block text-sm font-medium text-gray-700">
-                      Maximum Characters
-                    </label>
-                    <input
-                      id="maxLength"
-                      type="number"
-                      min="1"
-                      value={fieldConfig?.max_length || ''}
-                      onChange={(e) => {
-                        const currentConfig = fieldConfig || {};
-                        setFieldConfig({
-                          ...currentConfig,
-                          max_length: e.target.value ? parseInt(e.target.value) : null
-                        });
-                      }}
-                      placeholder="No maximum"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      disabled={isSubmitting}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Maximum number of characters allowed
-                    </p>
-                  </div>
-                </div>
+                )}
 
                 {/* Prepend and Append */}
                 <div className="grid grid-cols-2 gap-4">
