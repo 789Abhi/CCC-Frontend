@@ -297,7 +297,7 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                                 placeholder={fieldConfig?.placeholder || "Enter a number"}
                                 maxLength={maxLength || undefined}
                                 className={`
-                                    w-full ${prependText ? 'rounded-l-none' : 'rounded-l-lg'} ${appendText ? 'rounded-r-none' : 'rounded-r-lg'} py-3 border-2 text-gray-900 placeholder-gray-500
+                                    w-full ${prependText ? 'rounded-l-none' : 'rounded-l-lg'} ${appendText ? 'rounded-r-none' : 'rounded-r-lg'} py-3 border-2 text-gray-900 placeholder-gray-500 cursor-text
                                     transition-all duration-200 ease-in-out
                                     ${getInputBorderColor()}
                                     ${getInputFocusColor()}
@@ -345,7 +345,7 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                             placeholder={fieldConfig?.placeholder || "Enter a number"}
                             maxLength={maxLength || undefined}
                             className={`
-                                w-full pl-4 pr-12 py-3 border-2 rounded-lg text-gray-900 placeholder-gray-500
+                                w-full pl-4 pr-12 py-3 border-2 rounded-lg text-gray-900 placeholder-gray-500 cursor-text
                                 transition-all duration-200 ease-in-out
                                 ${getInputBorderColor()}
                                 ${getInputFocusColor()}

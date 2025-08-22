@@ -99,7 +99,7 @@ const EmailField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, 
                     onBlur={handleBlur}
                     placeholder={fieldConfig?.placeholder || "Enter email address"}
                     className={`
-                        w-full pl-4 pr-12 py-3 border-2 rounded-lg text-gray-900 placeholder-gray-500
+                        w-full pl-4 pr-12 py-3 border-2 rounded-lg text-gray-900 placeholder-gray-500 cursor-text
                         transition-all duration-200 ease-in-out
                         ${getInputBorderColor()}
                         ${getInputFocusColor()}

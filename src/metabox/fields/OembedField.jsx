@@ -20,8 +20,12 @@ const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
   useEffect(() => {
     if (value !== iframeCode) {
       setIframeCode(value || '');
+      // Reset preview state when value changes
+      if (!value) {
+        setShowPreview(false);
+      }
     }
-  }, [value]); // Remove iframeCode from dependencies to prevent infinite loop
+  }, [value, iframeCode]);
 
   const handleIframeCodeChange = (e) => {
     const newCode = e.target.value;
@@ -68,7 +72,11 @@ const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
   };
 
   const isValidIframeCode = (code) => {
-    return code && code.trim().startsWith('<iframe') && code.includes('src=');
+    if (!code || typeof code !== 'string') return false;
+    const trimmed = code.trim();
+    return trimmed.startsWith('<iframe') && 
+           trimmed.includes('src=') && 
+           trimmed.includes('</iframe>');
   };
 
   return (
@@ -79,6 +87,10 @@ const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
           {field.required && <span className="text-red-500 ml-1">*</span>}
         </label>
         <div className="flex items-center gap-2">
+          {/* Always show debug info to see what's happening */}
+          <div className="text-xs text-gray-500">
+            Code: {iframeCode ? 'Yes' : 'No'} | Valid: {isValidIframeCode(iframeCode) ? 'Yes' : 'No'}
+          </div>
           {iframeCode && isValidIframeCode(iframeCode) && (
             <button
               type="button"
@@ -100,7 +112,7 @@ const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
           value={iframeCode}
           onChange={handleIframeCodeChange}
           placeholder="Paste your iframe code here (e.g., Google Maps, YouTube, Vimeo embed code)"
-          className="w-full px-3 py-3 border border-gray-300 rounded-lg text-sm font-mono resize-y min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-3 py-3 border border-gray-300 rounded-lg text-sm font-mono resize-y min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-text"
           rows={4}
           disabled={isSubmitting}
         />
