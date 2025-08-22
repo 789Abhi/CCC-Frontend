@@ -93,7 +93,7 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
         <div className="flex items-center gap-2">
           {/* Always show debug info to see what's happening */}
           <div className="text-xs text-gray-500">
-            Code: {iframeCode ? 'Yes' : 'No'} | Valid: {isValidIframeCode(iframeCode) ? 'Yes' : 'No'}
+            Code: {iframeCode ? 'Yes' : 'No'} | Valid: {isValidIframeCode(iframeCode) ? 'Yes' : 'No'} | Preview: {showPreview ? 'Yes' : 'No'}
           </div>
           {iframeCode && isValidIframeCode(iframeCode) && (
             <button
@@ -145,9 +145,13 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
             </div>
           </div>
           <div className="bg-gray-50 overflow-hidden" style={{ width: width === '100%' ? '100%' : `${width}px`, height: height === '400px' ? '400px' : `${height}px` }}>
+            {/* Debug: Show the processed iframe code */}
+            <div className="text-xs text-gray-600 p-2 bg-yellow-100 mb-2">
+              Processed Code: {getProcessedIframeCode()?.substring(0, 100)}...
+            </div>
             <div
               className="w-full h-full flex items-center justify-center"
-              dangerouslySetInnerHTML={{ __html: getProcessedIframeCode() }}
+              dangerouslySetInnerHTML={{ __html: getProcessedIframeCode() || iframeCode }}
             />
           </div>
         </div>
