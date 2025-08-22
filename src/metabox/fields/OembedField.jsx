@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { ExternalLink, Eye, EyeOff } from 'lucide-react';
 
 const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldConfig }) => {
@@ -31,18 +31,17 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
     setShowPreview(prev => !prev);
   }, []);
 
-  const extractIframeSrc = (iframeCode) => {
-    const srcMatch = iframeCode.match(/src=["']([^"']+)["']/);
-    return srcMatch ? srcMatch[1] : null;
-  };
+  // Memoize validation and processing to prevent unnecessary recalculations
+  const isValidCode = useMemo(() => {
+    if (!iframeCode || typeof iframeCode !== 'string') return false;
+    const trimmed = iframeCode.trim();
+    return trimmed.startsWith('<iframe') && 
+           trimmed.includes('src=') && 
+           trimmed.includes('</iframe>');
+  }, [iframeCode]);
 
-  const extractIframeTitle = (iframeCode) => {
-    const titleMatch = iframeCode.match(/title=["']([^"']+)["']/);
-    return titleMatch ? titleMatch[1] : null;
-  };
-
-  const getProcessedIframeCode = () => {
-    if (!iframeCode) return null;
+  const processedIframeCode = useMemo(() => {
+    if (!iframeCode || !isValidCode) return null;
     
     // Replace width and height attributes if they exist
     let processedCode = iframeCode;
@@ -62,15 +61,19 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
     }
     
     return processedCode;
-  };
+  }, [iframeCode, isValidCode, width, height]);
 
-  const isValidIframeCode = (code) => {
-    if (!code || typeof code !== 'string') return false;
-    const trimmed = code.trim();
-    return trimmed.startsWith('<iframe') && 
-           trimmed.includes('src=') && 
-           trimmed.includes('</iframe>');
-  };
+  const iframeSrc = useMemo(() => {
+    if (!iframeCode) return null;
+    const srcMatch = iframeCode.match(/src=["']([^"']+)["']/);
+    return srcMatch ? srcMatch[1] : null;
+  }, [iframeCode]);
+
+  const iframeTitle = useMemo(() => {
+    if (!iframeCode) return null;
+    const titleMatch = iframeCode.match(/title=["']([^"']+)["']/);
+    return titleMatch ? titleMatch[1] : null;
+  }, [iframeCode]);
 
   return (
     <div className="mb-4">
@@ -80,7 +83,7 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
           {field.required && <span className="text-red-500 ml-1">*</span>}
         </label>
         <div className="flex items-center gap-2">
-          {iframeCode && isValidIframeCode(iframeCode) && (
+          {iframeCode && isValidCode && (
             <button
               type="button"
               className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
@@ -113,7 +116,7 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
         </div>
       )}
       
-      {iframeCode && !isValidIframeCode(iframeCode) && (
+      {iframeCode && !isValidCode && (
         <div className="text-amber-600 text-xs mt-1 bg-amber-50 px-2 py-1 rounded">
           Please enter a valid iframe code starting with &lt;iframe
         </div>
@@ -121,7 +124,7 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
       
 
       
-      {showPreview && iframeCode && isValidIframeCode(iframeCode) && (
+      {showPreview && iframeCode && isValidCode && (
         <div className="mt-4 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
           <div className="flex justify-between items-center px-4 py-3 bg-gray-50 border-b border-gray-200">
             <h4 className="text-sm font-semibold text-gray-700">Preview</h4>
@@ -133,19 +136,19 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
             <div
               className="w-full"
               style={{ minHeight: '400px' }}
-              dangerouslySetInnerHTML={{ __html: getProcessedIframeCode() || iframeCode }}
+              dangerouslySetInnerHTML={{ __html: processedIframeCode || iframeCode }}
             />
           </div>
         </div>
       )}
       
-      {iframeCode && isValidIframeCode(iframeCode) && show_title && extractIframeTitle(iframeCode) && (
+      {iframeCode && isValidCode && show_title && iframeTitle && (
         <div className="mt-2 p-2 bg-gray-100 rounded">
-          <h4 className="text-sm font-semibold text-gray-700 mb-1">{extractIframeTitle(iframeCode)}</h4>
-          {extractIframeSrc(iframeCode) && (
+          <h4 className="text-sm font-semibold text-gray-700 mb-1">{iframeTitle}</h4>
+          {iframeSrc && (
             <p className="text-xs text-gray-500">
-              Source: <a href={extractIframeSrc(iframeCode)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                {extractIframeSrc(iframeCode)}
+              Source: <a href={iframeSrc} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                {iframeSrc}
               </a>
             </p>
           )}
