@@ -81,7 +81,7 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
         setIsCheckingUniqueness(true);
         
         try {
-            const response = await fetch(ajaxurl, {
+            const response = await fetch(cccData.ajaxUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -92,7 +92,7 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                     field_id: fieldConfig?.field_id || 0,
                     post_id: fieldConfig?.post_id || 0,
                     instance_id: fieldConfig?.instance_id || '',
-                    nonce: ccc_ajax.nonce
+                    nonce: cccData.nonce
                 })
             });
 
