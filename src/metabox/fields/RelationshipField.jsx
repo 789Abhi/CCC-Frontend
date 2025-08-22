@@ -11,6 +11,12 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
   const [taxonomyFilter, setTaxonomyFilter] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const searchTimeoutRef = useRef(null);
+  const selectedPostsRef = useRef([]);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    selectedPostsRef.current = selectedPosts;
+  }, [selectedPosts]);
 
   // Parse field config - memoized to prevent recreation
   const config = useMemo(() => {
@@ -214,8 +220,10 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
       }
 
       if (postsArray) {
+        // Use ref to get current selectedPosts to avoid dependency issues
+        const currentSelectedPosts = selectedPostsRef.current;
         const filteredPosts = postsArray.filter(post => 
-          !Array.isArray(selectedPosts) || !selectedPosts.some(selected => selected.id === post.id)
+          !Array.isArray(currentSelectedPosts) || !currentSelectedPosts.some(selected => selected.id === post.id)
         );
         setAvailablePosts(filteredPosts);
       } else {
@@ -227,29 +235,31 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm, postTypeFilter, taxonomyFilter, filter_post_types, filter_post_status, filter_taxonomy, selectedPosts]);
+  }, [searchTerm, postTypeFilter, taxonomyFilter, filter_post_types, filter_post_status, filter_taxonomy]); // Remove selectedPosts dependency
 
   const addPost = useCallback((post) => {
-    if (Array.isArray(selectedPosts) && selectedPosts.some(p => p.id === post.id)) {
+    const currentSelectedPosts = selectedPostsRef.current;
+    if (Array.isArray(currentSelectedPosts) && currentSelectedPosts.some(p => p.id === post.id)) {
       return;
     }
     
-    if (max_posts > 0 && Array.isArray(selectedPosts) && selectedPosts.length >= max_posts) {
+    if (max_posts > 0 && Array.isArray(currentSelectedPosts) && currentSelectedPosts.length >= max_posts) {
       return;
     }
     
     setSelectedPosts(prev => Array.isArray(prev) ? [...prev, post] : [post]);
     setAvailablePosts(prev => Array.isArray(prev) ? prev.filter(p => p.id !== post.id) : []);
-  }, [selectedPosts, max_posts]);
+  }, [max_posts]); // Remove selectedPosts dependency
 
   const removePost = useCallback((postId) => {
-    const removedPost = Array.isArray(selectedPosts) ? selectedPosts.find(post => post.id === postId) : null;
+    const currentSelectedPosts = selectedPostsRef.current;
+    const removedPost = Array.isArray(currentSelectedPosts) ? currentSelectedPosts.find(post => post.id === postId) : null;
     setSelectedPosts(prev => Array.isArray(prev) ? prev.filter(post => post.id !== postId) : []);
     
     if (removedPost) {
       setAvailablePosts(prev => Array.isArray(prev) ? [...prev, removedPost] : []);
     }
-  }, [selectedPosts]);
+  }, []); // Remove selectedPosts dependency
 
   const getPostTypeLabel = useCallback((postType) => {
     const postTypes = {
