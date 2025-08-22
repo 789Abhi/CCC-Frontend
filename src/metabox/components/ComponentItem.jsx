@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
 import TextField from '../fields/Textfield';
 
 import logo from '/drag-drop-icon.svg';
@@ -20,7 +20,7 @@ import FileField from '../fields/FileField';
 import RepeaterField from '../fields/RepeaterField';
 import UserField from '../fields/UserField';
 
-function ToggleSwitch({ checked, onChange }) {
+const ToggleSwitch = memo(({ checked, onChange }) => {
   return (
     <button
       type="button"
@@ -33,9 +33,11 @@ function ToggleSwitch({ checked, onChange }) {
       />
     </button>
   );
-}
+});
 
-function DotMenu({ onDelete }) {
+ToggleSwitch.displayName = 'ToggleSwitch';
+
+const DotMenu = memo(({ onDelete }) => {
   const [open, setOpen] = useState(false);
   const menuRef = useRef();
   useEffect(() => {
@@ -47,18 +49,18 @@ function DotMenu({ onDelete }) {
   }, [open]);
   return (
     <div className="relative" ref={menuRef}>
-          <button
+      <button
         className="ccc-action-btn p-1 rounded hover:bg-gray-200 text-gray-500 focus:outline-none"
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-            type="button"
+        type="button"
         aria-label="More actions"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <circle cx="5" cy="12" r="2" />
           <circle cx="12" cy="12" r="2" />
           <circle cx="19" cy="12" r="2" />
-              </svg>
-          </button>
+        </svg>
+      </button>
       {open && (
         <div className="absolute right-0 mt-2 w-32 bg-white border border-pink-200 rounded shadow-lg z-30 animate-fade-in">
           <button
@@ -72,9 +74,11 @@ function DotMenu({ onDelete }) {
       )}
     </div>
   );
-}
+});
 
-function ComponentItem({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents, postId }) {
+DotMenu.displayName = 'DotMenu';
+
+const ComponentItem = memo(({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents, postId }) => {
   const [fields, setFields] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
 
@@ -130,7 +134,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
     });
   }, [fieldValues, component.id, component.instance_id]);
 
-  const handleFieldChange = (fieldName, value) => {
+  const handleFieldChange = useCallback((fieldName, value) => {
     console.log('ComponentItem handleFieldChange', { 
       instance_id: component.instance_id, 
       fieldName, 
@@ -147,7 +151,7 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
     } else {
       console.warn('onFieldChange is not defined for component:', component.instance_id);
     }
-  };
+  }, [onFieldChange, component.instance_id]);
 
   return (
     <div
@@ -305,48 +309,48 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                     />
                   );
                 }
-                          if (field.type === 'range') {
-            const isRequired = field.required || false;
-            const instanceFieldValues = fieldValues?.[component.instance_id] || {};
-            const value = instanceFieldValues[field.id] !== undefined
-              ? instanceFieldValues[field.id]
-              : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
-            const handleChange = val => {
-              if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
-            };
-            return (
-              <RangeField
-                key={field.id}
-                label={field.label}
-                fieldName={field.name}
-                fieldConfig={field.config || {}}
-                fieldValue={value}
-                fieldRequired={isRequired}
-                onChange={handleChange}
-              />
-            );
-          }
-          if (field.type === 'file') {
-            const isRequired = field.required || false;
-            const instanceFieldValues = fieldValues?.[component.instance_id] || {};
-            const value = instanceFieldValues[field.id] !== undefined
-              ? instanceFieldValues[field.id]
-              : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
-            const handleChange = val => {
-              if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
-            };
-            return (
-              <FileField
-                key={field.id}
-                label={field.label}
-                fieldName={field.name}
-                fieldConfig={field.config || {}}
-                fieldValue={value}
-                fieldRequired={isRequired}
-                onChange={handleChange}
-              />
-            );
-          }
+                if (field.type === 'range') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  const value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                  const handleChange = val => {
+                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                  };
+                  return (
+                    <RangeField
+                      key={field.id}
+                      label={field.label}
+                      fieldName={field.name}
+                      fieldConfig={field.config || {}}
+                      fieldValue={value}
+                      fieldRequired={isRequired}
+                      onChange={handleChange}
+                    />
+                  );
+                }
+                if (field.type === 'file') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  const value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                  const handleChange = val => {
+                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                  };
+                  return (
+                    <FileField
+                      key={field.id}
+                      label={field.label}
+                      fieldName={field.name}
+                      fieldConfig={field.config || {}}
+                      fieldValue={value}
+                      fieldRequired={isRequired}
+                      onChange={handleChange}
+                    />
+                  );
+                }
                 if (field.type === 'image') {
                   const isRequired = field.required || false;
                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
@@ -430,7 +434,6 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                 }
                 if (field.type === 'select') {
                   const isRequired = field.required || false;
-                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
                   const multiple = field.config && field.config.multiple;
                   let value = instanceFieldValues[field.id] !== undefined
                     ? instanceFieldValues[field.id]
@@ -766,12 +769,14 @@ function ComponentItem({ component, index, isReadOnly = false, totalComponents, 
                 // Add more field types here as needed
                 return null;
               })}
-          </div>
+            </div>
           )}
         </div>
       )}
     </div>
   );
-}
+});
+
+ComponentItem.displayName = 'ComponentItem';
 
 export default ComponentItem; 

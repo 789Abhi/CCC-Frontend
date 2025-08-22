@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { Search, X, ChevronDown, ChevronUp, ArrowRight, ArrowLeft } from 'lucide-react';
 
-const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
+const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
   const [selectedPosts, setSelectedPosts] = useState([]);
   const [availablePosts, setAvailablePosts] = useState([]);
   const [availablePostTypes, setAvailablePostTypes] = useState([]);
@@ -72,7 +72,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
     }
   }, [selectedPosts, onChange, return_format]);
 
-  const fetchAvailablePostTypes = async () => {
+  const fetchAvailablePostTypes = useCallback(async () => {
     try {
       console.log('RelationshipField: fetchAvailablePostTypes called');
       
@@ -139,9 +139,9 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       console.error('Error fetching available post types:', error);
       setAvailablePostTypes([]);
     }
-  };
+  }, [filter_post_types]);
 
-  const fetchAvailableTaxonomies = async () => {
+  const fetchAvailableTaxonomies = useCallback(async () => {
     try {
       // Check if cccData is available
       if (typeof cccData === 'undefined') {
@@ -181,9 +181,9 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       console.error('Error fetching available taxonomies:', error);
       setAvailableTaxonomies([]);
     }
-  };
+  }, []);
 
-  const fetchTaxonomiesForPostType = async (postType) => {
+  const fetchTaxonomiesForPostType = useCallback(async (postType) => {
     try {
       // Check if cccData is available
       if (typeof cccData === 'undefined') {
@@ -224,9 +224,9 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       console.error('Error fetching taxonomies for post type:', error);
       setAvailableTaxonomies([]);
     }
-  };
+  }, []);
 
-  const fetchPostDetails = async (postIds) => {
+  const fetchPostDetails = useCallback(async (postIds) => {
     try {
       // Check if cccData is available
       if (typeof cccData === 'undefined') {
@@ -261,9 +261,9 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
     } catch (error) {
       console.error('Error fetching post details:', error);
     }
-  };
+  }, []);
 
-  const loadAvailablePosts = async () => {
+  const loadAvailablePosts = useCallback(async () => {
     setIsLoading(true);
     try {
       console.log('RelationshipField: Loading posts with filters:', {
@@ -347,11 +347,9 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchTerm, postTypeFilter, taxonomyFilter, filter_post_types, filter_post_status, filter_taxonomy, selectedPosts]);
 
-
-
-  const addPost = (post) => {
+  const addPost = useCallback((post) => {
     // Check if already selected
     if (Array.isArray(selectedPosts) && selectedPosts.some(p => p.id === post.id)) {
       return;
@@ -365,28 +363,28 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
     setSelectedPosts(prev => Array.isArray(prev) ? [...prev, post] : [post]);
     // Remove from available posts
     setAvailablePosts(prev => Array.isArray(prev) ? prev.filter(p => p.id !== post.id) : []);
-  };
+  }, [selectedPosts, max_posts]);
 
-  const removePost = (postId) => {
+  const removePost = useCallback((postId) => {
     const removedPost = Array.isArray(selectedPosts) ? selectedPosts.find(post => post.id === postId) : null;
     setSelectedPosts(prev => Array.isArray(prev) ? prev.filter(post => post.id !== postId) : []);
     
     // Add back to available posts if it exists
     if (removedPost) {
-      setAvailablePosts(prev => Array.isArray(prev) ? [...prev, removedPost] : [removedPost]);
+      setAvailablePosts(prev => Array.isArray(prev) ? [...prev, removedPost] : []);
     }
-  };
+  }, [selectedPosts]);
 
-  const getPostTypeLabel = (postType) => {
+  const getPostTypeLabel = useCallback((postType) => {
     const postTypes = {
       post: 'Post',
       page: 'Page',
       // Add more as needed
     };
     return postTypes[postType] || postType;
-  };
+  }, []);
 
-  const getStatusLabel = (status) => {
+  const getStatusLabel = useCallback((status) => {
     const statuses = {
       publish: 'Published',
       draft: 'Draft',
@@ -394,7 +392,7 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       private: 'Private'
     };
     return statuses[status] || status;
-  };
+  }, []);
 
   // Debug logging for render
   console.log('RelationshipField: Rendering with state:', {
@@ -436,53 +434,53 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
           )}
           
           {filters.includes('post_type') && (
-             <div className="relative min-w-[160px]">
-               <select
-                 value={postTypeFilter}
-                 onChange={(e) => {
-                   console.log('RelationshipField: Post type filter changed to:', e.target.value);
-                   setPostTypeFilter(e.target.value);
-                 }}
-                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-3 focus:ring-blue-100 focus:border-blue-500 hover:-translate-y-0.5 transition-all duration-300"
-                 disabled={isSubmitting}
-               >
-                  <option value="">All post types</option>
-                  {Array.isArray(availablePostTypes) && availablePostTypes.length > 0 ? (
-                    availablePostTypes.map((postType) => (
-                      <option key={postType.value} value={postType.value}>
-                        {postType.label}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="" disabled>Loading post types...</option>
-                  )}
-               </select>
-               {isLoading && (
-                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-blue-600 font-medium animate-pulse">
-                   Loading...
-                 </div>
-               )}
-             </div>
-           )}
+            <div className="relative min-w-[160px]">
+              <select
+                value={postTypeFilter}
+                onChange={(e) => {
+                  console.log('RelationshipField: Post type filter changed to:', e.target.value);
+                  setPostTypeFilter(e.target.value);
+                }}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-3 focus:ring-blue-100 focus:border-blue-500 hover:-translate-y-0.5 transition-all duration-300"
+                disabled={isSubmitting}
+              >
+                <option value="">All post types</option>
+                {Array.isArray(availablePostTypes) && availablePostTypes.length > 0 ? (
+                  availablePostTypes.map((postType) => (
+                    <option key={postType.value} value={postType.value}>
+                      {postType.label}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>Loading post types...</option>
+                )}
+              </select>
+              {isLoading && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-blue-600 font-medium animate-pulse">
+                  Loading...
+                </div>
+              )}
+            </div>
+          )}
           
           {filters.includes('taxonomy') && (
-             <select
-               value={taxonomyFilter}
-               onChange={(e) => {
-                 console.log('RelationshipField: Taxonomy filter changed to:', e.target.value);
-                 setTaxonomyFilter(e.target.value);
-               }}
-               className="min-w-[160px] px-4 py-3 border-2 border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-3 focus:ring-blue-100 focus:border-blue-500 hover:-translate-y-0.5 transition-all duration-300"
-               disabled={isSubmitting}
-             >
-               <option value="">All taxonomies</option>
-               {Array.isArray(availableTaxonomies) && availableTaxonomies.map((taxonomy) => (
-                 <option key={taxonomy.value} value={taxonomy.value}>
-                   {taxonomy.label}
-                 </option>
-               ))}
-             </select>
-           )}
+            <select
+              value={taxonomyFilter}
+              onChange={(e) => {
+                console.log('RelationshipField: Taxonomy filter changed to:', e.target.value);
+                setTaxonomyFilter(e.target.value);
+              }}
+              className="min-w-[160px] px-4 py-3 border-2 border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-3 focus:ring-blue-100 focus:border-blue-500 hover:-translate-y-0.5 transition-all duration-300"
+              disabled={isSubmitting}
+            >
+              <option value="">All taxonomies</option>
+              {Array.isArray(availableTaxonomies) && availableTaxonomies.map((taxonomy) => (
+                <option key={taxonomy.value} value={taxonomy.value}>
+                  {taxonomy.label}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Two Column Layout */}
@@ -587,6 +585,8 @@ const RelationshipField = ({ field, value, onChange, isSubmitting }) => {
       </div>
     </div>
   );
-};
+});
+
+RelationshipField.displayName = 'RelationshipField';
 
 export default RelationshipField; 

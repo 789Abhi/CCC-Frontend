@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 
-function Textfield({ label, value, onChange, placeholder, required, error }) {
-  const handleChange = (e) => {
+const Textfield = memo(({ label, value, onChange, placeholder, required, error }) => {
+  const handleChange = useCallback((e) => {
     const newValue = e.target.value;
     console.log('TextField handleChange triggered:', { 
       field: label, 
@@ -18,7 +18,7 @@ function Textfield({ label, value, onChange, placeholder, required, error }) {
     } else {
       console.warn('TextField onChange is not defined!');
     }
-  };
+  }, [onChange, label, value]);
 
   console.log('TextField render:', {
     label,
@@ -55,6 +55,8 @@ function Textfield({ label, value, onChange, placeholder, required, error }) {
       )}
     </div>
   );
-}
+});
+
+Textfield.displayName = 'Textfield';
 
 export default Textfield;
