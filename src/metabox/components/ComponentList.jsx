@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, memo } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -60,7 +60,7 @@ function DotMenu({ onDelete }) {
   );
 }
 
-function SortableComponentItem(props) {
+const SortableComponentItem = React.memo((props) => {
   const { component, ...rest } = props;
   const {
     attributes,
@@ -78,9 +78,11 @@ function SortableComponentItem(props) {
     boxShadow: isDragging ? '0 8px 24px 0 rgba(236, 72, 153, 0.15)' : undefined,
   };
   return <ComponentItem {...rest} component={component} listeners={listeners} attributes={attributes} setNodeRef={setNodeRef} style={style} />;
-}
+});
 
-function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndoDelete, onToggleHide, onReorder, expandedComponentIds = [], onToggleExpand, dropdownOpen, setDropdownOpen, availableComponents, addComponent, onFieldValuesChange, fieldValuesByInstance, postId, onValidationChange }) {
+SortableComponentItem.displayName = 'SortableComponentItem';
+
+const ComponentList = React.memo(({ components, isReadOnly = false, onAdd, onRemove, onUndoDelete, onToggleHide, onReorder, expandedComponentIds = [], onToggleExpand, dropdownOpen, setDropdownOpen, availableComponents, addComponent, onFieldValuesChange, fieldValuesByInstance, postId, onValidationChange }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 2 } })
   );
@@ -257,6 +259,8 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
       </div>
     </div>
   );
-}
+});
+
+ComponentList.displayName = 'ComponentList';
 
 export default ComponentList; 

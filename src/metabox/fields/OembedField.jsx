@@ -64,33 +64,11 @@ const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
       processedCode = processedCode.replace('<iframe', `<iframe height="${height}"`);
     }
     
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('OembedField: Processing iframe code:', {
-        original: iframeCode,
-        processed: processedCode,
-        width,
-        height
-      });
-    }
-    
     return processedCode;
   };
 
   const isValidIframeCode = (code) => {
-    const isValid = code && code.trim().startsWith('<iframe') && code.includes('src=');
-    
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('OembedField: Validating iframe code:', {
-        code: code?.substring(0, 100) + '...',
-        isValid,
-        startsWithIframe: code?.trim().startsWith('<iframe'),
-        hasSrc: code?.includes('src=')
-      });
-    }
-    
-    return isValid;
+    return code && code.trim().startsWith('<iframe') && code.includes('src=');
   };
 
   return (
@@ -105,17 +83,7 @@ const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
             <button
               type="button"
               className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
-              onClick={() => {
-                const newState = !showPreview;
-                setShowPreview(newState);
-                if (process.env.NODE_ENV === 'development') {
-                  console.log('OembedField: Preview toggle clicked:', {
-                    newState,
-                    iframeCode: iframeCode?.substring(0, 100) + '...',
-                    isValid: isValidIframeCode(iframeCode)
-                  });
-                }
-              }}
+              onClick={() => setShowPreview(!showPreview)}
               title={showPreview ? "Hide Preview" : "Show Preview"}
             >
               {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -150,16 +118,7 @@ const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
         </div>
       )}
       
-      {/* Debug information in development */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
-          <div className="font-semibold mb-1">Debug Info:</div>
-          <div>iframeCode: {iframeCode ? 'Set' : 'Not set'}</div>
-          <div>isValid: {isValidIframeCode(iframeCode) ? 'Yes' : 'No'}</div>
-          <div>showPreview: {showPreview ? 'Yes' : 'No'}</div>
-          <div>fieldConfig: {fieldConfig ? 'Present' : 'Missing'}</div>
-        </div>
-      )}
+
       
       {showPreview && iframeCode && isValidIframeCode(iframeCode) && (
         <div className="mt-4 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
@@ -170,11 +129,6 @@ const OembedField = ({ field, value, onChange, isSubmitting, fieldConfig }) => {
             </div>
           </div>
           <div className="bg-gray-50 overflow-hidden" style={{ width: width === '100%' ? '100%' : `${width}px`, height: height === '400px' ? '400px' : `${height}px` }}>
-            {process.env.NODE_ENV === 'development' && (
-              <div className="p-2 bg-yellow-100 text-xs text-yellow-800 border-b">
-                Debug: Preview rendering with processed code
-              </div>
-            )}
             <div
               className="w-full h-full flex items-center justify-center"
               dangerouslySetInnerHTML={{ __html: getProcessedIframeCode() }}

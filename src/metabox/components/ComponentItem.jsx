@@ -74,7 +74,7 @@ const DotMenu = ({ onDelete }) => {
   );
 }
 
-const ComponentItem = ({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, onValidationChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents, postId }) => {
+const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, onValidationChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents, postId }) => {
   const [fields, setFields] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
 
@@ -126,13 +126,9 @@ const ComponentItem = ({ component, index, isReadOnly = false, totalComponents, 
 
   const handleFieldChange = useCallback((fieldName, value) => {
     if (onFieldChange) {
-      // Only call onFieldChange if the value has actually changed
-      const currentValue = fieldValues?.[component.instance_id]?.[fieldName];
-      if (currentValue !== value) {
-        onFieldChange(component.instance_id, fieldName, value);
-      }
+      onFieldChange(component.instance_id, fieldName, value);
     }
-  }, [onFieldChange, component.instance_id, fieldValues]);
+  }, [onFieldChange, component.instance_id]);
 
   return (
     <div
@@ -383,7 +379,7 @@ const ComponentItem = ({ component, index, isReadOnly = false, totalComponents, 
                     />
                   );
                 }
-                  if (field.type === 'oembed') {
+                                   if (field.type === 'oembed') {
                    const isRequired = field.required || false;
                    const instanceFieldValues = fieldValues?.[component.instance_id] || {};
                    const value = instanceFieldValues[field.id] !== undefined
@@ -741,6 +737,8 @@ const ComponentItem = ({ component, index, isReadOnly = false, totalComponents, 
       )}
     </div>
   );
-}
+});
+
+ComponentItem.displayName = 'ComponentItem';
 
 export default ComponentItem;
