@@ -3,31 +3,11 @@ import React, { memo, useCallback } from 'react';
 const Textfield = memo(({ label, value, onChange, placeholder, required, error }) => {
   const handleChange = useCallback((e) => {
     const newValue = e.target.value;
-    console.log('TextField handleChange triggered:', { 
-      field: label, 
-      oldValue: value, 
-      newValue: newValue, 
-      length: newValue.length,
-      words: newValue.split(' ').length,
-      timestamp: new Date().toISOString()
-    });
     
     if (onChange) {
-      console.log('TextField calling onChange with:', newValue);
       onChange(newValue);
-    } else {
-      console.warn('TextField onChange is not defined!');
     }
-  }, [onChange, label, value]);
-
-  console.log('TextField render:', {
-    label,
-    value,
-    valueType: typeof value,
-    valueLength: value?.length || 0,
-    onChangeDefined: !!onChange,
-    timestamp: new Date().toISOString()
-  });
+  }, [onChange]);
 
   return (
     <div className="mb-4">
@@ -47,12 +27,6 @@ const Textfield = memo(({ label, value, onChange, placeholder, required, error }
         autoComplete="off"
       />
       {error && <div className="text-xs text-red-500 mt-1">This field is required.</div>}
-      {/* Debug info */}
-      {window.CCC_DEBUG_COMPONENTS && (
-        <div className="text-xs text-gray-500 mt-1">
-          Debug: Value length: {value?.length || 0}, Words: {value?.split(' ').length || 0}
-        </div>
-      )}
     </div>
   );
 });

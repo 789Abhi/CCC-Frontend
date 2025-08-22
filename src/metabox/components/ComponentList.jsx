@@ -6,7 +6,7 @@ import logo from "/drag-drop-icon.svg";
 import Textfield from '../fields/Textfield';
 import ComponentItem from './ComponentItem';
 
-function ToggleSwitch({ checked, onChange }) {
+const ToggleSwitch = ({ checked, onChange }) => {
   return (
     <button
       type="button"

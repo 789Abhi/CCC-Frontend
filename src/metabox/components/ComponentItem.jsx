@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TextField from '../fields/Textfield';
 
 import logo from '/drag-drop-icon.svg';
@@ -20,7 +20,7 @@ import FileField from '../fields/FileField';
 import RepeaterField from '../fields/RepeaterField';
 import UserField from '../fields/UserField';
 
-const ToggleSwitch = memo(({ checked, onChange }) => {
+const ToggleSwitch = ({ checked, onChange }) => {
   return (
     <button
       type="button"
@@ -33,11 +33,9 @@ const ToggleSwitch = memo(({ checked, onChange }) => {
       />
     </button>
   );
-});
+}
 
-ToggleSwitch.displayName = 'ToggleSwitch';
-
-const DotMenu = memo(({ onDelete }) => {
+const DotMenu = ({ onDelete }) => {
   const [open, setOpen] = useState(false);
   const menuRef = useRef();
   useEffect(() => {
@@ -74,11 +72,9 @@ const DotMenu = memo(({ onDelete }) => {
       )}
     </div>
   );
-});
+}
 
-DotMenu.displayName = 'DotMenu';
-
-const ComponentItem = memo(({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, onValidationChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents, postId }) => {
+const ComponentItem = ({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, onValidationChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents, postId }) => {
   const [fields, setFields] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
 
@@ -749,8 +745,6 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
       )}
     </div>
   );
-});
+}
 
-ComponentItem.displayName = 'ComponentItem';
-
-export default ComponentItem; 
+export default ComponentItem;

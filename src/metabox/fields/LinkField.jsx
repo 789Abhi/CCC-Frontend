@@ -32,11 +32,9 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
 
   // Initialize from value
   useEffect(() => {
-    console.log('LinkField: Initializing with value:', value);
     if (value) {
       try {
         const parsedValue = typeof value === 'string' ? JSON.parse(value) : value;
-        console.log('LinkField: Parsed value:', parsedValue);
         if (parsedValue && typeof parsedValue === 'object') {
           setLinkData(prev => ({
             ...prev,
@@ -45,7 +43,6 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
           
           // If internal link with post_id, fetch post details
           if (parsedValue.type === 'internal' && parsedValue.post_id) {
-            console.log('LinkField: Fetching post details for post_id:', parsedValue.post_id);
             fetchPostDetails(parsedValue.post_id);
           }
         }
@@ -57,7 +54,6 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
     // Mark initialization as complete after a longer delay to allow post fetching
     const timer = setTimeout(() => {
       isInitializing.current = false;
-      console.log('LinkField: Initialization complete');
     }, 500); // Increased timeout to allow for async post fetching
     
     return () => clearTimeout(timer);
@@ -90,7 +86,6 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
   }, [searchTerm, postTypeFilter, linkData.type, showPostSearch]);
 
   const fetchPostDetails = async (postId) => {
-    console.log('LinkField: fetchPostDetails called with postId:', postId);
     try {
       if (typeof cccData === 'undefined') {
         console.error('LinkField: cccData not available');
@@ -108,10 +103,8 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
       });
 
       const data = await response.json();
-      console.log('LinkField: fetchPostDetails response:', data);
       if (data.success && data.data && data.data.length > 0) {
         const post = data.data[0];
-        console.log('LinkField: Setting selectedPost:', post);
         setSelectedPost(post);
         
         // Update linkData with the URL if it's missing (and we're initializing)
@@ -122,8 +115,6 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
           }));
           hasFetchedInitialPost.current = true;
         }
-      } else {
-        console.warn('LinkField: No post found for ID:', postId);
       }
     } catch (error) {
       console.error('Error fetching post details:', error);
