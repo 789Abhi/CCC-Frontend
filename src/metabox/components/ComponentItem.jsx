@@ -88,9 +88,6 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
   useEffect(() => {
     if (isExpanded && fields.length === 0 && component.id && component.instance_id) {
       setLoadingFields(true);
-      if (process.env.NODE_ENV === 'development') {
-        console.log('ComponentItem: Loading fields for component:', component.name, 'instance:', component.instance_id);
-      }
       fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -114,9 +111,7 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
           } else if (data.data && Array.isArray(data.data.fields)) {
             fieldArr = data.data.fields;
           }
-                     if (process.env.NODE_ENV === 'development') {
-             console.log('CCC: Fields loaded for component', component.name, fieldArr.length, 'fields');
-           }
+                     // Fields loaded successfully
           setFields(fieldArr);
         })
         .catch((error) => {
@@ -130,12 +125,7 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
   // Debug fieldValues changes - only log significant changes
   useEffect(() => {
     // Only log when fieldValues actually change, not on every render
-    if (fieldValues && Object.keys(fieldValues).length > 0) {
-      const instanceValues = fieldValues?.[component.instance_id];
-      if (instanceValues && Object.keys(instanceValues).length > 0) {
-        console.log('ComponentItem fieldValues changed for instance:', component.instance_id, 'fields:', Object.keys(instanceValues).length);
-      }
-    }
+    // Removed excessive logging to prevent console spam
   }, [fieldValues, component.instance_id]);
 
   const handleFieldChange = useCallback((fieldName, value) => {
@@ -143,7 +133,6 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
       // Only call onFieldChange if the value has actually changed
       const currentValue = fieldValues?.[component.instance_id]?.[fieldName];
       if (currentValue !== value) {
-        console.log('ComponentItem handleFieldChange:', { instance_id: component.instance_id, fieldName, value });
         onFieldChange(component.instance_id, fieldName, value);
       }
     }
@@ -203,23 +192,13 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
                     ? instanceFieldValues[field.id]
                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
                   
-                                     // Debug logging for text fields - only log once per field
-                   if (process.env.NODE_ENV === 'development') {
-                     console.log('TextField rendering:', field.id, field.name, 'value:', value);
-                   }
+                                     // Debug logging removed to prevent console spam
                   
-                  const handleChange = val => {
-                    console.log('TextField handleChange called with:', val);
-                    console.log('TextField handleChange - onFieldChange defined:', !!onFieldChange);
-                    console.log('TextField handleChange - component.instance_id:', component.instance_id);
-                    console.log('TextField handleChange - field.id:', field.id);
-                    if (onFieldChange) {
-                      console.log('TextField calling onFieldChange...');
-                      onFieldChange(component.instance_id, field.id, val);
-                    } else {
-                      console.error('TextField onFieldChange is not defined!');
-                    }
-                  };
+                                     const handleChange = val => {
+                     if (onFieldChange) {
+                       onFieldChange(component.instance_id, field.id, val);
+                     }
+                   };
                   
                   return (
                     <TextField

@@ -5,8 +5,7 @@ import toast from 'react-hot-toast';
 import { AlertTriangle } from 'lucide-react';
 
 function MetaboxApp() {
-  // Remove the random ID generation that causes re-renders
-  console.log('CCC DEBUG: MetaboxApp function running');
+  // Component function - no logging needed
   const [components, setComponents] = useState([]); // { ...component, isHidden, isPendingDelete }
   const [isLoading, setIsLoading] = useState(true);
   const [availableComponents, setAvailableComponents] = useState([]);
@@ -30,8 +29,6 @@ function MetaboxApp() {
     const hasChanged = JSON.stringify(currentValues) !== JSON.stringify(values);
     
     if (hasChanged) {
-      console.log('CCC DEBUG: Field values changed - keys:', Object.keys(values).length);
-      
       // Always update the state to ensure real-time updates
       fieldValuesRef.current = values;
       setFieldValuesByInstance(values);
@@ -73,13 +70,11 @@ function MetaboxApp() {
 
   // Load expanded state from localStorage on mount
   useEffect(() => {
-    console.log('CCC DEBUG: Loading expanded state from localStorage');
     const postId = getPostId();
     const stored = localStorage.getItem(`ccc_expanded_${postId}`);
     if (stored) {
       try {
         setExpandedComponentIds(JSON.parse(stored));
-        console.log('CCC DEBUG: Expanded state loaded from localStorage');
       } catch (e) {
         console.error('CCC: Failed to parse stored expanded state:', e);
       }
@@ -88,7 +83,6 @@ function MetaboxApp() {
 
   // Persist expanded state to localStorage on change
   useEffect(() => {
-    console.log('CCC DEBUG: Saving expanded state to localStorage - count:', expandedComponentIds.length);
     const postId = getPostId();
     localStorage.setItem(`ccc_expanded_${postId}`, JSON.stringify(expandedComponentIds));
   }, [expandedComponentIds]);
@@ -241,19 +235,14 @@ function MetaboxApp() {
 
   useEffect(() => {
     if (isInitializedRef.current) {
-      console.log('CCC DEBUG: Component already initialized, skipping');
       return;
     }
     
-    console.log('CCC DEBUG: Initializing data');
     isInitializedRef.current = true;
     
     const initializeData = async () => {
-      console.log('CCC DEBUG: Loading available components');
       await loadAvailableComponents();
-      console.log('CCC DEBUG: Loading assigned components');
       await loadAssignedComponents();
-      console.log('CCC DEBUG: Data initialization complete');
     };
     initializeData();
   }, []); // Empty dependency array to run only once
@@ -328,20 +317,15 @@ function MetaboxApp() {
 
   // Save on page update (WordPress save)
   useEffect(() => {
-    console.log('CCC DEBUG: Setting up form submit handler');
     const form = document.querySelector('form#post');
     if (!form) {
-      console.log('CCC DEBUG: No form found');
       return;
     }
     
     const handleFormSubmit = (e) => {
-      console.log('CCC DEBUG: Form submit triggered');
-      
       // Check for validation errors
       const currentValidationErrors = validationErrorsRef.current;
       if (Object.keys(currentValidationErrors).length > 0) {
-        console.log('CCC DEBUG: Validation errors found, preventing form submission');
         e.preventDefault();
         
         // Show error message to user
@@ -358,8 +342,6 @@ function MetaboxApp() {
         
         return;
       }
-      
-      console.log('CCC DEBUG: No validation errors, proceeding with submission');
       
       // Force TinyMCE to update all textareas
       if (window.tinymce && window.tinymce.triggerSave) {
@@ -385,9 +367,6 @@ function MetaboxApp() {
       if (Array.isArray(componentsRef.current)) {
         componentsToSubmit = componentsRef.current.filter(c => !c.isPendingDelete).map(({ isPendingDelete, ...rest }) => rest);
       }
-      console.log('CCC DEBUG: Submitting components:', componentsToSubmit.length);
-      console.log('CCC DEBUG: Submitting field values:', Object.keys(fieldValuesToSubmit).length);
-      console.log('CCC DEBUG: Field values data:', fieldValuesToSubmit);
       // Set components hidden input
       const input = document.getElementById('ccc_components_data');
       if (input) {
@@ -402,9 +381,7 @@ function MetaboxApp() {
     };
     
     form.addEventListener('submit', handleFormSubmit);
-    console.log('CCC DEBUG: Form submit handler added');
     return () => {
-      console.log('CCC DEBUG: Form submit handler removed');
       form.removeEventListener('submit', handleFormSubmit);
     };
   }, []); // Empty dependency array - this effect runs only once

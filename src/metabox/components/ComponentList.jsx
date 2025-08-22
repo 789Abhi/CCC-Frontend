@@ -140,8 +140,6 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
     // Only update if the value has actually changed
     const currentValue = fieldValuesByInstance?.[instance_id]?.[field_name];
     if (currentValue !== value) {
-      console.log('ComponentList handleFieldChange:', { instance_id, field_name, value });
-      
       const updatedFieldValues = {
         ...fieldValuesByInstance,
         [instance_id]: {
