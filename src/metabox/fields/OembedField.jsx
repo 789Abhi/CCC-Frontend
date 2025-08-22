@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ExternalLink, Eye, EyeOff } from 'lucide-react';
 
 const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldConfig }) => {
@@ -15,17 +15,6 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
     show_author = false,
     show_related = false
   } = config;
-
-  // Sync iframeCode state with value prop when it changes (only when value changes from parent)
-  useEffect(() => {
-    if (value !== iframeCode) {
-      setIframeCode(value || '');
-      // Reset preview state when value changes
-      if (!value) {
-        setShowPreview(false);
-      }
-    }
-  }, [value]); // Remove iframeCode from dependencies to prevent infinite loop
 
   const handleIframeCodeChange = useCallback((e) => {
     const newCode = e.target.value;
