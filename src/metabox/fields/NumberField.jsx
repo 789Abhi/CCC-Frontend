@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Hash, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 
-const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, onChange }) => {
+const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, onChange, onValidationChange }) => {
     const [number, setNumber] = useState('');
     const [isValid, setIsValid] = useState(true);
     const [isFocused, setIsFocused] = useState(false);
@@ -227,6 +227,21 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
         return null;
     };
 
+    // Check if field has validation errors
+    const hasValidationErrors = () => {
+        if (fieldRequired && !number) return true;
+        if (number && !isValid) return true;
+        if (isUniqueRequired && number && !isUnique) return true;
+        return false;
+    };
+
+    // Notify parent component about validation changes
+    useEffect(() => {
+        if (onValidationChange) {
+            onValidationChange(fieldName, hasValidationErrors());
+        }
+    }, [isValid, isUnique, number, fieldRequired, onValidationChange, fieldName]);
+
     const getWarningMessage = () => {
         // Show warning when phone number exceeds max_length but is still valid
         if (fieldConfig?.number_type === 'phone' && 
@@ -255,7 +270,7 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
     };
 
     return (
-        <div className="w-full">
+        <div className="w-full" data-field-id={fieldConfig?.field_id}>
             <label htmlFor={`number-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-2">
                 {label || 'Number'}
                 {fieldRequired && <span className="text-red-500 ml-1">*</span>}

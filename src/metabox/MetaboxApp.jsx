@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ComponentList from './components/ComponentList';
 import ComponentSelector from './components/ComponentSelector';
 import toast from 'react-hot-toast';
+import { AlertTriangle } from 'lucide-react';
 
 function MetaboxApp() {
   console.log('CCC DEBUG: MetaboxApp function running - Component ID:', Math.random().toString(36).substr(2, 9));
@@ -13,10 +14,12 @@ function MetaboxApp() {
   const [expandedComponentIds, setExpandedComponentIds] = useState([]); // for expand/collapse
   const [dropdownOpen, setDropdownOpen] = useState(false); // for add dropdown
   const [fieldValuesByInstance, setFieldValuesByInstance] = useState({});
+  const [validationErrors, setValidationErrors] = useState({});
   
   // Use refs to access current values without causing re-renders
   const componentsRef = useRef(components);
   const fieldValuesRef = useRef(fieldValuesByInstance);
+  const validationErrorsRef = useRef({});
   const isInitializedRef = useRef(false);
 
   // Ensure unsaved changes are tracked when a field value changes
@@ -35,6 +38,26 @@ function MetaboxApp() {
       setHasUnsavedChanges(true);
     }
   }, []); // Empty dependency array to prevent re-creation
+
+  // Handle validation changes from fields
+  const handleValidationChange = useCallback((instanceId, fieldId, hasErrors) => {
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      if (hasErrors) {
+        if (!newErrors[instanceId]) newErrors[instanceId] = {};
+        newErrors[instanceId][fieldId] = hasErrors;
+      } else {
+        if (newErrors[instanceId]) {
+          delete newErrors[instanceId][fieldId];
+          if (Object.keys(newErrors[instanceId]).length === 0) {
+            delete newErrors[instanceId];
+          }
+        }
+      }
+      validationErrorsRef.current = newErrors;
+      return newErrors;
+    });
+  }, []);
 
   // Get post ID from WordPress
   const getPostId = () => {
@@ -314,7 +337,30 @@ function MetaboxApp() {
     
     const handleFormSubmit = (e) => {
       console.log('CCC DEBUG: Form submit triggered');
-      // Do NOT call e.preventDefault() here
+      
+      // Check for validation errors
+      const currentValidationErrors = validationErrorsRef.current;
+      if (Object.keys(currentValidationErrors).length > 0) {
+        console.log('CCC DEBUG: Validation errors found, preventing form submission');
+        e.preventDefault();
+        
+        // Show error message to user
+        const errorMessage = 'Please fix the validation errors before saving. Check the fields marked with errors.';
+        alert(errorMessage);
+        
+        // Scroll to first error field
+        const firstErrorInstance = Object.keys(currentValidationErrors)[0];
+        const firstErrorField = Object.keys(currentValidationErrors[firstErrorInstance])[0];
+        const errorFieldElement = document.querySelector(`[data-field-id="${firstErrorField}"]`);
+        if (errorFieldElement) {
+          errorFieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        return;
+      }
+      
+      console.log('CCC DEBUG: No validation errors, proceeding with submission');
+      
       // Force TinyMCE to update all textareas
       if (window.tinymce && window.tinymce.triggerSave) {
         window.tinymce.triggerSave();
@@ -394,6 +440,12 @@ function MetaboxApp() {
           Saving changes...
         </div>
       )}
+      {Object.keys(validationErrors).length > 0 && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-2 text-sm text-red-700 flex items-center">
+          <AlertTriangle className="w-4 h-4 mr-2" />
+          Validation errors detected. Please fix them before saving.
+        </div>
+      )}
       <ComponentList
         components={components}
         isReadOnly={false}
@@ -416,6 +468,7 @@ function MetaboxApp() {
         availableComponents={availableComponents}
         addComponent={addComponent}
         onFieldValuesChange={handleFieldValuesChange}
+        onValidationChange={handleValidationChange}
         fieldValuesByInstance={fieldValuesByInstance}
         postId={getPostId()}
       />

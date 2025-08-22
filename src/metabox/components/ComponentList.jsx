@@ -80,7 +80,7 @@ function SortableComponentItem(props) {
   return <ComponentItem {...rest} component={component} listeners={listeners} attributes={attributes} setNodeRef={setNodeRef} style={style} />;
 }
 
-function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndoDelete, onToggleHide, onReorder, expandedComponentIds = [], onToggleExpand, dropdownOpen, setDropdownOpen, availableComponents, addComponent, onFieldValuesChange, fieldValuesByInstance, postId }) {
+function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndoDelete, onToggleHide, onReorder, expandedComponentIds = [], onToggleExpand, dropdownOpen, setDropdownOpen, availableComponents, addComponent, onFieldValuesChange, fieldValuesByInstance, postId, onValidationChange }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 2 } })
   );
@@ -251,6 +251,7 @@ function ComponentList({ components, isReadOnly = false, onAdd, onRemove, onUndo
                   isExpanded={expandedComponentIds.includes(component.instance_id)}
                   onToggleExpand={onToggleExpand}
                   onFieldChange={handleFieldChange}
+                  onValidationChange={onValidationChange}
                   fieldValues={fieldValuesByInstance}
                   availableComponents={availableComponents}
                   postId={postId}

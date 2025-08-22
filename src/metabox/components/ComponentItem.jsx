@@ -78,7 +78,7 @@ const DotMenu = memo(({ onDelete }) => {
 
 DotMenu.displayName = 'DotMenu';
 
-const ComponentItem = memo(({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents, postId }) => {
+const ComponentItem = memo(({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, onValidationChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents, postId }) => {
   const [fields, setFields] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
 
@@ -310,6 +310,12 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
                   const handleChange = val => {
                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
                   };
+                  const handleValidationChange = (fieldName, hasErrors) => {
+                    // Notify parent about validation state
+                    if (onValidationChange) {
+                      onValidationChange(component.instance_id, field.id, hasErrors);
+                    }
+                  };
                   return (
                     <NumberField
                       key={field.id}
@@ -324,6 +330,7 @@ const ComponentItem = memo(({ component, index, isReadOnly = false, totalCompone
                       fieldValue={value}
                       fieldRequired={isRequired}
                       onChange={handleChange}
+                      onValidationChange={handleValidationChange}
                     />
                   );
                 }
