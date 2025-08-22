@@ -43,7 +43,19 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
   // Memoize the entire HTML object to prevent re-renders
   const htmlContent = useMemo(() => {
     if (!iframeCode || !isValidCode) return { __html: '' };
-    return { __html: iframeCode };
+    
+    // Ensure the iframe has proper dimensions
+    let processedCode = iframeCode;
+    
+    // Add width and height if they don't exist
+    if (!processedCode.includes('width=')) {
+      processedCode = processedCode.replace('<iframe', `<iframe width="100%"`);
+    }
+    if (!processedCode.includes('height=')) {
+      processedCode = processedCode.replace('<iframe', `<iframe height="400"`);
+    }
+    
+    return { __html: processedCode };
   }, [iframeCode, isValidCode]);
 
   // Memoize the style object to prevent re-renders
@@ -119,9 +131,17 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
             </div>
           </div>
           <div className="bg-gray-50 p-4">
+            {/* Debug: Show what HTML is being rendered */}
+            <div className="text-xs text-gray-600 p-2 bg-yellow-100 mb-2">
+              Rendered HTML: {htmlContent.__html.substring(0, 150)}...
+            </div>
             <div
-              className="w-full"
-              style={previewStyle}
+              className="w-full h-full"
+              style={{ 
+                minHeight: '400px', 
+                position: 'relative',
+                overflow: 'visible'
+              }}
               dangerouslySetInnerHTML={htmlContent}
             />
           </div>
