@@ -383,26 +383,31 @@ const ComponentItem = ({ component, index, isReadOnly = false, totalComponents, 
                     />
                   );
                 }
-                if (field.type === 'oembed') {
-                  const isRequired = field.required || false;
-                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
-                  const value = instanceFieldValues[field.id] !== undefined
-                    ? instanceFieldValues[field.id]
-                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
-                  const handleChange = val => {
-                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
-                  };
-                  return (
-                    <OembedField
-                      key={field.id}
-                      field={field}
-                      value={value}
-                      onChange={handleChange}
-                      isSubmitting={false}
-                    />
-                  );
-                }
-                if (field.type === 'wysiwyg') {
+                  if (field.type === 'oembed') {
+                   const isRequired = field.required || false;
+                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                   const value = instanceFieldValues[field.id] !== undefined
+                     ? instanceFieldValues[field.id]
+                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                   const handleChange = val => {
+                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                   };
+                   return (
+                     <OembedField
+                       key={field.id}
+                       field={field}
+                       value={value}
+                       onChange={handleChange}
+                       isSubmitting={false}
+                       fieldConfig={{
+                         field_id: field.id,
+                         post_id: postId,
+                         instance_id: component.instance_id
+                       }}
+                     />
+                   );
+                 }
+                 if (field.type === 'wysiwyg') {
                   const isRequired = field.required || false;
                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
                   const value = instanceFieldValues[field.id] !== undefined
@@ -512,42 +517,42 @@ const ComponentItem = ({ component, index, isReadOnly = false, totalComponents, 
                     />
                   );
                 }
-                if (field.type === 'radio') {
-                  const isRequired = field.required || false;
-                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
-                  let value = instanceFieldValues[field.id] !== undefined
-                    ? instanceFieldValues[field.id]
-                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
-                  // Radio fields are always single selection
-                  if (Array.isArray(value)) {
-                    value = value[0] || '';
-                  }
-                  let optionsRaw = field.options || (field.config && field.config.options) || [];
-                  let options = [];
-                  if (Array.isArray(optionsRaw)) {
-                    options = optionsRaw.map(opt => typeof opt === 'string' ? { label: opt, value: opt } : opt);
-                  } else if (optionsRaw && typeof optionsRaw === 'object') {
-                    options = Object.entries(optionsRaw).map(([value, label]) => ({ label, value }));
-                  } else {
-                    options = [];
-                  }
-                  const handleChange = val => {
-                    // Radio fields save single value
-                    onFieldChange(component.instance_id, field.id, val);
-                  };
-                  return (
-                    <RadioField
-                      key={field.id}
-                      label={field.label}
-                      value={value}
-                      onChange={handleChange}
-                      options={options}
-                      required={isRequired}
-                      error={isRequired && !value}
-                    />
-                  );
-                }
-                                 if (field.type === 'oembed') {
+                                 if (field.type === 'radio') {
+                   const isRequired = field.required || false;
+                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                   let value = instanceFieldValues[field.id] !== undefined
+                     ? instanceFieldValues[field.id]
+                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                   // Radio fields are always single selection
+                   if (Array.isArray(value)) {
+                     value = value[0] || '';
+                   }
+                   let optionsRaw = field.options || (field.config && field.config.options) || [];
+                   let options = [];
+                   if (Array.isArray(optionsRaw)) {
+                     options = optionsRaw.map(opt => typeof opt === 'string' ? { label: opt, value: opt } : opt);
+                   } else if (optionsRaw && typeof optionsRaw === 'object') {
+                     options = Object.entries(optionsRaw).map(([value, label]) => ({ label, value }));
+                   } else {
+                     options = [];
+                   }
+                   const handleChange = val => {
+                     // Radio fields save single value
+                     onFieldChange(component.instance_id, field.id, val);
+                   };
+                   return (
+                     <RadioField
+                       key={field.id}
+                       label={field.label}
+                       value={value}
+                       onChange={handleChange}
+                       options={options}
+                       required={isRequired}
+                       error={isRequired && !value}
+                     />
+                   );
+                 }
+                 if (field.type === 'relationship') {
                    const isRequired = field.required || false;
                    const instanceFieldValues = fieldValues?.[component.instance_id] || {};
                    const value = instanceFieldValues[field.id] !== undefined
@@ -556,17 +561,22 @@ const ComponentItem = ({ component, index, isReadOnly = false, totalComponents, 
                    const handleChange = val => {
                      if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
                    };
-                  return (
-                    <OembedField
-                      key={field.id}
-                      field={field}
-                      value={value}
-                      onChange={handleChange}
-                      isSubmitting={false}
-                    />
-                  );
-                }
-                                 if (field.type === 'relationship') {
+                   return (
+                     <RelationshipField
+                       key={field.id}
+                       field={field}
+                       value={value}
+                       onChange={handleChange}
+                       isSubmitting={false}
+                       fieldConfig={{
+                         field_id: field.id,
+                         post_id: postId,
+                         instance_id: component.instance_id
+                       }}
+                     />
+                   );
+                 }
+                 if (field.type === 'link') {
                    const isRequired = field.required || false;
                    const instanceFieldValues = fieldValues?.[component.instance_id] || {};
                    const value = instanceFieldValues[field.id] !== undefined
@@ -575,35 +585,21 @@ const ComponentItem = ({ component, index, isReadOnly = false, totalComponents, 
                    const handleChange = val => {
                      if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
                    };
-                  return (
-                    <RelationshipField
-                      key={field.id}
-                      field={field}
-                      value={value}
-                      onChange={handleChange}
-                      isSubmitting={false}
-                    />
-                  );
-                }
-                                 if (field.type === 'link') {
-                   const isRequired = field.required || false;
-                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
-                   const value = instanceFieldValues[field.id] !== undefined
-                     ? instanceFieldValues[field.id]
-                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
-                   const handleChange = val => {
-                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
-                   };
-                  return (
-                    <LinkField
-                      key={field.id}
-                      field={field}
-                      value={value}
-                      onChange={handleChange}
-                      isSubmitting={false}
-                    />
-                  );
-                }
+                   return (
+                     <LinkField
+                       key={field.id}
+                       field={field}
+                       value={value}
+                       onChange={handleChange}
+                       isSubmitting={false}
+                       fieldConfig={{
+                         field_id: field.id,
+                         post_id: postId,
+                         instance_id: component.instance_id
+                       }}
+                     />
+                   );
+                 }
                 if (field.type === 'color') {
                   const isRequired = field.required || false;
                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
