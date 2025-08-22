@@ -66,10 +66,7 @@
   }
 }
 
-/* OEmbed Field Styles */
-.ccc-oembed-field {
-  margin-bottom: 1rem;
-}
+
 
 /* Email Field Styles - Using Tailwind CSS only */
 
@@ -288,117 +285,19 @@
   cursor: not-allowed;
 }
 
-.ccc-oembed-input-container {
-  margin-bottom: 0.5rem;
-}
 
-.ccc-oembed-iframe-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  resize: vertical;
-  min-height: 120px;
-}
 
-.ccc-oembed-preview-btn {
-  padding: 0.5rem 1rem;
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
 
-.ccc-oembed-preview-btn:hover:not(:disabled) {
-  background-color: #2563eb;
-}
 
-.ccc-oembed-preview-btn:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
-}
 
-.ccc-oembed-settings {
-  background-color: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  padding: 1rem;
-  margin-top: 0.5rem;
-}
 
-.ccc-oembed-setting-row {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-}
 
-.ccc-oembed-setting {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
 
-.ccc-oembed-setting label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #374151;
-}
 
-.ccc-oembed-setting input[type="text"] {
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-}
 
-.ccc-oembed-preview {
-  margin-top: 0.5rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  overflow: hidden;
-}
 
-.ccc-oembed-preview-content {
-  width: 100%;
-  height: 100%;
-}
 
-.ccc-oembed-preview-content iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
 
-.ccc-oembed-info {
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  background-color: #f3f4f6;
-  border-radius: 0.25rem;
-}
-
-.ccc-oembed-info h4 {
-  margin: 0 0 0.25rem 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
-}
-
-.ccc-oembed-info p {
-  margin: 0;
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.ccc-field-error {
-  color: #dc2626;
-  font-size: 0.75rem;
-  margin-top: 0.25rem;
-}
 
 /* Two Column Layout for Relationship Field */
 .ccc-relationship-columns {

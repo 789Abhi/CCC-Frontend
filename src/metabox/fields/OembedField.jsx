@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Eye, EyeOff, Settings } from 'lucide-react';
+import { ExternalLink, Eye, EyeOff } from 'lucide-react';
 
 const OembedField = ({ field, value, onChange, isSubmitting }) => {
   const [iframeCode, setIframeCode] = useState(value || '');
-  const [showSettings, setShowSettings] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [error, setError] = useState('');
 
@@ -40,14 +39,6 @@ const OembedField = ({ field, value, onChange, isSubmitting }) => {
     return titleMatch ? titleMatch[1] : null;
   };
 
-  const getPreviewStyle = () => ({
-    width: width === '100%' ? '100%' : `${width}px`,
-    height: height === '400px' ? '400px' : `${height}px`,
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    overflow: 'hidden'
-  });
-
   const getProcessedIframeCode = () => {
     if (!iframeCode) return null;
     
@@ -76,97 +67,75 @@ const OembedField = ({ field, value, onChange, isSubmitting }) => {
   };
 
   return (
-    <div className="ccc-field ccc-oembed-field">
-      <div className="ccc-field-header">
-        <label className="ccc-field-label">
+    <div className="mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-sm font-medium text-gray-700">
           {field.label}
-          {field.required && <span className="required">*</span>}
+          {field.required && <span className="text-red-500 ml-1">*</span>}
         </label>
-        <div className="ccc-field-actions">
-          <button
-            type="button"
-            className="ccc-field-action-btn"
-            onClick={() => setShowSettings(!showSettings)}
-            title="Settings"
-          >
-            <Settings size={16} />
-          </button>
+        <div className="flex items-center gap-2">
           {iframeCode && isValidIframeCode(iframeCode) && (
             <button
               type="button"
-              className="ccc-field-action-btn"
+              className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
               onClick={() => setShowPreview(!showPreview)}
               title={showPreview ? "Hide Preview" : "Show Preview"}
             >
               {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
+              <span>
+                {showPreview ? "Hide Preview" : "Show Preview"}
+              </span>
             </button>
           )}
         </div>
       </div>
       
-      <div className="ccc-oembed-input-container">
+      <div className="mb-2">
         <textarea
           value={iframeCode}
           onChange={handleIframeCodeChange}
           placeholder="Paste your iframe code here (e.g., Google Maps, YouTube, Vimeo embed code)"
-          className="ccc-field-textarea ccc-oembed-iframe-textarea"
+          className="w-full px-3 py-3 border border-gray-300 rounded-lg text-sm font-mono resize-y min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           rows={4}
           disabled={isSubmitting}
         />
       </div>
       
       {error && (
-        <div className="ccc-field-error">
+        <div className="text-red-600 text-xs mt-1">
           {error}
         </div>
       )}
       
       {iframeCode && !isValidIframeCode(iframeCode) && (
-        <div className="ccc-field-warning">
+        <div className="text-amber-600 text-xs mt-1 bg-amber-50 px-2 py-1 rounded">
           Please enter a valid iframe code starting with &lt;iframe
         </div>
       )}
       
-      {showSettings && (
-        <div className="ccc-oembed-settings">
-          <div className="ccc-oembed-setting-row">
-            <div className="ccc-oembed-setting">
-              <label>Width:</label>
-              <input
-                type="text"
-                defaultValue={width}
-                placeholder="100%"
-                className="ccc-field-input ccc-oembed-width"
-              />
+      {showPreview && iframeCode && isValidIframeCode(iframeCode) && (
+        <div className="mt-4 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+          <div className="flex justify-between items-center px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <h4 className="text-sm font-semibold text-gray-700">Preview</h4>
+            <div className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded font-mono">
+              {width} × {height}
             </div>
-            <div className="ccc-oembed-setting">
-              <label>Height:</label>
-              <input
-                type="text"
-                defaultValue={height}
-                placeholder="400px"
-                className="ccc-field-input ccc-oembed-height"
-              />
-            </div>
+          </div>
+          <div className="bg-gray-50 overflow-hidden">
+            <div
+              className="w-full h-full flex items-center justify-center"
+              dangerouslySetInnerHTML={{ __html: getProcessedIframeCode() }}
+            />
           </div>
         </div>
       )}
       
-      {showPreview && iframeCode && isValidIframeCode(iframeCode) && (
-        <div className="ccc-oembed-preview" style={getPreviewStyle()}>
-          <div
-            className="ccc-oembed-preview-content"
-            dangerouslySetInnerHTML={{ __html: getProcessedIframeCode() }}
-          />
-        </div>
-      )}
-      
       {iframeCode && isValidIframeCode(iframeCode) && show_title && extractIframeTitle(iframeCode) && (
-        <div className="ccc-oembed-info">
-          <h4>{extractIframeTitle(iframeCode)}</h4>
+        <div className="mt-2 p-2 bg-gray-100 rounded">
+          <h4 className="text-sm font-semibold text-gray-700 mb-1">{extractIframeTitle(iframeCode)}</h4>
           {extractIframeSrc(iframeCode) && (
-            <p className="ccc-oembed-src">
-              Source: <a href={extractIframeSrc(iframeCode)} target="_blank" rel="noopener noreferrer">
+            <p className="text-xs text-gray-500">
+              Source: <a href={extractIframeSrc(iframeCode)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                 {extractIframeSrc(iframeCode)}
               </a>
             </p>
