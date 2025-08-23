@@ -242,13 +242,13 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 append: ''
               });
             }
-          } else if (field.type === 'range' && field.config) {
-            try {
-              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
-              setFieldConfig({
-                min_value: config.min_value !== undefined && config.min_value !== null ? config.min_value : null,
-                max_value: config.max_value !== undefined && config.max_value !== null ? config.max_value : null,
-                prepend: config.prepend || '',
+                     } else if (field.type === 'range' && field.config) {
+             try {
+               const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+               setFieldConfig({
+                 min_value: config.min_value !== undefined && config.min_value !== null ? config.min_value : null,
+                 max_value: config.max_value !== undefined && config.max_value !== null ? config.max_value : 100,
+                 prepend: config.prepend || '',
                 append: config.append || ''
               });
             } catch (e) {
@@ -408,7 +408,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     if (type === 'range') {
       setFieldConfig({
         min_value: null,
-        max_value: null,
+        max_value: 100,
         prepend: '',
         append: ''
       });
@@ -1957,7 +1957,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <input
                       id="rangeMaxValue"
                       type="number"
-                      value={fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : ''}
+                      value={fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : 100}
                       onChange={(e) => {
                         const currentConfig = fieldConfig || {};
                         setFieldConfig({
