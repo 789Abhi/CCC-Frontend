@@ -236,28 +236,47 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         setError('');
         
         console.log('FileField: Opening media library...');
+        console.log('FileField: Current wp object:', typeof wp !== 'undefined' ? 'Available' : 'Not available');
+        console.log('FileField: Current wp.media:', typeof wp !== 'undefined' && wp.media ? 'Available' : 'Not available');
+        console.log('FileField: Current wp.media type:', typeof wp !== 'undefined' && wp.media ? typeof wp.media : 'N/A');
         
-        // Check if WordPress media uploader is available
-        if (typeof wp !== 'undefined' && wp.media) {
-            console.log('FileField: Creating media frame...');
+        // Function to actually open the media library
+        const openMediaFrame = () => {
+            // Check if WordPress media uploader is available
+            if (typeof wp !== 'undefined' && wp.media && typeof wp.media === 'function') {
+                console.log('FileField: Creating media frame...');
             const frame = wp.media({
-                title: 'Select Files',
+                title: multiple ? 'Select or Upload Files' : 'Select or Upload File',
                 button: {
-                    text: 'Use these files'
+                    text: multiple ? 'Use these files' : 'Use this file'
                 },
                 multiple: multiple,
-                library: {
-                    type: allowed_types.map(type => {
-                        switch(type) {
-                            case 'image': return 'image';
-                            case 'video': return 'video';
-                            case 'audio': return 'audio';
-                            case 'document': return 'application';
-                            case 'archive': return 'application';
-                            default: return '';
+                // Enable both library selection and file upload
+                states: [
+                    new wp.media.controller.Library({
+                        library: wp.media.query({
+                            type: allowed_types.map(type => {
+                                switch(type) {
+                                    case 'image': return 'image';
+                                    case 'video': return 'video';
+                                    case 'audio': return 'audio';
+                                    case 'document': return 'application';
+                                    case 'archive': return 'application';
+                                    default: return '';
+                                }
+                            }).filter(Boolean)
+                        }),
+                        multiple: multiple
+                    }),
+                    new wp.media.controller.Upload({
+                        multiple: multiple,
+                        // Ensure upload controller is properly configured
+                        uploaderParams: {
+                            // Allow all file types for upload
+                            allowedTypes: allowed_types
                         }
-                    }).filter(Boolean)
-                }
+                    })
+                ]
             });
 
             frame.on('select', () => {
@@ -270,19 +289,23 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     const attachmentData = attachment.toJSON();
                     console.log('FileField: Processing attachment:', attachmentData);
                     
+                    // Check if this is a newly uploaded file or existing media library file
+                    const isNewUpload = attachmentData.uploading || attachmentData.status === 'uploading';
+                    
                     // Get basic file information
                     const fileData = {
                         id: attachmentData.id,
-                        name: attachmentData.filename || attachmentData.title || 'Unknown File',
-                        type: attachmentData.mime_type || 'application/octet-stream',
-                        size: attachmentData.filesizeInBytes || 0,
-                        size_formatted: attachmentData.filesizeHumanReadable || formatFileSize(attachmentData.filesizeInBytes || 0),
-                        url: attachmentData.url,
+                        name: attachmentData.filename || attachmentData.title || attachmentData.name || 'Unknown File',
+                        type: attachmentData.mime_type || attachmentData.type || 'application/octet-stream',
+                        size: attachmentData.filesizeInBytes || attachmentData.filesize || 0,
+                        size_formatted: attachmentData.filesizeHumanReadable || formatFileSize(attachmentData.filesizeInBytes || attachmentData.filesize || 0),
+                        url: attachmentData.url || attachmentData.guid,
                         thumbnail: attachmentData.sizes?.thumbnail?.url || 
                                   attachmentData.sizes?.medium?.url || 
                                   attachmentData.sizes?.small?.url || 
-                                  attachmentData.url,
-                        is_media_library: true
+                                  attachmentData.url || attachmentData.guid,
+                        is_media_library: !isNewUpload,
+                        is_new_upload: isNewUpload
                     };
                     
                     console.log('FileField: Created file data:', fileData);
@@ -337,10 +360,72 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                 setIsOpeningMedia(false);
             });
 
-            frame.open();
+            // Add error handling for media frame
+            frame.on('error', (error) => {
+                console.error('FileField: Media frame error:', error);
+                setError('Error opening media library. Please try again.');
+                setIsOpeningMedia(false);
+            });
+
+            // Ensure the frame is properly initialized before opening
+            try {
+                console.log('FileField: Attempting to open media frame...');
+                frame.open();
+                console.log('FileField: Media frame opened successfully');
+            } catch (error) {
+                console.error('FileField: Error opening media frame:', error);
+                setError('Failed to open media library. Please refresh the page and try again.');
+                setIsOpeningMedia(false);
+            }
         } else {
+            console.error('FileField: WordPress media library not available');
+            console.log('FileField: wp object:', typeof wp !== 'undefined' ? wp : 'undefined');
+            console.log('FileField: wp.media:', typeof wp !== 'undefined' && wp.media ? typeof wp.media : 'undefined');
+            
             setError('WordPress media library is not available. Please refresh the page and try again.');
             setIsOpeningMedia(false);
+        }
+        };
+        
+        // Try to open immediately, if it fails, wait a bit and try again
+        try {
+            openMediaFrame();
+        } catch (error) {
+            console.log('FileField: First attempt failed, retrying in 100ms...');
+            setTimeout(() => {
+                try {
+                    openMediaFrame();
+                } catch (retryError) {
+                    console.error('FileField: Retry also failed:', retryError);
+                    setError('Failed to open media library after retry. Please refresh the page and try again.');
+                    setIsOpeningMedia(false);
+                }
+            }, 100);
+        }
+        
+        // Also try to ensure WordPress media is fully loaded
+        if (typeof wp === 'undefined' || !wp.media) {
+            console.log('FileField: WordPress media not loaded, waiting for it...');
+            const checkMedia = () => {
+                if (typeof wp !== 'undefined' && wp.media && typeof wp.media === 'function') {
+                    console.log('FileField: WordPress media now available, opening...');
+                    openMediaFrame();
+                } else {
+                    setTimeout(checkMedia, 50);
+                }
+            };
+            setTimeout(checkMedia, 50);
+        }
+        
+        // Additional check: ensure media library is properly initialized
+        if (typeof wp !== 'undefined' && wp.media && typeof wp.media === 'function') {
+            // Force media library to initialize if it hasn't already
+            try {
+                wp.media.view.settings.defaultProps = wp.media.view.settings.defaultProps || {};
+                console.log('FileField: WordPress media library initialized');
+            } catch (initError) {
+                console.log('FileField: WordPress media library initialization check:', initError);
+            }
         }
     };
 
