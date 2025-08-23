@@ -247,19 +247,19 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
                setFieldConfig({
                  min_value: config.min_value !== undefined && config.min_value !== null ? config.min_value : null,
-                 max_value: config.max_value !== undefined && config.max_value !== null ? config.max_value : 100,
+                 max_value: config.max_value !== undefined && config.max_value !== null ? config.max_value : null,
                  prepend: config.prepend || '',
-                append: config.append || ''
-              });
-            } catch (e) {
-              console.error("Error parsing range config:", e);
-              setFieldConfig({
-                min_value: null,
-                max_value: null,
-                prepend: '',
-                append: ''
-              });
-            }
+                 append: config.append || ''
+               });
+             } catch (e) {
+               console.error("Error parsing range config:", e);
+               setFieldConfig({
+                 min_value: null,
+                 max_value: null,
+                 prepend: '',
+                 append: ''
+               });
+             }
           } else if (field.type === 'file' && field.config) {
             try {
               const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
@@ -405,14 +405,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
   // Reset field configuration when type changes
   useEffect(() => {
-    if (type === 'range') {
+    // Only set defaults for new fields, not when editing existing ones
+    if (!field && type === 'range') {
       setFieldConfig({
         min_value: null,
         max_value: 100,
         prepend: '',
         append: ''
       });
-    } else if (type === 'number') {
+    } else if (!field && type === 'number') {
       setFieldConfig({
         number_type: 'normal',
         unique: false,
@@ -424,7 +425,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         append: ''
       });
     }
-  }, [type]);
+  }, [type, field]);
 
   // Fetch available post types and taxonomies for relationship field
   useEffect(() => {
@@ -1336,7 +1337,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     </label>
                     <input
                       type="number"
-                      value={fieldConfig?.max_value || ''}
+                      value={fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : (field ? '' : 100)}
                       onChange={(e) => setFieldConfig(prev => ({ 
                         ...prev, 
                         max_value: e.target.value === '' ? null : parseFloat(e.target.value) 
@@ -1957,7 +1958,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <input
                       id="rangeMaxValue"
                       type="number"
-                      value={fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : 100}
+                      value={fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : (field ? '' : 100)}
                       onChange={(e) => {
                         const currentConfig = fieldConfig || {};
                         setFieldConfig({
