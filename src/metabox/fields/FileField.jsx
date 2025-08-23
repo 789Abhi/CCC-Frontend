@@ -232,12 +232,32 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
     };
 
     const openMediaLibrary = () => {
+        console.log('FileField: openMediaLibrary called');
+        console.log('FileField: Field name/label:', label || name || 'unnamed');
+        console.log('FileField: Multiple allowed:', multiple);
+        console.log('FileField: Allowed types:', allowed_types);
+        
         setIsOpeningMedia(true);
         setError('');
         
+        // Check for existing media frames and close them
+        if (window.wp && window.wp.media && window.wp.media.frames) {
+            console.log('FileField: Existing media frames found, closing them');
+            Object.keys(window.wp.media.frames).forEach(key => {
+                if (window.wp.media.frames[key] && typeof window.wp.media.frames[key].close === 'function') {
+                    window.wp.media.frames[key].close();
+                }
+            });
+        }
+        
         // Simple, direct WordPress media library opening
         if (typeof wp !== 'undefined' && wp.media && typeof wp.media === 'function') {
+            console.log('FileField: Creating new media frame');
+            const frameId = 'file-field-' + Date.now() + '-' + Math.random();
+            console.log('FileField: Frame ID:', frameId);
+            
             const frame = wp.media({
+                id: frameId,
                 title: multiple ? 'Select or Upload Files' : 'Select or Upload File',
                 button: {
                     text: multiple ? 'Use these files' : 'Use this file'
@@ -258,7 +278,10 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
             });
 
             frame.on('select', () => {
+                console.log('FileField: Select event triggered for frame:', frameId);
                 const selection = frame.state().get('selection');
+                console.log('FileField: Selection object:', selection);
+                console.log('FileField: Selection length:', selection.length);
                 const selectedFiles = [];
 
                 selection.map(attachment => {
@@ -317,10 +340,23 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
             });
 
             frame.on('close', () => {
+                console.log('FileField: Frame closed for:', frameId);
                 setIsOpeningMedia(false);
             });
 
+            frame.on('open', () => {
+                console.log('FileField: Frame opened for:', frameId);
+                console.log('FileField: Frame state:', frame.state());
+                console.log('FileField: Frame router:', frame.router);
+            });
+
+            frame.on('ready', () => {
+                console.log('FileField: Frame ready for:', frameId);
+            });
+
+            console.log('FileField: About to open frame:', frameId);
             frame.open();
+            console.log('FileField: Frame.open() called for:', frameId);
         } else {
             setError('WordPress media library is not available. Please refresh the page and try again.');
             setIsOpeningMedia(false);
