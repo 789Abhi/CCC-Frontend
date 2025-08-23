@@ -222,8 +222,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               setFieldConfig({
                 number_type: config.number_type || 'normal',
                 unique: config.unique || false,
-                min_value: config.min_value || null,
-                max_value: config.max_value || null,
+                min_value: config.min_value !== undefined && config.min_value !== null ? config.min_value : null,
+                max_value: config.max_value !== undefined && config.max_value !== null ? config.max_value : null,
                 min_length: config.min_length || null,
                 max_length: config.max_length || null,
                 prepend: config.prepend || '',
@@ -246,16 +246,16 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             try {
               const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
               setFieldConfig({
-                min_value: config.min_value || 0,
-                max_value: config.max_value || 100,
+                min_value: config.min_value !== undefined && config.min_value !== null ? config.min_value : null,
+                max_value: config.max_value !== undefined && config.max_value !== null ? config.max_value : null,
                 prepend: config.prepend || '',
                 append: config.append || ''
               });
             } catch (e) {
               console.error("Error parsing range config:", e);
               setFieldConfig({
-                min_value: 0,
-                max_value: 100,
+                min_value: null,
+                max_value: null,
                 prepend: '',
                 append: ''
               });
@@ -403,55 +403,18 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     setCurrentNestedField(null)
   }, [field, isOpen])
 
-  // Set initial fieldConfig based on initial type
+  // Reset field configuration when type changes
   useEffect(() => {
-    if (type === 'number') {
+    if (type === 'range') {
       setFieldConfig({
-        number_type: 'normal',
-        unique: false,
         min_value: null,
         max_value: null,
-        min_length: null,
-        max_length: null,
         prepend: '',
         append: ''
       });
-    }
-  }, []); // Run only on mount
-
-  // Reset fieldConfig when type changes
-  useEffect(() => {
-    if (type === 'number') {
+    } else if (type === 'number') {
       setFieldConfig({
         number_type: 'normal',
-        unique: false,
-        min_value: null,
-        max_value: null,
-        min_length: null,
-        max_length: null,
-        prepend: '',
-        append: ''
-      });
-    } else if (type === 'range') {
-      setFieldConfig({
-        min_value: 0,
-        max_value: 100,
-        prepend: '',
-        append: ''
-      });
-    } else if (type === 'file') {
-      setFieldConfig({
-        allowed_types: ['image', 'video', 'document', 'audio', 'archive'],
-        max_file_size: 10,
-        return_type: 'url',
-        multiple: false,
-        show_preview: true,
-        show_download: true,
-        show_delete: true
-      });
-    } else {
-      // For other field types, set a basic config
-      setFieldConfig({
         unique: false,
         min_value: null,
         max_value: null,
@@ -869,8 +832,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           console.log("Number field config for preventDatabaseSave:", fieldData.config);
         } else if (type === "range") {
           fieldData.config = {
-            min_value: fieldConfig?.min_value || 0,
-            max_value: fieldConfig?.max_value || 100,
+            min_value: fieldConfig?.min_value !== undefined && fieldConfig?.min_value !== null ? fieldConfig.min_value : null,
+            max_value: fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : null,
             prepend: fieldConfig?.prepend || '',
             append: fieldConfig?.append || ''
           }
@@ -1030,8 +993,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         formData.append("field_config", JSON.stringify(config))
       } else if (type === "range") {
         const config = {
-          min_value: fieldConfig?.min_value || 0,
-          max_value: fieldConfig?.max_value || 100,
+          min_value: fieldConfig?.min_value !== undefined && fieldConfig?.min_value !== null ? fieldConfig.min_value : null,
+          max_value: fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : null,
           prepend: fieldConfig?.prepend || '',
           append: fieldConfig?.append || ''
         }
@@ -1354,10 +1317,13 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <input
                       type="number"
                       value={fieldConfig?.min_value || ''}
-                      onChange={(e) => setFieldConfig(prev => ({ 
-                        ...prev, 
-                        min_value: e.target.value === '' ? null : parseFloat(e.target.value) 
-                      }))}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          min_value: e.target.value === '' ? null : parseFloat(e.target.value)
+                        });
+                      }}
                       placeholder="No minimum"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -1813,7 +1779,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                           const currentConfig = fieldConfig || {};
                           setFieldConfig({
                             ...currentConfig,
-                            min_value: e.target.value ? parseFloat(e.target.value) : null
+                            min_value: e.target.value === '' ? null : parseFloat(e.target.value)
                           });
                         }}
                         placeholder="No minimum"
@@ -1834,7 +1800,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                           const currentConfig = fieldConfig || {};
                           setFieldConfig({
                             ...currentConfig,
-                            max_value: e.target.value ? parseFloat(e.target.value) : null
+                            max_value: e.target.value === '' ? null : parseFloat(e.target.value)
                           });
                         }}
                         placeholder="No maximum"
@@ -1861,7 +1827,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                           const currentConfig = fieldConfig || {};
                           setFieldConfig({
                             ...currentConfig,
-                            min_length: e.target.value ? parseInt(e.target.value) : null
+                            min_length: e.target.value === '' ? null : parseInt(e.target.value)
                           });
                         }}
                         placeholder="No minimum"
@@ -1886,7 +1852,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                           const currentConfig = fieldConfig || {};
                           setFieldConfig({
                             ...currentConfig,
-                            max_length: e.target.value ? parseInt(e.target.value) : null
+                            max_length: e.target.value === '' ? null : parseInt(e.target.value)
                           });
                         }}
                         placeholder="No maximum"
@@ -1967,20 +1933,20 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <input
                       id="rangeMinValue"
                       type="number"
-                      value={fieldConfig?.min_value || 0}
+                      value={fieldConfig?.min_value !== undefined && fieldConfig?.min_value !== null ? fieldConfig.min_value : ''}
                       onChange={(e) => {
                         const currentConfig = fieldConfig || {};
                         setFieldConfig({
                           ...currentConfig,
-                          min_value: e.target.value ? parseFloat(e.target.value) : 0
+                          min_value: e.target.value === '' ? null : parseFloat(e.target.value)
                         });
                       }}
-                      placeholder="0"
+                      placeholder="Enter minimum value (optional)"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                       disabled={isSubmitting}
                     />
                     <p className="text-xs text-gray-500">
-                      Sets the lowest allowed value for the range slider
+                      Sets the lowest allowed value for the range slider (leave empty for no minimum)
                     </p>
                   </div>
                   
@@ -1991,20 +1957,20 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <input
                       id="rangeMaxValue"
                       type="number"
-                      value={fieldConfig?.max_value || 100}
+                      value={fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : ''}
                       onChange={(e) => {
                         const currentConfig = fieldConfig || {};
                         setFieldConfig({
                           ...currentConfig,
-                          max_value: e.target.value ? parseFloat(e.target.value) : 100
+                          max_value: e.target.value === '' ? null : parseFloat(e.target.value)
                         });
                       }}
-                      placeholder="100"
+                      placeholder="Enter maximum value (optional)"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                       disabled={isSubmitting}
                     />
                     <p className="text-xs text-gray-500">
-                      Sets the highest allowed value for the range slider
+                      Sets the highest allowed value for the range slider (leave empty for no maximum)
                     </p>
                   </div>
                 </div>

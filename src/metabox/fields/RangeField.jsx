@@ -9,8 +9,8 @@ const RangeField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, 
     const [isInitializing, setIsInitializing] = useState(true);
     const inputRef = useRef(null);
 
-    const minValue = fieldConfig?.min_value ?? 0;
-    const maxValue = fieldConfig?.max_value ?? 100;
+    const minValue = fieldConfig?.min_value !== undefined && fieldConfig?.min_value !== null ? fieldConfig.min_value : 0;
+    const maxValue = fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : 100;
     const prependText = fieldConfig?.prepend ?? '';
     const appendText = fieldConfig?.append ?? '';
 
@@ -94,7 +94,10 @@ const RangeField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, 
     };
 
     const handleClear = () => {
-        const defaultValue = Math.round((minValue + maxValue) / 2);
+        // Use fallback values if min/max are null
+        const fallbackMin = minValue !== null && minValue !== undefined ? minValue : 0;
+        const fallbackMax = maxValue !== null && maxValue !== undefined ? maxValue : 100;
+        const defaultValue = Math.round((fallbackMin + fallbackMax) / 2);
         setRangeValue(defaultValue.toString());
         setIsValid(true);
         setShowValidation(false);
@@ -167,7 +170,10 @@ const RangeField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, 
     };
 
     const getSliderBackground = () => {
-        const percentage = ((parseFloat(rangeValue) - minValue) / (maxValue - minValue)) * 100;
+        // Use fallback values if min/max are null
+        const fallbackMin = minValue !== null && minValue !== undefined ? minValue : 0;
+        const fallbackMax = maxValue !== null && maxValue !== undefined ? maxValue : 100;
+        const percentage = ((parseFloat(rangeValue) - fallbackMin) / (fallbackMax - fallbackMin)) * 100;
         return `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${percentage}%, #e5e7eb ${percentage}%, #e5e7eb 100%)`;
     };
 
@@ -192,8 +198,8 @@ const RangeField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, 
                     <div className="flex-1 relative">
                         <input
                             type="range"
-                            min={minValue}
-                            max={maxValue}
+                            min={minValue !== null && minValue !== undefined ? minValue : 0}
+                            max={maxValue !== null && maxValue !== undefined ? maxValue : 100}
                             value={rangeValue}
                             onChange={handleSliderChange}
                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
@@ -229,14 +235,14 @@ const RangeField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, 
                         <input
                             ref={inputRef}
                             type="number"
-                            min={minValue}
-                            max={maxValue}
+                            min={minValue !== null && minValue !== undefined ? minValue : undefined}
+                            max={maxValue !== null && maxValue !== undefined ? maxValue : undefined}
                             value={rangeValue}
                             onChange={handleRangeChange}
                             onFocus={handleFocus}
                             onBlur={handleBlur}
                             className={`w-20 px-3 py-2 border rounded-md text-sm font-medium text-gray-700 ${getInputBorderColor()} ${getInputFocusColor()} transition-colors`}
-                            placeholder={minValue.toString()}
+                            placeholder={minValue !== null && minValue !== undefined ? minValue.toString() : '0'}
                         />
                         <span className="text-sm font-medium text-gray-700">
                             {appendText}
