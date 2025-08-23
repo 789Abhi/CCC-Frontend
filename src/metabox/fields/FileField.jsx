@@ -9,7 +9,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
 
     const {
         allowed_types = ['image', 'video', 'document', 'audio', 'archive'],
-        max_file_size = 25, // MB
+        max_file_size = null, // No default restriction
         return_type = 'url',
         multiple = false,
         show_preview = true,
@@ -122,16 +122,12 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
     }, [fieldValue]);
 
     const showSuccessMessage = (message) => {
-        // setSuccessMessage(message); // Removed as per edit hint
-        setError('');
-        setTimeout(() => {
-            // setSuccessMessage(''); // Removed as per edit hint
-        }, 3000);
+        // Function removed - no longer needed
+        console.log('Success:', message);
     };
 
     const showErrorMessage = (message) => {
         setError(message);
-        // setSuccessMessage(''); // Removed as per edit hint
     };
 
     const getFileIcon = (fileType) => {
@@ -240,8 +236,6 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         setError('');
         
         console.log('FileField: Opening media library...');
-        console.log('FileField: wp available:', typeof wp !== 'undefined');
-        console.log('FileField: wp.media available:', typeof wp !== 'undefined' && wp.media);
         
         // Check if WordPress media uploader is available
         if (typeof wp !== 'undefined' && wp.media) {
@@ -270,149 +264,24 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                 console.log('FileField: Media frame select event triggered');
                 const selection = frame.state().get('selection');
                 console.log('FileField: Selection:', selection);
-                console.log('FileField: Selection count:', selection.length);
                 const selectedFiles = [];
 
                 selection.map(attachment => {
-                    console.log('FileField: Processing attachment:', attachment);
-                    console.log('FileField: Attachment ID:', attachment.id);
-                    console.log('FileField: Attachment filename:', attachment.get('filename'));
-                    console.log('FileField: Attachment title:', attachment.get('title'));
-                    console.log('FileField: Attachment URL:', attachment.get('url'));
-                    console.log('FileField: Attachment mime type:', attachment.get('mime_type'));
-                    console.log('FileField: Attachment sizes:', attachment.get('sizes'));
+                    const attachmentData = attachment.toJSON();
+                    console.log('FileField: Processing attachment:', attachmentData);
                     
-                    // Get MIME type - try multiple methods
-                    let mimeType = attachment.get('mime_type');
-                    if (!mimeType) {
-                        // Try to get from attributes
-                        mimeType = attachment.attributes.mime_type;
-                    }
-                    if (!mimeType) {
-                        // Try to get from changed attributes
-                        mimeType = attachment.changed.mime_type;
-                    }
-                    if (!mimeType) {
-                        // Fallback based on file extension
-                        const filename = attachment.get('filename') || '';
-                        const ext = filename.split('.').pop().toLowerCase();
-                        switch(ext) {
-                            case 'jpg':
-                            case 'jpeg':
-                            case 'png':
-                            case 'gif':
-                            case 'webp':
-                                mimeType = 'image/' + (ext === 'jpg' ? 'jpeg' : ext);
-                                break;
-                            case 'mp4':
-                            case 'avi':
-                            case 'mov':
-                            case 'wmv':
-                                mimeType = 'video/' + ext;
-                                break;
-                            case 'mp3':
-                            case 'wav':
-                            case 'ogg':
-                                mimeType = 'audio/' + ext;
-                                break;
-                            case 'pdf':
-                                mimeType = 'application/pdf';
-                                break;
-                            case 'doc':
-                            case 'docx':
-                                mimeType = 'application/msword';
-                                break;
-                            case 'xls':
-                            case 'xlsx':
-                                mimeType = 'application/vnd.ms-excel';
-                                break;
-                            case 'zip':
-                            case 'rar':
-                                mimeType = 'application/' + ext;
-                                break;
-                            default:
-                                mimeType = 'application/octet-stream';
-                        }
-                    }
-                    
-                    console.log('FileField: Final MIME type:', mimeType);
-                    
-                    // Validate file type based on allowed_types
-                    let isAllowed = false;
-                    
-                    if (allowed_types.includes('image') && mimeType.startsWith('image/')) isAllowed = true;
-                    if (allowed_types.includes('video') && mimeType.startsWith('video/')) isAllowed = true;
-                    if (allowed_types.includes('audio') && mimeType.startsWith('audio/')) isAllowed = true;
-                    if (allowed_types.includes('document') && (
-                        mimeType === 'application/pdf' ||
-                        mimeType.includes('document') ||
-                        mimeType.includes('word') ||
-                        mimeType.includes('excel') ||
-                        mimeType === 'text/plain'
-                    )) isAllowed = true;
-                    if (allowed_types.includes('archive') && (
-                        mimeType.includes('zip') ||
-                        mimeType.includes('rar') ||
-                        mimeType.includes('tar') ||
-                        mimeType.includes('gzip')
-                    )) isAllowed = true;
-
-                    console.log('FileField: File type allowed:', isAllowed);
-
-                    if (!isAllowed) {
-                        showErrorMessage(`File type ${mimeType} is not allowed for this field`);
-                        return;
-                    }
-
-                    // Get file size - try multiple methods
-                    let fileSize = attachment.get('filesizeInBytes') || 0;
-                    if (!fileSize) {
-                        // Try to get from attributes
-                        fileSize = attachment.attributes.filesizeInBytes || 0;
-                    }
-                    if (!fileSize) {
-                        // Try to get from changed attributes
-                        fileSize = attachment.changed.filesizeInBytes || 0;
-                    }
-                    if (!fileSize) {
-                        // Try to get from other size properties
-                        fileSize = attachment.get('filesize') || 0;
-                    }
-                    if (!fileSize) {
-                        // Try to get from attributes
-                        fileSize = attachment.attributes.filesize || 0;
-                    }
-                    if (!fileSize) {
-                        // Try to get from changed attributes
-                        fileSize = attachment.changed.filesize || 0;
-                    }
-                    
-                    // If still no file size, try to get from the full size image
-                    if (!fileSize && attachment.get('sizes') && attachment.get('sizes').full) {
-                        // This is a rough estimate - we'll use a default size
-                        fileSize = 1024 * 1024; // 1MB default
-                    }
-                    
-                    console.log('FileField: Final file size:', fileSize);
-                    
-                    const maxSizeBytes = max_file_size * 1024 * 1024;
-                    console.log('FileField: File size:', fileSize, 'Max allowed:', maxSizeBytes);
-                    if (fileSize > maxSizeBytes) {
-                        showErrorMessage(`File size exceeds ${max_file_size}MB limit`);
-                        return;
-                    }
-
+                    // Get basic file information
                     const fileData = {
-                        id: attachment.id,
-                        name: attachment.get('filename') || attachment.get('title'),
-                        type: mimeType,
-                        size: fileSize,
-                        size_formatted: attachment.get('filesizeHumanReadable') || formatFileSize(fileSize),
-                        url: attachment.get('url'),
-                        thumbnail: attachment.get('sizes')?.thumbnail?.url || 
-                                  attachment.get('sizes')?.medium?.url || 
-                                  attachment.get('sizes')?.small?.url || 
-                                  attachment.get('url'),
+                        id: attachmentData.id,
+                        name: attachmentData.filename || attachmentData.title || 'Unknown File',
+                        type: attachmentData.mime_type || 'application/octet-stream',
+                        size: attachmentData.filesizeInBytes || 0,
+                        size_formatted: attachmentData.filesizeHumanReadable || formatFileSize(attachmentData.filesizeInBytes || 0),
+                        url: attachmentData.url,
+                        thumbnail: attachmentData.sizes?.thumbnail?.url || 
+                                  attachmentData.sizes?.medium?.url || 
+                                  attachmentData.sizes?.small?.url || 
+                                  attachmentData.url,
                         is_media_library: true
                     };
                     
@@ -438,11 +307,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                             is_media_library: true
                         }));
                         console.log('FileField: Sending multiple files to onChange:', filesForDB);
-                        console.log('FileField: onChange function available:', typeof onChange === 'function');
-                        console.log('FileField: Current files state:', files);
-                        console.log('FileField: Calling onChange with:', [...files, ...filesForDB]);
                         onChange([...files, ...filesForDB]);
-                        showSuccessMessage(`${selectedFiles.length} files added from media library.`);
                     } else {
                         setFiles(selectedFiles);
                         // Send complete file data for database storage
@@ -458,10 +323,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                             is_media_library: true
                         };
                         console.log('FileField: Sending single file to onChange:', fileData);
-                        console.log('FileField: onChange function available:', typeof onChange === 'function');
-                        console.log('FileField: Calling onChange with:', fileData);
                         onChange(fileData);
-                        showSuccessMessage(`1 file added from media library.`);
                     }
                     setError(''); // Clear any previous errors
                 } else {
@@ -477,7 +339,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
 
             frame.open();
         } else {
-            showErrorMessage('WordPress media library is not available. Please refresh the page and try again.');
+            setError('WordPress media library is not available. Please refresh the page and try again.');
             setIsOpeningMedia(false);
         }
     };
@@ -708,7 +570,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                         <div className="flex-1">
                             <p className="text-sm font-medium text-gray-700">File Upload</p>
                             <p className="text-xs text-gray-500">
-                                Allowed: {allowed_types.join(', ')} • Max: {max_file_size}MB
+                                Allowed: {allowed_types.join(', ')} • Max: {max_file_size ? `${max_file_size}MB` : 'No Limit'}
                             </p>
                         </div>
                     </div>
@@ -782,7 +644,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                                     onClick={() => {
                                         setFiles([]);
                                         onChange([]);
-                                        showSuccessMessage('All files cleared successfully.');
+                                        console.log('All files cleared successfully.');
                                     }}
                                     className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors"
                                 >

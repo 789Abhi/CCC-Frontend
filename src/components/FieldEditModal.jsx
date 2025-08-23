@@ -852,7 +852,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         } else if (type === "file") {
           fieldData.config = {
             allowed_types: fieldConfig?.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
-            max_file_size: fieldConfig?.max_file_size || 25,
+            max_file_size: fieldConfig?.max_file_size !== undefined && fieldConfig?.max_file_size !== null ? fieldConfig.max_file_size : null,
             return_type: fieldConfig?.return_type || 'url',
             multiple: fieldConfig?.multiple || false,
             show_preview: fieldConfig?.show_preview !== undefined ? fieldConfig?.show_preview : true,
@@ -1014,7 +1014,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       } else if (type === "file") {
         const config = {
           allowed_types: fieldConfig?.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
-          max_file_size: fieldConfig?.max_file_size || 25,
+          max_file_size: fieldConfig?.max_file_size !== undefined && fieldConfig?.max_file_size !== null ? fieldConfig.max_file_size : null,
           return_type: fieldConfig?.return_type || 'url',
           multiple: fieldConfig?.multiple || false,
           show_preview: fieldConfig?.show_preview !== undefined ? fieldConfig?.show_preview : true,
@@ -2093,22 +2093,22 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   <input
                     id="fileMaxSize"
                     type="number"
-                    min="1"
+                    min="0"
                     max="100"
-                    value={fieldConfig?.max_file_size || 25}
+                    value={fieldConfig?.max_file_size !== undefined && fieldConfig?.max_file_size !== null ? fieldConfig.max_file_size : ''}
                     onChange={(e) => {
                       const currentConfig = fieldConfig || {};
                       setFieldConfig({
                         ...currentConfig,
-                        max_file_size: parseInt(e.target.value) || 25
+                        max_file_size: e.target.value === '' ? null : parseInt(e.target.value)
                       });
                     }}
-                    placeholder="25"
+                    placeholder="Enter size (optional)"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     disabled={isSubmitting}
                   />
                   <p className="text-xs text-gray-500">
-                    Maximum file size allowed for upload (1-100 MB, default is 25 MB)
+                    Maximum file size allowed for upload (leave empty for no restriction, default is 25 MB for new fields)
                   </p>
                 </div>
 
