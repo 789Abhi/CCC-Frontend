@@ -741,6 +741,27 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
                   };
                   
+                  // Get all available fields from all components for conditional logic
+                  const getAllAvailableFields = () => {
+                    const allFields = [];
+                    
+                    // Get fields from the current component
+                    if (component.fields && Array.isArray(component.fields)) {
+                      allFields.push(...component.fields);
+                    }
+                    
+                    // Get fields from other components if availableComponents is passed
+                    if (availableComponents && Array.isArray(availableComponents)) {
+                      availableComponents.forEach(comp => {
+                        if (comp.id !== component.id && comp.fields && Array.isArray(comp.fields)) {
+                          allFields.push(...comp.fields);
+                        }
+                      });
+                    }
+                    
+                    return allFields;
+                  };
+                  
                   return (
                     <ToggleField
                       key={field.id}
@@ -750,7 +771,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       onValidationChange={onValidationChange}
                       instanceId={component.instance_id}
                       fieldId={field.id}
-                      availableFields={component.fields || []}
+                      availableFields={getAllAvailableFields()}
                     />
                   );
                 }
