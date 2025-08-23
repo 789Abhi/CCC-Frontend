@@ -235,16 +235,8 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         setIsOpeningMedia(true);
         setError('');
         
-        console.log('FileField: Opening media library...');
-        console.log('FileField: Current wp object:', typeof wp !== 'undefined' ? 'Available' : 'Not available');
-        console.log('FileField: Current wp.media:', typeof wp !== 'undefined' && wp.media ? 'Available' : 'Not available');
-        console.log('FileField: Current wp.media type:', typeof wp !== 'undefined' && wp.media ? typeof wp.media : 'N/A');
-        
-        // Function to actually open the media library
-        const openMediaFrame = () => {
-            // Check if WordPress media uploader is available
-            if (typeof wp !== 'undefined' && wp.media && typeof wp.media === 'function') {
-                console.log('FileField: Creating media frame...');
+        // Simple, direct WordPress media library opening
+        if (typeof wp !== 'undefined' && wp.media && typeof wp.media === 'function') {
             const frame = wp.media({
                 title: multiple ? 'Select or Upload Files' : 'Select or Upload File',
                 button: {
@@ -266,19 +258,12 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
             });
 
             frame.on('select', () => {
-                console.log('FileField: Media frame select event triggered');
                 const selection = frame.state().get('selection');
-                console.log('FileField: Selection:', selection);
                 const selectedFiles = [];
 
                 selection.map(attachment => {
                     const attachmentData = attachment.toJSON();
-                    console.log('FileField: Processing attachment:', attachmentData);
                     
-                    // Check if this is a newly uploaded file or existing media library file
-                    const isNewUpload = attachmentData.uploading || attachmentData.status === 'uploading';
-                    
-                    // Get basic file information
                     const fileData = {
                         id: attachmentData.id,
                         name: attachmentData.filename || attachmentData.title || attachmentData.name || 'Unknown File',
@@ -290,21 +275,15 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                                   attachmentData.sizes?.medium?.url || 
                                   attachmentData.sizes?.small?.url || 
                                   attachmentData.url || attachmentData.guid,
-                        is_media_library: !isNewUpload,
-                        is_new_upload: isNewUpload
+                        is_media_library: true
                     };
                     
-                    console.log('FileField: Created file data:', fileData);
                     selectedFiles.push(fileData);
                 });
 
-                console.log('FileField: Final selected files array:', selectedFiles);
-
                 if (selectedFiles.length > 0) {
-                    console.log('FileField: Media library files selected:', selectedFiles);
                     if (multiple) {
                         setFiles(prev => [...prev, ...selectedFiles]);
-                        // Send complete file data for database storage
                         const filesForDB = selectedFiles.map(file => ({
                             id: file.id,
                             url: file.url,
@@ -315,11 +294,9 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                             thumbnail: file.thumbnail,
                             is_media_library: true
                         }));
-                        console.log('FileField: Sending multiple files to onChange:', filesForDB);
                         onChange([...files, ...filesForDB]);
                     } else {
                         setFiles(selectedFiles);
-                        // Send complete file data for database storage
                         const fileForDB = selectedFiles[0];
                         const fileData = {
                             id: fileForDB.id,
@@ -331,12 +308,9 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                             thumbnail: fileForDB.thumbnail,
                             is_media_library: true
                         };
-                        console.log('FileField: Sending single file to onChange:', fileData);
                         onChange(fileData);
                     }
-                    setError(''); // Clear any previous errors
-                } else {
-                    console.log('FileField: No valid files selected after processing');
+                    setError('');
                 }
                 
                 setIsOpeningMedia(false);
@@ -346,72 +320,10 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                 setIsOpeningMedia(false);
             });
 
-            // Add error handling for media frame
-            frame.on('error', (error) => {
-                console.error('FileField: Media frame error:', error);
-                setError('Error opening media library. Please try again.');
-                setIsOpeningMedia(false);
-            });
-
-            // Ensure the frame is properly initialized before opening
-            try {
-                console.log('FileField: Attempting to open media frame...');
-                frame.open();
-                console.log('FileField: Media frame opened successfully');
-            } catch (error) {
-                console.error('FileField: Error opening media frame:', error);
-                setError('Failed to open media library. Please refresh the page and try again.');
-                setIsOpeningMedia(false);
-            }
+            frame.open();
         } else {
-            console.error('FileField: WordPress media library not available');
-            console.log('FileField: wp object:', typeof wp !== 'undefined' ? wp : 'undefined');
-            console.log('FileField: wp.media:', typeof wp !== 'undefined' && wp.media ? typeof wp.media : 'undefined');
-            
             setError('WordPress media library is not available. Please refresh the page and try again.');
             setIsOpeningMedia(false);
-        }
-        };
-        
-        // Try to open immediately, if it fails, wait a bit and try again
-        try {
-            openMediaFrame();
-        } catch (error) {
-            console.log('FileField: First attempt failed, retrying in 100ms...');
-            setTimeout(() => {
-                try {
-                    openMediaFrame();
-                } catch (retryError) {
-                    console.error('FileField: Retry also failed:', retryError);
-                    setError('Failed to open media library after retry. Please refresh the page and try again.');
-                    setIsOpeningMedia(false);
-                }
-            }, 100);
-        }
-        
-        // Also try to ensure WordPress media is fully loaded
-        if (typeof wp === 'undefined' || !wp.media) {
-            console.log('FileField: WordPress media not loaded, waiting for it...');
-            const checkMedia = () => {
-                if (typeof wp !== 'undefined' && wp.media && typeof wp.media === 'function') {
-                    console.log('FileField: WordPress media now available, opening...');
-                    openMediaFrame();
-                } else {
-                    setTimeout(checkMedia, 50);
-                }
-            };
-            setTimeout(checkMedia, 50);
-        }
-        
-        // Additional check: ensure media library is properly initialized
-        if (typeof wp !== 'undefined' && wp.media && typeof wp.media === 'function') {
-            // Force media library to initialize if it hasn't already
-            try {
-                wp.media.view.settings.defaultProps = wp.media.view.settings.defaultProps || {};
-                console.log('FileField: WordPress media library initialized');
-            } catch (initError) {
-                console.log('FileField: WordPress media library initialization check:', initError);
-            }
         }
     };
 
