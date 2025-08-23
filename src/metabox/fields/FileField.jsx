@@ -1,20 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Upload, File, Image, Video, Music, Archive, Download, Trash2, X, Plus, FileText, FolderOpen } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { File, Image, Video, Music, Archive, Download, Trash2, X, Plus, FileText, FolderOpen } from 'lucide-react';
 
 const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, onChange }) => {
     const [files, setFiles] = useState([]);
-    const [isUploading, setIsUploading] = useState(false);
     const [isOpeningMedia, setIsOpeningMedia] = useState(false);
-    const [dragActive, setDragActive] = useState(false);
     const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
     const [expandedFiles, setExpandedFiles] = useState(new Set());
-    const fileInputRef = useRef(null);
-    const dropZoneRef = useRef(null);
 
     const {
         allowed_types = ['image', 'video', 'document', 'audio', 'archive'],
-        max_file_size = 10, // MB
+        max_file_size = 25, // MB
         return_type = 'url',
         multiple = false,
         show_preview = true,
@@ -127,16 +122,16 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
     }, [fieldValue]);
 
     const showSuccessMessage = (message) => {
-        setSuccessMessage(message);
+        // setSuccessMessage(message); // Removed as per edit hint
         setError('');
         setTimeout(() => {
-            setSuccessMessage('');
+            // setSuccessMessage(''); // Removed as per edit hint
         }, 3000);
     };
 
     const showErrorMessage = (message) => {
         setError(message);
-        setSuccessMessage('');
+        // setSuccessMessage(''); // Removed as per edit hint
     };
 
     const getFileIcon = (fileType) => {
@@ -159,148 +154,6 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
-
-    const validateFile = (file) => {
-        const maxSizeBytes = max_file_size * 1024 * 1024; // Convert MB to bytes
-        
-        if (file.size > maxSizeBytes) {
-            return `File size exceeds ${max_file_size}MB limit`;
-        }
-
-        // Check file type based on allowed_types
-        const fileType = file.type;
-        const fileName = file.name.toLowerCase();
-        
-        let isAllowed = false;
-        
-        if (allowed_types.includes('image') && fileType.startsWith('image/')) isAllowed = true;
-        if (allowed_types.includes('video') && fileType.startsWith('video/')) isAllowed = true;
-        if (allowed_types.includes('audio') && fileType.startsWith('audio/')) isAllowed = true;
-        if (allowed_types.includes('document') && (
-            fileType === 'application/pdf' ||
-            fileType.includes('document') ||
-            fileType.includes('word') ||
-            fileType.includes('excel') ||
-            fileType === 'text/plain'
-        )) isAllowed = true;
-        if (allowed_types.includes('archive') && (
-            fileType.includes('zip') ||
-            fileType.includes('rar') ||
-            fileType.includes('tar') ||
-            fileType.includes('gzip')
-        )) isAllowed = true;
-
-        if (!isAllowed) {
-            return 'File type not allowed';
-        }
-
-        return null; // No error
-    };
-
-    const handleFileUpload = async (uploadedFiles) => {
-        setIsUploading(true);
-        setError('');
-        setSuccessMessage('');
-
-        const fileArray = Array.from(uploadedFiles);
-        const validFiles = [];
-        const errors = [];
-
-        for (const file of fileArray) {
-            const validationError = validateFile(file);
-            if (validationError) {
-                errors.push(`${file.name}: ${validationError}`);
-            } else {
-                validFiles.push(file);
-            }
-        }
-
-        if (errors.length > 0) {
-            showErrorMessage(errors.join(', '));
-            setIsUploading(false);
-            return;
-        }
-
-        try {
-            // Create file data with proper structure for database storage
-            const uploadedFileData = validFiles.map(file => ({
-                temp_id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                size_formatted: formatFileSize(file.size),
-                url: URL.createObjectURL(file), // This creates a blob URL for preview
-                is_temp: true,
-                file: file // Keep reference for actual upload
-            }));
-
-            if (multiple) {
-                setFiles(prev => [...prev, ...uploadedFileData]);
-            } else {
-                setFiles(uploadedFileData);
-            }
-
-            // Send data to parent component for database storage
-            if (multiple) {
-                const filesForDB = uploadedFileData.map(file => ({
-                    temp_id: file.temp_id,
-                    name: file.name,
-                    type: file.type,
-                    size: file.size,
-                    is_temp: true
-                }));
-                onChange([...files, ...filesForDB]);
-            } else {
-                const fileForDB = uploadedFileData[0];
-                onChange({
-                    temp_id: fileForDB.temp_id,
-                    name: fileForDB.name,
-                    type: fileForDB.type,
-                    size: fileForDB.size,
-                    is_temp: true
-                });
-            }
-
-            // Show success message
-            if (validFiles.length > 1) {
-                showSuccessMessage(`${validFiles.length} files uploaded successfully.`);
-            } else {
-                showSuccessMessage('File uploaded successfully.');
-            }
-
-        } catch (error) {
-            showErrorMessage('Upload failed: ' + error.message);
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    const handleFileSelect = (event) => {
-        const selectedFiles = event.target.files;
-        if (selectedFiles.length > 0) {
-            handleFileUpload(selectedFiles);
-        }
-    };
-
-    const handleDrop = (event) => {
-        event.preventDefault();
-        setDragActive(false);
-        
-        const droppedFiles = event.dataTransfer.files;
-        if (droppedFiles.length > 0) {
-            handleFileUpload(droppedFiles);
-        }
-    };
-
-    const handleDragOver = (event) => {
-        event.preventDefault();
-        setDragActive(true);
-    };
-
-    const handleDragLeave = (event) => {
-        event.preventDefault();
-        setDragActive(false);
     };
 
     const removeFile = (fileId) => {
@@ -361,9 +214,8 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
             }
         }
         
-        if (fileToRemove) {
-            showSuccessMessage(`"${fileToRemove.name}" removed successfully.`);
-        }
+        // File removed successfully
+        console.log(`"${fileToRemove.name}" removed successfully.`);
     };
 
     const downloadFile = (file) => {
@@ -381,10 +233,6 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         if (file.url) {
             window.open(file.url, '_blank');
         }
-    };
-
-    const openFileModal = () => {
-        fileInputRef.current?.click();
     };
 
     const openMediaLibrary = () => {
@@ -855,7 +703,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                 <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                     <div className="flex items-center space-x-3 mb-3">
                         <div className="flex-shrink-0">
-                            <Upload size={18} className="text-gray-400" />
+                            <FolderOpen size={18} className="text-gray-400" />
                         </div>
                         <div className="flex-1">
                             <p className="text-sm font-medium text-gray-700">File Upload</p>
@@ -869,16 +717,9 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     <div className="flex space-x-2">
                         <button
                             type="button"
-                            onClick={openFileModal}
-                            className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors border border-blue-200"
-                        >
-                            Browse Files
-                        </button>
-                        <button
-                            type="button"
                             onClick={openMediaLibrary}
                             disabled={isOpeningMedia}
-                            className="flex-1 bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-md text-sm font-medium transition-colors border border-green-200 disabled:opacity-50"
+                            className="w-full bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-md text-sm font-medium transition-colors border border-green-200 disabled:opacity-50"
                         >
                             {isOpeningMedia ? (
                                 <>
@@ -894,40 +735,9 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                         </button>
                     </div>
                     
-                    {/* Drag & Drop Zone */}
-                    <div
-                        ref={dropZoneRef}
-                        className={`mt-3 border-2 border-dashed rounded-md p-3 text-center transition-colors ${
-                            dragActive 
-                                ? 'border-blue-400 bg-blue-50' 
-                                : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                        onDrop={handleDrop}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                    >
-                        <p className="text-xs text-gray-500">
-                            Drag and drop files here
-                        </p>
-                    </div>
-                    
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple={multiple}
-                        accept={allowed_types.map(type => {
-                            switch(type) {
-                                case 'image': return 'image/*';
-                                case 'video': return 'video/*';
-                                case 'audio': return 'audio/*';
-                                case 'document': return '.pdf,.doc,.docx,.txt,.xls,.xlsx';
-                                case 'archive': return '.zip,.rar,.tar,.gz';
-                                default: return '';
-                            }
-                        }).filter(Boolean).join(',')}
-                        onChange={handleFileSelect}
-                        className="hidden"
-                    />
+                    <p className="text-xs text-gray-500 text-center mt-2">
+                        Files must be uploaded to WordPress Media Library first
+                    </p>
                 </div>
 
                 {/* Error Message */}
@@ -938,21 +748,23 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                 )}
 
                 {/* Upload Progress */}
-                {isUploading && (
+                {/* This section is no longer needed as file uploads are handled by Media Library */}
+                {/* {isUploading && (
                     <div className="text-sm text-blue-600 bg-blue-50 border border-blue-200 p-3 rounded-lg">
                         <div className="flex items-center">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400 mr-2"></div>
                             Uploading files...
                         </div>
                     </div>
-                )}
+                )} */}
 
                 {/* Success Message */}
-                {successMessage && (
+                {/* This section is no longer needed as successMessage state is removed */}
+                {/* {successMessage && (
                     <div className="text-sm text-green-600 bg-green-50 border border-green-200 p-3 rounded-lg">
                         {successMessage}
                     </div>
-                )}
+                )} */}
 
                 {/* File List */}
                 {files.length > 0 && (

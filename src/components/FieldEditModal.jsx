@@ -265,7 +265,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
               setFieldConfig({
                 allowed_types: config.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
-                max_file_size: config.max_file_size || 10,
+                max_file_size: config.max_file_size || 25,
                 return_type: config.return_type || 'url',
                 multiple: config.multiple || false,
                 show_preview: config.show_preview !== undefined ? config.show_preview : true,
@@ -276,7 +276,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               console.error("Error parsing file config:", e);
               setFieldConfig({
                 allowed_types: ['image', 'video', 'document', 'audio', 'archive'],
-                max_file_size: 10,
+                max_file_size: 25,
                 return_type: 'url',
                 multiple: false,
                 show_preview: true,
@@ -423,6 +423,16 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         max_length: null,
         prepend: '',
         append: ''
+      });
+    } else if (!field && type === 'file') {
+      setFieldConfig({
+        allowed_types: ['image', 'video', 'document', 'audio', 'archive'],
+        max_file_size: 25,
+        return_type: 'url',
+        multiple: false,
+        show_preview: true,
+        show_download: true,
+        show_delete: true
       });
     }
   }, [type, field]);
@@ -842,7 +852,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         } else if (type === "file") {
           fieldData.config = {
             allowed_types: fieldConfig?.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
-            max_file_size: fieldConfig?.max_file_size || 10,
+            max_file_size: fieldConfig?.max_file_size || 25,
             return_type: fieldConfig?.return_type || 'url',
             multiple: fieldConfig?.multiple || false,
             show_preview: fieldConfig?.show_preview !== undefined ? fieldConfig?.show_preview : true,
@@ -1004,7 +1014,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       } else if (type === "file") {
         const config = {
           allowed_types: fieldConfig?.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
-          max_file_size: fieldConfig?.max_file_size || 10,
+          max_file_size: fieldConfig?.max_file_size || 25,
           return_type: fieldConfig?.return_type || 'url',
           multiple: fieldConfig?.multiple || false,
           show_preview: fieldConfig?.show_preview !== undefined ? fieldConfig?.show_preview : true,
@@ -2085,20 +2095,20 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     type="number"
                     min="1"
                     max="100"
-                    value={fieldConfig?.max_file_size || 10}
+                    value={fieldConfig?.max_file_size || 25}
                     onChange={(e) => {
                       const currentConfig = fieldConfig || {};
                       setFieldConfig({
                         ...currentConfig,
-                        max_file_size: parseInt(e.target.value) || 10
+                        max_file_size: parseInt(e.target.value) || 25
                       });
                     }}
-                    placeholder="10"
+                    placeholder="25"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     disabled={isSubmitting}
                   />
                   <p className="text-xs text-gray-500">
-                    Maximum file size allowed for upload (1-100 MB)
+                    Maximum file size allowed for upload (1-100 MB, default is 25 MB)
                   </p>
                 </div>
 
