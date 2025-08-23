@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const ToggleField = ({ 
   field, 
@@ -13,6 +13,9 @@ const ToggleField = ({
   const [conditionalLogic, setConditionalLogic] = useState([]);
   const [showConditionalConfig, setShowConditionalConfig] = useState(false);
   const [logicOperator, setLogicOperator] = useState('AND'); // AND or OR
+  
+  // Ref to store the conditional logic handler instance
+  const conditionalLogicRef = useRef(null);
 
   useEffect(() => {
     // Parse initial value
@@ -31,7 +34,263 @@ const ToggleField = ({
     if (field?.config?.logic_operator) {
       setLogicOperator(field.config.logic_operator);
     }
+
+    // Initialize conditional logic handler
+    initializeConditionalLogic();
   }, [value, field]);
+
+  // Initialize conditional logic functionality
+  const initializeConditionalLogic = () => {
+    if (!conditionalLogicRef.current) {
+      conditionalLogicRef.current = new ConditionalLogicHandler();
+      conditionalLogicRef.current.init();
+    }
+  };
+
+  // Conditional Logic Handler Class
+  class ConditionalLogicHandler {
+    constructor() {
+      this.rules = new Map(); // Store rules by toggle field ID
+      this.fieldStates = new Map(); // Store current field states
+      this.initialized = false;
+    }
+
+    init() {
+      if (this.initialized) return;
+      
+      // Process existing toggle fields
+      this.processExistingToggleFields();
+      
+      this.initialized = true;
+      console.log('CCC: Conditional Logic Handler initialized');
+    }
+
+    processExistingToggleFields() {
+      const toggleFields = document.querySelectorAll('.ccc-field-toggle');
+      toggleFields.forEach(field => this.processToggleField(field));
+    }
+
+    processToggleField(toggleField) {
+      // Check if this field has conditional logic data
+      const conditionalData = toggleField.getAttribute('data-conditional-logic');
+      if (!conditionalData) return;
+
+      try {
+        const logic = JSON.parse(conditionalData);
+        if (!logic || !Array.isArray(logic)) return;
+
+        const toggleInput = toggleField.querySelector('input[type="checkbox"], input[type="hidden"]');
+        if (!toggleInput) return;
+
+        const fieldId = toggleInput.id || toggleInput.name;
+        if (!fieldId) return;
+
+        // Store the rules for this toggle field
+        this.rules.set(fieldId, logic);
+
+        // Set up event listener for toggle changes
+        this.setupToggleListener(toggleField, toggleInput, fieldId);
+
+        // Apply initial logic
+        this.applyConditionalLogic(fieldId);
+
+      } catch (error) {
+        console.error('CCC: Error processing conditional logic:', error);
+      }
+    }
+
+    setupToggleListener(toggleField, toggleInput, fieldId) {
+      const handleChange = () => {
+        this.applyConditionalLogic(fieldId);
+      };
+
+      // Remove existing listener if any
+      toggleInput.removeEventListener('change', handleChange);
+      
+      // Add new listener
+      toggleInput.addEventListener('change', handleChange);
+
+      // Also listen for custom events (for button-style toggles)
+      toggleField.addEventListener('toggleChanged', handleChange);
+    }
+
+    applyConditionalLogic(toggleFieldId) {
+      const rules = this.rules.get(toggleFieldId);
+      if (!rules || !Array.isArray(rules)) return;
+
+      const toggleField = document.querySelector(`[id*="${toggleFieldId}"], [name*="${toggleFieldId}"]`)?.closest('.ccc-field-toggle');
+      if (!toggleField) return;
+
+      const toggleInput = toggleField.querySelector('input[type="checkbox"], input[type="hidden"]');
+      if (!toggleInput) return;
+
+      const isEnabled = this.isToggleEnabled(toggleInput);
+      
+      // Process each rule
+      rules.forEach(rule => {
+        this.processRule(rule, isEnabled, toggleField);
+      });
+    }
+
+    isToggleEnabled(toggleInput) {
+      if (toggleInput.type === 'checkbox') {
+        return toggleInput.checked;
+      } else if (toggleInput.type === 'hidden') {
+        return toggleInput.value === '1';
+      }
+      return false;
+    }
+
+    processRule(rule, toggleEnabled, toggleField) {
+      const { target_field, action, condition, value, logic_operator = 'AND' } = rule;
+      
+      if (!target_field) return;
+
+      // Find target field(s)
+      const targetFields = this.findTargetFields(target_field);
+      
+      targetFields.forEach(targetField => {
+        // Determine if the condition is met
+        const conditionMet = this.evaluateCondition(rule, toggleEnabled, targetField);
+        
+        // Apply the action
+        if (conditionMet) {
+          this.applyAction(action, targetField, true);
+        } else {
+          this.applyAction(action, targetField, false);
+        }
+      });
+    }
+
+    findTargetFields(targetFieldName) {
+      const targetFields = [];
+      
+      // Try to find by name attribute
+      const byName = document.querySelectorAll(`[name*="${targetFieldName}"]`);
+      byName.forEach(field => {
+        const fieldContainer = field.closest('.ccc-field');
+        if (fieldContainer) {
+          targetFields.push(fieldContainer);
+        }
+      });
+
+      // Try to find by ID attribute
+      const byId = document.querySelectorAll(`[id*="${targetFieldName}"]`);
+      byId.forEach(field => {
+        const fieldContainer = field.closest('.ccc-field');
+        if (fieldContainer && !targetFields.includes(fieldContainer)) {
+          targetFields.push(fieldContainer);
+        }
+      });
+
+      return targetFields;
+    }
+
+    evaluateCondition(rule, toggleEnabled, targetField) {
+      const { condition, value } = rule;
+
+      switch (condition) {
+        case 'when_toggle_is':
+          return toggleEnabled === (value === '1');
+        
+        case 'when_field_equals':
+          return this.getFieldValue(targetField) === value;
+        
+        case 'when_field_not_equals':
+          return this.getFieldValue(targetField) !== value;
+        
+        case 'when_field_contains':
+          const fieldValue = this.getFieldValue(targetField);
+          return typeof fieldValue === 'string' && fieldValue.includes(value);
+        
+        case 'when_field_not_contains':
+          const fieldValue2 = this.getFieldValue(targetField);
+          return typeof fieldValue2 === 'string' && !fieldValue2.includes(value);
+        
+        default:
+          return false;
+      }
+    }
+
+    getFieldValue(fieldContainer) {
+      const input = fieldContainer.querySelector('input, select, textarea');
+      if (!input) return '';
+
+      if (input.type === 'checkbox') {
+        return input.checked ? '1' : '0';
+      } else if (input.type === 'radio') {
+        const checkedRadio = fieldContainer.querySelector('input[type="radio"]:checked');
+        return checkedRadio ? checkedRadio.value : '';
+      } else {
+        return input.value || '';
+      }
+    }
+
+    applyAction(action, targetField, conditionMet) {
+      const inputs = targetField.querySelectorAll('input, select, textarea, button');
+      
+      switch (action) {
+        case 'show':
+          if (conditionMet) {
+            targetField.style.display = '';
+            targetField.classList.remove('ccc-field-hidden');
+          } else {
+            targetField.style.display = 'none';
+            targetField.classList.add('ccc-field-hidden');
+          }
+          break;
+        
+        case 'hide':
+          if (conditionMet) {
+            targetField.style.display = 'none';
+            targetField.classList.add('ccc-field-hidden');
+          } else {
+            targetField.style.display = '';
+            targetField.classList.remove('ccc-field-hidden');
+          }
+          break;
+        
+        case 'enable':
+          inputs.forEach(input => {
+            input.disabled = !conditionMet;
+            if (conditionMet) {
+              input.classList.remove('ccc-field-disabled');
+            } else {
+              input.classList.add('ccc-field-disabled');
+            }
+          });
+          break;
+        
+        case 'disable':
+          inputs.forEach(input => {
+            input.disabled = conditionMet;
+            if (conditionMet) {
+              input.classList.add('ccc-field-disabled');
+            } else {
+              input.classList.remove('ccc-field-disabled');
+            }
+          });
+          break;
+      }
+    }
+
+    addRules(toggleFieldId, rules) {
+      this.rules.set(toggleFieldId, rules);
+      this.applyConditionalLogic(toggleFieldId);
+    }
+
+    removeRules(toggleFieldId) {
+      this.rules.delete(toggleFieldId);
+    }
+
+    getAllRules() {
+      return Object.fromEntries(this.rules);
+    }
+
+    clearAllRules() {
+      this.rules.clear();
+    }
+  }
 
   const handleToggleChange = (newValue) => {
     setIsEnabled(newValue);
@@ -40,6 +299,11 @@ const ToggleField = ({
     // Trigger validation change
     if (onValidationChange) {
       onValidationChange(fieldId, newValue ? '1' : '0', true);
+    }
+
+    // Apply conditional logic when toggle changes
+    if (conditionalLogicRef.current && field?.config?.conditional_logic) {
+      conditionalLogicRef.current.applyConditionalLogic(`toggle-${fieldId}`);
     }
   };
 
@@ -64,7 +328,7 @@ const ToggleField = ({
       onChange(updatedField);
       
       // Apply conditional logic to the DOM
-      this.applyConditionalLogicToDOM(updatedField);
+      applyConditionalLogicToDOM(updatedField);
     }
   };
 
@@ -89,7 +353,7 @@ const ToggleField = ({
       onChange(updatedField);
       
       // Apply conditional logic to the DOM
-      this.applyConditionalLogicToDOM(updatedField);
+      applyConditionalLogicToDOM(updatedField);
     }
   };
 
@@ -137,21 +401,21 @@ const ToggleField = ({
 
   // Method to apply conditional logic to the DOM
   const applyConditionalLogicToDOM = (updatedField) => {
-    if (window.cccConditionalLogic && updatedField.config?.conditional_logic) {
+    if (conditionalLogicRef.current && updatedField.config?.conditional_logic) {
       // Add data attribute to the toggle field for the conditional logic handler
       const toggleFieldElement = document.querySelector(`[id*="toggle-${fieldId}"]`)?.closest('.ccc-field-toggle');
       if (toggleFieldElement) {
         toggleFieldElement.setAttribute('data-conditional-logic', JSON.stringify(updatedField.config.conditional_logic));
         
         // Add rules to the conditional logic handler
-        window.cccConditionalLogic.addRules(`toggle-${fieldId}`, updatedField.config.conditional_logic);
+        conditionalLogicRef.current.addRules(`toggle-${fieldId}`, updatedField.config.conditional_logic);
       }
     }
   };
 
   // Apply conditional logic when component mounts or field config changes
   useEffect(() => {
-    if (field?.config?.conditional_logic && window.cccConditionalLogic) {
+    if (field?.config?.conditional_logic && conditionalLogicRef.current) {
       applyConditionalLogicToDOM(field);
     }
   }, [field?.config?.conditional_logic]);

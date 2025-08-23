@@ -3,7 +3,7 @@ import ComponentList from './components/ComponentList';
 import ComponentSelector from './components/ComponentSelector';
 import toast from 'react-hot-toast';
 import { AlertTriangle } from 'lucide-react';
-import './conditionalLogic.js';
+
 
 function MetaboxApp() {
   // Component function - no logging needed
