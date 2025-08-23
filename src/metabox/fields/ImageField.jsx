@@ -6,16 +6,35 @@ function ImageField({ label, value, onChange, required, error }) {
   // Open WP Media Library
   const openMediaLibrary = (e) => {
     e.preventDefault();
+    
+    // Close any existing media frames to prevent conflicts
+    if (window.wp && window.wp.media && window.wp.media.frames) {
+      Object.keys(window.wp.media.frames).forEach(key => {
+        if (window.wp.media.frames[key] && typeof window.wp.media.frames[key].close === 'function') {
+          window.wp.media.frames[key].close();
+        }
+      });
+    }
+    
     if (window.wp && window.wp.media) {
+      const frameId = 'image-field-' + Date.now() + '-' + Math.random();
       const frame = window.wp.media({
+        id: frameId,
         title: 'Select or Upload Image',
         button: { text: 'Use this image' },
-        multiple: false
+        multiple: false,
+        library: { type: 'image' }
       });
+      
       frame.on('select', () => {
         const attachment = frame.state().get('selection').first().toJSON();
         if (onChange) onChange(attachment.url);
       });
+      
+      frame.on('close', () => {
+        // Clean up
+      });
+      
       frame.open();
     } else {
       // fallback: open file input

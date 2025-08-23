@@ -81,8 +81,19 @@ function VideoField({ label, value, onChange, required = false, error, config = 
   };
 
   const openMediaLibrary = () => {
+    // Close any existing media frames to prevent conflicts
+    if (window.wp && window.wp.media && window.wp.media.frames) {
+      Object.keys(window.wp.media.frames).forEach(key => {
+        if (window.wp.media.frames[key] && typeof window.wp.media.frames[key].close === 'function') {
+          window.wp.media.frames[key].close();
+        }
+      });
+    }
+    
     if (window.wp && window.wp.media) {
+      const frameId = 'video-field-' + Date.now() + '-' + Math.random();
       const frame = window.wp.media({
+        id: frameId,
         title: 'Select Video',
         button: {
           text: 'Use this video'
@@ -110,6 +121,10 @@ function VideoField({ label, value, onChange, required = false, error, config = 
           title: attachment.title || attachment.filename || 'Video',
           description: `File: ${attachment.filename || 'Video'} (${attachment.filesize ? (attachment.filesize / 1024 / 1024).toFixed(2) + ' MB' : 'Unknown size'})`
         });
+      });
+
+      frame.on('close', () => {
+        // Clean up
       });
 
       frame.open();

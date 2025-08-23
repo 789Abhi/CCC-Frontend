@@ -346,12 +346,6 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
 
             frame.on('open', () => {
                 console.log('FileField: Frame opened for:', frameId);
-                console.log('FileField: Frame state:', frame.state());
-                console.log('FileField: Frame router:', frame.router);
-            });
-
-            frame.on('ready', () => {
-                console.log('FileField: Frame ready for:', frameId);
             });
 
             console.log('FileField: About to open frame:', frameId);
