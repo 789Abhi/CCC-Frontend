@@ -267,7 +267,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 allowed_types: config.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
                 max_file_size: config.max_file_size || 25,
                 return_type: config.return_type || 'url',
-                multiple: config.multiple || false,
                 show_preview: config.show_preview !== undefined ? config.show_preview : true,
                 show_download: config.show_download !== undefined ? config.show_download : true,
                 show_delete: config.show_delete !== undefined ? config.show_delete : true
@@ -278,7 +277,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 allowed_types: ['image', 'video', 'document', 'audio', 'archive'],
                 max_file_size: 25,
                 return_type: 'url',
-                multiple: false,
                 show_preview: true,
                 show_download: true,
                 show_delete: true
@@ -854,7 +852,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             allowed_types: fieldConfig?.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
             max_file_size: fieldConfig?.max_file_size !== undefined && fieldConfig?.max_file_size !== null ? fieldConfig.max_file_size : null,
             return_type: fieldConfig?.return_type || 'url',
-            multiple: fieldConfig?.multiple || false,
             show_preview: fieldConfig?.show_preview !== undefined ? fieldConfig?.show_preview : true,
             show_download: fieldConfig?.show_download !== undefined ? fieldConfig?.show_download : true,
             show_delete: fieldConfig?.show_delete !== undefined ? fieldConfig?.show_delete : true
@@ -1016,7 +1013,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           allowed_types: fieldConfig?.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
           max_file_size: fieldConfig?.max_file_size !== undefined && fieldConfig?.max_file_size !== null ? fieldConfig.max_file_size : null,
           return_type: fieldConfig?.return_type || 'url',
-          multiple: fieldConfig?.multiple || false,
           show_preview: fieldConfig?.show_preview !== undefined ? fieldConfig?.show_preview : true,
           show_download: fieldConfig?.show_download !== undefined ? fieldConfig?.show_download : true,
           show_delete: fieldConfig?.show_delete !== undefined ? fieldConfig?.show_delete : true
@@ -2139,27 +2135,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   </p>
                 </div>
 
-                {/* Multiple Files */}
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={fieldConfig?.multiple || false}
-                      onChange={(e) => {
-                        const currentConfig = fieldConfig || {};
-                        setFieldConfig({
-                          ...currentConfig,
-                          multiple: e.target.checked
-                        });
-                      }}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Allow Multiple Files</span>
-                  </label>
-                  <p className="text-xs text-gray-500">
-                    Allow users to upload multiple files at once
-                  </p>
-                </div>
+
 
                 {/* Display Options */}
                 <div className="space-y-2">

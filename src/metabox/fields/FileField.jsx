@@ -11,7 +11,6 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         allowed_types = ['image', 'video', 'document', 'audio', 'archive'],
         max_file_size = null, // No default restriction
         return_type = 'url',
-        multiple = false,
         show_preview = true,
         show_download = true,
         show_delete = true
@@ -158,56 +157,30 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
         setFiles(updatedFiles);
         
         // Send consistent data structure for database storage
-        if (multiple) {
-            const filesForDB = updatedFiles.map(file => {
-                if (file.is_media_library) {
-                    return {
-                        id: file.id,
-                        url: file.url,
-                        type: file.type,
-                        name: file.name,
-                        size: file.size,
-                        size_formatted: file.size_formatted,
-                        thumbnail: file.thumbnail,
-                        is_media_library: true
-                    };
-                } else {
-                    return {
-                        temp_id: file.temp_id,
-                        name: file.name,
-                        type: file.type,
-                        size: file.size,
-                        is_temp: true
-                    };
-                }
-            });
-            onChange(filesForDB);
-        } else {
-            if (updatedFiles.length > 0) {
-                const file = updatedFiles[0];
-                if (file.is_media_library) {
-                    onChange({
-                        id: file.id,
-                        url: file.url,
-                        type: file.type,
-                        name: file.name,
-                        size: file.size,
-                        size_formatted: file.size_formatted,
-                        thumbnail: file.thumbnail,
-                        is_media_library: true
-                    });
-                } else {
-                    onChange({
-                        temp_id: file.temp_id,
-                        name: file.name,
-                        type: file.type,
-                        size: file.size,
-                        is_temp: true
-                    });
-                }
+        if (updatedFiles.length > 0) {
+            const file = updatedFiles[0];
+            if (file.is_media_library) {
+                onChange({
+                    id: file.id,
+                    url: file.url,
+                    type: file.type,
+                    name: file.name,
+                    size: file.size,
+                    size_formatted: file.size_formatted,
+                    thumbnail: file.thumbnail,
+                    is_media_library: true
+                });
             } else {
-                onChange('');
+                onChange({
+                    temp_id: file.temp_id,
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    is_temp: true
+                });
             }
+        } else {
+            onChange('');
         }
         
         // File removed successfully
@@ -234,7 +207,6 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
     const openMediaLibrary = () => {
         console.log('FileField: openMediaLibrary called');
         console.log('FileField: Field name/label:', label || name || 'unnamed');
-        console.log('FileField: Multiple allowed:', multiple);
         console.log('FileField: Allowed types:', allowed_types);
         
         setIsOpeningMedia(true);
@@ -258,11 +230,11 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
             
             const frame = wp.media({
                 id: frameId,
-                title: multiple ? 'Select or Upload Files' : 'Select or Upload File',
+                title: 'Select or Upload File',
                 button: {
-                    text: multiple ? 'Use these files' : 'Use this file'
+                    text: 'Use this file'
                 },
-                multiple: multiple,
+                multiple: false,
                 library: {
                     type: allowed_types.map(type => {
                         switch(type) {
@@ -305,34 +277,19 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                 });
 
                 if (selectedFiles.length > 0) {
-                    if (multiple) {
-                        setFiles(prev => [...prev, ...selectedFiles]);
-                        const filesForDB = selectedFiles.map(file => ({
-                            id: file.id,
-                            url: file.url,
-                            type: file.type,
-                            name: file.name,
-                            size: file.size,
-                            size_formatted: file.size_formatted,
-                            thumbnail: file.thumbnail,
-                            is_media_library: true
-                        }));
-                        onChange([...files, ...filesForDB]);
-                    } else {
-                        setFiles(selectedFiles);
-                        const fileForDB = selectedFiles[0];
-                        const fileData = {
-                            id: fileForDB.id,
-                            url: fileForDB.url,
-                            type: fileForDB.type,
-                            name: fileForDB.name,
-                            size: fileForDB.size,
-                            size_formatted: fileForDB.size_formatted,
-                            thumbnail: fileForDB.thumbnail,
-                            is_media_library: true
-                        };
-                        onChange(fileData);
-                    }
+                    setFiles(selectedFiles);
+                    const fileForDB = selectedFiles[0];
+                    const fileData = {
+                        id: fileForDB.id,
+                        url: fileForDB.url,
+                        type: fileForDB.type,
+                        name: fileForDB.name,
+                        size: fileForDB.size,
+                        size_formatted: fileForDB.size_formatted,
+                        thumbnail: fileForDB.thumbnail,
+                        is_media_library: true
+                    };
+                    onChange(fileData);
                     setError('');
                 }
                 
@@ -502,17 +459,11 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
     const getFileSummary = () => {
         if (files.length === 0) return null;
 
-        const totalSize = files.reduce((sum, file) => sum + (file.size || 0), 0);
-        const fileTypes = files.reduce((acc, file) => {
-            const type = file.type.split('/')[0] || 'unknown';
-            acc[type] = (acc[type] || 0) + 1;
-            return acc;
-        }, {});
-
+        const file = files[0];
         return {
-            count: files.length,
-            totalSize: formatFileSize(totalSize),
-            fileTypes
+            count: 1,
+            totalSize: file.size_formatted || formatFileSize(file.size || 0),
+            fileTypes: { [file.type.split('/')[0] || 'unknown']: 1 }
         };
     };
 
@@ -524,7 +475,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 mb-4">
                 <div className="flex justify-between items-center text-sm">
                     <div className="text-blue-800">
-                        <span className="font-semibold">{summary.count}</span> file{summary.count !== 1 ? 's' : ''} selected
+                        <span className="font-semibold">1</span> file selected
                     </div>
                     <div className="text-blue-600">
                         Total: <span className="font-semibold">{summary.totalSize}</span>
@@ -649,21 +600,8 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                         
                         <div className="flex justify-between items-center">
                             <h4 className="text-sm font-medium text-gray-700">
-                                {multiple ? 'Selected Files' : 'Selected File'} ({files.length})
+                                Selected File ({files.length})
                             </h4>
-                            {multiple && files.length > 1 && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setFiles([]);
-                                        onChange([]);
-                                        console.log('All files cleared successfully.');
-                                    }}
-                                    className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors"
-                                >
-                                    Clear All
-                                </button>
-                            )}
                         </div>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
