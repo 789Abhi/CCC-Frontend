@@ -251,32 +251,18 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     text: multiple ? 'Use these files' : 'Use this file'
                 },
                 multiple: multiple,
-                // Enable both library selection and file upload
-                states: [
-                    new wp.media.controller.Library({
-                        library: wp.media.query({
-                            type: allowed_types.map(type => {
-                                switch(type) {
-                                    case 'image': return 'image';
-                                    case 'video': return 'video';
-                                    case 'audio': return 'audio';
-                                    case 'document': return 'application';
-                                    case 'archive': return 'application';
-                                    default: return '';
-                                }
-                            }).filter(Boolean)
-                        }),
-                        multiple: multiple
-                    }),
-                    new wp.media.controller.Upload({
-                        multiple: multiple,
-                        // Ensure upload controller is properly configured
-                        uploaderParams: {
-                            // Allow all file types for upload
-                            allowedTypes: allowed_types
+                library: {
+                    type: allowed_types.map(type => {
+                        switch(type) {
+                            case 'image': return 'image';
+                            case 'video': return 'video';
+                            case 'audio': return 'audio';
+                            case 'document': return 'application';
+                            case 'archive': return 'application';
+                            default: return '';
                         }
-                    })
-                ]
+                    }).filter(Boolean)
+                }
             });
 
             frame.on('select', () => {
