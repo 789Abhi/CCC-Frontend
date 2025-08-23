@@ -105,6 +105,13 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     order: 'ASC'
   });
 
+  // Toggle field configuration state
+  const [toggleConfig, setToggleConfig] = useState({
+    default_value: false,
+    ui_style: 'switch',
+    conditional_logic: []
+  });
+
   // Available post types and taxonomies for relationship field
   const [availablePostTypes, setAvailablePostTypes] = useState([]);
   const [availableTaxonomies, setAvailableTaxonomies] = useState([]);
@@ -129,6 +136,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "select",
     "checkbox",
     "radio",
+    "toggle",
     "user",
   ]
 
@@ -260,6 +268,22 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                  append: ''
                });
              }
+          } else if (field.type === 'toggle' && field.config) {
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              setToggleConfig({
+                default_value: config.default_value !== undefined ? config.default_value : false,
+                ui_style: config.ui_style || 'switch',
+                conditional_logic: config.conditional_logic || []
+              });
+            } catch (e) {
+              console.error("Error parsing toggle config:", e);
+              setToggleConfig({
+                default_value: false,
+                ui_style: 'switch',
+                conditional_logic: []
+              });
+            }
           } else if (field.type === 'file' && field.config) {
             try {
               const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
@@ -847,6 +871,13 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             append: fieldConfig?.append || ''
           }
           console.log("Range field config for preventDatabaseSave:", fieldData.config);
+        } else if (type === "toggle") {
+          fieldData.config = {
+            default_value: toggleConfig?.default_value || false,
+            ui_style: toggleConfig?.ui_style || 'switch',
+            conditional_logic: toggleConfig?.conditional_logic || []
+          }
+          console.log("Toggle field config for preventDatabaseSave:", fieldData.config);
         } else if (type === "file") {
           fieldData.config = {
             allowed_types: fieldConfig?.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
@@ -1007,6 +1038,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           append: fieldConfig?.append || ''
         }
         console.log("Range field config being sent:", config);
+        formData.append("field_config", JSON.stringify(config))
+      } else if (type === "toggle") {
+        const config = {
+          default_value: toggleConfig?.default_value || false,
+          ui_style: toggleConfig?.ui_style || 'switch',
+          conditional_logic: toggleConfig?.conditional_logic || []
+        }
+        console.log("Toggle field config being sent:", config);
         formData.append("field_config", JSON.stringify(config))
       } else if (type === "file") {
         const config = {
@@ -2035,6 +2074,182 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <p className="text-xs text-gray-500">
                       Unit to display after the numeric input (optional)
                     </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Toggle Field Settings */}
+            {type === "toggle" && (
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">Toggle Field Settings</h4>
+                
+                {/* Default Value */}
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={toggleConfig?.default_value || false}
+                      onChange={(e) => {
+                        setToggleConfig({
+                          ...toggleConfig,
+                          default_value: e.target.checked
+                        });
+                      }}
+                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      disabled={isSubmitting}
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      Default to Enabled
+                    </span>
+                  </label>
+                  <p className="text-xs text-gray-500">
+                    When checked, the toggle will be enabled by default
+                  </p>
+                </div>
+
+                {/* UI Style */}
+                <div className="space-y-2">
+                  <label htmlFor="toggleUIStyle" className="block text-sm font-medium text-gray-700">
+                    UI Style
+                  </label>
+                  <select
+                    id="toggleUIStyle"
+                    value={toggleConfig?.ui_style || 'switch'}
+                    onChange={(e) => {
+                      setToggleConfig({
+                        ...toggleConfig,
+                        ui_style: e.target.value
+                      });
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    <option value="switch">Switch Toggle</option>
+                    <option value="checkbox">Checkbox Style</option>
+                    <option value="button">Button Style</option>
+                  </select>
+                  <p className="text-xs text-gray-500">
+                    Choose the visual style for the toggle field
+                  </p>
+                </div>
+
+                {/* Conditional Logic */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-sm font-medium text-gray-700">Conditional Logic</h5>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newRule = {
+                          id: Date.now(),
+                          target_field: '',
+                          action: 'show',
+                          operator: 'equals',
+                          value: '1'
+                        };
+                        setToggleConfig({
+                          ...toggleConfig,
+                          conditional_logic: [...(toggleConfig?.conditional_logic || []), newRule]
+                        });
+                      }}
+                      className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                      disabled={isSubmitting}
+                    >
+                      + Add Rule
+                    </button>
+                  </div>
+                  
+                  {toggleConfig?.conditional_logic && toggleConfig.conditional_logic.length > 0 ? (
+                    <div className="space-y-3">
+                      {toggleConfig.conditional_logic.map((rule, index) => (
+                        <div key={rule.id} className="flex items-center gap-2 p-3 bg-white rounded border">
+                          <select
+                            value={rule.target_field}
+                            onChange={(e) => {
+                              const updatedRules = [...toggleConfig.conditional_logic];
+                              updatedRules[index] = { ...rule, target_field: e.target.value };
+                              setToggleConfig({
+                                ...toggleConfig,
+                                conditional_logic: updatedRules
+                              });
+                            }}
+                            className="flex-1 text-sm border border-gray-300 rounded px-2 py-1"
+                            disabled={isSubmitting}
+                          >
+                            <option value="">Select target field</option>
+                            {/* This would need to be populated with available fields */}
+                            <option value="text_field">Text Field</option>
+                            <option value="textarea_field">Textarea Field</option>
+                            <option value="image_field">Image Field</option>
+                          </select>
+                          
+                          <select
+                            value={rule.action}
+                            onChange={(e) => {
+                              const updatedRules = [...toggleConfig.conditional_logic];
+                              updatedRules[index] = { ...rule, action: e.target.value };
+                              setToggleConfig({
+                                ...toggleConfig,
+                                conditional_logic: updatedRules
+                              });
+                            }}
+                            className="text-sm border border-gray-300 rounded px-2 py-1"
+                            disabled={isSubmitting}
+                          >
+                            <option value="show">Show</option>
+                            <option value="hide">Hide</option>
+                            <option value="enable">Enable</option>
+                            <option value="disable">Disable</option>
+                          </select>
+                          
+                          <span className="text-sm text-gray-500">when toggle is</span>
+                          
+                          <select
+                            value={rule.operator}
+                            onChange={(e) => {
+                              const updatedRules = [...toggleConfig.conditional_logic];
+                              updatedRules[index] = { ...rule, operator: e.target.value };
+                              setToggleConfig({
+                                ...toggleConfig,
+                                conditional_logic: updatedRules
+                              });
+                            }}
+                            className="text-sm border border-gray-300 rounded px-2 py-1"
+                            disabled={isSubmitting}
+                          >
+                            <option value="equals">Enabled</option>
+                            <option value="not_equals">Disabled</option>
+                          </select>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updatedRules = toggleConfig.conditional_logic.filter((_, i) => i !== index);
+                              setToggleConfig({
+                                ...toggleConfig,
+                                conditional_logic: updatedRules
+                              });
+                            }}
+                            className="text-red-600 hover:text-red-800 p-1"
+                            disabled={isSubmitting}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      No conditional rules set. Add rules to control other fields based on this toggle.
+                    </p>
+                  )}
+                  
+                  <div className="text-xs text-gray-500">
+                    <p><strong>Show/Hide:</strong> Controls field visibility</p>
+                    <p><strong>Enable/Disable:</strong> Controls field interaction</p>
                   </div>
                 </div>
               </div>

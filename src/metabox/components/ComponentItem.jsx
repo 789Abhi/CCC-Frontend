@@ -19,6 +19,7 @@ import RangeField from '../fields/RangeField';
 import FileField from '../fields/FileField';
 import RepeaterField from '../fields/RepeaterField';
 import UserField from '../fields/UserField';
+import ToggleField from '../fields/ToggleField';
 
 const ToggleSwitch = ({ checked, onChange }) => {
   return (
@@ -726,6 +727,30 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       error={isRequired && (multiple ? !value?.length : !value)}
                       roleFilter={field.config?.role_filter || []}
                       returnType={field.config?.return_type || 'id'}
+                    />
+                  );
+                }
+                if (field.type === 'toggle') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  let value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.config?.default_value || false));
+                  
+                  const handleChange = (val) => {
+                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                  };
+                  
+                  return (
+                    <ToggleField
+                      key={field.id}
+                      field={field}
+                      value={value}
+                      onChange={handleChange}
+                      onValidationChange={onValidationChange}
+                      instanceId={component.instance_id}
+                      fieldId={field.id}
+                      availableFields={component.fields || []}
                     />
                   );
                 }

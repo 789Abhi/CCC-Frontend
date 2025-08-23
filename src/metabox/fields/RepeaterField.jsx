@@ -11,6 +11,7 @@ import SelectField from './SelectField';
 import CheckboxField from './CheckboxField';
 import RadioField from './RadioField';
 import ColorField from './ColorField';
+import ToggleField from './ToggleField';
 
 // Sortable Repeater Item Component
 const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemoveItem, onToggleHidden, instanceId, fieldId }) => {
@@ -276,6 +277,25 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
             onChange={handleChange}
             required={isRequired}
             error={fieldError}
+          />
+        );
+
+      case 'toggle':
+        let toggleValue = fieldValue;
+        if (typeof toggleValue === 'string') {
+          toggleValue = toggleValue === '1' || toggleValue === 'true';
+        }
+        
+        return (
+          <ToggleField
+            key={`${field.name}_${itemIndex}`}
+            field={field}
+            value={toggleValue}
+            onChange={handleChange}
+            onValidationChange={() => {}}
+            instanceId={instanceId}
+            fieldId={fieldId}
+            availableFields={nestedFields || []}
           />
         );
 
