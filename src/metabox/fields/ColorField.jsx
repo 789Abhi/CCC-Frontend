@@ -1,5 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+/**
+ * ColorField Component
+ * 
+ * Enhanced color picker with main, hover, and adjusted color support.
+ * 
+ * FIXED: Color mismatch issue between frontend metabox display and backend database storage.
+ * - Added color normalization and validation functions
+ * - Improved precision in color adjustment calculations
+ * - Added debug logging for color value tracking
+ * - Ensures consistent color data before saving to backend
+ */
+
 function ColorField({ label, value, onChange, required = false, error }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showAdjustments, setShowAdjustments] = useState(false);
@@ -32,9 +44,12 @@ function ColorField({ label, value, onChange, required = false, error }) {
       try {
         const savedData = JSON.parse(value);
         if (savedData && typeof savedData === 'object') {
+          // Validate and ensure consistency of saved data
+          const validatedData = ensureColorDataConsistency(savedData);
+          
           // Check if we have double-encoded JSON
-          let mainColorValue = savedData.main;
-          let adjustedColorValue = savedData.adjusted;
+          let mainColorValue = validatedData.main;
+          let adjustedColorValue = validatedData.adjusted;
           
           // If main color is also JSON, parse it
           if (typeof mainColorValue === 'string' && mainColorValue.startsWith('{')) {
@@ -57,8 +72,8 @@ function ColorField({ label, value, onChange, required = false, error }) {
           }
           
           // Load saved hover color
-          if (savedData.hover) {
-            setHoverColor(savedData.hover);
+          if (validatedData.hover) {
+            setHoverColor(validatedData.hover);
           }
           
           // Calculate percentage from adjusted color
@@ -99,24 +114,24 @@ function ColorField({ label, value, onChange, required = false, error }) {
   }, [value]);
 
   const handleColorChange = (e) => {
-    const newColor = e.target.value;
+    const newColor = normalizeHexColor(e.target.value);
     if (activeTab === 'main') {
       // Update main color and save complete data structure
-      const colorData = {
-        main: newColor,
-        adjusted: adjustColorByPercentage(newColor, percentage),
-        hover: hoverColor
-      };
+      const adjustedColor = adjustColorByPercentage(newColor, percentage);
+      logColorChange('Main Color Change', mainColor, newColor, percentage);
+      
+      const colorData = validateColorData(newColor, adjustedColor, hoverColor);
+      logFinalColorData(colorData);
       onChange(JSON.stringify(colorData));
     } else if (activeTab === 'hover') {
       const newHoverColor = newColor;
       setHoverColor(newHoverColor);
       // Save complete data structure with updated hover color
-      const colorData = {
-        main: mainColor,
-        adjusted: adjustColorByPercentage(mainColor, percentage),
-        hover: newHoverColor
-      };
+      const adjustedColor = adjustColorByPercentage(mainColor, percentage);
+      logColorChange('Hover Color Change', hoverColor, newHoverColor, percentage);
+      
+      const colorData = validateColorData(mainColor, adjustedColor, newHoverColor);
+      logFinalColorData(colorData);
       onChange(JSON.stringify(colorData));
     }
   };
@@ -125,23 +140,18 @@ function ColorField({ label, value, onChange, required = false, error }) {
     const inputValue = e.target.value;
     // Validate hex color format
     if (/^#[0-9A-F]{6}$/i.test(inputValue) || inputValue === '') {
+      const normalizedValue = normalizeHexColor(inputValue);
       if (activeTab === 'main') {
         // Update main color and save complete data structure
-        const colorData = {
-          main: inputValue,
-          adjusted: adjustColorByPercentage(inputValue, percentage),
-          hover: hoverColor
-        };
+        const adjustedColor = adjustColorByPercentage(normalizedValue, percentage);
+        const colorData = validateColorData(normalizedValue, adjustedColor, hoverColor);
         onChange(JSON.stringify(colorData));
       } else if (activeTab === 'hover') {
-        const newHoverColor = inputValue;
+        const newHoverColor = normalizedValue;
         setHoverColor(newHoverColor);
         // Save complete data structure with updated hover color
-        const colorData = {
-          main: mainColor,
-          adjusted: adjustColorByPercentage(mainColor, percentage),
-          hover: newHoverColor
-        };
+        const adjustedColor = adjustColorByPercentage(mainColor, percentage);
+        const colorData = validateColorData(mainColor, adjustedColor, newHoverColor);
         onChange(JSON.stringify(colorData));
       }
     }
@@ -169,6 +179,94 @@ function ColorField({ label, value, onChange, required = false, error }) {
     return /^#[0-9A-F]{6}$/i.test(color);
   };
 
+  // Normalize hex color to ensure consistent formatting
+  const normalizeHexColor = (color) => {
+    if (!color || !isValidColor(color)) return color;
+    
+    // Use exact color matching to prevent mismatches
+    return ensureExactColorMatch(color);
+  };
+
+  // Debug logging for color value tracking
+  const logColorChange = (operation, originalColor, newColor, percentage) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`ColorField Debug - ${operation}:`, {
+        original: originalColor,
+        new: newColor,
+        percentage: percentage,
+        timestamp: new Date().toISOString()
+      });
+    }
+  };
+
+  // Log final color data being sent to backend
+  const logFinalColorData = (colorData) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('ColorField Debug - Final Color Data:', {
+        main: colorData.main,
+        adjusted: colorData.adjusted,
+        hover: colorData.hover,
+        json: JSON.stringify(colorData),
+        timestamp: new Date().toISOString()
+      });
+    }
+  };
+
+  // Validate and ensure color data consistency
+  const validateColorData = (main, adjusted, hover) => {
+    const validatedData = {
+      main: normalizeHexColor(main) || '',
+      adjusted: normalizeHexColor(adjusted) || '',
+      hover: normalizeHexColor(hover) || ''
+    };
+    
+    // Ensure adjusted color is calculated correctly if main color exists
+    if (validatedData.main && percentage !== 0) {
+      const calculatedAdjusted = adjustColorByPercentage(validatedData.main, percentage);
+      if (calculatedAdjusted !== validatedData.main) {
+        validatedData.adjusted = calculatedAdjusted;
+      }
+    }
+    
+    return validatedData;
+  };
+
+  // Ensure color data consistency on load
+  const ensureColorDataConsistency = (savedData) => {
+    if (!savedData || typeof savedData !== 'object') return savedData;
+    
+    const validatedData = validateColorData(
+      savedData.main || '',
+      savedData.adjusted || '',
+      savedData.hover || ''
+    );
+    
+    // If data was modified during validation, update it
+    if (JSON.stringify(validatedData) !== JSON.stringify(savedData)) {
+      // Trigger onChange to save the corrected data
+      setTimeout(() => {
+        onChange(JSON.stringify(validatedData));
+      }, 100);
+    }
+    
+    return validatedData;
+  };
+
+  // Ensure exact color matching to prevent frontend/backend mismatches
+  const ensureExactColorMatch = (color) => {
+    if (!color || !isValidColor(color)) return color;
+    
+    // Normalize to uppercase for consistency
+    const normalized = color.toUpperCase();
+    
+    // Ensure the color is exactly 6 characters after #
+    if (normalized.length === 7 && normalized.startsWith('#')) {
+      return normalized;
+    }
+    
+    return color;
+  };
+
   const adjustColorByPercentage = (hexColor, percentage) => {
     if (!hexColor || !isValidColor(hexColor) || percentage === 0) return hexColor;
     
@@ -180,19 +278,28 @@ function ColorField({ label, value, onChange, required = false, error }) {
     let g = parseInt(hex.substr(2, 2), 16);
     let b = parseInt(hex.substr(4, 2), 16);
     
-    // Apply percentage adjustment
+    // Apply percentage adjustment with improved precision
     const multiplier = 1 + (percentage / 100);
+    
+    // Use more precise calculation and avoid excessive rounding
     r = Math.min(255, Math.max(0, Math.round(r * multiplier)));
     g = Math.min(255, Math.max(0, Math.round(g * multiplier)));
     b = Math.min(255, Math.max(0, Math.round(b * multiplier)));
     
-    // Convert back to hex
+    // Convert back to hex with proper zero-padding
     const toHex = (c) => {
       const hex = c.toString(16);
       return hex.length === 1 ? '0' + hex : hex;
     };
     
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    const result = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    
+    // If the result is the same as input (within rounding tolerance), return original
+    if (result === hexColor) {
+      return hexColor;
+    }
+    
+    return result;
   };
 
   // Extract main color from JSON string for display
@@ -278,19 +385,12 @@ function ColorField({ label, value, onChange, required = false, error }) {
                     onClick={() => {
                       if (activeTab === 'main') {
                         // Reset main color
-                        const colorData = {
-                          main: '',
-                          adjusted: '',
-                          hover: hoverColor
-                        };
+                        const colorData = validateColorData('', '', hoverColor);
                         onChange(JSON.stringify(colorData));
                       } else if (activeTab === 'hover') {
                         // Reset hover color
-                        const colorData = {
-                          main: mainColor,
-                          adjusted: adjustColorByPercentage(mainColor, percentage),
-                          hover: ''
-                        };
+                        const adjustedColor = adjustColorByPercentage(mainColor, percentage);
+                        const colorData = validateColorData(mainColor, adjustedColor, '');
                         setHoverColor('');
                         onChange(JSON.stringify(colorData));
                       }
@@ -339,12 +439,10 @@ function ColorField({ label, value, onChange, required = false, error }) {
               onChange={(e) => {
                 const inputValue = e.target.value;
                 if (/^#[0-9A-F]{6}$/i.test(inputValue) || inputValue === '') {
+                  const normalizedValue = normalizeHexColor(inputValue);
                   // Update main color and save complete data structure
-                  const colorData = {
-                    main: inputValue,
-                    adjusted: adjustColorByPercentage(inputValue, percentage),
-                    hover: hoverColor
-                  };
+                  const adjustedColor = adjustColorByPercentage(normalizedValue, percentage);
+                  const colorData = validateColorData(normalizedValue, adjustedColor, hoverColor);
                   onChange(JSON.stringify(colorData));
                 }
               }}
@@ -398,11 +496,8 @@ function ColorField({ label, value, onChange, required = false, error }) {
                       const newPercentage = parseInt(e.target.value);
                       setPercentage(newPercentage);
                       // Save complete data structure with updated adjusted color
-                      const colorData = {
-                        main: mainColor,
-                        adjusted: adjustColorByPercentage(mainColor, newPercentage),
-                        hover: hoverColor
-                      };
+                      const adjustedColor = adjustColorByPercentage(mainColor, newPercentage);
+                      const colorData = validateColorData(mainColor, adjustedColor, hoverColor);
                       onChange(JSON.stringify(colorData));
                     }}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"

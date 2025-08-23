@@ -426,6 +426,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                 }
                 if (field.type === 'select') {
                   const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
                   const multiple = field.config && field.config.multiple;
                   let value = instanceFieldValues[field.id] !== undefined
                     ? instanceFieldValues[field.id]
