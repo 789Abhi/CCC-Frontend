@@ -409,7 +409,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     if (!field && type === 'range') {
       setFieldConfig({
         min_value: null,
-        max_value: 100,
+        max_value: null,
         prepend: '',
         append: ''
       });
@@ -1337,15 +1337,20 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     </label>
                     <input
                       type="number"
-                      value={fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : (field ? '' : 100)}
-                      onChange={(e) => setFieldConfig(prev => ({ 
-                        ...prev, 
-                        max_value: e.target.value === '' ? null : parseFloat(e.target.value) 
-                      }))}
-                      placeholder="No maximum"
+                      value={fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : ''}
+                      onChange={(e) => {
+                        const currentConfig = fieldConfig || {};
+                        setFieldConfig({
+                          ...currentConfig,
+                          max_value: e.target.value === '' ? null : parseFloat(e.target.value)
+                        });
+                      }}
+                      placeholder="100"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <p className="text-xs text-gray-500">Sets the highest allowed number</p>
+                    <p className="text-xs text-gray-500">
+                      Sets the highest allowed value for the range slider (leave empty for no maximum, default is 100)
+                    </p>
                   </div>
                   
                   <div>
@@ -1804,7 +1809,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                             max_value: e.target.value === '' ? null : parseFloat(e.target.value)
                           });
                         }}
-                        placeholder="No maximum"
+                        placeholder="100"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                         disabled={isSubmitting}
                       />
@@ -1947,7 +1952,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       disabled={isSubmitting}
                     />
                     <p className="text-xs text-gray-500">
-                      Sets the lowest allowed value for the range slider (leave empty for no minimum)
+                      Sets the lowest allowed value for the range slider (leave empty for no minimum, default is 0)
                     </p>
                   </div>
                   
@@ -1958,7 +1963,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <input
                       id="rangeMaxValue"
                       type="number"
-                      value={fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : (field ? '' : 100)}
+                      value={fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : ''}
                       onChange={(e) => {
                         const currentConfig = fieldConfig || {};
                         setFieldConfig({
@@ -1971,7 +1976,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       disabled={isSubmitting}
                     />
                     <p className="text-xs text-gray-500">
-                      Sets the highest allowed value for the range slider (leave empty for no maximum)
+                      Sets the highest allowed value for the range slider (leave empty for no maximum, default is 100)
                     </p>
                   </div>
                 </div>
