@@ -2167,26 +2167,24 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       </div>
 
                       {/* Logic Operator Selection */}
-                      {toggleConfig?.conditional_logic && toggleConfig.conditional_logic.length > 1 && (
-                        <div className="flex items-center gap-2 p-2 bg-white rounded border">
-                          <span className="text-xs text-gray-500">Logic:</span>
-                          <select
-                            value={toggleConfig?.logic_operator || 'AND'}
-                            onChange={(e) => {
-                              setToggleConfig({
-                                ...toggleConfig,
-                                logic_operator: e.target.value
-                              });
-                            }}
-                            className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
-                            disabled={isSubmitting}
-                          >
-                            <option value="AND">All of the conditions pass</option>
-                            <option value="OR">Any of the following conditions pass</option>
-                          </select>
-                          <span className="text-xs text-gray-500">Rules will be combined using this logic</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 p-2 bg-white rounded border">
+                        <span className="text-xs text-gray-500">Logic:</span>
+                        <select
+                          value={toggleConfig?.logic_operator || 'AND'}
+                          onChange={(e) => {
+                            setToggleConfig({
+                              ...toggleConfig,
+                              logic_operator: e.target.value
+                            });
+                          }}
+                          className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
+                          disabled={isSubmitting}
+                        >
+                          <option value="AND">All of the conditions pass</option>
+                          <option value="OR">Any of the following conditions pass</option>
+                        </select>
+                        <span className="text-xs text-gray-500">Rules will be combined using this logic</span>
+                      </div>
                       
                       {toggleConfig?.conditional_logic && toggleConfig.conditional_logic.length > 0 ? (
                         <div className="space-y-3">
