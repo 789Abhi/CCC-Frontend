@@ -302,11 +302,6 @@ class ConditionalLogicHandler {
   }
 
   evaluateRule(rule, fieldValue) {
-    if (rule.condition === 'when_toggle_is') {
-      const expectedValue = rule.value === '1' ? true : false;
-      return fieldValue === expectedValue;
-    }
-
     // Get target field value for comparison
     const targetField = this.targetFields.get(rule.target_field) || 
                        document.querySelector(`[data-field-id="${rule.target_field}"]`);
