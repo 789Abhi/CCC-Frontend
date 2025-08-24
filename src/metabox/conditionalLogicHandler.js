@@ -69,17 +69,12 @@ class ConditionalLogicHandler {
   }
 
   applyInitialConditionalLogic() {
-    console.log('=== CCC: Applying initial conditional logic ===');
-    console.log('Fields with conditional logic:', this.fieldsWithConditionalLogic.size);
-    
     // First, evaluate conditional logic for all fields based on current field values
     this.fieldsWithConditionalLogic.forEach((fieldData, fieldId) => {
       const { config, element } = fieldData;
-      console.log(`Field ${fieldId} config:`, config);
       
       if (config.field_condition === 'show_when' && config.conditional_logic) {
         const shouldShow = this.evaluateConditionalLogicForField(config);
-        console.log(`Field ${fieldId} should show: ${shouldShow}`);
         this.applyFieldVisibility(element, shouldShow);
       }
     });
@@ -92,31 +87,22 @@ class ConditionalLogicHandler {
   }
 
   processExistingFieldsWithConditionalLogic() {
-    console.log('=== Processing existing fields with conditional logic ===');
-    
     // Find all fields with conditional logic (both .ccc-field and .ccc-field-wrapper)
     const fieldsWithConditionalLogic = document.querySelectorAll('.ccc-field[data-conditional-logic], .ccc-field-wrapper[data-conditional-logic]');
-    console.log(`Found ${fieldsWithConditionalLogic.length} fields with conditional logic`);
     
     fieldsWithConditionalLogic.forEach(field => {
-      console.log('Processing field with conditional logic:', field);
       this.processFieldWithConditionalLogic(field);
     });
     
     // Also find fields that might be targets of conditional logic
     const allFields = document.querySelectorAll('.ccc-field[data-field-id], .ccc-field-wrapper[data-field-id]');
-    console.log(`Found ${allFields.length} total fields with data-field-id`);
     
     allFields.forEach(field => {
       const fieldId = field.getAttribute('data-field-id');
       if (fieldId && !this.targetFields.has(fieldId)) {
-        console.log(`Adding target field: ${fieldId}`, field);
         this.targetFields.set(fieldId, field);
       }
     });
-    
-    console.log('Target fields map:', this.targetFields);
-    console.log('Fields with conditional logic map:', this.fieldsWithConditionalLogic);
   }
 
   setupMutationObserver() {
@@ -178,21 +164,31 @@ class ConditionalLogicHandler {
         const targetField = document.querySelector(`[data-field-id="${rule.target_field}"]`);
         if (targetField && !this.targetFields.has(rule.target_field)) {
           this.targetFields.set(rule.target_field, targetField);
+          
+          // Also set up event listeners on this target field so changes propagate
+          this.setupFieldEventListeners(targetField, rule.target_field, {});
         }
       }
     });
   }
 
   setupFieldEventListeners(field, fieldId, conditionalLogic) {
-    // For toggle fields, listen to checkbox changes
+    // For toggle fields, listen to button clicks (our toggle uses button, not checkbox)
     if (field.classList.contains('ccc-field-toggle')) {
-      const toggleInput = field.querySelector('input[type="checkbox"]');
-      if (toggleInput) {
-        toggleInput.addEventListener('change', (e) => {
-          this.handleFieldChange(fieldId, e.target.checked);
+      const toggleButton = field.querySelector('button[aria-pressed]');
+      if (toggleButton) {
+        console.log(`Setting up toggle event listener for field ${fieldId}`);
+        toggleButton.addEventListener('click', () => {
+          // Wait a moment for the aria-pressed to update, then get the new value
+          setTimeout(() => {
+            const newValue = this.getFieldValue(field);
+            console.log(`Toggle ${fieldId} clicked, new value: ${newValue}`);
+            this.handleFieldChange(fieldId, newValue);
+          }, 10);
         });
+        
         // Apply initial state
-        this.handleFieldChange(fieldId, toggleInput.checked);
+        this.handleFieldChange(fieldId, this.getFieldValue(field));
       }
     } else {
       // For other field types, listen to various input changes
@@ -264,18 +260,14 @@ class ConditionalLogicHandler {
       return true;
     }
 
-    console.log(`Evaluating conditional logic:`, config.conditional_logic);
-
     const results = config.conditional_logic.map(rule => {
       let result;
       if (changedFieldId && rule.target_field === changedFieldId) {
         // Use the provided field value for this specific rule
         result = this.evaluateRuleWithValue(rule, changedFieldValue);
-        console.log(`Rule with provided value - target: ${rule.target_field}, condition: ${rule.condition}, value: ${rule.value}, fieldValue: ${changedFieldValue}, result: ${result}`);
       } else {
         // Get current value for other fields
         result = this.evaluateRule(rule, null);
-        console.log(`Rule with current value - target: ${rule.target_field}, condition: ${rule.condition}, value: ${rule.value}, result: ${result}`);
       }
       return result;
     });
@@ -368,15 +360,11 @@ class ConditionalLogicHandler {
 
   applyFieldVisibility(fieldElement, shouldShow) {
     const fieldId = fieldElement.getAttribute('data-field-id');
-    console.log(`*** Applying visibility to field ${fieldId}: ${shouldShow ? 'SHOW' : 'HIDE'} ***`);
-    console.log('Field element:', fieldElement);
     
     if (shouldShow) {
       fieldElement.classList.remove('ccc-field-hidden');
-      console.log(`Field ${fieldId} classes after show:`, fieldElement.className);
     } else {
       fieldElement.classList.add('ccc-field-hidden');
-      console.log(`Field ${fieldId} classes after hide:`, fieldElement.className);
       
       // Clear validation errors for hidden fields
       if (fieldId && window.cccMetaboxApp && window.cccMetaboxApp.clearValidationErrorsForField) {
@@ -406,7 +394,6 @@ class ConditionalLogicHandler {
     const toggleButton = fieldElement.querySelector('button[aria-pressed]');
     if (toggleButton) {
       const isPressed = toggleButton.getAttribute('aria-pressed') === 'true';
-      console.log(`Toggle field value: aria-pressed="${toggleButton.getAttribute('aria-pressed')}", returning: ${isPressed}`);
       return isPressed;
     }
     
