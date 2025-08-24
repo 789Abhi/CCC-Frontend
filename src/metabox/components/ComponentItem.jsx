@@ -180,11 +180,25 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
               {/* Helper function to wrap field components with conditional logic */}
               {(() => {
                 const wrapFieldWithConditionalLogic = (fieldComponent, field) => {
+                  // Parse config if it's a string, or use as-is if it's already an object
+                  let parsedConfig = '';
+                  try {
+                    if (field?.config) {
+                      const configObj = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+                      // Only include conditional logic data if the field has conditional logic
+                      if (configObj.field_condition && configObj.field_condition !== 'always_show' && configObj.conditional_logic) {
+                        parsedConfig = JSON.stringify(configObj);
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Error parsing field config for conditional logic:', error);
+                  }
+                  
                   return (
                     <div 
                       key={field.id}
                       className="ccc-field ccc-field-wrapper"
-                      data-conditional-logic={field?.config ? JSON.stringify(field.config) : ''}
+                      data-conditional-logic={parsedConfig}
                       data-field-id={field.id}
                     >
                       {fieldComponent}
