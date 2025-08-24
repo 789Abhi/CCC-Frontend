@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, memo, useRef } from 'react';
 import { Plus, X, HelpCircle } from 'lucide-react';
 
 const ConditionalLogicTab = ({ 
@@ -14,15 +14,27 @@ const ConditionalLogicTab = ({
     conditional_logic: fieldConfig?.conditional_logic || []
   });
 
+  const isUserInteracting = useRef(false);
 
 
-  // Update local state when prop changes
+
+  // Update local state when prop changes (but not during user interactions)
   useEffect(() => {
-    if (fieldConfig) {
-      setConfig({
+    if (fieldConfig && !isUserInteracting.current) {
+      const newConfig = {
         field_condition: fieldConfig.field_condition || 'always_show',
         logic_operator: fieldConfig.logic_operator || 'AND',
         conditional_logic: fieldConfig.conditional_logic || []
+      };
+      
+      // Only update if the config is actually different
+      setConfig(prevConfig => {
+        if (prevConfig.field_condition === newConfig.field_condition &&
+            prevConfig.logic_operator === newConfig.logic_operator &&
+            JSON.stringify(prevConfig.conditional_logic) === JSON.stringify(newConfig.conditional_logic)) {
+          return prevConfig; // No change needed
+        }
+        return newConfig;
       });
     }
   }, [fieldConfig]);
@@ -34,6 +46,7 @@ const ConditionalLogicTab = ({
   }, [config]); // Removed onConfigChange dependency to prevent unnecessary calls
 
   const addRule = () => {
+    isUserInteracting.current = true;
     const newRule = {
       id: Date.now(),
       target_field: '',
@@ -45,22 +58,33 @@ const ConditionalLogicTab = ({
       ...prev,
       conditional_logic: [...prev.conditional_logic, newRule]
     }));
+    setTimeout(() => {
+      isUserInteracting.current = false;
+    }, 100);
   };
 
   const removeRule = (ruleId) => {
+    isUserInteracting.current = true;
     setConfig(prev => ({
       ...prev,
       conditional_logic: prev.conditional_logic.filter(rule => rule.id !== ruleId)
     }));
+    setTimeout(() => {
+      isUserInteracting.current = false;
+    }, 100);
   };
 
   const updateRule = (ruleId, field, value) => {
+    isUserInteracting.current = true;
     setConfig(prev => ({
       ...prev,
       conditional_logic: prev.conditional_logic.map(rule =>
         rule.id === ruleId ? { ...rule, [field]: value } : rule
       )
     }));
+    setTimeout(() => {
+      isUserInteracting.current = false;
+    }, 100);
   };
 
   const getConditionLabel = (condition) => {
@@ -94,7 +118,14 @@ const ConditionalLogicTab = ({
         </label>
         <select
           value={config.field_condition}
-          onChange={(e) => setConfig(prev => ({ ...prev, field_condition: e.target.value }))}
+          onChange={(e) => {
+            isUserInteracting.current = true;
+            setConfig(prev => ({ ...prev, field_condition: e.target.value }));
+            // Reset the interaction flag after a short delay
+            setTimeout(() => {
+              isUserInteracting.current = false;
+            }, 100);
+          }}
           className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           disabled={isSubmitting}
         >
@@ -112,7 +143,13 @@ const ConditionalLogicTab = ({
             <span className="text-xs text-gray-500">Logic:</span>
             <select
               value={config.logic_operator}
-              onChange={(e) => setConfig(prev => ({ ...prev, logic_operator: e.target.value }))}
+              onChange={(e) => {
+                isUserInteracting.current = true;
+                setConfig(prev => ({ ...prev, logic_operator: e.target.value }));
+                setTimeout(() => {
+                  isUserInteracting.current = false;
+                }, 100);
+              }}
               className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
               disabled={isSubmitting}
             >
