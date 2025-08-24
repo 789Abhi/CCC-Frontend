@@ -78,13 +78,149 @@ const ConditionalLogicTab = ({
     isUserInteracting.current = true;
     setConfig(prev => ({
       ...prev,
-      conditional_logic: prev.conditional_logic.map(rule =>
-        rule.id === ruleId ? { ...rule, [field]: value } : rule
-      )
+      conditional_logic: prev.conditional_logic.map(rule => {
+        if (rule.id === ruleId) {
+          const updatedRule = { ...rule, [field]: value };
+          
+          // Reset condition and value when target field changes
+          if (field === 'target_field') {
+            const targetField = availableFields.find(f => f.id === value);
+            if (targetField) {
+              updatedRule.condition = getDefaultConditionForFieldType(targetField.type);
+              updatedRule.value = getDefaultValueForFieldType(targetField.type);
+            }
+          }
+          
+          return updatedRule;
+        }
+        return rule;
+      })
     }));
     setTimeout(() => {
       isUserInteracting.current = false;
     }, 100);
+  };
+
+  // Get default condition based on field type
+  const getDefaultConditionForFieldType = (fieldType) => {
+    switch (fieldType) {
+      case 'toggle':
+        return 'when_toggle_is';
+      case 'select':
+      case 'radio':
+        return 'when_field_equals';
+      case 'checkbox':
+        return 'when_field_contains';
+      case 'text':
+      case 'textarea':
+      case 'email':
+        return 'when_field_equals';
+      case 'number':
+      case 'range':
+        return 'when_field_greater_than';
+      default:
+        return 'when_field_equals';
+    }
+  };
+
+  // Get default value based on field type
+  const getDefaultValueForFieldType = (fieldType) => {
+    switch (fieldType) {
+      case 'toggle':
+        return '1';
+      case 'number':
+      case 'range':
+        return '0';
+      default:
+        return '';
+    }
+  };
+
+  // Get available conditions based on target field type
+  const getAvailableConditions = (targetFieldId) => {
+    const targetField = availableFields.find(f => f.id === targetFieldId);
+    if (!targetField) {
+      return [
+        { value: 'when_field_equals', label: 'When field equals' }
+      ];
+    }
+
+    switch (targetField.type) {
+      case 'toggle':
+        return [
+          { value: 'when_toggle_is', label: 'When toggle is' }
+        ];
+      case 'select':
+      case 'radio':
+        return [
+          { value: 'when_field_equals', label: 'When field equals' },
+          { value: 'when_field_not_equals', label: 'When field not equals' }
+        ];
+      case 'checkbox':
+        return [
+          { value: 'when_field_contains', label: 'When field contains' },
+          { value: 'when_field_not_contains', label: 'When field not contains' }
+        ];
+      case 'text':
+      case 'textarea':
+      case 'email':
+        return [
+          { value: 'when_field_equals', label: 'When field equals' },
+          { value: 'when_field_not_equals', label: 'When field not equals' },
+          { value: 'when_field_contains', label: 'When field contains' },
+          { value: 'when_field_not_contains', label: 'When field not contains' }
+        ];
+      case 'number':
+      case 'range':
+        return [
+          { value: 'when_field_equals', label: 'When field equals' },
+          { value: 'when_field_not_equals', label: 'When field not equals' },
+          { value: 'when_field_greater_than', label: 'When field greater than' },
+          { value: 'when_field_less_than', label: 'When field less than' },
+          { value: 'when_field_greater_equal', label: 'When field greater than or equal' },
+          { value: 'when_field_less_equal', label: 'When field less than or equal' }
+        ];
+      default:
+        return [
+          { value: 'when_field_equals', label: 'When field equals' },
+          { value: 'when_field_not_equals', label: 'When field not equals' }
+        ];
+    }
+  };
+
+  // Get available values based on target field type and condition
+  const getAvailableValues = (targetFieldId, condition) => {
+    const targetField = availableFields.find(f => f.id === targetFieldId);
+    if (!targetField) return [];
+
+    switch (targetField.type) {
+      case 'toggle':
+        return [
+          { value: '1', label: 'Enabled' },
+          { value: '0', label: 'Disabled' }
+        ];
+      case 'select':
+      case 'radio':
+        // Return the options from the field config
+        if (targetField.config && targetField.config.options) {
+          return Object.entries(targetField.config.options).map(([value, label]) => ({
+            value: value,
+            label: label
+          }));
+        }
+        return [];
+      case 'checkbox':
+        // Return the options from the field config for checkbox fields
+        if (targetField.config && targetField.config.options) {
+          return Object.entries(targetField.config.options).map(([value, label]) => ({
+            value: value,
+            label: label
+          }));
+        }
+        return [];
+      default:
+        return []; // For text fields, number fields etc, user types the value
+    }
   };
 
   const getConditionLabel = (condition) => {
@@ -208,15 +344,11 @@ const ConditionalLogicTab = ({
                         className="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white"
                         disabled={isSubmitting}
                       >
-                        <option value="when_toggle_is">When toggle is</option>
-                        <option value="when_field_equals">When field equals</option>
-                        <option value="when_field_not_equals">When field not equals</option>
-                        <option value="when_field_contains">When field contains</option>
-                        <option value="when_field_not_contains">When field not contains</option>
-                        <option value="when_field_greater_than">When field greater than</option>
-                        <option value="when_field_less_than">When field less than</option>
-                        <option value="when_field_greater_equal">When field greater than or equal</option>
-                        <option value="when_field_less_equal">When field less than or equal</option>
+                        {getAvailableConditions(rule.target_field).map(condition => (
+                          <option key={condition.value} value={condition.value}>
+                            {condition.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -225,15 +357,38 @@ const ConditionalLogicTab = ({
                       <label className="block text-xs font-medium text-gray-600 mb-1">
                         Value
                       </label>
-                      <select
-                        value={rule.value}
-                        onChange={(e) => updateRule(rule.id, 'value', e.target.value)}
-                        className="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white"
-                        disabled={isSubmitting}
-                      >
-                        <option value="1">Enabled</option>
-                        <option value="0">Disabled</option>
-                      </select>
+                      {(() => {
+                        const availableValues = getAvailableValues(rule.target_field, rule.condition);
+                        if (availableValues.length > 0) {
+                          // Show dropdown for fields with predefined options
+                          return (
+                            <select
+                              value={rule.value}
+                              onChange={(e) => updateRule(rule.id, 'value', e.target.value)}
+                              className="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+                              disabled={isSubmitting}
+                            >
+                              {availableValues.map(option => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          );
+                        } else {
+                          // Show text input for fields without predefined options
+                          return (
+                            <input
+                              type="text"
+                              value={rule.value}
+                              onChange={(e) => updateRule(rule.id, 'value', e.target.value)}
+                              className="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+                              placeholder="Enter value..."
+                              disabled={isSubmitting}
+                            />
+                          );
+                        }
+                      })()}
                     </div>
                   </div>
                 </div>

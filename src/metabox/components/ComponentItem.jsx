@@ -194,16 +194,22 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                    };
                   
                   return (
-                    <TextField
+                    <div 
                       key={field.id}
-                      label={field.label}
-                      value={value}
-                      onChange={handleChange}
-                      placeholder={field.placeholder}
-                      required={isRequired}
-                      error={isRequired && !value?.trim()}
-                      fieldId={field.id}
-                    />
+                      className="ccc-field ccc-field-wrapper"
+                      data-conditional-logic={field?.config ? JSON.stringify(field.config) : ''}
+                      data-field-id={field.id}
+                    >
+                      <TextField
+                        label={field.label}
+                        value={value}
+                        onChange={handleChange}
+                        placeholder={field.placeholder}
+                        required={isRequired}
+                        error={isRequired && !value?.trim()}
+                        fieldId={field.id}
+                      />
+                    </div>
                   );
                 }
                 if (field.type === 'textarea') {

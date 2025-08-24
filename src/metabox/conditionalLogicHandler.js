@@ -52,12 +52,12 @@ class ConditionalLogicHandler {
   }
 
   processExistingFieldsWithConditionalLogic() {
-    // Find all fields with conditional logic
-    const fieldsWithConditionalLogic = document.querySelectorAll('.ccc-field[data-conditional-logic]');
+    // Find all fields with conditional logic (both .ccc-field and .ccc-field-wrapper)
+    const fieldsWithConditionalLogic = document.querySelectorAll('.ccc-field[data-conditional-logic], .ccc-field-wrapper[data-conditional-logic]');
     fieldsWithConditionalLogic.forEach(field => this.processFieldWithConditionalLogic(field));
     
     // Also find fields that might be targets of conditional logic
-    const allFields = document.querySelectorAll('.ccc-field[data-field-id]');
+    const allFields = document.querySelectorAll('.ccc-field[data-field-id], .ccc-field-wrapper[data-field-id]');
     allFields.forEach(field => {
       const fieldId = field.getAttribute('data-field-id');
       if (fieldId && !this.targetFields.has(fieldId)) {
@@ -73,11 +73,11 @@ class ConditionalLogicHandler {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.ELEMENT_NODE) {
             // Check if the added node is a field with conditional logic
-            if (node.classList && node.classList.contains('ccc-field') && node.getAttribute('data-conditional-logic')) {
+            if (node.classList && (node.classList.contains('ccc-field') || node.classList.contains('ccc-field-wrapper')) && node.getAttribute('data-conditional-logic')) {
               this.processFieldWithConditionalLogic(node);
             }
             // Check if any fields with conditional logic were added within the node
-            const fieldsWithConditionalLogic = node.querySelectorAll && node.querySelectorAll('.ccc-field[data-conditional-logic]');
+            const fieldsWithConditionalLogic = node.querySelectorAll && node.querySelectorAll('.ccc-field[data-conditional-logic], .ccc-field-wrapper[data-conditional-logic]');
             if (fieldsWithConditionalLogic) {
               fieldsWithConditionalLogic.forEach(field => this.processFieldWithConditionalLogic(field));
             }
