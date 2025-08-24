@@ -371,7 +371,22 @@ const ConditionalLogicTab = ({
                         Condition
                       </label>
                       <select
-                        value={rule.condition}
+                        value={(() => {
+                          const availableConditions = getAvailableConditions(rule.target_field);
+                          const conditionExists = availableConditions.some(c => c.value === rule.condition);
+                          console.log(`ConditionalLogicTab: Current condition "${rule.condition}" exists in available options:`, conditionExists);
+                          
+                          // If current condition doesn't exist in available options, use the first available one
+                          if (!conditionExists && availableConditions.length > 0) {
+                            const defaultCondition = availableConditions[0].value;
+                            console.log(`ConditionalLogicTab: Auto-correcting invalid condition "${rule.condition}" to "${defaultCondition}"`);
+                            // Update the rule with the correct condition
+                            setTimeout(() => updateRule(rule.id, 'condition', defaultCondition), 0);
+                            return defaultCondition;
+                          }
+                          
+                          return rule.condition;
+                        })()}
                         onChange={(e) => {
                           console.log(`ConditionalLogicTab: Condition dropdown changed from ${rule.condition} to ${e.target.value}`);
                           updateRule(rule.id, 'condition', e.target.value);
