@@ -1,16 +1,19 @@
 /**
- * Conditional Logic Handler for Toggle Fields
+ * Conditional Logic Handler for All Field Types
  * Handles the execution of conditional logic rules in the metabox
  */
 
 class ConditionalLogicHandler {
   constructor() {
-    this.toggleFields = new Map();
+    this.fieldsWithConditionalLogic = new Map();
     this.targetFields = new Map();
     this.init();
   }
 
   init() {
+    // Inject CSS for conditional logic
+    this.injectCSS();
+    
     // Wait for DOM to be ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => this.setup());
@@ -19,31 +22,64 @@ class ConditionalLogicHandler {
     }
   }
 
+  injectCSS() {
+    if (document.getElementById('ccc-conditional-logic-css')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'ccc-conditional-logic-css';
+    style.textContent = `
+      .ccc-field-hidden {
+        display: none !important;
+      }
+      .ccc-field-disabled {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+      .ccc-field-disabled input,
+      .ccc-field-disabled select,
+      .ccc-field-disabled textarea,
+      .ccc-field-disabled button {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   setup() {
-    this.processExistingToggleFields();
+    this.processExistingFieldsWithConditionalLogic();
     this.setupMutationObserver();
   }
 
-  processExistingToggleFields() {
-    // Find all toggle fields with conditional logic
-    const toggleFields = document.querySelectorAll('.ccc-field-toggle[data-conditional-logic]');
-    toggleFields.forEach(toggleField => this.processToggleField(toggleField));
+  processExistingFieldsWithConditionalLogic() {
+    // Find all fields with conditional logic
+    const fieldsWithConditionalLogic = document.querySelectorAll('.ccc-field[data-conditional-logic]');
+    fieldsWithConditionalLogic.forEach(field => this.processFieldWithConditionalLogic(field));
+    
+    // Also find fields that might be targets of conditional logic
+    const allFields = document.querySelectorAll('.ccc-field[data-field-id]');
+    allFields.forEach(field => {
+      const fieldId = field.getAttribute('data-field-id');
+      if (fieldId && !this.targetFields.has(fieldId)) {
+        this.targetFields.set(fieldId, field);
+      }
+    });
   }
 
   setupMutationObserver() {
-    // Watch for new toggle fields being added to the DOM
+    // Watch for new fields with conditional logic being added to the DOM
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            // Check if the added node is a toggle field
-            if (node.classList && node.classList.contains('ccc-field-toggle')) {
-              this.processToggleField(node);
+            // Check if the added node is a field with conditional logic
+            if (node.classList && node.classList.contains('ccc-field') && node.getAttribute('data-conditional-logic')) {
+              this.processFieldWithConditionalLogic(node);
             }
-            // Check if any toggle fields were added within the node
-            const toggleFields = node.querySelectorAll && node.querySelectorAll('.ccc-field-toggle[data-conditional-logic]');
-            if (toggleFields) {
-              toggleFields.forEach(toggleField => this.processToggleField(toggleField));
+            // Check if any fields with conditional logic were added within the node
+            const fieldsWithConditionalLogic = node.querySelectorAll && node.querySelectorAll('.ccc-field[data-conditional-logic]');
+            if (fieldsWithConditionalLogic) {
+              fieldsWithConditionalLogic.forEach(field => this.processFieldWithConditionalLogic(field));
             }
           }
         });
@@ -56,37 +92,28 @@ class ConditionalLogicHandler {
     });
   }
 
-  processToggleField(toggleField) {
-    const toggleFieldId = toggleField.getAttribute('data-toggle-field-id');
-    const conditionalLogicData = toggleField.getAttribute('data-conditional-logic');
+  processFieldWithConditionalLogic(field) {
+    const fieldId = field.getAttribute('data-field-id');
+    const conditionalLogicData = field.getAttribute('data-conditional-logic');
 
-    if (!toggleFieldId || !conditionalLogicData) return;
+    if (!fieldId || !conditionalLogicData) return;
 
     try {
       const conditionalLogic = JSON.parse(conditionalLogicData);
       
-      // Store toggle field reference
-      this.toggleFields.set(toggleFieldId, {
-        element: toggleField,
+      // Store field reference
+      this.fieldsWithConditionalLogic.set(fieldId, {
+        element: field,
         config: conditionalLogic
       });
 
-      // Find the toggle input
-      const toggleInput = toggleField.querySelector('input[type="checkbox"]');
-      if (toggleInput) {
-        // Set up event listener for toggle changes
-        toggleInput.addEventListener('change', (e) => {
-          this.handleToggleChange(toggleFieldId, e.target.checked);
-        });
-
-        // Apply initial state
-        this.handleToggleChange(toggleFieldId, toggleInput.checked);
-      }
+      // Set up event listeners for field changes
+      this.setupFieldEventListeners(field, fieldId, conditionalLogic);
 
       // Process target fields
       this.processTargetFields(conditionalLogic);
     } catch (error) {
-      console.error('Error processing toggle field:', error);
+      console.error('Error processing field with conditional logic:', error);
     }
   }
 
@@ -103,11 +130,39 @@ class ConditionalLogicHandler {
     });
   }
 
-  handleToggleChange(toggleFieldId, isChecked) {
-    const toggleField = this.toggleFields.get(toggleFieldId);
-    if (!toggleField) return;
+  setupFieldEventListeners(field, fieldId, conditionalLogic) {
+    // For toggle fields, listen to checkbox changes
+    if (field.classList.contains('ccc-field-toggle')) {
+      const toggleInput = field.querySelector('input[type="checkbox"]');
+      if (toggleInput) {
+        toggleInput.addEventListener('change', (e) => {
+          this.handleFieldChange(fieldId, e.target.checked);
+        });
+        // Apply initial state
+        this.handleFieldChange(fieldId, toggleInput.checked);
+      }
+    } else {
+      // For other field types, listen to various input changes
+      const inputs = field.querySelectorAll('input, select, textarea');
+      inputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+          this.handleFieldChange(fieldId, this.getFieldValue(field));
+        });
+        input.addEventListener('input', (e) => {
+          this.handleFieldChange(fieldId, this.getFieldValue(field));
+        });
+      });
+      
+      // Apply initial state
+      this.handleFieldChange(fieldId, this.getFieldValue(field));
+    }
+  }
 
-    const { config } = toggleField;
+  handleFieldChange(fieldId, fieldValue) {
+    const field = this.fieldsWithConditionalLogic.get(fieldId);
+    if (!field) return;
+
+    const { config } = field;
     
     // Handle overall field condition
     if (config.field_condition === 'always_show') {
@@ -117,29 +172,29 @@ class ConditionalLogicHandler {
 
     // Apply conditional logic based on field condition
     if (config.field_condition === 'show_when' || config.field_condition === 'hide_when') {
-      const shouldShow = this.evaluateConditionalLogic(config, isChecked);
+      const shouldShow = this.evaluateConditionalLogic(config, fieldValue);
       
       if (config.field_condition === 'show_when') {
-        this.applyFieldVisibility(toggleField.element, shouldShow);
+        this.applyFieldVisibility(field.element, shouldShow);
       } else if (config.field_condition === 'hide_when') {
-        this.applyFieldVisibility(toggleField.element, !shouldShow);
+        this.applyFieldVisibility(field.element, !shouldShow);
       }
     }
 
     // Apply rules to target fields
     if (config.conditional_logic && Array.isArray(config.conditional_logic)) {
       config.conditional_logic.forEach(rule => {
-        this.applyRule(rule, isChecked);
+        this.applyRule(rule, fieldValue);
       });
     }
   }
 
-  evaluateConditionalLogic(config, toggleValue) {
+  evaluateConditionalLogic(config, fieldValue) {
     if (!config.conditional_logic || config.conditional_logic.length === 0) {
       return true;
     }
 
-    const results = config.conditional_logic.map(rule => this.evaluateRule(rule, toggleValue));
+    const results = config.conditional_logic.map(rule => this.evaluateRule(rule, fieldValue));
     
     if (config.logic_operator === 'AND') {
       return results.every(result => result === true);
@@ -148,10 +203,10 @@ class ConditionalLogicHandler {
     }
   }
 
-  evaluateRule(rule, toggleValue) {
+  evaluateRule(rule, fieldValue) {
     if (rule.condition === 'when_toggle_is') {
       const expectedValue = rule.value === '1' ? true : false;
-      return toggleValue === expectedValue;
+      return fieldValue === expectedValue;
     }
 
     // Get target field value for comparison
@@ -184,7 +239,7 @@ class ConditionalLogicHandler {
     }
   }
 
-  applyRule(rule, toggleValue) {
+  applyRule(rule, fieldValue) {
     if (!rule.target_field) return;
 
     const targetField = this.targetFields.get(rule.target_field) || 
@@ -192,12 +247,12 @@ class ConditionalLogicHandler {
     
     if (!targetField) return;
 
-    const shouldExecute = this.evaluateRule(rule, toggleValue);
+    const shouldExecute = this.evaluateRule(rule, fieldValue);
     
     if (shouldExecute) {
       // Action is determined by field_condition, not by individual rules
       // This method is called for each rule, but the actual action is applied at the field level
-      // in handleToggleChange based on field_condition
+      // in handleFieldChange based on field_condition
     }
   }
 
@@ -264,22 +319,19 @@ class ConditionalLogicHandler {
 
   // Public method to refresh all conditional logic
   refresh() {
-    this.toggleFields.forEach((toggleField, toggleFieldId) => {
-      const toggleInput = toggleField.element.querySelector('input[type="checkbox"]');
-      if (toggleInput) {
-        this.handleToggleChange(toggleFieldId, toggleInput.checked);
-      }
+    this.fieldsWithConditionalLogic.forEach((field, fieldId) => {
+      this.handleFieldChange(fieldId, this.getFieldValue(field.element));
     });
   }
 
-  // Public method to add a new toggle field
-  addToggleField(toggleFieldElement) {
-    this.processToggleField(toggleFieldElement);
+  // Public method to add a new field with conditional logic
+  addField(fieldElement) {
+    this.processFieldWithConditionalLogic(fieldElement);
   }
 
-  // Public method to remove a toggle field
-  removeToggleField(toggleFieldId) {
-    this.toggleFields.delete(toggleFieldId);
+  // Public method to remove a field with conditional logic
+  removeField(fieldId) {
+    this.fieldsWithConditionalLogic.delete(fieldId);
   }
 }
 

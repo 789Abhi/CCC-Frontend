@@ -34,7 +34,6 @@ const ToggleField = ({
     <div 
       className="ccc-field ccc-field-toggle"
       data-conditional-logic={field?.config ? JSON.stringify(field.config) : ''}
-      data-toggle-field-id={fieldId}
       data-field-id={fieldId}
     >
       <div className="flex items-center justify-between mb-3">

@@ -22,6 +22,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import FieldTreeModal from "./FieldTreeModal"
+import ConditionalLogicTab from "./ConditionalLogicTab"
 
 function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false }) {
   // Add debugging
@@ -109,6 +110,13 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   const [toggleConfig, setToggleConfig] = useState({
     default_value: false,
     field_condition: 'always_show', // 'always_show', 'show_when', 'hide_when'
+    conditional_logic: [],
+    logic_operator: 'AND'
+  });
+
+  // Conditional logic state for all field types
+  const [conditionalLogicConfig, setConditionalLogicConfig] = useState({
+    field_condition: 'always_show',
     conditional_logic: [],
     logic_operator: 'AND'
   });
@@ -282,6 +290,23 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               console.error("Error parsing toggle config:", e);
               setToggleConfig({
                 default_value: false,
+                field_condition: 'always_show',
+                conditional_logic: [],
+                logic_operator: 'AND'
+              });
+            }
+          } else if (field.config) {
+            // Load conditional logic config for all other field types
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              setConditionalLogicConfig({
+                field_condition: config.field_condition || 'always_show',
+                conditional_logic: config.conditional_logic || [],
+                logic_operator: config.logic_operator || 'AND'
+              });
+            } catch (e) {
+              console.error("Error parsing field config:", e);
+              setConditionalLogicConfig({
                 field_condition: 'always_show',
                 conditional_logic: [],
                 logic_operator: 'AND'
@@ -902,6 +927,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             order: userConfig.order || 'ASC'
           }
           console.log("User field config for preventDatabaseSave:", fieldData.config);
+        } else {
+          // For all other field types, include conditional logic
+          const existingConfig = fieldData.config || {};
+          fieldData.config = {
+            ...existingConfig,
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
+          };
         }
 
         onSave(fieldData)
@@ -1052,17 +1086,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         }
         console.log("Toggle field config being sent:", config);
         formData.append("field_config", JSON.stringify(config))
-      } else if (type === "file") {
-        const config = {
-          allowed_types: fieldConfig?.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
-          max_file_size: fieldConfig?.max_file_size !== undefined && fieldConfig?.max_file_size !== null ? fieldConfig.max_file_size : null,
-          return_type: fieldConfig?.return_type || 'url',
-          show_preview: fieldConfig?.show_preview !== undefined ? fieldConfig?.show_preview : true,
-          show_download: fieldConfig?.show_download !== undefined ? fieldConfig?.show_download : true,
-          show_delete: fieldConfig?.show_delete !== undefined ? fieldConfig?.show_delete : true
-        }
-        console.log("File field config being sent:", config);
-        formData.append("field_config", JSON.stringify(config))
       } else if (type === "user") {
         const config = {
           role_filter: userConfig.role_filter || [],
@@ -1074,6 +1097,58 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         }
         console.log("User field config being sent:", config);
         formData.append("field_config", JSON.stringify(config))
+      } else {
+        // For all other field types, include conditional logic
+        const existingConfig = {};
+        
+        // Add existing config based on field type
+        if (type === "wysiwyg") {
+          existingConfig.editor_settings = wysiwygSettings;
+        } else if (type === "image") {
+          existingConfig.return_type = imageReturnType;
+        } else if (type === "video") {
+          existingConfig.return_type = videoReturnType;
+          existingConfig.sources = videoSources;
+          existingConfig.player_options = videoPlayerOptions;
+        } else if (type === "link") {
+          existingConfig.link_types = linkConfig.link_types;
+          existingConfig.default_type = linkConfig.default_type;
+          existingConfig.post_types = linkConfig.post_types;
+          existingConfig.show_target = linkConfig.show_target;
+          existingConfig.show_title = linkConfig.show_title;
+        } else if (type === "number") {
+          existingConfig.number_type = fieldConfig?.number_type || 'normal';
+          existingConfig.unique = fieldConfig?.unique || false;
+          existingConfig.min_value = fieldConfig?.min_value || null;
+          existingConfig.max_value = fieldConfig?.max_value || null;
+          existingConfig.min_length = fieldConfig?.min_length || null;
+          existingConfig.max_length = fieldConfig?.max_length || null;
+          existingConfig.prepend = fieldConfig?.prepend || '';
+          existingConfig.append = fieldConfig?.append || '';
+        } else if (type === "range") {
+          existingConfig.min_value = fieldConfig?.min_value || null;
+          existingConfig.max_value = fieldConfig?.max_value || null;
+          existingConfig.prepend = fieldConfig?.prepend || '';
+          existingConfig.append = fieldConfig?.append || '';
+        } else if (type === "file") {
+          existingConfig.allowed_types = fieldConfig?.allowed_types || ['image', 'video', 'document', 'audio', 'archive'];
+          existingConfig.max_file_size = fieldConfig?.max_file_size || 25;
+          existingConfig.return_type = fieldConfig?.return_type || 'url';
+          existingConfig.show_preview = fieldConfig?.show_preview !== undefined ? fieldConfig?.show_preview : true;
+          existingConfig.show_download = fieldConfig?.show_download !== undefined ? fieldConfig?.show_download : true;
+          existingConfig.show_delete = fieldConfig?.show_delete !== undefined ? fieldConfig?.show_delete : true;
+        }
+        
+        // Add conditional logic to all field types
+        const config = {
+          ...existingConfig,
+          field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+          conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+          logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
+        };
+        
+        console.log(`${type} field config with conditional logic being sent:`, config);
+        formData.append("field_config", JSON.stringify(config));
       }
 
       console.log("Submitting form data:", Object.fromEntries(formData))
@@ -2114,245 +2189,13 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 </div>
 
                 {/* Conditional Logic */}
-                <div className="space-y-3">
-                  {/* Overall Field Condition */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Field Condition</label>
-                    <select
-                      value={toggleConfig?.field_condition || 'always_show'}
-                      onChange={(e) => {
-                        setToggleConfig({
-                          ...toggleConfig,
-                          field_condition: e.target.value
-                        });
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      disabled={isSubmitting}
-                    >
-                      <option value="always_show">Always show</option>
-                      <option value="show_when">Show when</option>
-                      <option value="hide_when">Hide when</option>
-                    </select>
-                    <p className="text-xs text-gray-500">
-                      {toggleConfig?.field_condition === 'always_show' && 'Field will always be visible and interactive'}
-                      {toggleConfig?.field_condition === 'show_when' && 'Field will only be visible when conditions are met'}
-                      {toggleConfig?.field_condition === 'hide_when' && 'Field will be hidden when conditions are met'}
-                    </p>
-                  </div>
-
-                  {/* Conditional Rules - Only show if not "always_show" */}
-                  {(toggleConfig?.field_condition === 'show_when' || toggleConfig?.field_condition === 'hide_when') && (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <h5 className="text-sm font-medium text-gray-700">Conditional Rules</h5>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newRule = {
-                              id: Date.now(),
-                              target_field: '',
-                              condition: 'when_toggle_is',
-                              value: '1'
-                            };
-                            setToggleConfig({
-                              ...toggleConfig,
-                              conditional_logic: [...(toggleConfig?.conditional_logic || []), newRule]
-                            });
-                          }}
-                          className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-                          disabled={isSubmitting}
-                        >
-                          + Add Rule
-                        </button>
-                      </div>
-
-                      {/* Logic Operator Selection */}
-                      <div className="flex items-center gap-2 p-2 bg-white rounded border">
-                        <span className="text-xs text-gray-500">Logic:</span>
-                        <select
-                          value={toggleConfig?.logic_operator || 'AND'}
-                          onChange={(e) => {
-                            setToggleConfig({
-                              ...toggleConfig,
-                              logic_operator: e.target.value
-                            });
-                          }}
-                          className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
-                          disabled={isSubmitting}
-                        >
-                          <option value="AND">All of the conditions pass</option>
-                          <option value="OR">Any of the following conditions pass</option>
-                        </select>
-                        <span className="text-xs text-gray-500">Rules will be combined using this logic</span>
-                      </div>
-                      
-                      {toggleConfig?.conditional_logic && toggleConfig.conditional_logic.length > 0 ? (
-                        <div className="space-y-3">
-                          {toggleConfig.conditional_logic.map((rule, index) => (
-                            <div key={rule.id} className="bg-white rounded-lg border border-gray-200 p-3">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                                  Rule {index + 1}
-                                </span>
-                                {index < toggleConfig.conditional_logic.length - 1 && (
-                                  <span className="text-xs text-gray-400 font-medium">
-                                    {toggleConfig?.logic_operator === 'AND' ? 'All of the conditions pass' : 'Any of the following conditions pass'}
-                                  </span>
-                                )}
-                              </div>
-                              
-                                                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                                  {/* Target Field Selection */}
-                                  <div>
-                                    <label className="block text-xs text-gray-600 mb-1">Target Field</label>
-                                    <select
-                                      value={rule.target_field}
-                                      onChange={(e) => {
-                                        const updatedRules = [...toggleConfig.conditional_logic];
-                                        updatedRules[index] = { ...rule, target_field: e.target.value };
-                                        setToggleConfig({
-                                          ...toggleConfig,
-                                          conditional_logic: updatedRules
-                                        });
-                                      }}
-                                      className="w-full text-sm border border-gray-300 rounded px-2 py-1"
-                                      disabled={isSubmitting}
-                                    >
-                                      <option value="">Select target field</option>
-                                      {/* Show only fields from the current component */}
-                                      {component?.fields?.map((compField) => (
-                                        <option key={compField.id} value={compField.id}>
-                                          {compField.label || compField.name}
-                                        </option>
-                                      )) || []}
-                                    </select>
-                                  </div>
-                                  
-                                  {/* Condition with Operator */}
-                                  <div>
-                                    <label className="block text-xs text-gray-600 mb-1">Condition</label>
-                                    <select
-                                      value={rule.condition}
-                                      onChange={(e) => {
-                                        const updatedRules = [...toggleConfig.conditional_logic];
-                                        updatedRules[index] = { ...rule, condition: e.target.value };
-                                        setToggleConfig({
-                                          ...toggleConfig,
-                                          conditional_logic: updatedRules
-                                        });
-                                      }}
-                                      className="w-full text-sm border border-gray-300 rounded px-2 py-1"
-                                      disabled={isSubmitting}
-                                    >
-                                      <option value="when_toggle_is">When toggle is</option>
-                                      <option value="when_field_equals">When field equals</option>
-                                      <option value="when_field_not_equals">When field not equals</option>
-                                      <option value="when_field_contains">When field contains</option>
-                                      <option value="when_field_not_contains">When field not contains</option>
-                                      <option value="when_field_greater_than">When field greater than</option>
-                                      <option value="when_field_less_than">When field less than</option>
-                                      <option value="when_field_greater_equal">When field greater than or equal</option>
-                                      <option value="when_field_less_equal">When field less than or equal</option>
-                                    </select>
-                                  </div>
-                                  
-                                  {/* Value */}
-                                  <div>
-                                    <label className="block text-xs text-gray-600 mb-1">Value</label>
-                                    <select
-                                      value={rule.value}
-                                      onChange={(e) => {
-                                        const updatedRules = [...toggleConfig.conditional_logic];
-                                        updatedRules[index] = { ...rule, value: e.target.value };
-                                        setToggleConfig({
-                                          ...toggleConfig,
-                                          conditional_logic: updatedRules
-                                        });
-                                      }}
-                                      className="w-full text-sm border border-gray-300 rounded px-2 py-1"
-                                      disabled={isSubmitting}
-                                    >
-                                      <option value="1">Enabled</option>
-                                      <option value="0">Disabled</option>
-                                    </select>
-                                  </div>
-                                </div>
-                              
-                              {/* Remove Rule Button */}
-                              <div className="flex justify-end mt-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updatedRules = toggleConfig.conditional_logic.filter((_, i) => i !== index);
-                                    setToggleConfig({
-                                      ...toggleConfig,
-                                      conditional_logic: updatedRules
-                                    });
-                                  }}
-                                  className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
-                                  title="Remove rule"
-                                  disabled={isSubmitting}
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-6">
-                          <div className="w-12 h-12 mx-auto mb-3 text-gray-300">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <p className="text-sm text-gray-500 mb-3">
-                            No conditional rules set. Add rules to control other fields based on this toggle.
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                                                          const newRule = {
-                              id: Date.now(),
-                              target_field: '',
-                              condition: 'when_toggle_is',
-                              value: '1'
-                            };
-                              setToggleConfig({
-                                ...toggleConfig,
-                                conditional_logic: [...(toggleConfig?.conditional_logic || []), newRule]
-                              });
-                            }}
-                            className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-                            disabled={isSubmitting}
-                          >
-                            + Add First Rule
-                          </button>
-                        </div>
-                      )}
-                      
-                      {/* Help Text */}
-                      {toggleConfig?.conditional_logic && toggleConfig.conditional_logic.length > 0 && (
-                        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                          <h5 className="text-xs font-medium text-blue-800 mb-2">How it works:</h5>
-                                                     <div className="text-xs text-blue-700 space-y-1">
-                             <p><strong>All of the conditions pass (AND):</strong> All rules must be true for the action to execute</p>
-                             <p><strong>Any of the following conditions pass (OR):</strong> Any rule being true will execute the action</p>
-                             <p><strong>Show when:</strong> Field is visible when conditions are met</p>
-                             <p><strong>Hide when:</strong> Field is hidden when conditions are met</p>
-                           </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  
-                  <div className="text-xs text-gray-500">
-                    <p><strong>Show/Hide:</strong> Controls field visibility</p>
-                    <p><strong>Enable/Disable:</strong> Controls field interaction</p>
-                  </div>
-                </div>
+                <ConditionalLogicTab
+                  fieldConfig={toggleConfig}
+                  onConfigChange={(config) => setToggleConfig(prev => ({ ...prev, ...config }))}
+                  availableFields={component?.fields || []}
+                  isSubmitting={isSubmitting}
+                  fieldType="toggle"
+                />
               </div>
             )}
 
@@ -2629,6 +2472,19 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   </div>
                   <p className="text-xs text-gray-500">Limit user selection to specific roles (leave empty for all roles)</p>
                 </div>
+              </div>
+            )}
+
+            {/* Conditional Logic Tab for All Field Types */}
+            {type !== "toggle" && (
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
+                <ConditionalLogicTab
+                  fieldConfig={conditionalLogicConfig}
+                  onConfigChange={setConditionalLogicConfig}
+                  availableFields={component?.fields || []}
+                  isSubmitting={isSubmitting}
+                  fieldType={type}
+                />
               </div>
             )}
 
