@@ -461,9 +461,27 @@ class ConditionalLogicHandler {
       case 'checkbox':
         // For multiple checkboxes (checkbox field), return selected values as comma-separated string
         const checkedBoxes = fieldElement.querySelectorAll('input[type="checkbox"]:checked');
-        const values = Array.from(checkedBoxes).map(cb => cb.value);
+        const values = Array.from(checkedBoxes).map(cb => {
+          // If checkbox has value="on", look for a data attribute or nearby label for the real value
+          if (cb.value === 'on' || cb.value === '') {
+            // Look for a value attribute or data attribute
+            const realValue = cb.getAttribute('data-value') || cb.getAttribute('data-option-value');
+            if (realValue) return realValue;
+            
+            // Look for nearby label or text content
+            const label = cb.closest('label');
+            if (label) {
+              const labelText = label.textContent.trim().toLowerCase();
+              return labelText;
+            }
+            
+            return cb.value;
+          }
+          return cb.value;
+        }).filter(val => val && val !== 'on'); // Filter out empty values and 'on'
+        
         const result = values.join(',');
-        console.log(`  Checkbox field values: checked boxes=${checkedBoxes.length}, values=[${values.join(', ')}], result="${result}"`);
+        console.log(`  Checkbox field values: checked boxes=${checkedBoxes.length}, raw values=[${Array.from(checkedBoxes).map(cb => cb.value).join(', ')}], processed values=[${values.join(', ')}], result="${result}"`);
         return result;
       case 'radio':
         const checkedRadio = fieldElement.querySelector('input[type="radio"]:checked');
