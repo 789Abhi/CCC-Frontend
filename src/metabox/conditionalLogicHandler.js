@@ -252,19 +252,7 @@ class ConditionalLogicHandler {
     });
   }
 
-  evaluateConditionalLogic(config, fieldValue) {
-    if (!config.conditional_logic || config.conditional_logic.length === 0) {
-      return true;
-    }
 
-    const results = config.conditional_logic.map(rule => this.evaluateRule(rule, fieldValue));
-    
-    if (config.logic_operator === 'AND') {
-      return results.every(result => result === true);
-    } else {
-      return results.some(result => result === true);
-    }
-  }
 
   evaluateConditionalLogicForField(config, changedFieldId = null, changedFieldValue = null) {
     if (!config.conditional_logic || config.conditional_logic.length === 0) {
@@ -272,6 +260,9 @@ class ConditionalLogicHandler {
     }
 
     console.log(`=== Evaluating ${config.logic_operator || 'OR'} logic for field ===`);
+    console.log(`Total rules to evaluate: ${config.conditional_logic.length}`);
+    console.log(`Rules:`, config.conditional_logic);
+    console.log(`Changed field ID: ${changedFieldId}, Changed field value: ${changedFieldValue}`);
     
     const results = config.conditional_logic.map((rule, index) => {
       let result;
@@ -412,10 +403,14 @@ class ConditionalLogicHandler {
   applyFieldVisibility(fieldElement, shouldShow) {
     const fieldId = fieldElement.getAttribute('data-field-id');
     
+    console.log(`Applying visibility to field ${fieldId}: shouldShow=${shouldShow}`);
+    
     if (shouldShow) {
       fieldElement.classList.remove('ccc-field-hidden');
+      console.log(`Field ${fieldId} SHOWN (removed ccc-field-hidden class)`);
     } else {
       fieldElement.classList.add('ccc-field-hidden');
+      console.log(`Field ${fieldId} HIDDEN (added ccc-field-hidden class)`);
       
       // Clear validation errors for hidden fields
       if (fieldId && window.cccMetaboxApp && window.cccMetaboxApp.clearValidationErrorsForField) {
