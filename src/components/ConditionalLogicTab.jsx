@@ -90,16 +90,18 @@ const ConditionalLogicTab = ({
           if (rule.id === ruleId) {
             const updatedRule = { ...rule, [field]: value };
             
-            // Reset condition and value when target field changes (but only for new rules or if condition/value are empty)
+            // Reset condition and value when target field changes
             if (field === 'target_field') {
               const targetField = filteredAvailableFields.find(f => f.id === value);
               if (targetField) {
-                // Only reset if this is a new rule or the rule is incomplete
-                const shouldReset = !rule.condition || rule.condition === '' || !rule.target_field;
+                // Reset if this is a new rule, incomplete rule, OR if the field type changed
+                const prevTargetField = filteredAvailableFields.find(f => f.id === rule.target_field);
+                const fieldTypeChanged = !prevTargetField || prevTargetField.type !== targetField.type;
+                const shouldReset = !rule.condition || rule.condition === '' || !rule.target_field || fieldTypeChanged;
                 
                 if (shouldReset) {
                   updatedRule.condition = getDefaultConditionForFieldType(targetField.type);
-                  updatedRule.value = getDefaultValueForFieldType(targetField.type);
+                  updatedRule.value = getDefaultValueForFieldType(targetField.type, value);
                   console.log(`ConditionalLogicTab: Reset defaults for field type ${targetField.type} - condition: ${updatedRule.condition}, value: ${updatedRule.value}`);
                 } else {
                   console.log(`ConditionalLogicTab: Not resetting existing rule with condition: ${rule.condition}, value: ${rule.value}`);
@@ -146,7 +148,7 @@ const ConditionalLogicTab = ({
   };
 
   // Get default value based on field type
-  const getDefaultValueForFieldType = (fieldType) => {
+  const getDefaultValueForFieldType = (fieldType, targetFieldId = null) => {
     switch (fieldType) {
       case 'toggle':
         return '1';
@@ -156,7 +158,13 @@ const ConditionalLogicTab = ({
       case 'checkbox':
       case 'select':
       case 'radio':
-        // For fields with options, don't auto-reset to empty - let user choose
+        // For fields with options, try to get the first available option
+        if (targetFieldId) {
+          const availableValues = getAvailableValues(targetFieldId, 'when_field_contains');
+          if (availableValues.length > 0) {
+            return availableValues[0].value;
+          }
+        }
         return '';
       default:
         return '';
