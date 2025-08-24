@@ -71,21 +71,31 @@ class ConditionalLogicHandler {
   }
 
   applyInitialConditionalLogic() {
+    console.log('=== APPLYING INITIAL CONDITIONAL LOGIC ===');
+    console.log(`Fields with conditional logic: ${this.fieldsWithConditionalLogic.size}`);
+    
     // First, evaluate conditional logic for all fields based on current field values
     this.fieldsWithConditionalLogic.forEach((fieldData, fieldId) => {
       const { config, element } = fieldData;
       
+      console.log(`Checking field ${fieldId}: field_condition=${config.field_condition}, has_rules=${config.conditional_logic ? config.conditional_logic.length : 0}`);
+      
       if (config.field_condition === 'show_when' && config.conditional_logic) {
+        console.log(`Evaluating initial logic for field ${fieldId}`);
         const shouldShow = this.evaluateConditionalLogicForField(config);
+        console.log(`Initial result for field ${fieldId}: shouldShow=${shouldShow}`);
         this.applyFieldVisibility(element, shouldShow);
       }
     });
     
+    console.log('=== TRIGGERING CHANGE EVENTS ===');
     // Then trigger change events to ensure all dependent fields are updated
     this.targetFields.forEach((fieldElement, fieldId) => {
       const currentValue = this.getFieldValue(fieldElement);
+      console.log(`Triggering change for field ${fieldId}: value=${currentValue}`);
       this.handleFieldChange(fieldId, currentValue);
     });
+    console.log('=== INITIAL LOGIC APPLICATION COMPLETE ===');
   }
 
   processExistingFieldsWithConditionalLogic() {
