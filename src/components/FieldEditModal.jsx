@@ -2151,9 +2151,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                             const newRule = {
                               id: Date.now(),
                               target_field: '',
-                              action: toggleConfig?.field_condition === 'show_when' ? 'show' : 'hide',
                               condition: 'when_toggle_is',
-                              operator: '===',
                               value: '1'
                             };
                             setToggleConfig({
@@ -2205,109 +2203,64 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                                 )}
                               </div>
                               
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-                                {/* Target Field Selection */}
-                                <div>
-                                  <label className="block text-xs text-gray-600 mb-1">Target Field</label>
-                                  <select
-                                    value={rule.target_field}
-                                    onChange={(e) => {
-                                      const updatedRules = [...toggleConfig.conditional_logic];
-                                      updatedRules[index] = { ...rule, target_field: e.target.value };
-                                      setToggleConfig({
-                                        ...toggleConfig,
-                                        conditional_logic: updatedRules
-                                      });
-                                    }}
-                                    className="w-full text-sm border border-gray-300 rounded px-2 py-1"
-                                    disabled={isSubmitting}
-                                  >
-                                    <option value="">Select target field</option>
-                                    {/* Show only fields from the current component */}
-                                    {component?.fields?.map((compField) => (
-                                      <option key={compField.id} value={compField.id}>
-                                        {compField.label || compField.name}
-                                      </option>
-                                    )) || []}
-                                  </select>
-                                </div>
-                                
-                                {/* Action Selection */}
-                                <div>
-                                  <label className="block text-xs text-gray-600 mb-1">Action</label>
-                                  <select
-                                    value={rule.action}
-                                    onChange={(e) => {
-                                      const updatedRules = [...toggleConfig.conditional_logic];
-                                      updatedRules[index] = { ...rule, action: e.target.value };
-                                      setToggleConfig({
-                                        ...toggleConfig,
-                                        conditional_logic: updatedRules
-                                      });
-                                    }}
-                                    className="w-full text-sm border border-gray-300 rounded px-2 py-1"
-                                    disabled={isSubmitting}
-                                  >
-                                    <option value="show">Show</option>
-                                    <option value="hide">Hide</option>
-                                    <option value="enable">Enable</option>
-                                    <option value="disable">Disable</option>
-                                  </select>
-                                </div>
-                                
-                                {/* Condition Type */}
-                                <div>
-                                  <label className="block text-xs text-gray-600 mb-1">Condition</label>
-                                  <select
-                                    value={rule.condition}
-                                    onChange={(e) => {
-                                      const updatedRules = [...toggleConfig.conditional_logic];
-                                      updatedRules[index] = { ...rule, condition: e.target.value };
-                                      setToggleConfig({
-                                        ...toggleConfig,
-                                        conditional_logic: updatedRules
-                                      });
-                                    }}
-                                    className="w-full text-sm border border-gray-300 rounded px-2 py-1"
-                                    disabled={isSubmitting}
-                                  >
-                                    <option value="when_toggle_is">When toggle is</option>
-                                    <option value="when_field_equals">When field equals</option>
-                                    <option value="when_field_not_equals">When field not equals</option>
-                                    <option value="when_field_contains">When field contains</option>
-                                    <option value="when_field_not_contains">When field not contains</option>
-                                  </select>
-                                </div>
-                                
-                                {/* Operator */}
-                                <div>
-                                  <label className="block text-xs text-gray-600 mb-1">Operator</label>
-                                  <select
-                                    value={rule.operator || '==='}
-                                    onChange={(e) => {
-                                      const updatedRules = [...toggleConfig.conditional_logic];
-                                      updatedRules[index] = { ...rule, operator: e.target.value };
-                                      setToggleConfig({
-                                        ...toggleConfig,
-                                        conditional_logic: updatedRules
-                                      });
-                                    }}
-                                    className="w-full text-sm border border-gray-300 rounded px-2 py-1"
-                                    disabled={isSubmitting}
-                                  >
-                                    <option value="===">===</option>
-                                    <option value="!==">!==</option>
-                                    <option value=">">{'>'}</option>
-                                    <option value="<">{'<'}</option>
-                                    <option value=">=">{'>='}</option>
-                                    <option value="<=">{'<='}</option>
-                                  </select>
-                                </div>
-                                
-                                {/* Value */}
-                                <div className="md:col-span-2 lg:col-span-1">
-                                  <label className="block text-xs text-gray-600 mb-1">Value</label>
-                                  {rule.condition === 'when_toggle_is' ? (
+                                                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                  {/* Target Field Selection */}
+                                  <div>
+                                    <label className="block text-xs text-gray-600 mb-1">Target Field</label>
+                                    <select
+                                      value={rule.target_field}
+                                      onChange={(e) => {
+                                        const updatedRules = [...toggleConfig.conditional_logic];
+                                        updatedRules[index] = { ...rule, target_field: e.target.value };
+                                        setToggleConfig({
+                                          ...toggleConfig,
+                                          conditional_logic: updatedRules
+                                        });
+                                      }}
+                                      className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                                      disabled={isSubmitting}
+                                    >
+                                      <option value="">Select target field</option>
+                                      {/* Show only fields from the current component */}
+                                      {component?.fields?.map((compField) => (
+                                        <option key={compField.id} value={compField.id}>
+                                          {compField.label || compField.name}
+                                        </option>
+                                      )) || []}
+                                    </select>
+                                  </div>
+                                  
+                                  {/* Condition with Operator */}
+                                  <div>
+                                    <label className="block text-xs text-gray-600 mb-1">Condition</label>
+                                    <select
+                                      value={rule.condition}
+                                      onChange={(e) => {
+                                        const updatedRules = [...toggleConfig.conditional_logic];
+                                        updatedRules[index] = { ...rule, condition: e.target.value };
+                                        setToggleConfig({
+                                          ...toggleConfig,
+                                          conditional_logic: updatedRules
+                                        });
+                                      }}
+                                      className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                                      disabled={isSubmitting}
+                                    >
+                                      <option value="when_toggle_is">When toggle is</option>
+                                      <option value="when_field_equals">When field equals</option>
+                                      <option value="when_field_not_equals">When field not equals</option>
+                                      <option value="when_field_contains">When field contains</option>
+                                      <option value="when_field_not_contains">When field not contains</option>
+                                      <option value="when_field_greater_than">When field greater than</option>
+                                      <option value="when_field_less_than">When field less than</option>
+                                      <option value="when_field_greater_equal">When field greater than or equal</option>
+                                      <option value="when_field_less_equal">When field less than or equal</option>
+                                    </select>
+                                  </div>
+                                  
+                                  {/* Value */}
+                                  <div>
+                                    <label className="block text-xs text-gray-600 mb-1">Value</label>
                                     <select
                                       value={rule.value}
                                       onChange={(e) => {
@@ -2324,25 +2277,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                                       <option value="1">Enabled</option>
                                       <option value="0">Disabled</option>
                                     </select>
-                                  ) : (
-                                    <input
-                                      type="text"
-                                      value={rule.value}
-                                      onChange={(e) => {
-                                        const updatedRules = [...toggleConfig.conditional_logic];
-                                        updatedRules[index] = { ...rule, value: e.target.value };
-                                        setToggleConfig({
-                                          ...toggleConfig,
-                                          conditional_logic: updatedRules
-                                        });
-                                      }}
-                                      placeholder="Enter value"
-                                      className="w-full text-sm border border-gray-300 rounded px-2 py-1"
-                                      disabled={isSubmitting}
-                                    />
-                                  )}
+                                  </div>
                                 </div>
-                              </div>
                               
                               {/* Remove Rule Button */}
                               <div className="flex justify-end mt-2">
@@ -2380,14 +2316,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                           <button
                             type="button"
                             onClick={() => {
-                              const newRule = {
-                                id: Date.now(),
-                                target_field: '',
-                                action: toggleConfig?.field_condition === 'show_when' ? 'show' : 'hide',
-                                condition: 'when_toggle_is',
-                                operator: '===',
-                                value: '1'
-                              };
+                                                          const newRule = {
+                              id: Date.now(),
+                              target_field: '',
+                              condition: 'when_toggle_is',
+                              value: '1'
+                            };
                               setToggleConfig({
                                 ...toggleConfig,
                                 conditional_logic: [...(toggleConfig?.conditional_logic || []), newRule]
@@ -2405,12 +2339,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       {toggleConfig?.conditional_logic && toggleConfig.conditional_logic.length > 0 && (
                         <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                           <h5 className="text-xs font-medium text-blue-800 mb-2">How it works:</h5>
-                          <div className="text-xs text-blue-700 space-y-1">
-                            <p><strong>All of the conditions pass (AND):</strong> All rules must be true for the action to execute</p>
-                            <p><strong>Any of the following conditions pass (OR):</strong> Any rule being true will execute the action</p>
-                            <p><strong>Show/Hide:</strong> Controls field visibility</p>
-                            <p><strong>Enable/Disable:</strong> Controls field interaction</p>
-                          </div>
+                                                     <div className="text-xs text-blue-700 space-y-1">
+                             <p><strong>All of the conditions pass (AND):</strong> All rules must be true for the action to execute</p>
+                             <p><strong>Any of the following conditions pass (OR):</strong> Any rule being true will execute the action</p>
+                             <p><strong>Show when:</strong> Field is visible when conditions are met</p>
+                             <p><strong>Hide when:</strong> Field is hidden when conditions are met</p>
+                           </div>
                         </div>
                       )}
                     </>

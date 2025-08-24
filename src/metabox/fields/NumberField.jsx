@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Hash, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 
-const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, onChange, onValidationChange }) => {
+const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, onChange, onValidationChange, fieldId }) => {
     const [number, setNumber] = useState('');
     const [isValid, setIsValid] = useState(true);
     const [isFocused, setIsFocused] = useState(false);
@@ -270,7 +270,7 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
     };
 
     return (
-        <div className="w-full ccc-field" data-field-id={fieldConfig?.field_id}>
+        <div className="w-full ccc-field" data-field-id={fieldId}>
             <label htmlFor={`number-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-2">
                 {label || 'Number'}
                 {fieldRequired && <span className="text-red-500 ml-1">*</span>}

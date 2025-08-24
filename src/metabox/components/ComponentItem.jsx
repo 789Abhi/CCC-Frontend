@@ -314,6 +314,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       fieldValue={value}
                       fieldRequired={isRequired}
                       onChange={handleChange}
+                      fieldId={field.id}
                     />
                   );
                 }

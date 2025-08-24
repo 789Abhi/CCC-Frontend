@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 
-const RangeField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, onChange }) => {
+const RangeField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, onChange, fieldId }) => {
     const [rangeValue, setRangeValue] = useState('');
     const [isValid, setIsValid] = useState(true);
     const [isFocused, setIsFocused] = useState(false);
@@ -178,7 +178,7 @@ const RangeField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, 
     };
 
     return (
-        <div className="w-full">
+        <div className="w-full ccc-field" data-field-id={fieldId}>
             {label && (
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                     {label}

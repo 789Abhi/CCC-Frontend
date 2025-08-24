@@ -154,9 +154,34 @@ class ConditionalLogicHandler {
       return toggleValue === expectedValue;
     }
 
-    // For other conditions, we would need to get the target field value
-    // This is a simplified implementation
-    return true;
+    // Get target field value for comparison
+    const targetField = this.targetFields.get(rule.target_field) || 
+                       document.querySelector(`[data-field-id="${rule.target_field}"]`);
+    
+    if (!targetField) return false;
+    
+    const targetValue = this.getFieldValue(targetField);
+    
+    switch (rule.condition) {
+      case 'when_field_equals':
+        return targetValue == rule.value;
+      case 'when_field_not_equals':
+        return targetValue != rule.value;
+      case 'when_field_contains':
+        return String(targetValue).includes(String(rule.value));
+      case 'when_field_not_contains':
+        return !String(targetValue).includes(String(rule.value));
+      case 'when_field_greater_than':
+        return parseFloat(targetValue) > parseFloat(rule.value);
+      case 'when_field_less_than':
+        return parseFloat(targetValue) < parseFloat(rule.value);
+      case 'when_field_greater_equal':
+        return parseFloat(targetValue) >= parseFloat(rule.value);
+      case 'when_field_less_equal':
+        return parseFloat(targetValue) <= parseFloat(rule.value);
+      default:
+        return false;
+    }
   }
 
   applyRule(rule, toggleValue) {
@@ -170,7 +195,9 @@ class ConditionalLogicHandler {
     const shouldExecute = this.evaluateRule(rule, toggleValue);
     
     if (shouldExecute) {
-      this.applyAction(targetField, rule.action);
+      // Action is determined by field_condition, not by individual rules
+      // This method is called for each rule, but the actual action is applied at the field level
+      // in handleToggleChange based on field_condition
     }
   }
 
@@ -215,6 +242,24 @@ class ConditionalLogicHandler {
       input.disabled = true;
       input.classList.add('opacity-50', 'cursor-not-allowed');
     });
+  }
+
+  getFieldValue(fieldElement) {
+    // Get the value from various input types
+    const input = fieldElement.querySelector('input, select, textarea');
+    if (!input) return '';
+    
+    switch (input.type) {
+      case 'checkbox':
+        return input.checked;
+      case 'radio':
+        const checkedRadio = fieldElement.querySelector('input[type="radio"]:checked');
+        return checkedRadio ? checkedRadio.value : '';
+      case 'file':
+        return input.files && input.files.length > 0 ? input.files[0].name : '';
+      default:
+        return input.value || '';
+    }
   }
 
   // Public method to refresh all conditional logic
