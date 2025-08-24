@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TextField from '../fields/Textfield';
+import useConditionalLogic from '../hooks/useConditionalLogic';
 
 import logo from '/drag-drop-icon.svg';
 import TextareaField from '../fields/TextareaField';
@@ -78,6 +79,12 @@ const DotMenu = ({ onDelete }) => {
 const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, onValidationChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents, postId }) => {
   const [fields, setFields] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
+
+  // Get current field values for this component instance
+  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+
+  // Use conditional logic hook for React-based field visibility
+  const { shouldRenderField } = useConditionalLogic(fields, instanceFieldValues);
 
   // Find required info for fields
   const compDef = availableComponents?.find(c => c.id === component.id);
@@ -177,36 +184,12 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
             <div className="text-center text-gray-400 italic">No fields for this component</div>
           ) : (
             <div>
-              {/* Helper function to wrap field components with conditional logic */}
+              {/* Conditional field rendering using React hook */}
               {(() => {
-                const wrapFieldWithConditionalLogic = (fieldComponent, field) => {
-                  // Parse config if it's a string, or use as-is if it's already an object
-                  let parsedConfig = '';
-                  try {
-                    if (field?.config) {
-                      const configObj = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
-                      // Only include conditional logic data if the field has conditional logic
-                      if (configObj.field_condition && configObj.field_condition !== 'always_show' && configObj.conditional_logic) {
-                        parsedConfig = JSON.stringify(configObj);
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Error parsing field config for conditional logic:', error);
-                  }
-                  
-                  return (
-                    <div 
-                      key={field.id}
-                      className="ccc-field ccc-field-wrapper"
-                      data-conditional-logic={parsedConfig}
-                      data-field-id={field.id}
-                    >
-                      {fieldComponent}
-                    </div>
-                  );
-                };
 
-                return fields.map(field => {
+                return fields
+                  .filter(field => shouldRenderField(field.id)) // Only render visible fields
+                  .map(field => {
                 if (field.type === 'text') {
                   const isRequired = field.required || false;
                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
@@ -222,17 +205,18 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                      }
                    };
                   
-                  return wrapFieldWithConditionalLogic(
-                    <TextField
-                      label={field.label}
-                      value={value}
-                      onChange={handleChange}
-                      placeholder={field.placeholder}
-                      required={isRequired}
-                      error={isRequired && !value?.trim()}
-                      fieldId={field.id}
-                    />,
-                    field
+                  return (
+                    <div key={field.id} className="mb-4">
+                      <TextField
+                        label={field.label}
+                        value={value}
+                        onChange={handleChange}
+                        placeholder={field.placeholder}
+                        required={isRequired}
+                        error={isRequired && !value?.trim()}
+                        fieldId={field.id}
+                      />
+                    </div>
                   );
                 }
                 if (field.type === 'textarea') {
@@ -245,17 +229,18 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                   const handleChange = val => {
                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
                   };
-                  return wrapFieldWithConditionalLogic(
-                    <TextareaField
-                      label={field.label}
-                      value={value}
-                      onChange={handleChange}
-                      placeholder={placeholder}
-                      required={isRequired}
-                      error={isRequired && !value?.trim()}
-                      fieldId={field.id}
-                    />,
-                    field
+                  return (
+                    <div key={field.id} className="mb-4">
+                      <TextareaField
+                        label={field.label}
+                        value={value}
+                        onChange={handleChange}
+                        placeholder={placeholder}
+                        required={isRequired}
+                        error={isRequired && !value?.trim()}
+                        fieldId={field.id}
+                      />
+                    </div>
                   );
                 }
                 if (field.type === 'email') {
