@@ -271,7 +271,7 @@ class ConditionalLogicHandler {
       return true;
     }
 
-    console.log(`=== Evaluating ${config.logic_operator} logic for field ===`);
+    console.log(`=== Evaluating ${config.logic_operator || 'OR'} logic for field ===`);
     
     const results = config.conditional_logic.map((rule, index) => {
       let result;
@@ -288,7 +288,9 @@ class ConditionalLogicHandler {
     });
     
     let finalResult;
-    if (config.logic_operator === 'AND') {
+    const operator = config.logic_operator || 'OR'; // Default to OR if undefined
+    
+    if (operator === 'AND') {
       finalResult = results.every(result => result === true);
       console.log(`AND logic: [${results.join(', ')}] = ${finalResult}`);
     } else {
