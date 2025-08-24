@@ -50,10 +50,18 @@ class ConditionalLogicHandler {
     this.processExistingFieldsWithConditionalLogic();
     this.setupMutationObserver();
     
-    // Apply initial conditional logic state
+    // Apply initial conditional logic state (multiple attempts for robustness)
     setTimeout(() => {
       this.applyInitialConditionalLogic();
     }, 100);
+    
+    setTimeout(() => {
+      this.applyInitialConditionalLogic();
+    }, 500);
+    
+    setTimeout(() => {
+      this.applyInitialConditionalLogic();
+    }, 1000);
   }
 
   applyInitialConditionalLogic() {
@@ -331,13 +339,14 @@ class ConditionalLogicHandler {
   }
 
   applyFieldVisibility(fieldElement, shouldShow) {
+    const fieldId = fieldElement.getAttribute('data-field-id');
+    
     if (shouldShow) {
       fieldElement.classList.remove('ccc-field-hidden');
     } else {
       fieldElement.classList.add('ccc-field-hidden');
       
       // Clear validation errors for hidden fields
-      const fieldId = fieldElement.getAttribute('data-field-id');
       if (fieldId && window.cccMetaboxApp && window.cccMetaboxApp.clearValidationErrorsForField) {
         window.cccMetaboxApp.clearValidationErrorsForField(fieldId);
       }
@@ -361,9 +370,18 @@ class ConditionalLogicHandler {
   }
 
   getFieldValue(fieldElement) {
+    // Check for toggle button first (has aria-pressed attribute)
+    const toggleButton = fieldElement.querySelector('button[aria-pressed]');
+    if (toggleButton) {
+      const isPressed = toggleButton.getAttribute('aria-pressed') === 'true';
+      return isPressed;
+    }
+    
     // Get the value from various input types
     const input = fieldElement.querySelector('input, select, textarea');
-    if (!input) return '';
+    if (!input) {
+      return '';
+    }
     
     switch (input.type) {
       case 'checkbox':
