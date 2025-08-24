@@ -417,8 +417,21 @@ const ConditionalLogicTab = ({
                           // Show dropdown for fields with predefined options
                           return (
                             <select
-                              value={rule.value}
-                              onChange={(e) => updateRule(rule.id, 'value', e.target.value)}
+                              value={(() => {
+                                // If value is empty and we have available options, auto-select the first one
+                                if ((!rule.value || rule.value === '') && availableValues.length > 0) {
+                                  const defaultValue = availableValues[0].value;
+                                  console.log(`ConditionalLogicTab: Auto-selecting first value "${defaultValue}" for rule`);
+                                  // Update the rule with the default value
+                                  setTimeout(() => updateRule(rule.id, 'value', defaultValue), 0);
+                                  return defaultValue;
+                                }
+                                return rule.value;
+                              })()}
+                              onChange={(e) => {
+                                console.log(`ConditionalLogicTab: Value dropdown changed to: ${e.target.value}`);
+                                updateRule(rule.id, 'value', e.target.value);
+                              }}
                               className="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white"
                               disabled={isSubmitting}
                             >
