@@ -57,12 +57,19 @@ class ConditionalLogicHandler {
   }
 
   applyInitialConditionalLogic() {
-    console.log('CCC: Applying initial conditional logic state');
-    
-    // Trigger evaluation for all fields to set initial visibility
+    // First, evaluate conditional logic for all fields based on current field values
     this.fieldsWithConditionalLogic.forEach((fieldData, fieldId) => {
-      const currentValue = this.getFieldValue(fieldData.element);
-      console.log(`CCC: Initial value for field ${fieldId}:`, currentValue);
+      const { config, element } = fieldData;
+      
+      if (config.field_condition === 'show_when' && config.conditional_logic) {
+        const shouldShow = this.evaluateConditionalLogicForField(config);
+        this.applyFieldVisibility(element, shouldShow);
+      }
+    });
+    
+    // Then trigger change events to ensure all dependent fields are updated
+    this.targetFields.forEach((fieldElement, fieldId) => {
+      const currentValue = this.getFieldValue(fieldElement);
       this.handleFieldChange(fieldId, currentValue);
     });
   }
@@ -175,7 +182,6 @@ class ConditionalLogicHandler {
   }
 
   handleFieldChange(fieldId, fieldValue) {
-    console.log(`CCC: Field ${fieldId} changed to:`, fieldValue);
     
     // When a field changes, we need to:
     // 1. Check all OTHER fields that might have conditional logic depending on this field
@@ -196,12 +202,8 @@ class ConditionalLogicHandler {
         );
         
         if (hasRuleForChangedField) {
-          console.log(`CCC: Evaluating conditional logic for field ${targetFieldId} based on ${fieldId}`);
-          
           // Evaluate all rules for this target field
           const shouldShow = this.evaluateConditionalLogicForField(config, fieldId, fieldValue);
-          
-          console.log(`CCC: Field ${targetFieldId} should ${shouldShow ? 'show' : 'hide'} based on ${config.field_condition}`);
           
           if (config.field_condition === 'show_when') {
             this.applyFieldVisibility(element, shouldShow);
@@ -227,13 +229,13 @@ class ConditionalLogicHandler {
     }
   }
 
-  evaluateConditionalLogicForField(config, changedFieldId, changedFieldValue) {
+  evaluateConditionalLogicForField(config, changedFieldId = null, changedFieldValue = null) {
     if (!config.conditional_logic || config.conditional_logic.length === 0) {
       return true;
     }
 
     const results = config.conditional_logic.map(rule => {
-      if (rule.target_field === changedFieldId) {
+      if (changedFieldId && rule.target_field === changedFieldId) {
         // Use the provided field value for this specific rule
         return this.evaluateRuleWithValue(rule, changedFieldValue);
       } else {
