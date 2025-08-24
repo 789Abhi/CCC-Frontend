@@ -33,8 +33,9 @@ const ToggleField = ({
   return (
     <div 
       className="ccc-field ccc-field-toggle"
-      data-conditional-logic={field?.config?.conditional_logic ? JSON.stringify(field.config.conditional_logic) : ''}
+      data-conditional-logic={field?.config ? JSON.stringify(field.config) : ''}
       data-toggle-field-id={fieldId}
+      data-field-id={fieldId}
     >
       <div className="flex items-center justify-between mb-3">
         <label className="ccc-field-label text-sm font-medium text-gray-700">

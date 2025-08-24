@@ -270,7 +270,7 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
     };
 
     return (
-        <div className="w-full" data-field-id={fieldConfig?.field_id}>
+        <div className="w-full ccc-field" data-field-id={fieldConfig?.field_id}>
             <label htmlFor={`number-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-2">
                 {label || 'Number'}
                 {fieldRequired && <span className="text-red-500 ml-1">*</span>}

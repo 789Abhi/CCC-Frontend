@@ -1,6 +1,6 @@
 import React, { memo, useCallback } from 'react';
 
-const Textfield = memo(({ label, value, onChange, placeholder, required, error }) => {
+const Textfield = memo(({ label, value, onChange, placeholder, required, error, fieldId }) => {
   const handleChange = useCallback((e) => {
     const newValue = e.target.value;
     
@@ -10,7 +10,7 @@ const Textfield = memo(({ label, value, onChange, placeholder, required, error }
   }, [onChange]);
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 ccc-field" data-field-id={fieldId}>
       {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}{required && <span className="text-red-500 ml-1">*</span>}</label>}
       <input
         type="text"

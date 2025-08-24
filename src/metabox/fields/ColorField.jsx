@@ -12,7 +12,7 @@ import React, { useState, useRef, useEffect } from 'react';
  * - Ensures consistent color data before saving to backend
  */
 
-function ColorField({ label, value, onChange, required = false, error }) {
+function ColorField({ label, value, onChange, required = false, error, fieldId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showAdjustments, setShowAdjustments] = useState(false);
   const [percentage, setPercentage] = useState(0);
@@ -317,7 +317,7 @@ function ColorField({ label, value, onChange, required = false, error }) {
   const adjustedColor = mainColor ? adjustColorByPercentage(mainColor, percentage) : '';
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 ccc-field" data-field-id={fieldId}>
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {label}

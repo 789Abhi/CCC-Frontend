@@ -1,6 +1,6 @@
 import React from 'react';
 
-function CheckboxField({ label, value, onChange, options = [], required = false, error }) {
+function CheckboxField({ label, value, onChange, options = [], required = false, error, fieldId }) {
   // Checkbox fields are always multiple by default
   const handleCheckboxChange = (optionValue) => {
     let newValue = Array.isArray(value) ? [...value] : [];
@@ -15,7 +15,7 @@ function CheckboxField({ label, value, onChange, options = [], required = false,
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 ccc-field" data-field-id={fieldId}>
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {label}

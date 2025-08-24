@@ -1,13 +1,13 @@
 import React from 'react';
 
-function RadioField({ label, value, onChange, options = [], required = false, error }) {
+function RadioField({ label, value, onChange, options = [], required = false, error, fieldId }) {
   // Radio fields are always single selection
   const handleRadioChange = (optionValue) => {
     onChange(optionValue);
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 ccc-field" data-field-id={fieldId}>
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {label}

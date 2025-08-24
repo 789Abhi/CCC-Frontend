@@ -1,8 +1,8 @@
 import React from 'react';
 
-function TextareaField({ label, value, onChange, placeholder, required, error }) {
+function TextareaField({ label, value, onChange, placeholder, required, error, fieldId }) {
   return (
-    <div className="mb-4">
+    <div className="mb-4 ccc-field" data-field-id={fieldId}>
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-1">
           {label}

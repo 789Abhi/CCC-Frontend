@@ -202,6 +202,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       placeholder={field.placeholder}
                       required={isRequired}
                       error={isRequired && !value?.trim()}
+                      fieldId={field.id}
                     />
                   );
                 }
@@ -224,6 +225,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       placeholder={placeholder}
                       required={isRequired}
                       error={isRequired && !value?.trim()}
+                      fieldId={field.id}
                     />
                   );
                 }
@@ -251,6 +253,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       fieldValue={value}
                       fieldRequired={isRequired}
                       onChange={handleChange}
+                      fieldId={field.id}
                     />
                   );
                 }
@@ -284,6 +287,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       fieldRequired={isRequired}
                       onChange={handleChange}
                       onValidationChange={handleValidationChange}
+                      fieldId={field.id}
                     />
                   );
                 }
@@ -336,6 +340,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       fieldValue={value}
                       fieldRequired={isRequired}
                       onChange={handleChange}
+                      fieldId={field.id}
                     />
                   );
                 }
@@ -356,6 +361,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       onChange={handleChange}
                       required={isRequired}
                       error={isRequired && !value}
+                      fieldId={field.id}
                     />
                   );
                 }
@@ -377,6 +383,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       required={isRequired}
                       error={isRequired && !value}
                       config={field.config || {}}
+                      fieldId={field.id}
                     />
                   );
                 }
@@ -401,6 +408,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                          post_id: postId,
                          instance_id: component.instance_id
                        }}
+                       fieldId={field.id}
                      />
                    );
                  }
@@ -422,6 +430,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       required={isRequired}
                       error={isRequired && !value}
                       editorId={`wysiwyg_${component.instance_id}_${field.id}`}
+                      fieldId={field.id}
                     />
                   );
                 }
@@ -468,6 +477,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       multiple={multiple}
                       required={isRequired}
                       error={isRequired && (multiple ? !value?.length : !value)}
+                      fieldId={field.id}
                     />
                   );
                 }
@@ -512,6 +522,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       options={options}
                       required={isRequired}
                       error={isRequired && !value?.length}
+                      fieldId={field.id}
                     />
                   );
                 }
@@ -547,6 +558,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                        options={options}
                        required={isRequired}
                        error={isRequired && !value}
+                       fieldId={field.id}
                      />
                    );
                  }
@@ -571,6 +583,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                          post_id: postId,
                          instance_id: component.instance_id
                        }}
+                       fieldId={field.id}
                      />
                    );
                  }
@@ -595,6 +608,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                          post_id: postId,
                          instance_id: component.instance_id
                        }}
+                       fieldId={field.id}
                      />
                    );
                  }
@@ -657,6 +671,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       onChange={handleChange}
                       required={isRequired}
                       error={isRequired && !colorData.main}
+                      fieldId={field.id}
                     />
                   );
                 }
@@ -717,17 +732,18 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                   };
                   
                   return (
-                    <UserField
-                      key={field.id}
-                      label={field.label}
-                      value={value}
-                      onChange={handleChange}
-                      multiple={multiple}
-                      required={isRequired}
-                      error={isRequired && (multiple ? !value?.length : !value)}
-                      roleFilter={field.config?.role_filter || []}
-                      returnType={field.config?.return_type || 'id'}
-                    />
+                                         <UserField
+                       key={field.id}
+                       label={field.label}
+                       value={value}
+                       onChange={handleChange}
+                       multiple={multiple}
+                       required={isRequired}
+                       error={isRequired && (multiple ? !value?.length : !value)}
+                       roleFilter={field.config?.role_filter || []}
+                       returnType={field.config?.return_type || 'id'}
+                       fieldId={field.id}
+                     />
                   );
                 }
                 if (field.type === 'toggle') {

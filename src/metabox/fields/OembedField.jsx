@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { ExternalLink, Eye, EyeOff } from 'lucide-react';
 
-const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldConfig }) => {
+const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldConfig, fieldId }) => {
   const [iframeCode, setIframeCode] = useState(value || '');
   const [showPreview, setShowPreview] = useState(false);
   const [error, setError] = useState('');
@@ -83,7 +83,7 @@ const OembedField = React.memo(({ field, value, onChange, isSubmitting, fieldCon
   }, [iframeCode]);
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 ccc-field" data-field-id={fieldId}>
       <div className="flex items-center justify-between mb-2">
         <label className="text-sm font-medium text-gray-700">
           {field.label}

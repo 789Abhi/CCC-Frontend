@@ -1,6 +1,6 @@
 import React from 'react';
 
-function SelectField({ label, value, onChange, options = [], multiple = false, required = false, error }) {
+function SelectField({ label, value, onChange, options = [], multiple = false, required = false, error, fieldId }) {
   // Validate and normalize props
   const safeOptions = Array.isArray(options) ? options : [];
   const safeValue = value !== undefined && value !== null ? value : (multiple ? [] : '');
@@ -39,7 +39,7 @@ function SelectField({ label, value, onChange, options = [], multiple = false, r
   }).filter(opt => opt.value !== '');
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 ccc-field" data-field-id={fieldId}>
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-1">
           {label}

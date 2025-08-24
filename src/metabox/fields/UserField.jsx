@@ -8,7 +8,8 @@ const UserField = ({
   required = false, 
   error = null, 
   roleFilter = [], 
-  returnType = 'id' 
+  returnType = 'id',
+  fieldId
 }) => {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -197,7 +198,7 @@ const UserField = ({
   }
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 ccc-field" data-field-id={fieldId}>
       <label className="block text-sm font-medium text-gray-700 mb-2">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}

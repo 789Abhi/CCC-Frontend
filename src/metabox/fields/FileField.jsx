@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { File, Image, Video, Music, Archive, Download, Trash2, X, Plus, FileText, FolderOpen } from 'lucide-react';
 
-const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, onChange }) => {
+const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, onChange, fieldId }) => {
     const [files, setFiles] = useState([]);
     const [isOpeningMedia, setIsOpeningMedia] = useState(false);
     const [error, setError] = useState('');
@@ -516,7 +516,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
     };
 
     return (
-        <div className="w-full">
+        <div className="w-full ccc-field" data-field-id={fieldId}>
             {label && (
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                     {label}

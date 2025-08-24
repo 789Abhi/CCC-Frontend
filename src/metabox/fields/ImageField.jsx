@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 
-function ImageField({ label, value, onChange, required, error }) {
+function ImageField({ label, value, onChange, required, error, fieldId }) {
   const inputRef = useRef();
 
   // Open WP Media Library
@@ -57,7 +57,7 @@ function ImageField({ label, value, onChange, required, error }) {
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 ccc-field" data-field-id={fieldId}>
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-1">
           {label}

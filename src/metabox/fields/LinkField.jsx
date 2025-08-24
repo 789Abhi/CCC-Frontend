@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ExternalLink, Link, X, ChevronDown } from 'lucide-react';
 
-const LinkField = ({ field, value, onChange, isSubmitting }) => {
+const LinkField = ({ field, value, onChange, isSubmitting, fieldId }) => {
   const [linkData, setLinkData] = useState({
     type: 'internal',
     url: '',
@@ -200,7 +200,7 @@ const LinkField = ({ field, value, onChange, isSubmitting }) => {
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 ccc-field" data-field-id={fieldId}>
       <div className="mb-2">
         <label className="block text-sm font-medium text-gray-700">
           {field.label}

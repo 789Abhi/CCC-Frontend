@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, memo, useCallback, useMemo } from 'react';
 import { Search, X, ChevronDown, ChevronUp, ArrowRight, ArrowLeft } from 'lucide-react';
 
-const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
+const RelationshipField = memo(({ field, value, onChange, isSubmitting, fieldId }) => {
   const [selectedPosts, setSelectedPosts] = useState([]);
   const [availablePosts, setAvailablePosts] = useState([]);
   const [availablePostTypes, setAvailablePostTypes] = useState([]);
@@ -369,7 +369,7 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting }) => {
     }
 
     return (
-      <div className="mb-4">
+      <div className="mb-4 ccc-field" data-field-id={fieldId}>
         <div className="mb-2">
           <label className="block text-sm font-medium text-gray-700">
             {field.label}

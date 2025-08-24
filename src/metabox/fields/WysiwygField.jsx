@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-function WysiwygField({ label, value, onChange, required, error, editorId }) {
+function WysiwygField({ label, value, onChange, required, error, editorId, fieldId }) {
   const textareaRef = useRef();
 
   // Helper to wait for wp.editor to be available
@@ -85,7 +85,7 @@ function WysiwygField({ label, value, onChange, required, error, editorId }) {
   }, [value, editorId]);
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 ccc-field" data-field-id={fieldId}>
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-1">
           {label}

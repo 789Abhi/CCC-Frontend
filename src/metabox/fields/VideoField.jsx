@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-function VideoField({ label, value, onChange, required = false, error, config = {} }) {
+function VideoField({ label, value, onChange, required = false, error, config = {}, fieldId }) {
   const [videoData, setVideoData] = useState({
     url: '',
     type: 'url', // 'file', 'youtube', 'vimeo', 'url'
@@ -521,7 +521,7 @@ function VideoField({ label, value, onChange, required = false, error, config = 
   }, [selectedSource, playerOptions.autoplay, playerOptions.loop, videoData.url]);
 
   return (
-    <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+    <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg shadow-sm ccc-field" data-field-id={fieldId}>
       {label && (
         <label className="block text-sm font-semibold text-gray-900 mb-3">
           {label}
