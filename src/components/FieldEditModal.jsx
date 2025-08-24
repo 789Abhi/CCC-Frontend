@@ -2217,6 +2217,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   availableFields={availableFields}
                   isSubmitting={isSubmitting}
                   fieldType="toggle"
+                  currentFieldId={field?.id}
                 />
               </div>
             )}
@@ -2506,6 +2507,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   availableFields={availableFields}
                   isSubmitting={isSubmitting}
                   fieldType={type}
+                  currentFieldId={field?.id}
                 />
               </div>
             )}

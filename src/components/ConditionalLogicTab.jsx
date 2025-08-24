@@ -6,7 +6,8 @@ const ConditionalLogicTab = ({
   onConfigChange, 
   availableFields, 
   isSubmitting = false,
-  fieldType = 'field' // to customize labels if needed
+  fieldType = 'field', // to customize labels if needed
+  currentFieldId = null // ID of the current field being edited (to exclude from target selection)
 }) => {
   const [config, setConfig] = useState({
     field_condition: fieldConfig?.field_condition || 'always_show',
@@ -16,7 +17,10 @@ const ConditionalLogicTab = ({
 
   const isUserInteracting = useRef(false);
 
-
+  // Filter available fields to exclude the current field being edited
+  const filteredAvailableFields = availableFields.filter(field => 
+    currentFieldId ? field.id !== currentFieldId : true
+  );
 
   // Update local state when prop changes (but not during user interactions)
   useEffect(() => {
@@ -84,7 +88,7 @@ const ConditionalLogicTab = ({
           
           // Reset condition and value when target field changes
           if (field === 'target_field') {
-            const targetField = availableFields.find(f => f.id === value);
+            const targetField = filteredAvailableFields.find(f => f.id === value);
             if (targetField) {
               updatedRule.condition = getDefaultConditionForFieldType(targetField.type);
               updatedRule.value = getDefaultValueForFieldType(targetField.type);
@@ -138,7 +142,7 @@ const ConditionalLogicTab = ({
 
   // Get available conditions based on target field type
   const getAvailableConditions = (targetFieldId) => {
-    const targetField = availableFields.find(f => f.id === targetFieldId);
+    const targetField = filteredAvailableFields.find(f => f.id === targetFieldId);
     if (!targetField) {
       return [
         { value: 'when_field_equals', label: 'When field equals' }
@@ -190,7 +194,7 @@ const ConditionalLogicTab = ({
 
   // Get available values based on target field type and condition
   const getAvailableValues = (targetFieldId, condition) => {
-    const targetField = availableFields.find(f => f.id === targetFieldId);
+    const targetField = filteredAvailableFields.find(f => f.id === targetFieldId);
     if (!targetField) return [];
 
     switch (targetField.type) {
@@ -324,8 +328,13 @@ const ConditionalLogicTab = ({
                         className="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white"
                         disabled={isSubmitting}
                       >
-                        <option value="">Select a field</option>
-                        {availableFields.map(field => (
+                        <option value="">
+                          {filteredAvailableFields.length === 0 
+                            ? "No other fields available" 
+                            : "Select a field"
+                          }
+                        </option>
+                        {filteredAvailableFields.map(field => (
                           <option key={field.id} value={field.id}>
                             {field.label || field.name}
                           </option>
@@ -396,8 +405,11 @@ const ConditionalLogicTab = ({
             </div>
           ) : (
             <div className="text-center py-4 text-gray-500">
-              No rules added yet. Add your first rule below.
-          </div>
+              {filteredAvailableFields.length === 0 
+                ? "No other fields are available to create conditional logic rules. Add more fields to this component first."
+                : "No rules added yet. Add your first rule below."
+              }
+            </div>
           )}
 
           {/* Add Rule Button */}
@@ -405,7 +417,8 @@ const ConditionalLogicTab = ({
             type="button"
             onClick={addRule}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-            disabled={isSubmitting}
+            disabled={isSubmitting || filteredAvailableFields.length === 0}
+            title={filteredAvailableFields.length === 0 ? "No other fields available to create conditions" : "Add a new rule"}
           >
             <Plus size={16} />
             Add Rule
