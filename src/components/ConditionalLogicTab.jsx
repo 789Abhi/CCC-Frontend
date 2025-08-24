@@ -372,15 +372,22 @@ const ConditionalLogicTab = ({
                       </label>
                       <select
                         value={rule.condition}
-                        onChange={(e) => updateRule(rule.id, 'condition', e.target.value)}
+                        onChange={(e) => {
+                          console.log(`ConditionalLogicTab: Condition dropdown changed from ${rule.condition} to ${e.target.value}`);
+                          updateRule(rule.id, 'condition', e.target.value);
+                        }}
                         className="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white"
                         disabled={isSubmitting}
                       >
-                        {getAvailableConditions(rule.target_field).map(condition => (
-                          <option key={condition.value} value={condition.value}>
-                            {condition.label}
-                          </option>
-                        ))}
+                        {(() => {
+                          const availableConditions = getAvailableConditions(rule.target_field);
+                          console.log(`ConditionalLogicTab: Available conditions for field ${rule.target_field}:`, availableConditions);
+                          return availableConditions.map(condition => (
+                            <option key={condition.value} value={condition.value}>
+                              {condition.label}
+                            </option>
+                          ));
+                        })()}
                       </select>
                     </div>
 
