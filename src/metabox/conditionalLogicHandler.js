@@ -196,12 +196,21 @@ class ConditionalLogicHandler {
       // For other field types, listen to various input changes
       const inputs = field.querySelectorAll('input, select, textarea');
       inputs.forEach(input => {
-        input.addEventListener('change', (e) => {
-          this.handleFieldChange(fieldId, this.getFieldValue(field));
-        });
-        input.addEventListener('input', (e) => {
-          this.handleFieldChange(fieldId, this.getFieldValue(field));
-        });
+        if (input.type === 'checkbox') {
+          console.log(`Setting up checkbox event listener for field ${fieldId}, checkbox value: ${input.value}`);
+          input.addEventListener('change', (e) => {
+            const newValue = this.getFieldValue(field);
+            console.log(`Checkbox ${fieldId} changed, new value: "${newValue}"`);
+            this.handleFieldChange(fieldId, newValue);
+          });
+        } else {
+          input.addEventListener('change', (e) => {
+            this.handleFieldChange(fieldId, this.getFieldValue(field));
+          });
+          input.addEventListener('input', (e) => {
+            this.handleFieldChange(fieldId, this.getFieldValue(field));
+          });
+        }
       });
       
       // Apply initial state

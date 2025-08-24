@@ -45,6 +45,7 @@ const ConditionalLogicTab = ({
 
   // Notify parent of config changes (only when config actually changes)
   useEffect(() => {
+    console.log(`ConditionalLogicTab: Config changed, sending to parent:`, config);
     // Call onConfigChange, but don't include it in dependencies to avoid render loops
     onConfigChange(config);
   }, [config]); // Removed onConfigChange dependency to prevent unnecessary calls
@@ -79,27 +80,37 @@ const ConditionalLogicTab = ({
   };
 
   const updateRule = (ruleId, field, value) => {
+    console.log(`ConditionalLogicTab: updateRule called - ruleId: ${ruleId}, field: ${field}, value: ${value}`);
+    
     isUserInteracting.current = true;
-    setConfig(prev => ({
-      ...prev,
-      conditional_logic: prev.conditional_logic.map(rule => {
-        if (rule.id === ruleId) {
-          const updatedRule = { ...rule, [field]: value };
-          
-          // Reset condition and value when target field changes
-          if (field === 'target_field') {
-            const targetField = filteredAvailableFields.find(f => f.id === value);
-            if (targetField) {
-              updatedRule.condition = getDefaultConditionForFieldType(targetField.type);
-              updatedRule.value = getDefaultValueForFieldType(targetField.type);
+    setConfig(prev => {
+      const newConfig = {
+        ...prev,
+        conditional_logic: prev.conditional_logic.map(rule => {
+          if (rule.id === ruleId) {
+            const updatedRule = { ...rule, [field]: value };
+            
+            // Reset condition and value when target field changes
+            if (field === 'target_field') {
+              const targetField = filteredAvailableFields.find(f => f.id === value);
+              if (targetField) {
+                updatedRule.condition = getDefaultConditionForFieldType(targetField.type);
+                updatedRule.value = getDefaultValueForFieldType(targetField.type);
+                console.log(`ConditionalLogicTab: Reset defaults for field type ${targetField.type} - condition: ${updatedRule.condition}, value: ${updatedRule.value}`);
+              }
             }
+            
+            console.log(`ConditionalLogicTab: Updated rule:`, updatedRule);
+            return updatedRule;
           }
-          
-          return updatedRule;
-        }
-        return rule;
-      })
-    }));
+          return rule;
+        })
+      };
+      
+      console.log(`ConditionalLogicTab: New config:`, newConfig);
+      return newConfig;
+    });
+    
     setTimeout(() => {
       isUserInteracting.current = false;
     }, 100);
