@@ -260,23 +260,32 @@ class ConditionalLogicHandler {
       return true;
     }
 
-    const results = config.conditional_logic.map(rule => {
+    console.log(`=== Evaluating ${config.logic_operator} logic for field ===`);
+    
+    const results = config.conditional_logic.map((rule, index) => {
       let result;
       if (changedFieldId && rule.target_field === changedFieldId) {
         // Use the provided field value for this specific rule
         result = this.evaluateRuleWithValue(rule, changedFieldValue);
+        console.log(`Rule ${index + 1}: target=${rule.target_field}, condition=${rule.condition}, expected="${rule.value}", actual=${changedFieldValue}, result=${result}`);
       } else {
         // Get current value for other fields
         result = this.evaluateRule(rule, null);
+        console.log(`Rule ${index + 1}: target=${rule.target_field}, condition=${rule.condition}, expected="${rule.value}", result=${result}`);
       }
       return result;
     });
     
+    let finalResult;
     if (config.logic_operator === 'AND') {
-      return results.every(result => result === true);
+      finalResult = results.every(result => result === true);
+      console.log(`AND logic: [${results.join(', ')}] = ${finalResult}`);
     } else {
-      return results.some(result => result === true);
+      finalResult = results.some(result => result === true);
+      console.log(`OR logic: [${results.join(', ')}] = ${finalResult}`);
     }
+    
+    return finalResult;
   }
 
   evaluateRule(rule, fieldValue) {
@@ -289,37 +298,71 @@ class ConditionalLogicHandler {
     const targetField = this.targetFields.get(rule.target_field) || 
                        document.querySelector(`[data-field-id="${rule.target_field}"]`);
     
-    if (!targetField) return false;
+    if (!targetField) {
+      console.log(`  Target field ${rule.target_field} not found!`);
+      return false;
+    }
     
     const targetValue = this.getFieldValue(targetField);
+    console.log(`  Getting current value for field ${rule.target_field}: "${targetValue}"`);
     
     return this.evaluateRuleWithValue(rule, targetValue);
   }
 
   evaluateRuleWithValue(rule, targetValue) {
+    let result;
+    
     switch (rule.condition) {
       case 'when_toggle_is':
         const expectedValue = rule.value === '1' ? true : false;
-        return targetValue === expectedValue;
+        result = targetValue === expectedValue;
+        console.log(`  Toggle rule: expected=${expectedValue}, actual=${targetValue}, result=${result}`);
+        break;
       case 'when_field_equals':
-        return targetValue == rule.value;
+        result = targetValue == rule.value;
+        console.log(`  Equals rule: expected="${rule.value}", actual="${targetValue}", result=${result}`);
+        break;
       case 'when_field_not_equals':
-        return targetValue != rule.value;
+        result = targetValue != rule.value;
+        console.log(`  Not equals rule: expected="${rule.value}", actual="${targetValue}", result=${result}`);
+        break;
       case 'when_field_contains':
-        return String(targetValue).includes(String(rule.value));
+        if (rule.value === '' || rule.value === null || rule.value === undefined) {
+          // If checking for empty value, check if field is actually empty
+          result = targetValue === '' || targetValue === null || targetValue === undefined;
+          console.log(`  Contains empty rule: field="${targetValue}", checking if empty, result=${result}`);
+        } else {
+          result = String(targetValue).includes(String(rule.value));
+          console.log(`  Contains rule: field="${targetValue}", looking for="${rule.value}", result=${result}`);
+        }
+        break;
       case 'when_field_not_contains':
-        return !String(targetValue).includes(String(rule.value));
+        result = !String(targetValue).includes(String(rule.value));
+        console.log(`  Not contains rule: field="${targetValue}", looking for="${rule.value}", result=${result}`);
+        break;
       case 'when_field_greater_than':
-        return parseFloat(targetValue) > parseFloat(rule.value);
+        result = parseFloat(targetValue) > parseFloat(rule.value);
+        console.log(`  Greater than rule: ${targetValue} > ${rule.value} = ${result}`);
+        break;
       case 'when_field_less_than':
-        return parseFloat(targetValue) < parseFloat(rule.value);
+        result = parseFloat(targetValue) < parseFloat(rule.value);
+        console.log(`  Less than rule: ${targetValue} < ${rule.value} = ${result}`);
+        break;
       case 'when_field_greater_equal':
-        return parseFloat(targetValue) >= parseFloat(rule.value);
+        result = parseFloat(targetValue) >= parseFloat(rule.value);
+        console.log(`  Greater equal rule: ${targetValue} >= ${rule.value} = ${result}`);
+        break;
       case 'when_field_less_equal':
-        return parseFloat(targetValue) <= parseFloat(rule.value);
+        result = parseFloat(targetValue) <= parseFloat(rule.value);
+        console.log(`  Less equal rule: ${targetValue} <= ${rule.value} = ${result}`);
+        break;
       default:
-        return false;
+        result = false;
+        console.log(`  Unknown condition: ${rule.condition}, result=${result}`);
+        break;
     }
+    
+    return result;
   }
 
   applyRule(rule, fieldValue) {
@@ -405,7 +448,15 @@ class ConditionalLogicHandler {
     
     switch (input.type) {
       case 'checkbox':
-        return input.checked;
+        // For single checkbox, return checked state
+        if (fieldElement.querySelectorAll('input[type="checkbox"]').length === 1) {
+          return input.checked;
+        } else {
+          // For multiple checkboxes (checkbox field), return selected values as comma-separated string
+          const checkedBoxes = fieldElement.querySelectorAll('input[type="checkbox"]:checked');
+          const values = Array.from(checkedBoxes).map(cb => cb.value);
+          return values.join(',');
+        }
       case 'radio':
         const checkedRadio = fieldElement.querySelector('input[type="radio"]:checked');
         return checkedRadio ? checkedRadio.value : '';
