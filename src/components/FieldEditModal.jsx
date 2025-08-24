@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import axios from "axios"
 import { Plus, X, GripVertical, Edit, Eye } from "lucide-react"
 import {
@@ -25,8 +25,6 @@ import FieldTreeModal from "./FieldTreeModal"
 import ConditionalLogicTab from "./ConditionalLogicTab"
 
 function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false }) {
-  // Add debugging
-  console.log("FieldEditModal rendered with:", { isOpen, field, component })
 
   const [label, setLabel] = useState("")
   const [name, setName] = useState("")
@@ -132,6 +130,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     setToggleConfig(prev => ({ ...prev, ...config }));
   }, []);
 
+  // Memoized available fields to prevent array recreation on every render
+  const availableFields = useMemo(() => {
+    return component?.fields || [];
+  }, [component?.fields]);
+
   const availableFieldTypes = [
     "text",
     "textarea",
@@ -155,7 +158,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   ]
 
   useEffect(() => {
-    console.log("FieldEditModal useEffect triggered:", { field, isOpen })
 
     if (field) {
       console.log("Loading field data:", field)
@@ -2212,7 +2214,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 <ConditionalLogicTab
                   fieldConfig={toggleConfig}
                   onConfigChange={handleToggleConfigChange}
-                  availableFields={component?.fields || []}
+                  availableFields={availableFields}
                   isSubmitting={isSubmitting}
                   fieldType="toggle"
                 />
@@ -2501,7 +2503,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 <ConditionalLogicTab
                   fieldConfig={conditionalLogicConfig}
                   onConfigChange={setConditionalLogicConfig}
-                  availableFields={component?.fields || []}
+                  availableFields={availableFields}
                   isSubmitting={isSubmitting}
                   fieldType={type}
                 />

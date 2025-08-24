@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Plus, X, HelpCircle } from 'lucide-react';
 
 const ConditionalLogicTab = ({ 
@@ -14,6 +14,8 @@ const ConditionalLogicTab = ({
     conditional_logic: fieldConfig?.conditional_logic || []
   });
 
+
+
   // Update local state when prop changes
   useEffect(() => {
     if (fieldConfig) {
@@ -27,7 +29,7 @@ const ConditionalLogicTab = ({
 
   // Notify parent of config changes (only when config actually changes)
   useEffect(() => {
-    // Always call onConfigChange, but skip render-causing dependency on onConfigChange
+    // Call onConfigChange, but don't include it in dependencies to avoid render loops
     onConfigChange(config);
   }, [config]); // Removed onConfigChange dependency to prevent unnecessary calls
 
@@ -237,4 +239,4 @@ const ConditionalLogicTab = ({
   );
 };
 
-export default ConditionalLogicTab;
+export default memo(ConditionalLogicTab);
