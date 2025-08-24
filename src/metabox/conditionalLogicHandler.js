@@ -330,9 +330,10 @@ class ConditionalLogicHandler {
         break;
       case 'when_field_contains':
         if (rule.value === '' || rule.value === null || rule.value === undefined) {
-          // If checking for empty value, check if field is actually empty
-          result = targetValue === '' || targetValue === null || targetValue === undefined;
-          console.log(`  Contains empty rule: field="${targetValue}", checking if empty, result=${result}`);
+          // If checking for empty value, this condition should never be true
+          // (empty contains rule doesn't make logical sense)
+          result = false;
+          console.log(`  Contains empty rule: field="${targetValue}", empty condition always false, result=${result}`);
         } else {
           result = String(targetValue).includes(String(rule.value));
           console.log(`  Contains rule: field="${targetValue}", looking for="${rule.value}", result=${result}`);
@@ -450,15 +451,12 @@ class ConditionalLogicHandler {
     
     switch (input.type) {
       case 'checkbox':
-        // For single checkbox, return checked state
-        if (fieldElement.querySelectorAll('input[type="checkbox"]').length === 1) {
-          return input.checked;
-        } else {
-          // For multiple checkboxes (checkbox field), return selected values as comma-separated string
-          const checkedBoxes = fieldElement.querySelectorAll('input[type="checkbox"]:checked');
-          const values = Array.from(checkedBoxes).map(cb => cb.value);
-          return values.join(',');
-        }
+        // For multiple checkboxes (checkbox field), return selected values as comma-separated string
+        const checkedBoxes = fieldElement.querySelectorAll('input[type="checkbox"]:checked');
+        const values = Array.from(checkedBoxes).map(cb => cb.value);
+        const result = values.join(',');
+        console.log(`  Checkbox field values: checked boxes=${checkedBoxes.length}, values=[${values.join(', ')}], result="${result}"`);
+        return result;
       case 'radio':
         const checkedRadio = fieldElement.querySelector('input[type="radio"]:checked');
         return checkedRadio ? checkedRadio.value : '';
