@@ -90,13 +90,20 @@ const ConditionalLogicTab = ({
           if (rule.id === ruleId) {
             const updatedRule = { ...rule, [field]: value };
             
-            // Reset condition and value when target field changes
+            // Reset condition and value when target field changes (but only for new rules or if condition/value are empty)
             if (field === 'target_field') {
               const targetField = filteredAvailableFields.find(f => f.id === value);
               if (targetField) {
-                updatedRule.condition = getDefaultConditionForFieldType(targetField.type);
-                updatedRule.value = getDefaultValueForFieldType(targetField.type);
-                console.log(`ConditionalLogicTab: Reset defaults for field type ${targetField.type} - condition: ${updatedRule.condition}, value: ${updatedRule.value}`);
+                // Only reset if this is a new rule or the rule is incomplete
+                const shouldReset = !rule.condition || rule.condition === '' || !rule.target_field;
+                
+                if (shouldReset) {
+                  updatedRule.condition = getDefaultConditionForFieldType(targetField.type);
+                  updatedRule.value = getDefaultValueForFieldType(targetField.type);
+                  console.log(`ConditionalLogicTab: Reset defaults for field type ${targetField.type} - condition: ${updatedRule.condition}, value: ${updatedRule.value}`);
+                } else {
+                  console.log(`ConditionalLogicTab: Not resetting existing rule with condition: ${rule.condition}, value: ${rule.value}`);
+                }
               }
             }
             
@@ -146,6 +153,11 @@ const ConditionalLogicTab = ({
       case 'number':
       case 'range':
         return '0';
+      case 'checkbox':
+      case 'select':
+      case 'radio':
+        // For fields with options, don't auto-reset to empty - let user choose
+        return '';
       default:
         return '';
     }

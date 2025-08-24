@@ -339,10 +339,9 @@ class ConditionalLogicHandler {
         break;
       case 'when_field_contains':
         if (rule.value === '' || rule.value === null || rule.value === undefined) {
-          // If checking for empty value, this condition should never be true
-          // (empty contains rule doesn't make logical sense)
-          result = false;
-          console.log(`  Contains empty rule: field="${targetValue}", empty condition always false, result=${result}`);
+          // If checking for empty value, check if field is actually empty
+          result = targetValue === '' || targetValue === null || targetValue === undefined;
+          console.log(`  Contains empty rule: field="${targetValue}", checking if field is empty, result=${result}`);
         } else {
           result = String(targetValue).includes(String(rule.value));
           console.log(`  Contains rule: field="${targetValue}", looking for="${rule.value}", result=${result}`);
