@@ -5,9 +5,11 @@
 
 class ConditionalLogicHandler {
   constructor() {
+    console.log('CCC: Initializing ConditionalLogicHandler constructor');
     this.fieldsWithConditionalLogic = new Map();
     this.targetFields = new Map();
     this.init();
+    console.log('CCC: ConditionalLogicHandler setup complete');
   }
 
   init() {
@@ -485,11 +487,15 @@ class ConditionalLogicHandler {
   }
 }
 
+console.log('CCC: Conditional Logic Handler script loaded');
+
 // Initialize the handler when the script loads
 const conditionalLogicHandler = new ConditionalLogicHandler();
 
 // Make it available globally for debugging and manual control
 window.conditionalLogicHandler = conditionalLogicHandler;
+
+console.log('CCC: Conditional Logic Handler initialized:', conditionalLogicHandler);
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
