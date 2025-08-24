@@ -57,6 +57,34 @@ function MetaboxApp() {
     });
   }, []);
 
+  // Clear validation errors for a specific field (used by conditional logic)
+  const clearValidationErrorsForField = useCallback((fieldId) => {
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      Object.keys(newErrors).forEach(instanceId => {
+        if (newErrors[instanceId] && newErrors[instanceId][fieldId]) {
+          delete newErrors[instanceId][fieldId];
+          if (Object.keys(newErrors[instanceId]).length === 0) {
+            delete newErrors[instanceId];
+          }
+        }
+      });
+      validationErrorsRef.current = newErrors;
+      return newErrors;
+    });
+  }, []);
+
+  // Expose metabox app functions globally for conditional logic handler
+  useEffect(() => {
+    window.cccMetaboxApp = {
+      clearValidationErrorsForField
+    };
+    
+    return () => {
+      delete window.cccMetaboxApp;
+    };
+  }, [clearValidationErrorsForField]);
+
   // Get post ID from WordPress
   const getPostId = () => {
     if (typeof cccData !== 'undefined' && cccData.postId) {
@@ -324,9 +352,25 @@ function MetaboxApp() {
     }
     
     const handleFormSubmit = (e) => {
-      // Check for validation errors
+      // Check for validation errors, but ignore errors from hidden fields
       const currentValidationErrors = validationErrorsRef.current;
-      if (Object.keys(currentValidationErrors).length > 0) {
+      const visibleValidationErrors = {};
+      
+      // Filter out errors from hidden fields
+      Object.keys(currentValidationErrors).forEach(instanceId => {
+        Object.keys(currentValidationErrors[instanceId]).forEach(fieldId => {
+          const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`);
+          // Only include errors from visible fields (not hidden by conditional logic)
+          if (fieldElement && !fieldElement.classList.contains('ccc-field-hidden')) {
+            if (!visibleValidationErrors[instanceId]) {
+              visibleValidationErrors[instanceId] = {};
+            }
+            visibleValidationErrors[instanceId][fieldId] = currentValidationErrors[instanceId][fieldId];
+          }
+        });
+      });
+      
+      if (Object.keys(visibleValidationErrors).length > 0) {
         e.preventDefault();
         
         // Show error message to user
@@ -334,8 +378,8 @@ function MetaboxApp() {
         alert(errorMessage);
         
         // Scroll to first error field
-        const firstErrorInstance = Object.keys(currentValidationErrors)[0];
-        const firstErrorField = Object.keys(currentValidationErrors[firstErrorInstance])[0];
+        const firstErrorInstance = Object.keys(visibleValidationErrors)[0];
+        const firstErrorField = Object.keys(visibleValidationErrors[firstErrorInstance])[0];
         const errorFieldElement = document.querySelector(`[data-field-id="${firstErrorField}"]`);
         if (errorFieldElement) {
           errorFieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -418,12 +462,28 @@ function MetaboxApp() {
           Saving changes...
         </div>
       )}
-      {Object.keys(validationErrors).length > 0 && (
-        <div className="bg-red-50 border-b border-red-200 px-4 py-2 text-sm text-red-700 flex items-center">
-          <AlertTriangle className="w-4 h-4 mr-2" />
-          Validation errors detected. Please fix them before saving.
-        </div>
-      )}
+      {(() => {
+        // Filter validation errors to only show errors from visible fields
+        const visibleErrors = {};
+        Object.keys(validationErrors).forEach(instanceId => {
+          Object.keys(validationErrors[instanceId]).forEach(fieldId => {
+            const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`);
+            if (fieldElement && !fieldElement.classList.contains('ccc-field-hidden')) {
+              if (!visibleErrors[instanceId]) {
+                visibleErrors[instanceId] = {};
+              }
+              visibleErrors[instanceId][fieldId] = validationErrors[instanceId][fieldId];
+            }
+          });
+        });
+        
+        return Object.keys(visibleErrors).length > 0 && (
+          <div className="bg-red-50 border-b border-red-200 px-4 py-2 text-sm text-red-700 flex items-center">
+            <AlertTriangle className="w-4 h-4 mr-2" />
+            Validation errors detected. Please fix them before saving.
+          </div>
+        );
+      })()}
       <ComponentList
         components={components}
         isReadOnly={false}

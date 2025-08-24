@@ -333,6 +333,12 @@ class ConditionalLogicHandler {
       fieldElement.classList.remove('ccc-field-hidden');
     } else {
       fieldElement.classList.add('ccc-field-hidden');
+      
+      // Clear validation errors for hidden fields
+      const fieldId = fieldElement.getAttribute('data-field-id');
+      if (fieldId && window.cccMetaboxApp && window.cccMetaboxApp.clearValidationErrorsForField) {
+        window.cccMetaboxApp.clearValidationErrorsForField(fieldId);
+      }
     }
   }
 

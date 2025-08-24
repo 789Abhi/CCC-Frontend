@@ -44,32 +44,21 @@ const ToggleField = ({
       </div>
 
       {/* Toggle Switch */}
-      <div className="flex items-center space-x-3">
-        <div className="relative">
-          <input
-            type="checkbox"
-            id={`toggle-${fieldId}`}
-            className="sr-only"
-            checked={isEnabled}
-            onChange={(e) => handleToggleChange(e.target.checked)}
-          />
-          <label
-            htmlFor={`toggle-${fieldId}`}
-            className={`block w-14 h-8 rounded-full cursor-pointer transition-colors duration-200 ease-in-out ${
-              isEnabled ? 'bg-blue-600' : 'bg-gray-300'
+      <div className="flex items-center">
+        <button
+          type="button"
+          className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors duration-200 focus:outline-none border-2 border-pink-400 ${
+            isEnabled ? 'bg-green-400' : 'bg-gray-200'
+          }`}
+          onClick={() => handleToggleChange(!isEnabled)}
+          aria-pressed={isEnabled}
+        >
+          <span
+            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${
+              isEnabled ? 'translate-x-6' : 'translate-x-1'
             }`}
-          >
-            <span
-              className={`block w-6 h-6 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out ${
-                isEnabled ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </label>
-        </div>
-        
-        <span className="text-sm font-medium text-gray-700">
-          {isEnabled ? 'Enabled' : 'Disabled'}
-        </span>
+          />
+        </button>
       </div>
 
       {/* Field Description */}
