@@ -25,10 +25,11 @@ const ConditionalLogicTab = ({
     }
   }, [fieldConfig]);
 
-  // Notify parent of config changes
+  // Notify parent of config changes (only when config actually changes)
   useEffect(() => {
+    // Always call onConfigChange, but skip render-causing dependency on onConfigChange
     onConfigChange(config);
-  }, [config, onConfigChange]);
+  }, [config]); // Removed onConfigChange dependency to prevent unnecessary calls
 
   const addRule = () => {
     const newRule = {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { Plus, X, GripVertical, Edit, Eye } from "lucide-react"
 import {
@@ -126,6 +126,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   const [availableTaxonomies, setAvailableTaxonomies] = useState([]);
 
   const isEditing = !!field
+
+  // Memoized callback for toggle config changes to prevent unnecessary rerenders
+  const handleToggleConfigChange = useCallback((config) => {
+    setToggleConfig(prev => ({ ...prev, ...config }));
+  }, []);
 
   const availableFieldTypes = [
     "text",
@@ -444,6 +449,21 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           searchable: true,
           orderby: 'display_name',
           order: 'ASC'
+        });
+        
+        // Reset conditional logic config for new fields
+        setConditionalLogicConfig({
+          field_condition: 'always_show',
+          conditional_logic: [],
+          logic_operator: 'AND'
+        });
+        
+        // Reset toggle config for new fields
+        setToggleConfig({
+          default_value: false,
+          field_condition: 'always_show',
+          conditional_logic: [],
+          logic_operator: 'AND'
         });
       }
 
@@ -2191,7 +2211,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 {/* Conditional Logic */}
                 <ConditionalLogicTab
                   fieldConfig={toggleConfig}
-                  onConfigChange={(config) => setToggleConfig(prev => ({ ...prev, ...config }))}
+                  onConfigChange={handleToggleConfigChange}
                   availableFields={component?.fields || []}
                   isSubmitting={isSubmitting}
                   fieldType="toggle"
