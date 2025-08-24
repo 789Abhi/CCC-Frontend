@@ -177,7 +177,22 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
             <div className="text-center text-gray-400 italic">No fields for this component</div>
           ) : (
             <div>
-              {fields.map(field => {
+              {/* Helper function to wrap field components with conditional logic */}
+              {(() => {
+                const wrapFieldWithConditionalLogic = (fieldComponent, field) => {
+                  return (
+                    <div 
+                      key={field.id}
+                      className="ccc-field ccc-field-wrapper"
+                      data-conditional-logic={field?.config ? JSON.stringify(field.config) : ''}
+                      data-field-id={field.id}
+                    >
+                      {fieldComponent}
+                    </div>
+                  );
+                };
+
+                return fields.map(field => {
                 if (field.type === 'text') {
                   const isRequired = field.required || false;
                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
@@ -193,23 +208,17 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                      }
                    };
                   
-                  return (
-                    <div 
-                      key={field.id}
-                      className="ccc-field ccc-field-wrapper"
-                      data-conditional-logic={field?.config ? JSON.stringify(field.config) : ''}
-                      data-field-id={field.id}
-                    >
-                      <TextField
-                        label={field.label}
-                        value={value}
-                        onChange={handleChange}
-                        placeholder={field.placeholder}
-                        required={isRequired}
-                        error={isRequired && !value?.trim()}
-                        fieldId={field.id}
-                      />
-                    </div>
+                  return wrapFieldWithConditionalLogic(
+                    <TextField
+                      label={field.label}
+                      value={value}
+                      onChange={handleChange}
+                      placeholder={field.placeholder}
+                      required={isRequired}
+                      error={isRequired && !value?.trim()}
+                      fieldId={field.id}
+                    />,
+                    field
                   );
                 }
                 if (field.type === 'textarea') {
@@ -222,9 +231,8 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                   const handleChange = val => {
                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
                   };
-                  return (
+                  return wrapFieldWithConditionalLogic(
                     <TextareaField
-                      key={field.id}
                       label={field.label}
                       value={value}
                       onChange={handleChange}
@@ -232,7 +240,8 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       required={isRequired}
                       error={isRequired && !value?.trim()}
                       fieldId={field.id}
-                    />
+                    />,
+                    field
                   );
                 }
                 if (field.type === 'email') {
@@ -800,7 +809,8 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                 }
                 // Add more field types here as needed
                 return null;
-              })}
+                });
+              })()}
             </div>
           )}
         </div>

@@ -49,6 +49,22 @@ class ConditionalLogicHandler {
   setup() {
     this.processExistingFieldsWithConditionalLogic();
     this.setupMutationObserver();
+    
+    // Apply initial conditional logic state
+    setTimeout(() => {
+      this.applyInitialConditionalLogic();
+    }, 100);
+  }
+
+  applyInitialConditionalLogic() {
+    console.log('CCC: Applying initial conditional logic state');
+    
+    // Trigger evaluation for all fields to set initial visibility
+    this.fieldsWithConditionalLogic.forEach((fieldData, fieldId) => {
+      const currentValue = this.getFieldValue(fieldData.element);
+      console.log(`CCC: Initial value for field ${fieldId}:`, currentValue);
+      this.handleFieldChange(fieldId, currentValue);
+    });
   }
 
   processExistingFieldsWithConditionalLogic() {
@@ -159,34 +175,42 @@ class ConditionalLogicHandler {
   }
 
   handleFieldChange(fieldId, fieldValue) {
-    const field = this.fieldsWithConditionalLogic.get(fieldId);
-    if (!field) return;
-
-    const { config } = field;
+    console.log(`CCC: Field ${fieldId} changed to:`, fieldValue);
     
-    // Handle overall field condition
-    if (config.field_condition === 'always_show') {
-      // Field is always visible, no conditional logic needed
-      return;
-    }
-
-    // Apply conditional logic based on field condition
-    if (config.field_condition === 'show_when' || config.field_condition === 'hide_when') {
-      const shouldShow = this.evaluateConditionalLogic(config, fieldValue);
+    // When a field changes, we need to:
+    // 1. Check all OTHER fields that might have conditional logic depending on this field
+    // 2. Apply conditional logic to those fields based on this field's new value
+    
+    this.fieldsWithConditionalLogic.forEach((targetFieldData, targetFieldId) => {
+      const { config, element } = targetFieldData;
       
-      if (config.field_condition === 'show_when') {
-        this.applyFieldVisibility(field.element, shouldShow);
-      } else if (config.field_condition === 'hide_when') {
-        this.applyFieldVisibility(field.element, !shouldShow);
+      // Skip if this field doesn't have conditional logic
+      if (config.field_condition === 'always_show') {
+        return;
       }
-    }
-
-    // Apply rules to target fields
-    if (config.conditional_logic && Array.isArray(config.conditional_logic)) {
-      config.conditional_logic.forEach(rule => {
-        this.applyRule(rule, fieldValue);
-      });
-    }
+      
+      // Check if this target field has rules that depend on the changed field
+      if (config.conditional_logic && Array.isArray(config.conditional_logic)) {
+        const hasRuleForChangedField = config.conditional_logic.some(rule => 
+          rule.target_field === fieldId
+        );
+        
+        if (hasRuleForChangedField) {
+          console.log(`CCC: Evaluating conditional logic for field ${targetFieldId} based on ${fieldId}`);
+          
+          // Evaluate all rules for this target field
+          const shouldShow = this.evaluateConditionalLogicForField(config, fieldId, fieldValue);
+          
+          console.log(`CCC: Field ${targetFieldId} should ${shouldShow ? 'show' : 'hide'} based on ${config.field_condition}`);
+          
+          if (config.field_condition === 'show_when') {
+            this.applyFieldVisibility(element, shouldShow);
+          } else if (config.field_condition === 'hide_when') {
+            this.applyFieldVisibility(element, !shouldShow);
+          }
+        }
+      }
+    });
   }
 
   evaluateConditionalLogic(config, fieldValue) {
@@ -195,6 +219,28 @@ class ConditionalLogicHandler {
     }
 
     const results = config.conditional_logic.map(rule => this.evaluateRule(rule, fieldValue));
+    
+    if (config.logic_operator === 'AND') {
+      return results.every(result => result === true);
+    } else {
+      return results.some(result => result === true);
+    }
+  }
+
+  evaluateConditionalLogicForField(config, changedFieldId, changedFieldValue) {
+    if (!config.conditional_logic || config.conditional_logic.length === 0) {
+      return true;
+    }
+
+    const results = config.conditional_logic.map(rule => {
+      if (rule.target_field === changedFieldId) {
+        // Use the provided field value for this specific rule
+        return this.evaluateRuleWithValue(rule, changedFieldValue);
+      } else {
+        // Get current value for other fields
+        return this.evaluateRule(rule, null);
+      }
+    });
     
     if (config.logic_operator === 'AND') {
       return results.every(result => result === true);
@@ -217,7 +263,14 @@ class ConditionalLogicHandler {
     
     const targetValue = this.getFieldValue(targetField);
     
+    return this.evaluateRuleWithValue(rule, targetValue);
+  }
+
+  evaluateRuleWithValue(rule, targetValue) {
     switch (rule.condition) {
+      case 'when_toggle_is':
+        const expectedValue = rule.value === '1' ? true : false;
+        return targetValue === expectedValue;
       case 'when_field_equals':
         return targetValue == rule.value;
       case 'when_field_not_equals':
