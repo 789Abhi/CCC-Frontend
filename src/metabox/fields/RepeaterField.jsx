@@ -28,34 +28,72 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
     }
   });
   
+  // Fix field ID references in conditional logic to match current field IDs
+  const fieldsWithFixedConditionalLogic = nestedFields.map(field => {
+    if (field.config && field.config.conditional_logic && Array.isArray(field.config.conditional_logic)) {
+      const fixedConditionalLogic = field.config.conditional_logic.map(rule => {
+        // Find the target field by checking if any field references the old ID
+        const targetField = nestedFields.find(f => f.id === rule.target_field);
+        if (!targetField) {
+          // Target field not found by ID, try to find by matching field type and position
+          // For simple cases like toggle->image, assume the target is the other field
+          const otherFields = nestedFields.filter(f => f.name !== field.name);
+          if (otherFields.length === 1) {
+            console.log(`Fixing conditional logic: updating target_field from "${rule.target_field}" to "${otherFields[0].id}" for field "${field.name}"`);
+            return {
+              ...rule,
+              target_field: otherFields[0].id
+            };
+          }
+        }
+        return rule;
+      });
+      
+      return {
+        ...field,
+        config: {
+          ...field.config,
+          conditional_logic: fixedConditionalLogic
+        }
+      };
+    }
+    return field;
+  });
+  
   // Use conditional logic for nested fields within this repeater item
-  const { shouldRenderField } = useConditionalLogic(nestedFields, itemValuesByFieldId);
+  const { shouldRenderField } = useConditionalLogic(fieldsWithFixedConditionalLogic, itemValuesByFieldId);
   
   // Debug conditional logic
   useEffect(() => {
     console.log(`Repeater item ${index} conditional logic:`);
-    console.log('  Nested fields:', nestedFields.map(f => ({
+    console.log('  Original nested fields:', nestedFields.map(f => ({
       id: f.id, 
       name: f.name, 
       type: f.type, 
-      config: f.config
+      originalConfig: f.config
+    })));
+    console.log('  Fixed nested fields:', fieldsWithFixedConditionalLogic.map(f => ({
+      id: f.id, 
+      name: f.name, 
+      type: f.type, 
+      fixedConfig: f.config
     })));
     console.log('  Item values (by name):', item);
     console.log('  Item values (by field ID):', itemValuesByFieldId);
-    console.log('  Visible fields:', nestedFields.filter(f => shouldRenderField(f.id)).map(f => ({
+    console.log('  Visible fields:', fieldsWithFixedConditionalLogic.filter(f => shouldRenderField(f.id)).map(f => ({
       id: f.id,
       name: f.name,
       visible: shouldRenderField(f.id)
     })));
     
     // Debug each field's conditional logic evaluation
-    nestedFields.forEach(field => {
+    fieldsWithFixedConditionalLogic.forEach(field => {
       console.log(`  Field ${field.name} (ID: ${field.id}):`, {
         shouldRender: shouldRenderField(field.id),
         config: field.config
       });
     });
-  }, [nestedFields, item, shouldRenderField, index, itemValuesByFieldId]);
+  }, [nestedFields, fieldsWithFixedConditionalLogic, item, shouldRenderField, index, itemValuesByFieldId]);
   
   // Close dropdown when clicking outside
   useEffect(() => {
