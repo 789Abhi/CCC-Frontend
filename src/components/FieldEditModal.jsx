@@ -526,6 +526,85 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             });
           }
         }
+        
+        // Comprehensive field configuration loading for all field types
+        if (field.config) {
+          try {
+            const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+            
+            // Load field-specific configurations that might have been missed
+            if (field.type === 'image' && config.return_type) {
+              setImageReturnType(config.return_type);
+            }
+            
+            if (field.type === 'video' && config.return_type) {
+              setVideoReturnType(config.return_type);
+            }
+            
+            if (field.type === 'select' && config.multiple !== undefined) {
+              setSelectMultiple(!!config.multiple);
+            }
+            
+            if (field.type === 'file' && config.allowed_types) {
+              setFieldConfig(prev => ({
+                ...prev,
+                allowed_types: config.allowed_types,
+                max_file_size: config.max_file_size !== undefined ? config.max_file_size : 25,
+                return_type: config.return_type || 'url',
+                show_preview: config.show_preview !== undefined ? config.show_preview : true,
+                show_download: config.show_download !== undefined ? config.show_download : true,
+                show_delete: config.show_delete !== undefined ? config.show_delete : true
+              }));
+            }
+            
+            if (field.type === 'user' && config.role_filter) {
+              setUserConfig(prev => ({
+                ...prev,
+                role_filter: config.role_filter || [],
+                multiple: config.multiple !== undefined ? config.multiple : false,
+                return_type: config.return_type || 'id',
+                searchable: config.searchable !== undefined ? config.searchable : true,
+                orderby: config.orderby || 'display_name',
+                order: config.order || 'ASC'
+              }));
+            }
+            
+            if (field.type === 'relationship' && config.filter_post_types) {
+              setRelationshipConfig(prev => ({
+                ...prev,
+                filter_post_types: config.filter_post_types || [],
+                filter_post_status: config.filter_post_status || [],
+                filter_taxonomy: config.filter_taxonomy || '',
+                filters: config.filters || ['search', 'post_type'],
+                max_posts: config.max_posts || 0,
+                return_format: config.return_format || 'object'
+              }));
+            }
+            
+            if (field.type === 'link' && config.link_types) {
+              setLinkConfig(prev => ({
+                ...prev,
+                link_types: config.link_types || ['internal', 'external'],
+                default_type: config.default_type || 'internal',
+                post_types: config.post_types || ['post', 'page'],
+                show_target: config.show_target !== undefined ? config.show_target : true,
+                show_title: config.show_title !== undefined ? config.show_title : true
+              }));
+            }
+            
+            if (field.type === 'wysiwyg' && config.editor_settings) {
+              setWysiwygSettings(prev => ({
+                ...prev,
+                media_buttons: config.editor_settings?.media_buttons ?? true,
+                teeny: config.editor_settings?.teeny ?? false,
+                textarea_rows: config.editor_settings?.textarea_rows ?? 10,
+              }));
+            }
+            
+          } catch (e) {
+            console.error("Error parsing comprehensive field config:", e);
+          }
+        }
       } else {
         console.log("No field config found")
         if (field.type === "repeater") {
