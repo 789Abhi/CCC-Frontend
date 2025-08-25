@@ -34,6 +34,7 @@ import ChatGPTModal from "./ChatGPTModal"
 import ComponentEditNameModal from "./ComponentEditModal"
 import FieldVisualTreeModal from "./FieldVisualTreeModal"
 import DesignChatGPTModal from "./DesignChatGPTModal"
+import CssLibrarySelector from './CssLibrarySelector';
 
 const ComponentList = () => {
   const [showNewComponentDialog, setShowNewComponentDialog] = useState(false)
@@ -1031,6 +1032,9 @@ const ComponentList = () => {
             </button>
           </div>
         </div>
+
+        {/* CSS Library Selection */}
+        <CssLibrarySelector />
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
