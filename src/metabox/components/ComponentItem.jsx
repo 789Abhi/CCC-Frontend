@@ -83,8 +83,29 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
   // Get current field values for this component instance
   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
 
+  // Get all available fields from all components for conditional logic
+  const getAllAvailableFields = () => {
+    const allFields = [];
+    
+    // Get fields from the current component
+    if (fields && Array.isArray(fields)) {
+      allFields.push(...fields);
+    }
+    
+    // Get fields from other components if availableComponents is passed
+    if (availableComponents && Array.isArray(availableComponents)) {
+      availableComponents.forEach(comp => {
+        if (comp.id !== component.id && comp.fields && Array.isArray(comp.fields)) {
+          allFields.push(...comp.fields);
+        }
+      });
+    }
+    
+    return allFields;
+  };
+
   // Use conditional logic hook for React-based field visibility
-  const { shouldRenderField } = useConditionalLogic(fields, instanceFieldValues);
+  const { shouldRenderField } = useConditionalLogic(fields, instanceFieldValues, getAllAvailableFields());
 
   // Find required info for fields
   const compDef = availableComponents?.find(c => c.id === component.id);
@@ -726,6 +747,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       fieldId={field.id}
                       instanceId={component.instance_id}
                       children={field.children || []}
+                      mainComponentFields={getAllAvailableFields()}
                     />
                   );
                 }

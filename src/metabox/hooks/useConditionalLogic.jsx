@@ -4,7 +4,7 @@ import { useMemo } from 'react';
  * React hook for handling conditional logic in metabox fields
  * This replaces the old JavaScript-based conditional logic handler
  */
-export const useConditionalLogic = (fields = [], fieldValues = {}) => {
+export const useConditionalLogic = (fields = [], fieldValues = {}, mainComponentFields = []) => {
 
   // Calculate visible fields directly with useMemo to avoid re-render issues
   const visibleFields = useMemo(() => {
@@ -16,6 +16,14 @@ export const useConditionalLogic = (fields = [], fieldValues = {}) => {
       let targetField = fields.find(f => f.id === fieldId);
       if (!targetField) {
         targetField = fields.find(f => f.name === fieldId);
+      }
+      
+      // If not found in current fields, try main component fields
+      if (!targetField && mainComponentFields.length > 0) {
+        targetField = mainComponentFields.find(f => f.id === fieldId);
+        if (!targetField) {
+          targetField = mainComponentFields.find(f => f.name === fieldId);
+        }
       }
       
       // Get the value using the field's ID or name
@@ -44,6 +52,14 @@ export const useConditionalLogic = (fields = [], fieldValues = {}) => {
       let targetField = fields.find(f => f.id === rule.target_field);
       if (!targetField) {
         targetField = fields.find(f => f.name === rule.target_field);
+      }
+      
+      // If not found in current fields, try main component fields
+      if (!targetField && mainComponentFields.length > 0) {
+        targetField = mainComponentFields.find(f => f.id === rule.target_field);
+        if (!targetField) {
+          targetField = mainComponentFields.find(f => f.name === rule.target_field);
+        }
       }
       
       switch (rule.condition) {
@@ -110,6 +126,14 @@ export const useConditionalLogic = (fields = [], fieldValues = {}) => {
         // If not found by ID, try to find by name (for nested fields)
         if (!targetField) {
           targetField = fields.find(f => f.name === rule.target_field);
+        }
+        
+        // If not found in current fields, try main component fields
+        if (!targetField && mainComponentFields.length > 0) {
+          targetField = mainComponentFields.find(f => f.id === rule.target_field);
+          if (!targetField) {
+            targetField = mainComponentFields.find(f => f.name === rule.target_field);
+          }
         }
         
         return targetField !== undefined;

@@ -15,7 +15,7 @@ import ToggleField from './ToggleField';
 import useConditionalLogic from '../hooks/useConditionalLogic';
 
 // Sortable Repeater Item Component
-const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemoveItem, onToggleHidden, instanceId, fieldId }) => {
+const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemoveItem, onToggleHidden, instanceId, fieldId, mainComponentFields = [] }) => {
   const [isExpanded, setIsExpanded] = useState(true); // Default expanded
   const [isHidden, setIsHidden] = useState(item._hidden || false); // Get hidden state from item
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Dropdown menu state
@@ -82,7 +82,7 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
   });
   
   // Use conditional logic for nested fields within this repeater item
-  const { shouldRenderField } = useConditionalLogic(fieldsWithFixedConditionalLogic, itemValuesByFieldId);
+  const { shouldRenderField } = useConditionalLogic(fieldsWithFixedConditionalLogic, itemValuesByFieldId, mainComponentFields);
   
 
   
@@ -510,7 +510,8 @@ const RepeaterField = ({
   config = {},
   fieldId,
   instanceId,
-  children = [] // Add children prop for nested fields
+  children = [], // Add children prop for nested fields
+  mainComponentFields = [] // Add main component fields for conditional logic evaluation
 }) => {
   const [items, setItems] = useState([]);
   const isInternalUpdate = useRef(false); // Track if update is from internal state change
@@ -698,6 +699,7 @@ const RepeaterField = ({
                   onToggleHidden={toggleItemHidden}
                   instanceId={instanceId}
                   fieldId={fieldId}
+                  mainComponentFields={mainComponentFields}
                 />
               ))}
             </div>
