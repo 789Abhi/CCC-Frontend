@@ -51,27 +51,30 @@ const ConditionalLogicTab = ({
 
   // Clean up orphaned rules when available fields change
   useEffect(() => {
-    if (config.conditional_logic && config.conditional_logic.length > 0) {
-      const availableFieldIds = new Set(filteredAvailableFields.map(f => f.id));
-      const cleanedRules = config.conditional_logic.filter(rule => {
-        // Keep rules that target existing fields
-        return availableFieldIds.has(rule.target_field);
-      });
+    setConfig(prev => {
+      if (prev.conditional_logic && prev.conditional_logic.length > 0) {
+        const availableFieldIds = new Set(filteredAvailableFields.map(f => f.id));
+        const cleanedRules = prev.conditional_logic.filter(rule => {
+          // Keep rules that target existing fields
+          return availableFieldIds.has(rule.target_field);
+        });
 
-      // If some rules were removed, update the config
-      if (cleanedRules.length !== config.conditional_logic.length) {
-        const removedCount = config.conditional_logic.length - cleanedRules.length;
-        console.warn(`Cleaned up ${removedCount} orphaned conditional logic rule(s) that referenced deleted fields`);
-        
-        setConfig(prev => ({
-          ...prev,
-          conditional_logic: cleanedRules,
-          // If all rules were removed, reset to always show
-          field_condition: cleanedRules.length === 0 ? 'always_show' : prev.field_condition
-        }));
+        // If some rules were removed, update the config
+        if (cleanedRules.length !== prev.conditional_logic.length) {
+          const removedCount = prev.conditional_logic.length - cleanedRules.length;
+          console.warn(`Cleaned up ${removedCount} orphaned conditional logic rule(s) that referenced deleted fields`);
+          
+          return {
+            ...prev,
+            conditional_logic: cleanedRules,
+            // If all rules were removed, reset to always show
+            field_condition: cleanedRules.length === 0 ? 'always_show' : prev.field_condition
+          };
+        }
       }
-    }
-  }, [filteredAvailableFields, config.conditional_logic]);
+      return prev; // No changes needed
+    });
+  }, [filteredAvailableFields]); // Only depend on available fields, not the config itself
 
   const addRule = () => {
     isUserInteracting.current = true;
@@ -106,7 +109,7 @@ const ConditionalLogicTab = ({
     isUserInteracting.current = true;
     setConfig(prev => {
       const newConfig = {
-        ...prev,
+      ...prev,
         conditional_logic: prev.conditional_logic.map(rule => {
           if (rule.id === ruleId) {
             const updatedRule = { ...rule, [field]: value };
@@ -440,7 +443,7 @@ const ConditionalLogicTab = ({
                         if (availableValues.length > 0) {
                           // Show dropdown for fields with predefined options
                           return (
-                            <select
+                      <select
                               value={(() => {
                                 // If value is empty and we have available options, auto-select the first one
                                 if ((!rule.value || rule.value === '') && availableValues.length > 0) {
@@ -471,11 +474,11 @@ const ConditionalLogicTab = ({
                           return (
                             <input
                               type="text"
-                              value={rule.value}
-                              onChange={(e) => updateRule(rule.id, 'value', e.target.value)}
-                              className="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+                        value={rule.value}
+                        onChange={(e) => updateRule(rule.id, 'value', e.target.value)}
+                        className="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white"
                               placeholder="Enter value..."
-                              disabled={isSubmitting}
+                        disabled={isSubmitting}
                             />
                           );
                         }
@@ -491,7 +494,7 @@ const ConditionalLogicTab = ({
                 ? "No other fields are available to create conditional logic rules. Add more fields to this component first."
                 : "No rules added yet. Add your first rule below."
               }
-            </div>
+          </div>
           )}
 
           {/* Add Rule Button */}
