@@ -14,6 +14,9 @@ import ColorField from './ColorField';
 import ToggleField from './ToggleField';
 import OembedField from './OembedField';
 import LinkField from './LinkField';
+import EmailField from './EmailField';
+import NumberField from './NumberField';
+import RangeField from './RangeField';
 import useConditionalLogic from '../hooks/useConditionalLogic';
 
 // Sortable Repeater Item Component
@@ -391,6 +394,63 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
             isSubmitting={false}
             fieldConfig={field.config || {}}
             fieldId={`${field.name}_${itemIndex}`}
+          />
+        );
+
+      case 'email':
+        return (
+          <EmailField
+            key={`${field.name}_${itemIndex}`}
+            field={field}
+            value={fieldValue}
+            onChange={handleChange}
+            isSubmitting={false}
+            fieldConfig={field.config || {}}
+            fieldId={`${field.name}_${itemIndex}`}
+          />
+        );
+
+      case 'number':
+        return (
+          <NumberField
+            key={`${field.name}_${itemIndex}`}
+            field={field}
+            value={fieldValue}
+            onChange={handleChange}
+            isSubmitting={false}
+            fieldConfig={field.config || {}}
+            fieldId={`${field.name}_${itemIndex}`}
+          />
+        );
+
+      case 'range':
+        return (
+          <RangeField
+            key={`${field.name}_${itemIndex}`}
+            field={field}
+            value={fieldValue}
+            onChange={handleChange}
+            isSubmitting={false}
+            fieldConfig={field.config || {}}
+            fieldId={`${field.name}_${itemIndex}`}
+          />
+        );
+
+      case 'repeater':
+        return (
+          <RepeaterField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            value={fieldValue}
+            onChange={handleChange}
+            required={isRequired}
+            error={fieldError}
+            config={field.config || {}}
+            fieldId={`${field.name}_${itemIndex}`}
+            instanceId={`${instanceId}_${itemIndex}`}
+            children={field.children || field.config?.nested_fields || []}
+            mainComponentFields={mainComponentFields}
+            mainComponentFieldValues={mainComponentFieldValues}
           />
         );
 
