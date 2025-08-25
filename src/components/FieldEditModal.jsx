@@ -1003,7 +1003,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               // This ensures consistency across all nesting levels
               processedField.config = {
                 max_sets: field.config?.max_sets || field.maxSets || 0,
-                nested_fields: field.config?.nested_fields || field.nestedFieldDefinitions || []
+                nested_fields: field.config?.nested_fields || field.nestedFieldDefinitions || [],
+                // Include conditional logic for nested repeater fields
+                field_condition: field.config?.field_condition || 'always_show',
+                conditional_logic: field.config?.conditional_logic || [],
+                logic_operator: field.config?.logic_operator || 'AND'
               }
               
               // Recursively process nested fields if they exist
@@ -1014,7 +1018,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               console.log('FieldEditModal: Processed nested repeater field', field.label, processedField.config)
             } else if (field.type === 'image') {
               processedField.config = {
-                return_type: field.config?.return_type || field.imageReturnType || 'url'
+                return_type: field.config?.return_type || field.imageReturnType || 'url',
+                // Include conditional logic for image fields
+                field_condition: field.config?.field_condition || 'always_show',
+                conditional_logic: field.config?.conditional_logic || [],
+                logic_operator: field.config?.logic_operator || 'AND'
               }
             } else if (['select', 'checkbox', 'radio'].includes(field.type)) {
               // Handle options for select/checkbox/radio fields
@@ -1029,7 +1037,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 })
               }
               processedField.config = {
-                options: optionsObject
+                options: optionsObject,
+                // Include conditional logic for select/checkbox/radio fields
+                field_condition: field.config?.field_condition || 'always_show',
+                conditional_logic: field.config?.conditional_logic || [],
+                logic_operator: field.config?.logic_operator || 'AND'
               }
             } else if (field.type === 'user') {
               processedField.config = {
@@ -1038,7 +1050,21 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 return_type: field.config?.return_type || 'id',
                 searchable: field.config?.searchable !== undefined ? field.config?.searchable : true,
                 orderby: field.config?.orderby || 'display_name',
-                order: field.config?.order || 'ASC'
+                order: field.config?.order || 'ASC',
+                // Include conditional logic for user fields
+                field_condition: field.config?.field_condition || 'always_show',
+                conditional_logic: field.config?.conditional_logic || [],
+                logic_operator: field.config?.logic_operator || 'AND'
+              }
+            } else {
+              // For all other field types (text, textarea, email, number, etc.), include conditional logic
+              processedField.config = {
+                // Preserve any existing field-specific config
+                ...field.config,
+                // Always include conditional logic
+                field_condition: field.config?.field_condition || 'always_show',
+                conditional_logic: field.config?.conditional_logic || [],
+                logic_operator: field.config?.logic_operator || 'AND'
               }
             }
             
