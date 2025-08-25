@@ -871,17 +871,29 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           }
         } else if (type === "image") {
           fieldData.config = {
-            return_type: imageReturnType || "url"
+            return_type: imageReturnType || "url",
+            // Include conditional logic for image fields
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
         } else if (type === "video") {
           fieldData.config = {
             return_type: videoReturnType || "url",
             sources: videoSources,
-            player_options: videoPlayerOptions
+            player_options: videoPlayerOptions,
+            // Include conditional logic for video fields
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
         } else if (type === "wysiwyg") {
           fieldData.config = {
-            editor_settings: wysiwygSettings
+            editor_settings: wysiwygSettings,
+            // Include conditional logic for wysiwyg fields
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
         } else if (["select", "checkbox", "radio"].includes(type)) {
           const optionsObject = {}
@@ -890,12 +902,24 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               optionsObject[option.value.trim()] = option.label.trim()
             }
           })
-          fieldData.config = { options: optionsObject }
+          fieldData.config = { 
+            options: optionsObject,
+            // Include conditional logic for select/checkbox/radio fields
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
+          }
           if (type === "select") {
             fieldData.config.multiple = !!selectMultiple
           }
         } else if (type === "relationship") {
-          fieldData.config = relationshipConfig
+          fieldData.config = {
+            ...relationshipConfig,
+            // Include conditional logic for relationship fields
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
+          }
         } else if (type === "number") {
           fieldData.config = {
             number_type: fieldConfig?.number_type || 'normal',
@@ -905,7 +929,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             min_length: fieldConfig?.min_length || null,
             max_length: fieldConfig?.max_length || null,
             prepend: fieldConfig?.prepend || '',
-            append: fieldConfig?.append || ''
+            append: fieldConfig?.append || '',
+            // Include conditional logic for number fields
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
           console.log("Number field config for preventDatabaseSave:", fieldData.config);
         } else if (type === "range") {
@@ -913,7 +941,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             min_value: fieldConfig?.min_value !== undefined && fieldConfig?.min_value !== null ? fieldConfig.min_value : null,
             max_value: fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : null,
             prepend: fieldConfig?.prepend || '',
-            append: fieldConfig?.append || ''
+            append: fieldConfig?.append || '',
+            // Include conditional logic for range fields
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
           console.log("Range field config for preventDatabaseSave:", fieldData.config);
         } else if (type === "toggle") {
@@ -931,7 +963,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             return_type: fieldConfig?.return_type || 'url',
             show_preview: fieldConfig?.show_preview !== undefined ? fieldConfig?.show_preview : true,
             show_download: fieldConfig?.show_download !== undefined ? fieldConfig?.show_download : true,
-            show_delete: fieldConfig?.show_delete !== undefined ? fieldConfig?.show_delete : true
+            show_delete: fieldConfig?.show_delete !== undefined ? fieldConfig?.show_delete : true,
+            // Include conditional logic for file fields
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
           console.log("File field config for preventDatabaseSave:", fieldData.config);
         } else if (type === "user") {
@@ -941,7 +977,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             return_type: userConfig.return_type || 'id',
             searchable: userConfig.searchable !== undefined ? userConfig.searchable : true,
             orderby: userConfig.orderby || 'display_name',
-            order: userConfig.order || 'ASC'
+            order: userConfig.order || 'ASC',
+            // Include conditional logic for user fields
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
           console.log("User field config for preventDatabaseSave:", fieldData.config);
         } else {
