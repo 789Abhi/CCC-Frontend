@@ -181,6 +181,13 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               : (config.nested_fields || [])
             console.log("Loading nested field definitions:", nestedFields)
             setNestedFieldDefinitions(nestedFields)
+            
+            // Load conditional logic config for repeater fields
+            setConditionalLogicConfig({
+              field_condition: config.field_condition || 'always_show',
+              conditional_logic: config.conditional_logic || [],
+              logic_operator: config.logic_operator || 'AND'
+            })
           } else if (["select", "checkbox", "radio"].includes(field.type)) {
             const options = config.options || {}
             setFieldOptions(Object.entries(options).map(([value, label]) => ({ value, label })))
@@ -872,7 +879,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         if (type === "repeater") {
           fieldData.config = {
             max_sets: maxSets ? Number.parseInt(maxSets) : 0,
-            nested_fields: nestedFieldDefinitions
+            nested_fields: nestedFieldDefinitions,
+            // Include conditional logic for repeater fields
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
         } else if (type === "image") {
           fieldData.config = {
@@ -982,6 +993,16 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       // Handle different field type configurations
       if (type === "repeater") {
         formData.append("max_sets", maxSets ? Number.parseInt(maxSets) : 0)
+        
+        // Add conditional logic configuration for repeater fields
+        const repeaterConfig = {
+          max_sets: maxSets ? Number.parseInt(maxSets) : 0,
+          field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+          conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+          logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
+        };
+        console.log('FieldEditModal: Repeater field config with conditional logic:', repeaterConfig);
+        formData.append("field_config", JSON.stringify(repeaterConfig));
         
         // Process nested field definitions recursively for unlimited nesting levels
         const processNestedFieldsRecursively = (fields) => {
