@@ -20,17 +20,42 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
   const [isHidden, setIsHidden] = useState(item._hidden || false); // Get hidden state from item
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Dropdown menu state
   
+  // Transform item data from field names to field IDs for conditional logic
+  const itemValuesByFieldId = {};
+  nestedFields.forEach(field => {
+    if (field.name && item[field.name] !== undefined) {
+      itemValuesByFieldId[field.id] = item[field.name];
+    }
+  });
+  
   // Use conditional logic for nested fields within this repeater item
-  const { shouldRenderField } = useConditionalLogic(nestedFields, item);
+  const { shouldRenderField } = useConditionalLogic(nestedFields, itemValuesByFieldId);
   
   // Debug conditional logic
   useEffect(() => {
-    console.log(`Repeater item ${index} conditional logic:`, {
-      nestedFields: nestedFields.map(f => ({id: f.id, name: f.name, type: f.type, config: f.config})),
-      itemValues: item,
-      visibleFields: nestedFields.filter(f => shouldRenderField(f.id)).map(f => f.name)
+    console.log(`Repeater item ${index} conditional logic:`);
+    console.log('  Nested fields:', nestedFields.map(f => ({
+      id: f.id, 
+      name: f.name, 
+      type: f.type, 
+      config: f.config
+    })));
+    console.log('  Item values (by name):', item);
+    console.log('  Item values (by field ID):', itemValuesByFieldId);
+    console.log('  Visible fields:', nestedFields.filter(f => shouldRenderField(f.id)).map(f => ({
+      id: f.id,
+      name: f.name,
+      visible: shouldRenderField(f.id)
+    })));
+    
+    // Debug each field's conditional logic evaluation
+    nestedFields.forEach(field => {
+      console.log(`  Field ${field.name} (ID: ${field.id}):`, {
+        shouldRender: shouldRenderField(field.id),
+        config: field.config
+      });
     });
-  }, [nestedFields, item, shouldRenderField, index]);
+  }, [nestedFields, item, shouldRenderField, index, itemValuesByFieldId]);
   
   // Close dropdown when clicking outside
   useEffect(() => {

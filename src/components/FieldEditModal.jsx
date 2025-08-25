@@ -47,7 +47,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   // FieldPopup state for nested fields
   const [showFieldPopup, setShowFieldPopup] = useState(false)
   const [copiedText, setCopiedText] = useState(null)
-  
+
   // Add state for image return type
   const [imageReturnType, setImageReturnType] = useState('url');
   const [selectMultiple, setSelectMultiple] = useState(false);
@@ -1592,7 +1592,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       </button>
                     </div>
                   </div>
-
+                  
                   {/* Nested Fields List */}
                   {nestedFieldDefinitions.length > 0 ? (
                     <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd} sensors={sensors}>
@@ -1612,14 +1612,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                               isSubmitting={isSubmitting}
                             />
                           ))}
-                        </div>
+                  </div>
                       </SortableContext>
                     </DndContext>
                   ) : (
                     <div className="text-center py-6 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
                       <p className="text-sm">No nested fields added yet</p>
                       <p className="text-xs mt-1">Click "Add Field" to create your first nested field</p>
-                    </div>
+                  </div>
                   )}
                 </div>
               </div>
