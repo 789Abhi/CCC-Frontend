@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -440,12 +440,19 @@ const RepeaterField = ({
   children = [] // Add children prop for nested fields
 }) => {
   const [items, setItems] = useState([]);
+  const isInternalUpdate = useRef(false); // Track if update is from internal state change
   const maxSets = config.max_sets || 0; // 0 means unlimited
   // Use children if available, otherwise fall back to config.nested_fields
   const nestedFields = children.length > 0 ? children : (config.nested_fields || []);
 
   // Initialize items from value or empty array
   useEffect(() => {
+    // Skip update if it's from our own internal state change
+    if (isInternalUpdate.current) {
+      isInternalUpdate.current = false;
+      return;
+    }
+    
     console.log('CCC DEBUG: RepeaterField initializing with value:', value);
     if (Array.isArray(value)) {
       // Ensure all items have _hidden property
@@ -490,9 +497,12 @@ const RepeaterField = ({
       
       const jsonString = JSON.stringify(allItems);
       console.log('CCC DEBUG: RepeaterField JSON string:', jsonString);
+      
+      // Mark this as an internal update to prevent re-initialization
+      isInternalUpdate.current = true;
       onChange(jsonString);
     }
-  }, [items, onChange]);
+  }, [items]); // Remove onChange from dependencies to prevent infinite loop
 
   const addItem = () => {
     if (maxSets > 0 && items.length >= maxSets) {
