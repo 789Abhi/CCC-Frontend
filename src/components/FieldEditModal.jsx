@@ -156,11 +156,34 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   const validationFields = useMemo(() => {
     // For nested fields, include all component fields for validation
     if (parentFieldType === 'repeater') {
-      return component?.fields || [];
+      // Get fields from component if available
+      const componentFields = component?.fields || [];
+      
+      // Also include sibling fields to ensure we have all necessary fields
+      const siblingFieldIds = new Set((siblingFields || []).map(f => f.id));
+      const siblingFieldNames = new Set((siblingFields || []).map(f => f.name).filter(Boolean));
+      
+      // Combine component fields with sibling fields, avoiding duplicates
+      const allValidationFields = [...componentFields];
+      
+      if (siblingFields && Array.isArray(siblingFields)) {
+        siblingFields.forEach(siblingField => {
+          const isDuplicate = allValidationFields.some(f => 
+            f.id === siblingField.id || f.name === siblingField.name
+          );
+          if (!isDuplicate) {
+            allValidationFields.push(siblingField);
+          }
+        });
+      }
+      
+      console.log('FieldEditModal: Validation fields for nested field:', allValidationFields.map(f => ({ id: f.id, name: f.name })));
+      
+      return allValidationFields;
     }
     // For normal fields, no additional validation fields needed
     return [];
-  }, [component?.fields, parentFieldType]);
+  }, [component?.fields, parentFieldType, siblingFields]);
 
   const availableFieldTypes = [
     "text",

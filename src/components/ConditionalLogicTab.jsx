@@ -61,16 +61,27 @@ const ConditionalLogicTab = ({
         const validationFieldIds = new Set(validationFields.map(f => f.id));
         const validationFieldNames = new Set(validationFields.map(f => f.name).filter(Boolean));
         
+        // Debug logging to see what fields are available
+        console.log('ConditionalLogicTab: Available fields for dropdown:', filteredAvailableFields.map(f => ({ id: f.id, name: f.name })));
+        console.log('ConditionalLogicTab: Validation fields:', validationFields.map(f => ({ id: f.id, name: f.name })));
+        console.log('ConditionalLogicTab: Current rules:', prev.conditional_logic);
+        
         const cleanedRules = prev.conditional_logic.filter(rule => {
           // Keep rules that have no target field yet (new/incomplete rules) or target existing fields
           // Check both by ID and by name since target_field can be stored as either
           // Check both available fields (for dropdown) and validation fields (for rule validation)
-          return !rule.target_field || 
+          const isValid = !rule.target_field || 
                  rule.target_field === '' || 
                  availableFieldIds.has(rule.target_field) ||
                  availableFieldNames.has(rule.target_field) ||
                  validationFieldIds.has(rule.target_field) ||
                  validationFieldNames.has(rule.target_field);
+          
+          if (!isValid) {
+            console.log(`ConditionalLogicTab: Rule ${rule.id} with target_field "${rule.target_field}" is invalid - not found in any available fields`);
+          }
+          
+          return isValid;
         });
 
         // If some rules were removed, update the config
