@@ -132,7 +132,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     // If we're editing a nested field (inside a repeater), use sibling fields only
     if (parentFieldType === 'repeater' && siblingFields) {
       // Filter out the current field being edited to prevent self-reference
-      return siblingFields.filter((siblingField, index) => {
+      const filteredSiblings = siblingFields.filter((siblingField, index) => {
         // For nested fields, we need to check by name/label since they might not have IDs yet
         if (field && field.name) {
           return siblingField.name !== field.name;
@@ -140,10 +140,13 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         // If no current field, include all siblings
         return true;
       }).map((siblingField, index) => ({
-        // Ensure each sibling field has an id for conditional logic
+        // Preserve existing IDs for database fields, or generate for new fields
         ...siblingField,
         id: siblingField.id || `nested_${index}_${siblingField.name || siblingField.label}`
       }));
+      
+      console.log('FieldEditModal: Available fields for nested field conditional logic:', filteredSiblings);
+      return filteredSiblings;
     }
     // For normal (non-nested) fields, use all component fields
     return component?.fields || [];
