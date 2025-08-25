@@ -10,7 +10,7 @@ function TextareaField({ label, value, onChange, placeholder, required, error, f
         </label>
       )}
       <textarea
-        className={`mt-2 block w-full border rounded-md !shadow-sm focus:ring focus:ring-opacity-50 px-3 py-2 text-base ${
+        className={`mt-2 block w-full border rounded-md !shadow-sm focus:ring focus:ring-opacity-50 px-3 py-2 text-base resize-y min-h-[100px] ${
           error ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-blue-400'
         }`}
         placeholder={placeholder}
@@ -19,6 +19,7 @@ function TextareaField({ label, value, onChange, placeholder, required, error, f
         required={required}
         aria-invalid={error ? 'true' : undefined}
         rows={4}
+        style={{ minHeight: '100px' }}
       />
       {error && <div className="text-xs text-red-500 mt-1">This field is required.</div>}
     </div>

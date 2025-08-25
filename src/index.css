@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom Field Styles */
+.ccc-field textarea {
+  min-height: 100px !important;
+  resize: vertical !important;
+  line-height: 1.5 !important;
+}
+
+.ccc-field input[type="text"] {
+  height: 40px !important;
+  line-height: 1.2 !important;
+}
+
 
 :root {
   --bg-primary: #FF269E; 
