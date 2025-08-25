@@ -54,10 +54,15 @@ const ConditionalLogicTab = ({
     setConfig(prev => {
       if (prev.conditional_logic && prev.conditional_logic.length > 0) {
         const availableFieldIds = new Set(filteredAvailableFields.map(f => f.id));
+        const availableFieldNames = new Set(filteredAvailableFields.map(f => f.name).filter(Boolean));
         
         const cleanedRules = prev.conditional_logic.filter(rule => {
           // Keep rules that have no target field yet (new/incomplete rules) or target existing fields
-          return !rule.target_field || rule.target_field === '' || availableFieldIds.has(rule.target_field);
+          // Check both by ID and by name since target_field can be stored as either
+          return !rule.target_field || 
+                 rule.target_field === '' || 
+                 availableFieldIds.has(rule.target_field) ||
+                 availableFieldNames.has(rule.target_field);
         });
 
         // If some rules were removed, update the config
@@ -117,10 +122,10 @@ const ConditionalLogicTab = ({
             
             // Reset condition and value when target field changes
             if (field === 'target_field') {
-              const targetField = filteredAvailableFields.find(f => f.id === value);
+              const targetField = filteredAvailableFields.find(f => f.id === value || f.name === value);
               if (targetField) {
                 // Reset if this is a new rule, incomplete rule, OR if the field type changed
-                const prevTargetField = filteredAvailableFields.find(f => f.id === rule.target_field);
+                const prevTargetField = filteredAvailableFields.find(f => f.id === rule.target_field || f.name === rule.target_field);
                 const fieldTypeChanged = !prevTargetField || prevTargetField.type !== targetField.type;
                 const shouldReset = !rule.condition || rule.condition === '' || !rule.target_field || fieldTypeChanged;
                 
@@ -193,7 +198,7 @@ const ConditionalLogicTab = ({
 
   // Get available conditions based on target field type
   const getAvailableConditions = (targetFieldId) => {
-    const targetField = filteredAvailableFields.find(f => f.id === targetFieldId);
+    const targetField = filteredAvailableFields.find(f => f.id === targetFieldId || f.name === targetFieldId);
     if (!targetField) {
       return [
         { value: 'when_field_equals', label: 'When field equals' }
@@ -245,7 +250,7 @@ const ConditionalLogicTab = ({
 
   // Get available values based on target field type and condition
   const getAvailableValues = (targetFieldId, condition) => {
-    const targetField = filteredAvailableFields.find(f => f.id === targetFieldId);
+    const targetField = filteredAvailableFields.find(f => f.id === targetFieldId || f.name === targetFieldId);
     if (!targetField) return [];
 
     switch (targetField.type) {
