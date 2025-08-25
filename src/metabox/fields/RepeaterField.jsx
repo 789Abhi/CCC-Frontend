@@ -33,15 +33,37 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
     if (field.config && field.config.conditional_logic && Array.isArray(field.config.conditional_logic)) {
       const fixedConditionalLogic = field.config.conditional_logic.map(rule => {
         // Find the target field by checking if any field references the old ID
-        const targetField = nestedFields.find(f => f.id === rule.target_field);
+        let targetField = nestedFields.find(f => f.id === rule.target_field);
+        
+        // If not found by ID, try to find by name (more reliable for nested fields)
         if (!targetField) {
-          // Target field not found by ID, try to find by matching field type and position
+          targetField = nestedFields.find(f => f.name === rule.target_field);
+        }
+        
+        // If still not found, try to find by logical inference
+        if (!targetField) {
+          // For toggle-based conditional logic, look for toggle fields
+          if (rule.condition === 'when_toggle_is') {
+            targetField = nestedFields.find(f => f.type === 'toggle' && f.name !== field.name);
+          }
+          
+          // If still not found, try to find by matching field type and position
           // For simple cases like toggle->image, assume the target is the other field
-          const otherFields = nestedFields.filter(f => f.name !== field.name);
-          if (otherFields.length === 1) {
+          if (!targetField) {
+            const otherFields = nestedFields.filter(f => f.name !== field.name);
+            if (otherFields.length === 1) {
+              targetField = otherFields[0];
+            }
+          }
+        }
+        
+        // Update the target_field to use the stable field name if available, otherwise use the ID
+        if (targetField) {
+          const newTargetField = targetField.name || targetField.id;
+          if (newTargetField !== rule.target_field) {
             return {
               ...rule,
-              target_field: otherFields[0].id
+              target_field: newTargetField
             };
           }
         }

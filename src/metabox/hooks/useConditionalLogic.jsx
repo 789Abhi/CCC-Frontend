@@ -12,8 +12,14 @@ export const useConditionalLogic = (fields = [], fieldValues = {}) => {
     
     // Helper function to get field value
     const getFieldValue = (fieldId) => {
-      const value = fieldValues[fieldId];
-      const targetField = fields.find(f => f.id === fieldId);
+      // First try to find by ID, then by name (for nested fields)
+      let targetField = fields.find(f => f.id === fieldId);
+      if (!targetField) {
+        targetField = fields.find(f => f.name === fieldId);
+      }
+      
+      // Get the value using the field's ID or name
+      const value = fieldValues[targetField?.id] || fieldValues[targetField?.name] || fieldValues[fieldId];
       
       // Handle different field types
       if (Array.isArray(value)) {
@@ -33,7 +39,12 @@ export const useConditionalLogic = (fields = [], fieldValues = {}) => {
     // Helper function to evaluate a single rule
     const evaluateRule = (rule) => {
       const targetValue = getFieldValue(rule.target_field);
-      const targetField = fields.find(f => f.id === rule.target_field);
+      
+      // First try to find by ID, then by name (for nested fields)
+      let targetField = fields.find(f => f.id === rule.target_field);
+      if (!targetField) {
+        targetField = fields.find(f => f.name === rule.target_field);
+      }
       
       switch (rule.condition) {
         case 'when_toggle_is':
@@ -93,7 +104,14 @@ export const useConditionalLogic = (fields = [], fieldValues = {}) => {
 
       // Filter out rules that reference non-existent fields
       const validRules = config.conditional_logic.filter(rule => {
-        const targetField = fields.find(f => f.id === rule.target_field);
+        // First try to find by ID
+        let targetField = fields.find(f => f.id === rule.target_field);
+        
+        // If not found by ID, try to find by name (for nested fields)
+        if (!targetField) {
+          targetField = fields.find(f => f.name === rule.target_field);
+        }
+        
         return targetField !== undefined;
       });
 
