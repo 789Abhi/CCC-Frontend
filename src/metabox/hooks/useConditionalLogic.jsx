@@ -4,7 +4,7 @@ import { useMemo } from 'react';
  * React hook for handling conditional logic in metabox fields
  * This replaces the old JavaScript-based conditional logic handler
  */
-export const useConditionalLogic = (fields = [], fieldValues = {}, mainComponentFields = []) => {
+export const useConditionalLogic = (fields = [], fieldValues = {}, mainComponentFields = [], mainComponentFieldValues = {}) => {
 
   // Calculate visible fields directly with useMemo to avoid re-render issues
   const visibleFields = useMemo(() => {
@@ -27,7 +27,8 @@ export const useConditionalLogic = (fields = [], fieldValues = {}, mainComponent
       }
       
       // Get the value using the field's ID or name
-      const value = fieldValues[targetField?.id] || fieldValues[targetField?.name] || fieldValues[fieldId];
+      const value = fieldValues[targetField?.id] || fieldValues[targetField?.name] || fieldValues[fieldId] ||
+                   mainComponentFieldValues[targetField?.id] || mainComponentFieldValues[targetField?.name] || mainComponentFieldValues[fieldId];
       
       // Handle different field types
       if (Array.isArray(value)) {

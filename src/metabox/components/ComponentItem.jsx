@@ -748,6 +748,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       instanceId={component.instance_id}
                       children={field.children || []}
                       mainComponentFields={getAllAvailableFields()}
+                      mainComponentFieldValues={instanceFieldValues}
                     />
                   );
                 }

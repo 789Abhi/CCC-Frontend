@@ -129,7 +129,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
   // Memoized available fields to prevent array recreation on every render
   const availableFields = useMemo(() => {
-    // If we're editing a nested field (inside a repeater), include both sibling fields and main component fields
+    // If we're editing a nested field (inside a repeater), use only sibling fields for the dropdown
     if (parentFieldType === 'repeater' && siblingFields) {
       // Filter out the current field being edited to prevent self-reference
       const filteredSiblings = siblingFields.filter((siblingField, index) => {
@@ -146,23 +146,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         id: siblingField.id || siblingField.name || `nested_${index}_${siblingField.label}`
       }));
       
-      // For nested fields, also include main component fields so they can reference them in conditional logic
-      const mainComponentFields = component?.fields || [];
-      
-      // Combine sibling fields with main component fields, avoiding duplicates
-      const allAvailableFields = [...filteredSiblings];
-      
-      // Add main component fields that aren't already in siblings
-      mainComponentFields.forEach(mainField => {
-        const isDuplicate = filteredSiblings.some(siblingField => 
-          siblingField.id === mainField.id || siblingField.name === mainField.name
-        );
-        if (!isDuplicate) {
-          allAvailableFields.push(mainField);
-        }
-      });
-      
-      return allAvailableFields;
+      return filteredSiblings;
     }
     // For normal (non-nested) fields, use all component fields
     return component?.fields || [];
@@ -2655,6 +2639,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   isSubmitting={isSubmitting}
                   fieldType={type}
                   currentFieldId={field?.id}
+                  validationFields={parentFieldType === 'repeater' ? (component?.fields || []) : []}
                 />
               </div>
             )}

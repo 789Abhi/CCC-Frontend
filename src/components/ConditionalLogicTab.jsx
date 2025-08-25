@@ -7,7 +7,8 @@ const ConditionalLogicTab = ({
   availableFields, 
   isSubmitting = false,
   fieldType = 'field', // to customize labels if needed
-  currentFieldId = null // ID of the current field being edited (to exclude from target selection)
+  currentFieldId = null, // ID of the current field being edited (to exclude from target selection)
+  validationFields = [] // Additional fields for validation (e.g., main component fields for nested fields)
 }) => {
   const [config, setConfig] = useState({
     field_condition: fieldConfig?.field_condition || 'always_show',
@@ -56,13 +57,20 @@ const ConditionalLogicTab = ({
         const availableFieldIds = new Set(filteredAvailableFields.map(f => f.id));
         const availableFieldNames = new Set(filteredAvailableFields.map(f => f.name).filter(Boolean));
         
+        // Also check validation fields for rule validation
+        const validationFieldIds = new Set(validationFields.map(f => f.id));
+        const validationFieldNames = new Set(validationFields.map(f => f.name).filter(Boolean));
+        
         const cleanedRules = prev.conditional_logic.filter(rule => {
           // Keep rules that have no target field yet (new/incomplete rules) or target existing fields
           // Check both by ID and by name since target_field can be stored as either
+          // Check both available fields (for dropdown) and validation fields (for rule validation)
           return !rule.target_field || 
                  rule.target_field === '' || 
                  availableFieldIds.has(rule.target_field) ||
-                 availableFieldNames.has(rule.target_field);
+                 availableFieldNames.has(rule.target_field) ||
+                 validationFieldIds.has(rule.target_field) ||
+                 validationFieldNames.has(rule.target_field);
         });
 
         // If some rules were removed, update the config
@@ -80,7 +88,7 @@ const ConditionalLogicTab = ({
       }
       return prev; // No changes needed
     });
-  }, [filteredAvailableFields]); // Only depend on available fields, not the config itself
+  }, [filteredAvailableFields, validationFields]); // Also depend on validation fields
 
   const addRule = () => {
     isUserInteracting.current = true;
@@ -122,10 +130,12 @@ const ConditionalLogicTab = ({
             
             // Reset condition and value when target field changes
             if (field === 'target_field') {
-              const targetField = filteredAvailableFields.find(f => f.id === value || f.name === value);
+              const targetField = filteredAvailableFields.find(f => f.id === value || f.name === value) ||
+                                 validationFields.find(f => f.id === value || f.name === value);
               if (targetField) {
                 // Reset if this is a new rule, incomplete rule, OR if the field type changed
-                const prevTargetField = filteredAvailableFields.find(f => f.id === rule.target_field || f.name === rule.target_field);
+                const prevTargetField = filteredAvailableFields.find(f => f.id === rule.target_field || f.name === rule.target_field) ||
+                                       validationFields.find(f => f.id === rule.target_field || f.name === rule.target_field);
                 const fieldTypeChanged = !prevTargetField || prevTargetField.type !== targetField.type;
                 const shouldReset = !rule.condition || rule.condition === '' || !rule.target_field || fieldTypeChanged;
                 
@@ -198,7 +208,8 @@ const ConditionalLogicTab = ({
 
   // Get available conditions based on target field type
   const getAvailableConditions = (targetFieldId) => {
-    const targetField = filteredAvailableFields.find(f => f.id === targetFieldId || f.name === targetFieldId);
+    const targetField = filteredAvailableFields.find(f => f.id === targetFieldId || f.name === targetFieldId) ||
+                       validationFields.find(f => f.id === targetFieldId || f.name === targetFieldId);
     if (!targetField) {
       return [
         { value: 'when_field_equals', label: 'When field equals' }
@@ -250,7 +261,8 @@ const ConditionalLogicTab = ({
 
   // Get available values based on target field type and condition
   const getAvailableValues = (targetFieldId, condition) => {
-    const targetField = filteredAvailableFields.find(f => f.id === targetFieldId || f.name === targetFieldId);
+    const targetField = filteredAvailableFields.find(f => f.id === targetFieldId || f.name === targetFieldId) ||
+                       validationFields.find(f => f.id === targetFieldId || f.name === targetFieldId);
     if (!targetField) return [];
 
     switch (targetField.type) {
