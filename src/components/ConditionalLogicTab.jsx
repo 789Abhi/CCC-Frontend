@@ -413,7 +413,7 @@ const ConditionalLogicTab = ({
                           }
                         </option>
                         {filteredAvailableFields.map(field => (
-                          <option key={field.id} value={field.id}>
+                          <option key={field.id} value={field.name || field.id}>
                             {field.label || field.name}
                           </option>
                         ))}

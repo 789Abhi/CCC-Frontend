@@ -129,15 +129,37 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
   // Memoized available fields to prevent array recreation on every render
   const availableFields = useMemo(() => {
-    // If we're editing a nested field (inside a repeater), only include sibling fields
+    // If we're editing a nested field (inside a repeater), include both sibling fields and main component fields
     if (parentFieldType === 'repeater' && siblingFields) {
-      const filteredSiblings = (siblingFields || []).filter(siblingField => {
-        return !(field && (field.id === siblingField.id || field.name === siblingField.name));
-      }).map((siblingField, index) => ({
-        ...siblingField,
-        id: siblingField.id || siblingField.name || `nested_${index}_${siblingField.label}`
+      // Start with sibling fields (other nested fields in the same repeater)
+      const allAvailableFields = [...siblingFields];
+      
+      // Also include main component fields for conditional logic
+      if (component?.fields && Array.isArray(component.fields)) {
+        allAvailableFields.push(...component.fields);
+      }
+      
+      // Filter out the current field being edited to prevent self-reference
+      const filteredFields = allAvailableFields.filter((availableField, index) => {
+        if (field && (field.id === availableField.id || field.name === availableField.name)) {
+          return false;
+        }
+        return true;
+      }).map((availableField, index) => ({
+        ...availableField,
+        id: availableField.id || availableField.name || `nested_${index}_${availableField.label}`
       }));
-      return filteredSiblings;
+      
+      // Remove duplicates based on stable ID
+      const uniqueFieldsMap = new Map();
+      filteredFields.forEach(f => {
+        const stableId = f.id || f.name;
+        if (stableId && !uniqueFieldsMap.has(stableId)) {
+          uniqueFieldsMap.set(stableId, f);
+        }
+      });
+      
+      return Array.from(uniqueFieldsMap.values());
     }
     
     // For normal (non-nested) fields, use all component fields with deduplication
