@@ -201,7 +201,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "checkbox",
     "radio",
     "toggle",
-    "user",
   ]
 
   useEffect(() => {
