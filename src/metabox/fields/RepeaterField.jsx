@@ -17,6 +17,7 @@ import LinkField from './LinkField';
 import EmailField from './EmailField';
 import NumberField from './NumberField';
 import RangeField from './RangeField';
+import RelationshipField from './RelationshipField';
 import useConditionalLogic from '../hooks/useConditionalLogic';
 
 // Sortable Repeater Item Component
@@ -451,6 +452,19 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
             children={field.children || field.config?.nested_fields || []}
             mainComponentFields={mainComponentFields}
             mainComponentFieldValues={mainComponentFieldValues}
+          />
+        );
+
+      case 'relationship':
+        return (
+          <RelationshipField
+            key={`${field.name}_${itemIndex}`}
+            field={field}
+            value={fieldValue}
+            onChange={handleChange}
+            isSubmitting={false}
+            fieldConfig={field.config || {}}
+            fieldId={`${field.name}_${itemIndex}`}
           />
         );
 
