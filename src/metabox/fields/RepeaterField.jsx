@@ -39,7 +39,6 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
           // For simple cases like toggle->image, assume the target is the other field
           const otherFields = nestedFields.filter(f => f.name !== field.name);
           if (otherFields.length === 1) {
-            console.log(`Fixing conditional logic: updating target_field from "${rule.target_field}" to "${otherFields[0].id}" for field "${field.name}"`);
             return {
               ...rule,
               target_field: otherFields[0].id
@@ -63,37 +62,7 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
   // Use conditional logic for nested fields within this repeater item
   const { shouldRenderField } = useConditionalLogic(fieldsWithFixedConditionalLogic, itemValuesByFieldId);
   
-  // Debug conditional logic
-  useEffect(() => {
-    console.log(`Repeater item ${index} conditional logic:`);
-    console.log('  Original nested fields:', nestedFields.map(f => ({
-      id: f.id, 
-      name: f.name, 
-      type: f.type, 
-      originalConfig: f.config
-    })));
-    console.log('  Fixed nested fields:', fieldsWithFixedConditionalLogic.map(f => ({
-      id: f.id, 
-      name: f.name, 
-      type: f.type, 
-      fixedConfig: f.config
-    })));
-    console.log('  Item values (by name):', item);
-    console.log('  Item values (by field ID):', itemValuesByFieldId);
-    console.log('  Visible fields:', fieldsWithFixedConditionalLogic.filter(f => shouldRenderField(f.id)).map(f => ({
-      id: f.id,
-      name: f.name,
-      visible: shouldRenderField(f.id)
-    })));
-    
-    // Debug each field's conditional logic evaluation
-    fieldsWithFixedConditionalLogic.forEach(field => {
-      console.log(`  Field ${field.name} (ID: ${field.id}):`, {
-        shouldRender: shouldRenderField(field.id),
-        config: field.config
-      });
-    });
-  }, [nestedFields, fieldsWithFixedConditionalLogic, item, shouldRenderField, index, itemValuesByFieldId]);
+
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -535,7 +504,7 @@ const RepeaterField = ({
       return;
     }
     
-    console.log('CCC DEBUG: RepeaterField initializing with value:', value);
+
     if (Array.isArray(value)) {
       // Ensure all items have _hidden property
       const itemsWithHiddenState = value.map(item => ({
@@ -556,10 +525,9 @@ const RepeaterField = ({
         } else {
           setItems([]);
         }
-      } catch (e) {
-        console.error('CCC DEBUG: RepeaterField failed to parse value:', e);
-        setItems([]);
-      }
+             } catch (e) {
+         setItems([]);
+       }
     } else {
       setItems([]);
     }
@@ -568,17 +536,13 @@ const RepeaterField = ({
   // Update parent when items change - save ALL items to database (including hidden ones)
   useEffect(() => {
     if (onChange) {
-      console.log('CCC DEBUG: RepeaterField updating parent with items:', items);
-      
       // Save ALL items to database (including hidden ones) so they persist
       const allItems = items.map(item => ({
         ...item,
         _hidden: item._hidden || false
       }));
-      console.log('CCC DEBUG: RepeaterField all items for database:', allItems);
       
       const jsonString = JSON.stringify(allItems);
-      console.log('CCC DEBUG: RepeaterField JSON string:', jsonString);
       
       // Mark this as an internal update to prevent re-initialization
       isInternalUpdate.current = true;
@@ -614,24 +578,20 @@ const RepeaterField = ({
   };
 
   const updateItem = (index, fieldName, fieldValue) => {
-    console.log('CCC DEBUG: RepeaterField updateItem called:', { index, fieldName, fieldValue });
     const updatedItems = [...items];
     updatedItems[index] = {
       ...updatedItems[index],
       [fieldName]: fieldValue
     };
-    console.log('CCC DEBUG: RepeaterField updatedItems:', updatedItems);
     setItems(updatedItems);
   };
 
   const toggleItemHidden = (index, hidden) => {
-    console.log('CCC DEBUG: RepeaterField toggleItemHidden called:', { index, hidden });
     const updatedItems = [...items];
     updatedItems[index] = {
       ...updatedItems[index],
       _hidden: hidden
     };
-    console.log('CCC DEBUG: RepeaterField updatedItems with hidden state:', updatedItems);
     setItems(updatedItems);
   };
 

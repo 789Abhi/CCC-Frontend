@@ -145,7 +145,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         id: siblingField.id || `nested_${index}_${siblingField.name || siblingField.label}`
       }));
       
-      console.log('FieldEditModal: Available fields for nested field conditional logic:', filteredSiblings);
+
       return filteredSiblings;
     }
     // For normal (non-nested) fields, use all component fields
@@ -1192,18 +1192,27 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       } else if (type === "image") {
         const config = {
           return_type: imageReturnType || "url",
+          field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+          conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+          logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
         }
         formData.append("field_config", JSON.stringify(config))
       } else if (type === "video") {
         const config = {
           return_type: videoReturnType || "url",
           sources: videoSources,
-          player_options: videoPlayerOptions
+          player_options: videoPlayerOptions,
+          field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+          conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+          logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
         }
         formData.append("field_config", JSON.stringify(config))
       } else if (type === "wysiwyg") {
         const config = {
           editor_settings: wysiwygSettings,
+          field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+          conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+          logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
         }
         formData.append("field_config", JSON.stringify(config))
       } else if (["select", "checkbox", "radio"].includes(type)) {
@@ -1214,13 +1223,24 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             optionsObject[option.value.trim()] = option.label.trim()
           }
         })
-        const config = { options: optionsObject }
+        const config = { 
+          options: optionsObject,
+          field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+          conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+          logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
+        }
         if (type === "select") {
           config.multiple = !!selectMultiple;
         }
         formData.append("field_config", JSON.stringify(config))
       } else if (type === "relationship") {
-        formData.append("field_config", JSON.stringify(relationshipConfig))
+        const config = {
+          ...relationshipConfig,
+          field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+          conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+          logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
+        }
+        formData.append("field_config", JSON.stringify(config))
       } else if (type === "number") {
         const config = {
           number_type: fieldConfig?.number_type || 'normal',
@@ -1230,7 +1250,10 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           min_length: fieldConfig?.min_length || null,
           max_length: fieldConfig?.max_length || null,
           prepend: fieldConfig?.prepend || '',
-          append: fieldConfig?.append || ''
+          append: fieldConfig?.append || '',
+          field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+          conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+          logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
         }
         console.log("Number field config being sent:", config);
         formData.append("field_config", JSON.stringify(config))
@@ -1239,7 +1262,10 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           min_value: fieldConfig?.min_value !== undefined && fieldConfig?.min_value !== null ? fieldConfig.min_value : null,
           max_value: fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : null,
           prepend: fieldConfig?.prepend || '',
-          append: fieldConfig?.append || ''
+          append: fieldConfig?.append || '',
+          field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+          conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+          logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
         }
         console.log("Range field config being sent:", config);
         formData.append("field_config", JSON.stringify(config))
@@ -1259,7 +1285,10 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           return_type: userConfig.return_type || 'id',
           searchable: userConfig.searchable !== undefined ? userConfig.searchable : true,
           orderby: userConfig.orderby || 'display_name',
-          order: userConfig.order || 'ASC'
+          order: userConfig.order || 'ASC',
+          field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+          conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+          logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
         }
         console.log("User field config being sent:", config);
         formData.append("field_config", JSON.stringify(config))

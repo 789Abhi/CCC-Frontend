@@ -54,16 +54,10 @@ const ConditionalLogicTab = ({
     setConfig(prev => {
       if (prev.conditional_logic && prev.conditional_logic.length > 0) {
         const availableFieldIds = new Set(filteredAvailableFields.map(f => f.id));
-        console.log('ConditionalLogicTab: Available field IDs:', Array.from(availableFieldIds));
-        console.log('ConditionalLogicTab: Existing conditional logic rules:', prev.conditional_logic);
         
         const cleanedRules = prev.conditional_logic.filter(rule => {
           // Keep rules that have no target field yet (new/incomplete rules) or target existing fields
-          const shouldKeep = !rule.target_field || rule.target_field === '' || availableFieldIds.has(rule.target_field);
-          if (!shouldKeep && rule.target_field) {
-            console.log(`ConditionalLogicTab: Removing rule with target_field "${rule.target_field}" - not found in available fields`);
-          }
-          return shouldKeep;
+          return !rule.target_field || rule.target_field === '' || availableFieldIds.has(rule.target_field);
         });
 
         // If some rules were removed, update the config
