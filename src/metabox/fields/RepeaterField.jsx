@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -141,6 +141,14 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
       onUpdateItem(itemIndex, field.name, value);
     };
 
+    // Temporary debug log to check field types
+    console.log('RepeaterField renderNestedField:', {
+      fieldType: field.type,
+      fieldName: field.name,
+      fieldValue,
+      field
+    });
+
     switch (field.type) {
       case 'text':
         return (
@@ -152,6 +160,7 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
             placeholder={field.placeholder}
             required={isRequired}
             error={fieldError}
+            fieldId={`${field.name}_${itemIndex}`}
           />
         );
 
@@ -165,6 +174,7 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
             placeholder={field.placeholder}
             required={isRequired}
             error={fieldError}
+            fieldId={`${field.name}_${itemIndex}`}
           />
         );
 
@@ -470,15 +480,14 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
 
       default:
         return (
-          <TextField
-            key={`${field.name}_${itemIndex}`}
-            label={field.label}
-            value={fieldValue}
-            onChange={handleChange}
-            placeholder={field.placeholder}
-            required={isRequired}
-            error={fieldError}
-          />
+          <div className="p-3 border border-red-300 bg-red-50 rounded-md">
+            <p className="text-red-600 text-sm">
+              Unknown field type: <strong>{field.type}</strong> for field: <strong>{field.name}</strong>
+            </p>
+            <p className="text-red-500 text-xs mt-1">
+              This field type is not supported in the repeater. Please check the field configuration.
+            </p>
+          </div>
         );
     }
   };
@@ -660,10 +669,10 @@ const RepeaterField = ({
   }, [value]);
 
   // Update parent when items change - save ALL items to database (including hidden ones)
-  useEffect(() => {
+  const handleItemsChange = useCallback((newItems) => {
     if (onChange) {
       // Save ALL items to database (including hidden ones) so they persist
-      const allItems = items.map(item => ({
+      const allItems = newItems.map(item => ({
         ...item,
         _hidden: item._hidden || false
       }));
@@ -674,9 +683,13 @@ const RepeaterField = ({
       isInternalUpdate.current = true;
       onChange(jsonString);
     }
-  }, [items]); // Remove onChange from dependencies to prevent infinite loop
+  }, [onChange]);
 
-  const addItem = () => {
+  useEffect(() => {
+    handleItemsChange(items);
+  }, [items, handleItemsChange]);
+
+  const addItem = useCallback(() => {
     if (maxSets > 0 && items.length >= maxSets) {
       alert(`Maximum ${maxSets} items allowed.`);
       return;
@@ -695,37 +708,37 @@ const RepeaterField = ({
     });
     
     setItems([...items, newItem]);
-  };
+  }, [items, maxSets, nestedFields]);
 
-  const removeItem = (index) => {
+  const removeItem = useCallback((index) => {
     if (confirm('Are you sure you want to remove this item?')) {
       setItems(items.filter((_, i) => i !== index));
     }
-  };
+  }, [items]);
 
-  const updateItem = (index, fieldName, fieldValue) => {
+  const updateItem = useCallback((index, fieldName, fieldValue) => {
     const updatedItems = [...items];
     updatedItems[index] = {
       ...updatedItems[index],
       [fieldName]: fieldValue
     };
     setItems(updatedItems);
-  };
+  }, [items]);
 
-  const toggleItemHidden = (index, hidden) => {
+  const toggleItemHidden = useCallback((index, hidden) => {
     const updatedItems = [...items];
     updatedItems[index] = {
       ...updatedItems[index],
       _hidden: hidden
     };
     setItems(updatedItems);
-  };
+  }, [items]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 2 } })
   );
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = useCallback((event) => {
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
       const activeIndex = parseInt(active.id.replace('repeater-item-', ''));
@@ -735,7 +748,7 @@ const RepeaterField = ({
         setItems(newOrder);
       }
     }
-  };
+  }, [items]);
 
     return (
     <div className="mb-6">
