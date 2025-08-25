@@ -129,24 +129,39 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
   // Memoized available fields to prevent array recreation on every render
   const availableFields = useMemo(() => {
-    // If we're editing a nested field (inside a repeater), use only sibling fields for the dropdown
+    // If we're editing a nested field (inside a repeater), include both sibling fields and main component fields
     if (parentFieldType === 'repeater' && siblingFields) {
+      // Start with sibling fields (other nested fields in the same repeater)
+      const allAvailableFields = [...siblingFields];
+      
+      // Also include main component fields for conditional logic
+      if (component?.fields && Array.isArray(component.fields)) {
+        component.fields.forEach(componentField => {
+          // Check if this field is already included (avoid duplicates)
+          const isDuplicate = allAvailableFields.some(f => 
+            (f.id && f.id === componentField.id) || 
+            (f.name && f.name === componentField.name)
+          );
+          if (!isDuplicate) {
+            allAvailableFields.push(componentField);
+          }
+        });
+      }
+      
       // Filter out the current field being edited to prevent self-reference
-      const filteredSiblings = siblingFields.filter((siblingField, index) => {
-        // For nested fields, we need to check by name/label since they might not have IDs yet
+      const filteredFields = allAvailableFields.filter((availableField, index) => {
         if (field && field.name) {
-          return siblingField.name !== field.name;
+          return availableField.name !== field.name;
         }
-        // If no current field, include all siblings
         return true;
-      }).map((siblingField, index) => ({
+      }).map((availableField, index) => ({
         // For nested fields, use the actual field name as the ID to ensure stability
         // This prevents conditional logic from breaking when fields are reloaded
-        ...siblingField,
-        id: siblingField.id || siblingField.name || `nested_${index}_${siblingField.label}`
+        ...availableField,
+        id: availableField.id || availableField.name || `nested_${index}_${availableField.label}`
       }));
       
-      return filteredSiblings;
+      return filteredFields;
     }
     // For normal (non-nested) fields, use all component fields
     return component?.fields || [];
@@ -2696,34 +2711,39 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       </div>
 
       {showFieldPopup && (
-        <FieldEditModal
-          isOpen={showFieldPopup}
-          field={currentNestedField}
-          component={{
-            ...component,
-            fields: [
-              ...(component?.fields || []),
-              ...(nestedFieldDefinitions || []),
-              ...(availableFields || [])
-            ].filter((field, index, self) => 
-              index === self.findIndex(f => 
-                (f.id && f.id === field.id) || 
-                (f.name && f.name === field.name)
+        <>
+          {console.log('FieldEditModal: Passing to nested modal - component fields:', component?.fields?.map(f => ({ id: f.id, name: f.name })))}
+          {console.log('FieldEditModal: Passing to nested modal - nestedFieldDefinitions:', nestedFieldDefinitions?.map(f => ({ id: f.id, name: f.name })))}
+          {console.log('FieldEditModal: Passing to nested modal - availableFields:', availableFields?.map(f => ({ id: f.id, name: f.name })))}
+          <FieldEditModal
+            isOpen={showFieldPopup}
+            field={currentNestedField}
+            component={{
+              ...component,
+              fields: [
+                ...(component?.fields || []),
+                ...(nestedFieldDefinitions || []),
+                ...(availableFields || [])
+              ].filter((field, index, self) => 
+                index === self.findIndex(f => 
+                  (f.id && f.id === field.id) || 
+                  (f.name && f.name === field.name)
+                )
               )
-            )
-          }}
-          onClose={() => setShowFieldPopup(false)}
-          onSave={(updatedField) => {
-            if (editingNestedFieldIndex !== null) {
-              handleUpdateNestedField(updatedField)
-            } else {
-              handleAddNestedField(updatedField)
-            }
-          }}
-          preventDatabaseSave={true}
-          parentFieldType={type}
-          siblingFields={nestedFieldDefinitions}
-        />
+            }}
+            onClose={() => setShowFieldPopup(false)}
+            onSave={(updatedField) => {
+              if (editingNestedFieldIndex !== null) {
+                handleUpdateNestedField(updatedField)
+              } else {
+                handleAddNestedField(updatedField)
+              }
+            }}
+            preventDatabaseSave={true}
+            parentFieldType={type}
+            siblingFields={nestedFieldDefinitions}
+          />
+        </>
       )}
     </div>
   )

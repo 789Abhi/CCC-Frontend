@@ -54,6 +54,12 @@ const ConditionalLogicTab = ({
   useEffect(() => {
     setConfig(prev => {
       if (prev.conditional_logic && prev.conditional_logic.length > 0) {
+        // Don't run cleanup if we don't have available fields yet
+        if (filteredAvailableFields.length === 0 && validationFields.length === 0) {
+          console.log('ConditionalLogicTab: Skipping cleanup - no available fields loaded yet');
+          return prev;
+        }
+        
         const availableFieldIds = new Set(filteredAvailableFields.map(f => f.id));
         const availableFieldNames = new Set(filteredAvailableFields.map(f => f.name).filter(Boolean));
         
@@ -79,6 +85,10 @@ const ConditionalLogicTab = ({
           
           if (!isValid) {
             console.log(`ConditionalLogicTab: Rule ${rule.id} with target_field "${rule.target_field}" is invalid - not found in any available fields`);
+            console.log(`ConditionalLogicTab: Available IDs:`, Array.from(availableFieldIds));
+            console.log(`ConditionalLogicTab: Available names:`, Array.from(availableFieldNames));
+            console.log(`ConditionalLogicTab: Validation IDs:`, Array.from(validationFieldIds));
+            console.log(`ConditionalLogicTab: Validation names:`, Array.from(validationFieldNames));
           }
           
           return isValid;
