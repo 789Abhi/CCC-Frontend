@@ -160,10 +160,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       const componentFields = component?.fields || [];
       
       // Also include sibling fields to ensure we have all necessary fields
-      const siblingFieldIds = new Set((siblingFields || []).map(f => f.id));
-      const siblingFieldNames = new Set((siblingFields || []).map(f => f.name).filter(Boolean));
-      
-      // Combine component fields with sibling fields, avoiding duplicates
       const allValidationFields = [...componentFields];
       
       if (siblingFields && Array.isArray(siblingFields)) {
@@ -2705,7 +2701,16 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           field={currentNestedField}
           component={{
             ...component,
-            fields: validationFields // Pass all validation fields to the nested field modal
+            fields: [
+              ...(component?.fields || []),
+              ...(nestedFieldDefinitions || []),
+              ...(availableFields || [])
+            ].filter((field, index, self) => 
+              index === self.findIndex(f => 
+                (f.id && f.id === field.id) || 
+                (f.name && f.name === field.name)
+              )
+            )
           }}
           onClose={() => setShowFieldPopup(false)}
           onSave={(updatedField) => {
@@ -2716,8 +2721,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             }
           }}
           preventDatabaseSave={true}
-          parentFieldType={type} // Pass the parent field type (should be 'repeater')
-          siblingFields={nestedFieldDefinitions} // Pass the sibling nested fields
+          parentFieldType={type}
+          siblingFields={nestedFieldDefinitions}
         />
       )}
     </div>
