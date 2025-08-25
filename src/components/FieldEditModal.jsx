@@ -415,6 +415,25 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         } catch (e) {
           console.error("Error parsing field config:", e)
         }
+        
+        // Centralized conditional logic loading for ALL field types (except toggle which handles it separately)
+        if (field.config && field.type !== 'toggle') {
+          try {
+            const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+            setConditionalLogicConfig({
+              field_condition: config.field_condition || 'always_show',
+              conditional_logic: config.conditional_logic || [],
+              logic_operator: config.logic_operator || 'AND'
+            });
+          } catch (e) {
+            console.error("Error parsing conditional logic config:", e);
+            setConditionalLogicConfig({
+              field_condition: 'always_show',
+              conditional_logic: [],
+              logic_operator: 'AND'
+            });
+          }
+        }
       } else {
         console.log("No field config found")
         if (field.type === "repeater") {
