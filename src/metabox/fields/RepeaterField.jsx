@@ -12,6 +12,8 @@ import CheckboxField from './CheckboxField';
 import RadioField from './RadioField';
 import ColorField from './ColorField';
 import ToggleField from './ToggleField';
+import OembedField from './OembedField';
+import LinkField from './LinkField';
 import useConditionalLogic from '../hooks/useConditionalLogic';
 
 // Sortable Repeater Item Component
@@ -363,6 +365,32 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
             instanceId={instanceId}
             fieldId={fieldId}
             availableFields={nestedFields || []}
+          />
+        );
+
+      case 'oembed':
+        return (
+          <OembedField
+            key={`${field.name}_${itemIndex}`}
+            field={field}
+            value={fieldValue}
+            onChange={handleChange}
+            isSubmitting={false}
+            fieldConfig={field.config || {}}
+            fieldId={`${field.name}_${itemIndex}`}
+          />
+        );
+
+      case 'link':
+        return (
+          <LinkField
+            key={`${field.name}_${itemIndex}`}
+            field={field}
+            value={fieldValue}
+            onChange={handleChange}
+            isSubmitting={false}
+            fieldConfig={field.config || {}}
+            fieldId={`${field.name}_${itemIndex}`}
           />
         );
 
