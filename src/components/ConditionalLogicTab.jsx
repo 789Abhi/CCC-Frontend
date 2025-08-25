@@ -55,8 +55,8 @@ const ConditionalLogicTab = ({
       if (prev.conditional_logic && prev.conditional_logic.length > 0) {
         const availableFieldIds = new Set(filteredAvailableFields.map(f => f.id));
         const cleanedRules = prev.conditional_logic.filter(rule => {
-          // Keep rules that target existing fields
-          return availableFieldIds.has(rule.target_field);
+          // Keep rules that have no target field yet (new/incomplete rules) or target existing fields
+          return !rule.target_field || rule.target_field === '' || availableFieldIds.has(rule.target_field);
         });
 
         // If some rules were removed, update the config
