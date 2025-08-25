@@ -91,7 +91,18 @@ export const useConditionalLogic = (fields = [], fieldValues = {}) => {
         return true;
       }
 
-      const results = config.conditional_logic.map(rule => evaluateRule(rule));
+      // Filter out rules that reference non-existent fields
+      const validRules = config.conditional_logic.filter(rule => {
+        const targetField = fields.find(f => f.id === rule.target_field);
+        return targetField !== undefined;
+      });
+
+      // If no valid rules remain, show the field by default
+      if (validRules.length === 0) {
+        return true;
+      }
+
+      const results = validRules.map(rule => evaluateRule(rule));
       const operator = config.logic_operator || 'OR';
       
       if (operator === 'AND') {

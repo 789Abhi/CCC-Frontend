@@ -49,6 +49,30 @@ const ConditionalLogicTab = ({
     onConfigChange(config);
   }, [config]); // Removed onConfigChange dependency to prevent unnecessary calls
 
+  // Clean up orphaned rules when available fields change
+  useEffect(() => {
+    if (config.conditional_logic && config.conditional_logic.length > 0) {
+      const availableFieldIds = new Set(filteredAvailableFields.map(f => f.id));
+      const cleanedRules = config.conditional_logic.filter(rule => {
+        // Keep rules that target existing fields
+        return availableFieldIds.has(rule.target_field);
+      });
+
+      // If some rules were removed, update the config
+      if (cleanedRules.length !== config.conditional_logic.length) {
+        const removedCount = config.conditional_logic.length - cleanedRules.length;
+        console.warn(`Cleaned up ${removedCount} orphaned conditional logic rule(s) that referenced deleted fields`);
+        
+        setConfig(prev => ({
+          ...prev,
+          conditional_logic: cleanedRules,
+          // If all rules were removed, reset to always show
+          field_condition: cleanedRules.length === 0 ? 'always_show' : prev.field_condition
+        }));
+      }
+    }
+  }, [filteredAvailableFields, config.conditional_logic]);
+
   const addRule = () => {
     isUserInteracting.current = true;
     const newRule = {
