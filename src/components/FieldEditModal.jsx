@@ -134,18 +134,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       // Start with sibling fields (other nested fields in the same repeater)
       const allAvailableFields = [...siblingFields];
       
-      // Also include main component fields for conditional logic
+      // Also include main component fields for conditional logic - include ALL fields, don't deduplicate
       if (component?.fields && Array.isArray(component.fields)) {
-        component.fields.forEach(componentField => {
-          // Check if this field is already included (avoid duplicates)
-          const isDuplicate = allAvailableFields.some(f => 
-            (f.id && f.id === componentField.id) || 
-            (f.name && f.name === componentField.name)
-          );
-          if (!isDuplicate) {
-            allAvailableFields.push(componentField);
-          }
-        });
+        allAvailableFields.push(...component.fields);
       }
       
       // Filter out the current field being edited to prevent self-reference
@@ -178,14 +169,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       const allValidationFields = [...componentFields];
       
       if (siblingFields && Array.isArray(siblingFields)) {
-        siblingFields.forEach(siblingField => {
-          const isDuplicate = allValidationFields.some(f => 
-            f.id === siblingField.id || f.name === siblingField.name
-          );
-          if (!isDuplicate) {
-            allValidationFields.push(siblingField);
-          }
-        });
+        // Include all sibling fields, don't deduplicate
+        allValidationFields.push(...siblingFields);
       }
       
       console.log('FieldEditModal: Validation fields for nested field:', allValidationFields.map(f => ({ id: f.id, name: f.name })));
@@ -2722,14 +2707,10 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               ...component,
               fields: [
                 ...(component?.fields || []),
-                ...(nestedFieldDefinitions || []),
-                ...(availableFields || [])
-              ].filter((field, index, self) => 
-                index === self.findIndex(f => 
-                  (f.id && f.id === field.id) || 
-                  (f.name && f.name === field.name)
-                )
-              )
+                ...(nestedFieldDefinitions || [])
+                // Don't include availableFields here as it might cause conflicts
+                // The nested modal will calculate its own availableFields
+              ]
             }}
             onClose={() => setShowFieldPopup(false)}
             onSave={(updatedField) => {
