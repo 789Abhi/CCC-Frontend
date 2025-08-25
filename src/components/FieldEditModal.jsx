@@ -152,6 +152,16 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     return component?.fields || [];
   }, [component?.fields, parentFieldType, siblingFields, field?.name]);
 
+  // Get validation fields for conditional logic (separate from available fields for dropdown)
+  const validationFields = useMemo(() => {
+    // For nested fields, include all component fields for validation
+    if (parentFieldType === 'repeater') {
+      return component?.fields || [];
+    }
+    // For normal fields, no additional validation fields needed
+    return [];
+  }, [component?.fields, parentFieldType]);
+
   const availableFieldTypes = [
     "text",
     "textarea",
@@ -2639,7 +2649,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   isSubmitting={isSubmitting}
                   fieldType={type}
                   currentFieldId={field?.id}
-                  validationFields={parentFieldType === 'repeater' ? (component?.fields || []) : []}
+                  validationFields={validationFields}
                 />
               </div>
             )}
