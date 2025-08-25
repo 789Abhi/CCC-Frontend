@@ -1409,23 +1409,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               </div>
             )}
 
-            {/* Max Sets for Repeater */}
-            {type === 'repeater' && (
-                <div className="space-y-2">
-                <label htmlFor="maxSets" className="block text-sm font-medium text-gray-700">
-                  Max Sets
-                  </label>
-                  <input
-                  id="maxSets"
-                  type="number"
-                  value={maxSets}
-                  onChange={e => setMaxSets(e.target.value)}
-                  placeholder="Enter max sets (0 for unlimited)"
-                    disabled={isSubmitting}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
-                  />
-                </div>
-            )}
 
             {/* Repeater Settings */}
             {type === "repeater" && (
