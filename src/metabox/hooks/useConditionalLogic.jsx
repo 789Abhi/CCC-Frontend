@@ -134,13 +134,11 @@ export const useConditionalLogic = (fields = [], fieldValues = {}) => {
           visible.add(field.id);
         }
       } catch (error) {
-        console.error(`Error processing field ${field.id}:`, error);
-        // If there's an error, show the field by default
+        // If there's an error parsing config, show the field by default
         visible.add(field.id);
       }
     });
     
-    console.log(`📊 Visible fields calculated:`, Array.from(visible));
     return visible;
   }, [fields, fieldValues]);
 

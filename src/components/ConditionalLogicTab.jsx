@@ -45,7 +45,6 @@ const ConditionalLogicTab = ({
 
   // Notify parent of config changes (only when config actually changes)
   useEffect(() => {
-    console.log(`ConditionalLogicTab: Config changed, sending to parent:`, config);
     // Call onConfigChange, but don't include it in dependencies to avoid render loops
     onConfigChange(config);
   }, [config]); // Removed onConfigChange dependency to prevent unnecessary calls
@@ -80,8 +79,6 @@ const ConditionalLogicTab = ({
   };
 
   const updateRule = (ruleId, field, value) => {
-    console.log(`ConditionalLogicTab: updateRule called - ruleId: ${ruleId}, field: ${field}, value: ${value}`);
-    
     isUserInteracting.current = true;
     setConfig(prev => {
       const newConfig = {
@@ -102,21 +99,16 @@ const ConditionalLogicTab = ({
                 if (shouldReset) {
                   updatedRule.condition = getDefaultConditionForFieldType(targetField.type);
                   updatedRule.value = getDefaultValueForFieldType(targetField.type, value);
-                  console.log(`ConditionalLogicTab: Reset defaults for field type ${targetField.type} - condition: ${updatedRule.condition}, value: ${updatedRule.value}`);
-                } else {
-                  console.log(`ConditionalLogicTab: Not resetting existing rule with condition: ${rule.condition}, value: ${rule.value}`);
                 }
               }
             }
             
-            console.log(`ConditionalLogicTab: Updated rule:`, updatedRule);
             return updatedRule;
           }
           return rule;
         })
       };
       
-      console.log(`ConditionalLogicTab: New config:`, newConfig);
       return newConfig;
     });
     
@@ -382,12 +374,12 @@ const ConditionalLogicTab = ({
                         value={(() => {
                           const availableConditions = getAvailableConditions(rule.target_field);
                           const conditionExists = availableConditions.some(c => c.value === rule.condition);
-                          console.log(`ConditionalLogicTab: Current condition "${rule.condition}" exists in available options:`, conditionExists);
+
                           
                           // If current condition doesn't exist in available options, use the first available one
                           if (!conditionExists && availableConditions.length > 0) {
                             const defaultCondition = availableConditions[0].value;
-                            console.log(`ConditionalLogicTab: Auto-correcting invalid condition "${rule.condition}" to "${defaultCondition}"`);
+
                             // Update the rule with the correct condition
                             setTimeout(() => updateRule(rule.id, 'condition', defaultCondition), 0);
                             return defaultCondition;
@@ -396,7 +388,7 @@ const ConditionalLogicTab = ({
                           return rule.condition;
                         })()}
                         onChange={(e) => {
-                          console.log(`ConditionalLogicTab: Condition dropdown changed from ${rule.condition} to ${e.target.value}`);
+
                           updateRule(rule.id, 'condition', e.target.value);
                         }}
                         className="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white"
@@ -404,7 +396,7 @@ const ConditionalLogicTab = ({
                       >
                         {(() => {
                           const availableConditions = getAvailableConditions(rule.target_field);
-                          console.log(`ConditionalLogicTab: Available conditions for field ${rule.target_field}:`, availableConditions);
+
                           return availableConditions.map(condition => (
                             <option key={condition.value} value={condition.value}>
                               {condition.label}
@@ -429,7 +421,7 @@ const ConditionalLogicTab = ({
                                 // If value is empty and we have available options, auto-select the first one
                                 if ((!rule.value || rule.value === '') && availableValues.length > 0) {
                                   const defaultValue = availableValues[0].value;
-                                  console.log(`ConditionalLogicTab: Auto-selecting first value "${defaultValue}" for rule`);
+
                                   // Update the rule with the default value
                                   setTimeout(() => updateRule(rule.id, 'value', defaultValue), 0);
                                   return defaultValue;
@@ -437,7 +429,7 @@ const ConditionalLogicTab = ({
                                 return rule.value;
                               })()}
                               onChange={(e) => {
-                                console.log(`ConditionalLogicTab: Value dropdown changed to: ${e.target.value}`);
+
                                 updateRule(rule.id, 'value', e.target.value);
                               }}
                               className="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white"
