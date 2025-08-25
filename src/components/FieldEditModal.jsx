@@ -129,57 +129,54 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
   // Memoized available fields to prevent array recreation on every render
   const availableFields = useMemo(() => {
-    // If we're editing a nested field (inside a repeater), include both sibling fields and main component fields
+    // If we're editing a nested field (inside a repeater), only include sibling fields
     if (parentFieldType === 'repeater' && siblingFields) {
-      // Start with sibling fields (other nested fields in the same repeater)
-      const allAvailableFields = [...siblingFields];
-      
-      // Also include main component fields for conditional logic - include ALL fields, don't deduplicate
-      if (component?.fields && Array.isArray(component.fields)) {
-        allAvailableFields.push(...component.fields);
-      }
-      
-      // Filter out the current field being edited to prevent self-reference
-      const filteredFields = allAvailableFields.filter((availableField, index) => {
-        if (field && field.name) {
-          return availableField.name !== field.name;
-        }
-        return true;
-      }).map((availableField, index) => ({
-        // For nested fields, use the actual field name as the ID to ensure stability
-        // This prevents conditional logic from breaking when fields are reloaded
-        ...availableField,
-        id: availableField.id || availableField.name || `nested_${index}_${availableField.label}`
+      const filteredSiblings = (siblingFields || []).filter(siblingField => {
+        return !(field && (field.id === siblingField.id || field.name === siblingField.name));
+      }).map((siblingField, index) => ({
+        ...siblingField,
+        id: siblingField.id || siblingField.name || `nested_${index}_${siblingField.label}`
       }));
-      
-      return filteredFields;
+      return filteredSiblings;
     }
-    // For normal (non-nested) fields, use all component fields
-    return component?.fields || [];
-  }, [component?.fields, parentFieldType, siblingFields, field?.name]);
+    
+    // For normal (non-nested) fields, use all component fields with deduplication
+    const uniqueTopLevelFieldsMap = new Map();
+    (component?.fields || []).forEach(f => {
+      const stableId = f.id || f.name;
+      if (stableId && !uniqueTopLevelFieldsMap.has(stableId)) {
+        uniqueTopLevelFieldsMap.set(stableId, f);
+      }
+    });
+    return Array.from(uniqueTopLevelFieldsMap.values());
+  }, [component?.fields, parentFieldType, siblingFields, field?.id, field?.name]);
 
   // Get validation fields for conditional logic (separate from available fields for dropdown)
   const validationFields = useMemo(() => {
-    // For nested fields, include all component fields for validation
+    // For nested fields, include all fields from component.fields (which already contains top-level and sibling nested fields)
     if (parentFieldType === 'repeater') {
-      // Get fields from component if available
-      const componentFields = component?.fields || [];
-      
-      // Also include sibling fields to ensure we have all necessary fields
-      const allValidationFields = [...componentFields];
-      
-      if (siblingFields && Array.isArray(siblingFields)) {
-        // Include all sibling fields, don't deduplicate
-        allValidationFields.push(...siblingFields);
-      }
-      
-      console.log('FieldEditModal: Validation fields for nested field:', allValidationFields.map(f => ({ id: f.id, name: f.name })));
-      
-      return allValidationFields;
+      const allValidationFields = component?.fields || [];
+      const uniqueValidationFieldsMap = new Map();
+      allValidationFields.forEach(f => {
+        const stableId = f.id || f.name;
+        if (stableId && !uniqueValidationFieldsMap.has(stableId)) {
+          uniqueValidationFieldsMap.set(stableId, f);
+        }
+      });
+      console.log('FieldEditModal: Validation fields for nested field:', Array.from(uniqueValidationFieldsMap.values()).map(f => ({ id: f.id, name: f.name })));
+      return Array.from(uniqueValidationFieldsMap.values());
     }
-    // For normal fields, no additional validation fields needed
-    return [];
-  }, [component?.fields, parentFieldType, siblingFields]);
+    
+    // For normal fields, include all component fields with deduplication
+    const uniqueTopLevelFieldsMap = new Map();
+    (component?.fields || []).forEach(f => {
+      const stableId = f.id || f.name;
+      if (stableId && !uniqueTopLevelFieldsMap.has(stableId)) {
+        uniqueTopLevelFieldsMap.set(stableId, f);
+      }
+    });
+    return Array.from(uniqueTopLevelFieldsMap.values());
+  }, [component?.fields, parentFieldType, field?.id, field?.name]);
 
   const availableFieldTypes = [
     "text",
@@ -2697,9 +2694,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
       {showFieldPopup && (
         <>
-          {console.log('FieldEditModal: Passing to nested modal - component fields:', component?.fields?.map(f => ({ id: f.id, name: f.name })))}
-          {console.log('FieldEditModal: Passing to nested modal - nestedFieldDefinitions:', nestedFieldDefinitions?.map(f => ({ id: f.id, name: f.name })))}
-          {console.log('FieldEditModal: Passing to nested modal - availableFields:', availableFields?.map(f => ({ id: f.id, name: f.name })))}
           <FieldEditModal
             isOpen={showFieldPopup}
             field={currentNestedField}

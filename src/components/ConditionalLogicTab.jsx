@@ -56,7 +56,6 @@ const ConditionalLogicTab = ({
       if (prev.conditional_logic && prev.conditional_logic.length > 0) {
         // Don't run cleanup if we don't have available fields yet
         if (filteredAvailableFields.length === 0 && validationFields.length === 0) {
-          console.log('ConditionalLogicTab: Skipping cleanup - no available fields loaded yet');
           return prev;
         }
         
@@ -66,11 +65,6 @@ const ConditionalLogicTab = ({
         // Also check validation fields for rule validation
         const validationFieldIds = new Set(validationFields.map(f => f.id));
         const validationFieldNames = new Set(validationFields.map(f => f.name).filter(Boolean));
-        
-        // Debug logging to see what fields are available
-        console.log('ConditionalLogicTab: Available fields for dropdown:', filteredAvailableFields.map(f => ({ id: f.id, name: f.name })));
-        console.log('ConditionalLogicTab: Validation fields:', validationFields.map(f => ({ id: f.id, name: f.name })));
-        console.log('ConditionalLogicTab: Current rules:', prev.conditional_logic);
         
         const cleanedRules = prev.conditional_logic.filter(rule => {
           // Keep rules that have no target field yet (new/incomplete rules) or target existing fields
@@ -82,14 +76,6 @@ const ConditionalLogicTab = ({
                  availableFieldNames.has(rule.target_field) ||
                  validationFieldIds.has(rule.target_field) ||
                  validationFieldNames.has(rule.target_field);
-          
-          if (!isValid) {
-            console.log(`ConditionalLogicTab: Rule ${rule.id} with target_field "${rule.target_field}" is invalid - not found in any available fields`);
-            console.log(`ConditionalLogicTab: Available IDs:`, Array.from(availableFieldIds));
-            console.log(`ConditionalLogicTab: Available names:`, Array.from(availableFieldNames));
-            console.log(`ConditionalLogicTab: Validation IDs:`, Array.from(validationFieldIds));
-            console.log(`ConditionalLogicTab: Validation names:`, Array.from(validationFieldNames));
-          }
           
           return isValid;
         });
@@ -164,6 +150,9 @@ const ConditionalLogicTab = ({
                   updatedRule.condition = getDefaultConditionForFieldType(targetField.type);
                   updatedRule.value = getDefaultValueForFieldType(targetField.type, value);
                 }
+                
+                // Ensure target_field is set to the stable ID (prefer name over ID for nested fields)
+                updatedRule.target_field = targetField.name || targetField.id;
               }
             }
             
