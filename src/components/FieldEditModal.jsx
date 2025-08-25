@@ -21,10 +21,10 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import FieldTreeModal from "./FieldTreeModal"
+
 import ConditionalLogicTab from "./ConditionalLogicTab"
 
-function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false }) {
+function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false, parentFieldType = null, siblingFields = null }) {
 
   const [label, setLabel] = useState("")
   const [name, setName] = useState("")
@@ -48,9 +48,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   const [showFieldPopup, setShowFieldPopup] = useState(false)
   const [copiedText, setCopiedText] = useState(null)
   
-  // Tree structure modal state
-  const [showTreeModal, setShowTreeModal] = useState(false)
-
   // Add state for image return type
   const [imageReturnType, setImageReturnType] = useState('url');
   const [selectMultiple, setSelectMultiple] = useState(false);
@@ -132,8 +129,25 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
   // Memoized available fields to prevent array recreation on every render
   const availableFields = useMemo(() => {
+    // If we're editing a nested field (inside a repeater), use sibling fields only
+    if (parentFieldType === 'repeater' && siblingFields) {
+      // Filter out the current field being edited to prevent self-reference
+      return siblingFields.filter((siblingField, index) => {
+        // For nested fields, we need to check by name/label since they might not have IDs yet
+        if (field && field.name) {
+          return siblingField.name !== field.name;
+        }
+        // If no current field, include all siblings
+        return true;
+      }).map((siblingField, index) => ({
+        // Ensure each sibling field has an id for conditional logic
+        ...siblingField,
+        id: siblingField.id || `nested_${index}_${siblingField.name || siblingField.label}`
+      }));
+    }
+    // For normal (non-nested) fields, use all component fields
     return component?.fields || [];
-  }, [component?.fields]);
+  }, [component?.fields, parentFieldType, siblingFields, field?.name]);
 
   const availableFieldTypes = [
     "text",
@@ -673,36 +687,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     setEditingNestedFieldIndex(null)
     setShowFieldPopup(false)
     setCurrentNestedField(null)
-  }
-
-  const handleTreeFieldUpdate = (path, updatedField) => {
-    console.log("FieldEditModal: Updating field from tree at path:", path, "with data:", updatedField)
-    
-    // Update the field at the specified path in nestedFieldDefinitions
-    const updateFieldAtPath = (fields, path, updatedField) => {
-      const [currentIndex, ...remainingPath] = path
-      
-      if (remainingPath.length === 0) {
-        // Update at current level
-        return fields.map((f, i) => (i === currentIndex ? updatedField : f))
-      } else {
-        // Navigate deeper
-        return fields.map((f, i) => {
-          if (i === currentIndex && f.type === "repeater" && f.config?.nested_fields) {
-            return {
-              ...f,
-              config: {
-                ...f.config,
-                nested_fields: updateFieldAtPath(f.config.nested_fields, remainingPath, updatedField)
-              }
-            }
-          }
-          return f
-        })
-      }
-    }
-    
-    setNestedFieldDefinitions(prev => updateFieldAtPath(prev, path, updatedField))
   }
 
   const handleDeleteNestedField = (indexToDelete) => {
@@ -1470,15 +1454,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   <div className="flex items-center justify-between">
                     <h5 className="text-sm font-medium text-gray-700">Nested Fields</h5>
                     <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowTreeModal(true)}
-                        className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-                        disabled={isSubmitting}
-                      >
-                        <Eye className="w-3 h-3" />
-                        Tree View
-                      </button>
+
                       <button
                         type="button"
                         onClick={() => {
@@ -2544,17 +2520,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             }
           }}
           preventDatabaseSave={true}
-        />
-      )}
-
-      {/* Tree Structure Modal */}
-      {showTreeModal && (
-        <FieldTreeModal
-          isOpen={showTreeModal}
-          fields={nestedFieldDefinitions}
-          onClose={() => setShowTreeModal(false)}
-          onFieldUpdate={handleTreeFieldUpdate}
-          component={component}
+          parentFieldType={type} // Pass the parent field type (should be 'repeater')
+          siblingFields={nestedFieldDefinitions} // Pass the sibling nested fields
         />
       )}
     </div>
