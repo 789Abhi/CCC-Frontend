@@ -197,7 +197,58 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               ? field.children
               : (config.nested_fields || [])
             console.log("Loading nested field definitions:", nestedFields)
-            setNestedFieldDefinitions(nestedFields)
+            
+
+            
+            // Update conditional logic references in nested fields to match current field IDs
+            const updatedNestedFields = nestedFields.map(nestedField => {
+              if (nestedField.config && nestedField.config.conditional_logic && Array.isArray(nestedField.config.conditional_logic)) {
+                const updatedConditionalLogic = nestedField.config.conditional_logic.map(rule => {
+                  // For each rule, find the target field among current nested fields
+                  // We need to match by name since IDs change, but the name should be stable
+                  let targetField = null;
+                  
+                  // First try to find by exact ID match (in case ID is still valid)
+                  targetField = nestedFields.find(f => f.id === rule.target_field);
+                  
+                  // If not found by ID, we need to find the field by other means
+                  // This is tricky because we don't store the target field name in the rule
+                  // Let's examine what target fields we have and try to match logically
+                  if (!targetField) {
+                    // Log the situation for debugging
+                    console.log(`Could not find target field "${rule.target_field}" for field "${nestedField.name}"`);
+                    console.log('Available nested fields:', nestedFields.map(f => ({id: f.id, name: f.name, type: f.type})));
+                    
+                    // If there's only one other field that's not the current field, assume that's the target
+                    const otherFields = nestedFields.filter(f => f.name !== nestedField.name);
+                    if (otherFields.length === 1) {
+                      targetField = otherFields[0];
+                      console.log(`Assuming target field is "${targetField.name}" (ID: ${targetField.id})`);
+                    }
+                  }
+                  
+                  if (targetField && targetField.id !== rule.target_field) {
+                    console.log(`Updating conditional logic reference from "${rule.target_field}" to "${targetField.id}" for field "${nestedField.name}"`);
+                    return {
+                      ...rule,
+                      target_field: targetField.id
+                    };
+                  }
+                  return rule;
+                });
+                
+                return {
+                  ...nestedField,
+                  config: {
+                    ...nestedField.config,
+                    conditional_logic: updatedConditionalLogic
+                  }
+                };
+              }
+              return nestedField;
+            });
+            
+            setNestedFieldDefinitions(updatedNestedFields)
             
             // Load conditional logic config for repeater fields
             setConditionalLogicConfig({
