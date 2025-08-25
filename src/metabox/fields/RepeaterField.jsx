@@ -12,12 +12,25 @@ import CheckboxField from './CheckboxField';
 import RadioField from './RadioField';
 import ColorField from './ColorField';
 import ToggleField from './ToggleField';
+import useConditionalLogic from '../hooks/useConditionalLogic';
 
 // Sortable Repeater Item Component
 const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemoveItem, onToggleHidden, instanceId, fieldId }) => {
   const [isExpanded, setIsExpanded] = useState(true); // Default expanded
   const [isHidden, setIsHidden] = useState(item._hidden || false); // Get hidden state from item
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Dropdown menu state
+  
+  // Use conditional logic for nested fields within this repeater item
+  const { shouldRenderField } = useConditionalLogic(nestedFields, item);
+  
+  // Debug conditional logic
+  useEffect(() => {
+    console.log(`Repeater item ${index} conditional logic:`, {
+      nestedFields: nestedFields.map(f => ({id: f.id, name: f.name, type: f.type, config: f.config})),
+      itemValues: item,
+      visibleFields: nestedFields.filter(f => shouldRenderField(f.id)).map(f => f.name)
+    });
+  }, [nestedFields, item, shouldRenderField, index]);
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -421,7 +434,13 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
       {/* Collapsible Content for this item */}
       {isExpanded && (
         <div className="space-y-4">
-          {nestedFields.map(field => renderNestedField(field, item, index))}
+          {nestedFields.map(field => {
+            // Check if field should be visible based on conditional logic
+            if (!shouldRenderField(field.id)) {
+              return null;
+            }
+            return renderNestedField(field, item, index);
+          })}
         </div>
       )}
     </div>
