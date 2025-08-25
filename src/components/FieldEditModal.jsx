@@ -2703,7 +2703,10 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         <FieldEditModal
           isOpen={showFieldPopup}
           field={currentNestedField}
-          component={component}
+          component={{
+            ...component,
+            fields: validationFields // Pass all validation fields to the nested field modal
+          }}
           onClose={() => setShowFieldPopup(false)}
           onSave={(updatedField) => {
             if (editingNestedFieldIndex !== null) {
