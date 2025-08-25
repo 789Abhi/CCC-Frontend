@@ -1444,89 +1444,64 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   <p className="text-xs text-gray-500">Limit the number of items that can be added to this repeater.</p>
                 </div>
 
+                {/* Nested Fields Management */}
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <input
-                        type="checkbox"
-                        checked={fieldConfig?.unique || false}
-                        onChange={(e) => setFieldConfig(prev => ({ ...prev, unique: e.target.checked }))}
-                        className="mr-2"
-                      />
-                      Unique Value
-                    </label>
-                    <p className="text-xs text-gray-500">Ensures each number is unique across all posts</p>
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-sm font-medium text-gray-700">Nested Fields</h5>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowTreeModal(true)}
+                        className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                        disabled={isSubmitting}
+                      >
+                        <Eye className="w-3 h-3" />
+                        Tree View
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingNestedFieldIndex(null)
+                          setCurrentNestedField(null)
+                          setShowFieldPopup(true)
+                        }}
+                        className="flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        disabled={isSubmitting}
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add Field
+                      </button>
+                    </div>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Minimum Value
-                    </label>
-                    <input
-                      type="number"
-                      value={fieldConfig?.min_value || ''}
-                      onChange={(e) => {
-                        const currentConfig = fieldConfig || {};
-                        setFieldConfig({
-                          ...currentConfig,
-                          min_value: e.target.value === '' ? null : parseFloat(e.target.value)
-                        });
-                      }}
-                      placeholder="No minimum"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-gray-500">Sets the lowest allowed number</p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Maximum Value
-                    </label>
-                    <input
-                      type="number"
-                      value={fieldConfig?.max_value !== undefined && fieldConfig?.max_value !== null ? fieldConfig.max_value : ''}
-                      onChange={(e) => {
-                        const currentConfig = fieldConfig || {};
-                        setFieldConfig({
-                          ...currentConfig,
-                          max_value: e.target.value === '' ? null : parseFloat(e.target.value)
-                        });
-                      }}
-                      placeholder="100"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-gray-500">
-                      Sets the highest allowed value for the range slider (leave empty for no maximum, default is 100)
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Prepend Text
-                    </label>
-                    <input
-                      type="text"
-                      value={fieldConfig?.prepend || ''}
-                      onChange={(e) => setFieldConfig(prev => ({ ...prev, prepend: e.target.value }))}
-                      placeholder="e.g., $"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-gray-500">Adds visual text before the input</p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Append Text
-                    </label>
-                    <input
-                      type="text"
-                      value={fieldConfig?.append || ''}
-                      onChange={(e) => setFieldConfig(prev => ({ ...prev, append: e.target.value }))}
-                      placeholder="e.g., %"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-gray-500">Adds visual text after the input</p>
-                  </div>
+
+                  {/* Nested Fields List */}
+                  {nestedFieldDefinitions.length > 0 ? (
+                    <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd} sensors={sensors}>
+                      <SortableContext items={nestedFieldDefinitions.map(field => field.name + field.label)} strategy={verticalListSortingStrategy}>
+                        <div className="space-y-2">
+                          {nestedFieldDefinitions.map((nestedField, index) => (
+                            <SortableNestedField
+                              key={nestedField.name + nestedField.label}
+                              field={nestedField}
+                              index={index}
+                              onEdit={() => {
+                                setEditingNestedFieldIndex(index)
+                                setCurrentNestedField(nestedField)
+                                setShowFieldPopup(true)
+                              }}
+                              onDelete={() => handleDeleteNestedField(index)}
+                              isSubmitting={isSubmitting}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  ) : (
+                    <div className="text-center py-6 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
+                      <p className="text-sm">No nested fields added yet</p>
+                      <p className="text-xs mt-1">Click "Add Field" to create your first nested field</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
