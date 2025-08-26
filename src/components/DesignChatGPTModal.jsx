@@ -217,25 +217,24 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
       return fields.map(field => {
         let fieldInfo = `- ${field.label} (${field.type}): ${field.name}`
         
-                 // Add nested fields for repeater
-         if (field.type === 'repeater' && field.config && field.config.nested_fields) {
-           fieldInfo += '\n  Nested fields:'
-           field.config.nested_fields.forEach(nestedField => {
-             fieldInfo += `\n    • ${nestedField.label} (${nestedField.type}): ${nestedField.name}`
-           })
-         } else if (field.type === 'repeater' && field.children && field.children.length > 0) {
-           fieldInfo += '\n  Nested fields:'
-           field.children.forEach(nestedField => {
-             fieldInfo += `\n    • ${nestedField.label} (${nestedField.type}): ${nestedField.name}`
-           })
-         }
+        // Add nested fields for repeater
+        if (field.type === 'repeater' && field.config && field.config.nested_fields) {
+          fieldInfo += '\n  Nested fields:'
+          field.config.nested_fields.forEach(nestedField => {
+            fieldInfo += `\n    • ${nestedField.label} (${nestedField.type}): ${nestedField.name}`
+          })
+        } else if (field.type === 'repeater' && field.children && field.children.length > 0) {
+          fieldInfo += '\n  Nested fields:'
+          field.children.forEach(nestedField => {
+            fieldInfo += `\n    • ${nestedField.label} (${nestedField.type}): ${nestedField.name}`
+          })
+        }
         
         return fieldInfo
       }).join('\n')
     }
     
     const fieldList = generateFieldList(component.fields)
-    const fieldExamples = generateFieldExamples()
     
     // CSS Library specific instructions
     let cssLibraryInstructions = ""
@@ -278,45 +277,28 @@ Component Description: ${component.description || 'A custom WordPress component'
 Available Fields:
 ${fieldList}
 
-PHP Data Fetching Examples:
-${fieldExamples}
-
 IMPORTANT REQUIREMENTS:
 1. Create a complete HTML structure with proper semantic markup
 2. Include modern CSS with responsive design (mobile-first approach)
-3. Use the PHP field data examples provided above - these are ready-to-use code snippets
-4. Make it visually appealing and professional
-5. Include hover effects and smooth transitions
-6. Use modern CSS features like Flexbox/Grid
-7. Ensure accessibility (proper ARIA labels, semantic HTML)
-8. Add comments explaining the structure
-9. Make it work well in WordPress themes
-10. Use proper WordPress escaping functions (esc_html, esc_url, esc_attr)
-11. For HTML content fields, use wp_kses_post() instead of esc_html()
-12. Handle conditional logic properly (check if fields exist before using them)
-13. Include proper error handling for missing data
-14. Make the design responsive and mobile-friendly
-15. Use the exact field names from the component configuration
+3. Make it visually appealing and professional
+4. Include hover effects and smooth transitions
+5. Use modern CSS features like Flexbox/Grid
+6. Ensure accessibility (proper ARIA labels, semantic HTML)
+7. Add comments explaining the structure
+8. Make it work well in WordPress themes
+9. Make the design responsive and mobile-friendly
+10. Use the exact field names from the component configuration
 
 ${cssLibraryInstructions}
 
-PHP FUNCTION REFERENCE:
-- get_ccc_field('field_name') - Basic field value
-- get_ccc_field_target('field_name') - Link field with target attributes
-- get_ccc_field_color('field_name') - Color field main value
-- get_ccc_field_hover_color('field_name') - Color field hover value
-- get_ccc_field_adjusted_color('field_name') - Color field adjusted value
-- get_ccc_select_values('field_name', null, null, 'string') - Select/checkbox as string
-- get_ccc_select_values('field_name', null, null, 'list') - Select/checkbox as list
-
-The PHP examples above show exactly how to fetch and display each field type. Use these examples as your foundation and build the HTML/CSS around them.`
+Please provide the complete HTML and CSS code that I can directly use in the WordPress component template. Focus on creating beautiful, responsive HTML/CSS that works with the field names provided above.`
 
     // Add reference image instruction if image is uploaded
     if (referenceImage) {
       prompt += `\n\nDesign Reference: I have uploaded a reference image that shows the desired design style and layout. Please create a design that closely matches the visual style, layout structure, and overall aesthetic shown in the reference image.`
     }
 
-    prompt += `\n\nPlease provide the complete HTML and CSS code that I can directly use in the WordPress component template. The PHP code is already provided above - focus on creating beautiful, responsive HTML/CSS that works with that PHP code.`
+    prompt += `\n\nPlease provide the complete HTML and CSS code that I can directly use in the WordPress component template.`
     
     return prompt
   }
@@ -324,13 +306,27 @@ The PHP examples above show exactly how to fetch and display each field type. Us
   const openChatGPT = () => {
     const prompt = generateChatGPTPrompt()
     
-    // Always copy to clipboard and open ChatGPT without URL parameters
-    // This avoids HTTP 431 errors with long prompts
-    copyToClipboard(prompt)
-    showMessage('Prompt copied to clipboard! Please paste it in ChatGPT.', 'success')
-    
-    // Open ChatGPT in a new tab
-    window.open('https://chat.openai.com', '_blank')
+    // Try to open ChatGPT with URL parameters first
+    try {
+      const chatGPTUrl = 'https://chat.openai.com?prompt=' + encodeURIComponent(prompt)
+      
+      // Check if URL is too long (browsers have limits)
+      if (chatGPTUrl.length > 2000) {
+        // URL too long, fall back to clipboard method
+        copyToClipboard(prompt)
+        showMessage('Prompt copied to clipboard! Opening ChatGPT...', 'success')
+        window.open('https://chat.openai.com', '_blank')
+      } else {
+        // URL is fine, open with prompt pre-filled
+        window.open(chatGPTUrl, '_blank')
+        showMessage('Opening ChatGPT with your prompt pre-filled!', 'success')
+      }
+    } catch (error) {
+      // Fallback to clipboard method
+      copyToClipboard(prompt)
+      showMessage('Prompt copied to clipboard! Opening ChatGPT...', 'success')
+      window.open('https://chat.openai.com', '_blank')
+    }
   }
 
   const handleImageUpload = (event) => {
@@ -668,13 +664,12 @@ The PHP examples above show exactly how to fetch and display each field type. Us
               </button>
             </div>
             
-            {/* Clipboard Note */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> The prompt is automatically copied to your clipboard when you click "Open ChatGPT with Design Prompt". 
-                This ensures all the detailed instructions and PHP examples are included without any URL length limitations.
-              </p>
-            </div>
+                         {/* Clipboard Note */}
+             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+               <p className="text-sm text-blue-800">
+                 <strong>Note:</strong> The prompt will automatically appear in ChatGPT when opened. If the prompt is too long, it will be copied to your clipboard as a fallback.
+               </p>
+             </div>
 
                      {/* Instructions */}
            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
@@ -683,12 +678,12 @@ The PHP examples above show exactly how to fetch and display each field type. Us
                <li>1. (Optional) Upload a reference image to match your desired design style</li>
                <li>2. Select your preferred CSS framework (Tailwind, Bootstrap, or Custom CSS)</li>
                <li>3. Click "Open ChatGPT with Design Prompt" to go to ChatGPT</li>
-               <li>4. The prompt will be automatically copied to your clipboard</li>
-               <li>5. Paste the prompt in ChatGPT and upload your reference image if you have one</li>
+               <li>4. The prompt will automatically appear in ChatGPT (or be copied to clipboard if too long)</li>
+               <li>5. Upload your reference image in ChatGPT if you have one</li>
                <li>6. ChatGPT will generate HTML/CSS code based on your component's fields, reference image, and selected CSS framework</li>
                <li>7. Copy the generated code and paste it into your component template file</li>
                <li>8. The template file is located at: <code className="bg-yellow-100 px-1 rounded">your-theme/ccc-templates/{component.handle_name}.php</code></li>
-               <li>9. The PHP examples above are ready-to-use code that you can copy directly into your template</li>
+               <li>9. Use the PHP examples in the green box above for data fetching</li>
                <li>10. The examples include proper escaping, conditional logic, and field-specific handling</li>
                <li>11. Use the field names exactly as shown in the examples for your specific component</li>
                <li>12. The generated CSS will be compatible with your selected framework</li>
