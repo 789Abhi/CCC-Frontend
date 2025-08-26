@@ -9,6 +9,7 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
   const [generationStep, setGenerationStep] = useState("")
   const [referenceImage, setReferenceImage] = useState(null)
   const [imagePreview, setImagePreview] = useState("")
+  const [selectedCSSLibrary, setSelectedCSSLibrary] = useState("custom") // New state for CSS library selection
 
   const showMessage = (message, type = 'info') => {
     console.log(`${type.toUpperCase()}: ${message}`)
@@ -26,9 +27,11 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
     console.log("DesignChatGPTModal: Component data:", component)
     console.log("DesignChatGPTModal: Fields:", component.fields)
     
-    let examples = "// Example to Fetch component fields data\n"
-    examples += `// Component: ${component.name}\n`
-    examples += "// Available fields:\n"
+    let examples = "// Complete PHP Template Example for Component: " + component.name + "\n"
+    examples += "// Copy this code to your template file: your-theme/ccc-templates/" + (component.handle_name || 'component') + ".php\n\n"
+    
+    examples += "<?php\n"
+    examples += "// Fetch all component fields\n"
     
     const processField = (field, prefix = '') => {
       const fieldName = field.name
@@ -36,49 +39,173 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
       const fieldLabel = field.label
       
       examples += `// ${fieldLabel} (${fieldType})\n`
-      examples += `$${fieldName} = get_ccc_field('${fieldName}');\n`
       
-      // Add type-specific examples
-      if (fieldType === 'image') {
-        examples += `// For image field:\n`
-        examples += `// $${fieldName} = get_ccc_field('${fieldName}'); // Returns image URL by default\n`
-        examples += `// $${fieldName}_id = get_ccc_field('${fieldName}', 'id'); // Get attachment ID\n`
-      } else if (fieldType === 'textarea' || fieldType === 'wysiwyg') {
-        examples += `// For ${fieldType} field:\n`
-        examples += `// echo wp_kses_post($${fieldName}); // Safe HTML output\n`
+      // Basic field fetching
+      if (fieldType === 'toggle' || fieldType === 'checkbox') {
+        examples += `$${fieldName} = get_ccc_field('${fieldName}');\n`
+        examples += `$${fieldName}_string = get_ccc_select_values('${fieldName}', null, null, 'string');\n`
+        examples += `$${fieldName}_list = get_ccc_select_values('${fieldName}', null, null, 'list');\n`
+      } else if (fieldType === 'image') {
+        examples += `$${fieldName} = get_ccc_field('${fieldName}'); // Returns image URL\n`
+        examples += `$${fieldName}_id = get_ccc_field('${fieldName}', 'id'); // Get attachment ID\n`
+      } else if (fieldType === 'link') {
+        examples += `$${fieldName} = get_ccc_field('${fieldName}'); // Returns link URL\n`
+        examples += `$${fieldName}_target = get_ccc_field_target('${fieldName}'); // Returns array with url, target, title\n`
+      } else if (fieldType === 'color') {
+        examples += `$${fieldName} = get_ccc_field('${fieldName}'); // Returns color value\n`
+        examples += `$${fieldName}_main = get_ccc_field_color('${fieldName}'); // Returns main color\n`
+        examples += `$${fieldName}_hover = get_ccc_field_hover_color('${fieldName}'); // Returns hover color\n`
+        examples += `$${fieldName}_adjusted = get_ccc_field_adjusted_color('${fieldName}'); // Returns adjusted color\n`
       } else if (fieldType === 'select') {
-        examples += `// For select field:\n`
-        examples += `// $${fieldName}_label = get_ccc_field('${fieldName}', 'label');\n`
-      } else if (fieldType === 'repeater') {
-        examples += `// For repeater field:\n`
-        examples += `// $${fieldName} = get_ccc_field('${fieldName}'); // Returns array of items\n`
-        examples += `// foreach ($${fieldName} as $item) {\n`
-        examples += `//   echo $item['nested_field_name'];\n`
-        examples += `// }\n`
+        examples += `$${fieldName} = get_ccc_field('${fieldName}'); // Returns selected value(s)\n`
+        examples += `$${fieldName}_string = get_ccc_select_values('${fieldName}', null, null, 'string');\n`
+        examples += `$${fieldName}_list = get_ccc_select_values('${fieldName}', null, null, 'list');\n`
+      } else if (fieldType === 'gallery' || fieldType === 'repeater') {
+        examples += `$${fieldName} = get_ccc_field('${fieldName}'); // Returns array of items\n`
+      } else {
+        examples += `$${fieldName} = get_ccc_field('${fieldName}');\n`
       }
+      
       examples += "\n"
       
-             // Process nested fields if this is a repeater
-       if (fieldType === 'repeater' && field.config && field.config.nested_fields) {
-         console.log(`DesignChatGPTModal: Found nested fields in ${fieldLabel}:`, field.config.nested_fields)
-         examples += `// Nested fields in ${fieldLabel} repeater:\n`
-         field.config.nested_fields.forEach(nestedField => {
-           examples += `// - ${nestedField.label} (${nestedField.type}): $item['${nestedField.name}']\n`
-         })
-         examples += "\n"
-       } else if (fieldType === 'repeater' && field.children && field.children.length > 0) {
-         console.log(`DesignChatGPTModal: Found children in ${fieldLabel}:`, field.children)
-         examples += `// Nested fields in ${fieldLabel} repeater:\n`
-         field.children.forEach(nestedField => {
-           examples += `// - ${nestedField.label} (${nestedField.type}): $item['${nestedField.name}']\n`
-         })
-         examples += "\n"
-       }
+      // Process nested fields if this is a repeater
+      if (fieldType === 'repeater' && field.config && field.config.nested_fields) {
+        console.log(`DesignChatGPTModal: Found nested fields in ${fieldLabel}:`, field.config.nested_fields)
+        examples += `// Nested fields in ${fieldLabel} repeater:\n`
+        field.config.nested_fields.forEach(nestedField => {
+          examples += `// - ${nestedField.label} (${nestedField.type}): $item['${nestedField.name}']\n`
+        })
+        examples += "\n"
+      } else if (fieldType === 'repeater' && field.children && field.children.length > 0) {
+        console.log(`DesignChatGPTModal: Found children in ${fieldLabel}:`, field.children)
+        examples += `// Nested fields in ${fieldLabel} repeater:\n`
+        field.children.forEach(nestedField => {
+          examples += `// - ${nestedField.label} (${nestedField.type}): $item['${nestedField.name}']\n`
+        })
+        examples += "\n"
+      }
     }
     
     component.fields.forEach(field => {
       processField(field)
     })
+    
+    // Add comprehensive usage examples
+    examples += "\n// ===== USAGE EXAMPLES =====\n\n"
+    
+    examples += "// Toggle/Checkbox fields\n"
+    examples += "<?php if ($${component.fields.find(f => f.type === 'toggle')?.name || 'enable_title'}): ?>\n"
+    examples += "    <h1><?php echo esc_html(${component.fields.find(f => f.type === 'text')?.name || 'title'}); ?></h1>\n"
+    examples += "<?php endif; ?>\n\n"
+    
+    examples += "// Text and textarea fields\n"
+    examples += "<h1><?php echo esc_html(${component.fields.find(f => f.type === 'textarea')?.name || 'text_area'}); ?></h1>\n\n"
+    
+    examples += "// Image field\n"
+    examples += "<img src=\"<?php echo esc_url(${component.fields.find(f => f.type === 'image')?.name || 'image'}); ?>\" \n"
+    examples += "     alt=\"<?php echo esc_attr(${component.fields.find(f => f.type === 'text')?.name || 'title'}); ?>\">\n\n"
+    
+    examples += "// Video field\n"
+    examples += "<video controls>\n"
+    examples += "    <source src=\"<?php echo esc_url(${component.fields.find(f => f.type === 'video')?.name || 'video'}); ?>\" type=\"video/mp4\">\n"
+    examples += "    Your browser does not support the video tag.\n"
+    examples += "</video>\n\n"
+    
+    examples += "// Oembed field\n"
+    examples += "<div><?php echo ${component.fields.find(f => f.type === 'oembed')?.name || 'oembed'}; ?></div>\n\n"
+    
+    examples += "// Link fields\n"
+    examples += "<!-- Normal link -->\n"
+    examples += "<a href=\"<?php echo esc_url(${component.fields.find(f => f.type === 'link')?.name || 'link'}); ?>\">Link Text</a>\n\n"
+    
+    examples += "<!-- Link with target (opens in new tab) -->\n"
+    examples += "<a href=\"<?php echo esc_url(${component.fields.find(f => f.type === 'link')?.name || 'link'}_target['url']); ?>\" \n"
+    examples += "   <?php echo ${component.fields.find(f => f.type === 'link')?.name || 'link'}_target['target']; ?>>Link with Target</a>\n\n"
+    
+    examples += "// Email field\n"
+    examples += "<a href=\"mailto:<?php echo esc_attr(${component.fields.find(f => f.type === 'email')?.name || 'email'}); ?>\">Email Us</a>\n\n"
+    
+    examples += "// Number and range fields\n"
+    examples += "<a style=\"font-size:<?php echo esc_attr(${component.fields.find(f => f.type === 'range')?.name || 'range'}); ?>px\" \n"
+    examples += "   href=\"tel:<?php echo esc_attr(${component.fields.find(f => f.type === 'number')?.name || 'number'}); ?>\">Call Us</a>\n\n"
+    
+    examples += "// File field\n"
+    examples += "<a class=\"download-link\" target=\"_blank\" \n"
+    examples += "   href=\"<?php echo esc_url(${component.fields.find(f => f.type === 'file')?.name || 'file'}); ?>\">Download File</a>\n\n"
+    
+    examples += "// Color field\n"
+    examples += "<a style=\"color:<?php echo esc_attr(${component.fields.find(f => f.type === 'color')?.name || 'color'}_hover); ?>;\" \n"
+    examples += "   target=\"_blank\" href=\"<?php echo esc_url(${component.fields.find(f => f.type === 'file')?.name || 'file'}); ?>\">Styled Download</a>\n\n"
+    
+    examples += "// Select field\n"
+    examples += "<div>Select value: <?php echo esc_html(${component.fields.find(f => f.type === 'select')?.name || 'select'}); ?></div>\n"
+    examples += "<div>Select string: <?php echo esc_html(${component.fields.find(f => f.type === 'select')?.name || 'select'}_string); ?></div>\n"
+    examples += "<div>Select list: <?php echo ${component.fields.find(f => f.type === 'select')?.name || 'select'}_list; ?></div>\n\n"
+    
+    examples += "// Select field as array\n"
+    examples += "<?php if (is_array(${component.fields.find(f => f.type === 'select')?.name || 'select'})): ?>\n"
+    examples += "    <?php foreach (${component.fields.find(f => f.type === 'select')?.name || 'select'} as $value): ?>\n"
+    examples += "        <?php echo esc_html($value) . ' '; ?>\n"
+    examples += "    <?php endforeach; ?>\n"
+    examples += "<?php else: ?>\n"
+    examples += "    <?php echo esc_html(${component.fields.find(f => f.type === 'select')?.name || 'select'}); ?>\n"
+    examples += "<?php endif; ?>\n\n"
+    
+    examples += "// Select field as list\n"
+    examples += "<ul>\n"
+    examples += "    <?php foreach (${component.fields.find(f => f.type === 'select')?.name || 'select'} as $value): ?>\n"
+    examples += "        <li><?php echo esc_html($value); ?></li>\n"
+    examples += "    <?php endforeach; ?>\n"
+    examples += "</ul>\n\n"
+    
+    examples += "// Checkbox field\n"
+    examples += "<ul>\n"
+    examples += "    <?php foreach (${component.fields.find(f => f.type === 'checkbox')?.name || 'checkbox'} as $values): ?>\n"
+    examples += "        <li><?php echo esc_html($values); ?></li>\n"
+    examples += "    <?php endforeach; ?>\n"
+    examples += "</ul>\n\n"
+    
+    examples += "// Radio field\n"
+    examples += "<div><?php echo esc_html(${component.fields.find(f => f.type === 'radio')?.name || 'radio'}); ?></div>\n\n"
+    
+    examples += "// Gallery/Repeater field\n"
+    examples += "<div class=\"gallery\">\n"
+    examples += "    <?php if (${component.fields.find(f => f.type === 'gallery' || f.type === 'repeater')?.name || 'gallery'} && is_array(${component.fields.find(f => f.type === 'gallery' || f.type === 'repeater')?.name || 'gallery'})): ?>\n"
+    examples += "        <?php foreach (${component.fields.find(f => f.type === 'gallery' || f.type === 'repeater')?.name || 'gallery'} as $gallery_item): ?>\n"
+    examples += "            <?php \n"
+    examples += "            // Fetch nested fields from each gallery item\n"
+    examples += "            // Note: show is \"1\" or \"0\" (string), not boolean\n"
+    examples += "            $show_image = isset($gallery_item['show']) && $gallery_item['show'] === \"1\";\n"
+    examples += "            $image_url = isset($gallery_item['image']) ? $gallery_item['image'] : null;\n"
+    examples += "            ?>\n"
+    examples += "            <?php if ($show_image && $image_url): ?>\n"
+    examples += "                <div class=\"gallery-item\">\n"
+    examples += "                    <img src=\"<?php echo esc_url($image_url); ?>\" alt=\"Gallery Image\">\n"
+    examples += "                </div>\n"
+    examples += "            <?php endif; ?>\n"
+    examples += "        <?php endforeach; ?>\n"
+    examples += "    <?php else: ?>\n"
+    examples += "        <p>No gallery data available</p>\n"
+    examples += "    <?php endif; ?>\n"
+    examples += "</div>\n\n"
+    
+    examples += "// Alternative gallery loop\n"
+    examples += "<div class=\"gallery-grid\">\n"
+    examples += "    <?php foreach(${component.fields.find(f => f.type === 'gallery' || f.type === 'repeater')?.name || 'gallery'} as $idx): ?>\n"
+    examples += "        <div class=\"gallery-item\">\n"
+    examples += "            <img src=\"<?php echo esc_url($idx['image']); ?>\" alt=\"Gallery Image\">\n"
+    examples += "        </div>\n"
+    examples += "    <?php endforeach; ?>\n"
+    examples += "</div>\n\n"
+    
+    examples += "?>\n\n"
+    
+    examples += "<!-- HTML Structure Example -->\n"
+    examples += "<div class=\"component-${component.handle_name || 'component'}\">\n"
+    examples += "    <!-- Your HTML structure here using the PHP variables above -->\n"
+    examples += "    <!-- Remember to use proper escaping: esc_html(), esc_url(), esc_attr() -->\n"
+    examples += "    <!-- For HTML content, use wp_kses_post() instead of esc_html() -->\n"
+    examples += "</div>\n"
     
     return examples
   }
@@ -120,23 +247,40 @@ ${fieldList}
 PHP Data Fetching Examples:
 ${fieldExamples}
 
-Requirements:
+IMPORTANT REQUIREMENTS:
 1. Create a complete HTML structure with proper semantic markup
 2. Include modern CSS with responsive design (mobile-first approach)
-3. Use the PHP field data examples provided above
+3. Use the PHP field data examples provided above - these are ready-to-use code snippets
 4. Make it visually appealing and professional
 5. Include hover effects and smooth transitions
 6. Use modern CSS features like Flexbox/Grid
 7. Ensure accessibility (proper ARIA labels, semantic HTML)
 8. Add comments explaining the structure
-9. Make it work well in WordPress themes`
+9. Make it work well in WordPress themes
+10. Use proper WordPress escaping functions (esc_html, esc_url, esc_attr)
+11. For HTML content fields, use wp_kses_post() instead of esc_html()
+12. Handle conditional logic properly (check if fields exist before using them)
+13. Include proper error handling for missing data
+14. Make the design responsive and mobile-friendly
+15. Use the exact field names from the component configuration
+
+PHP FUNCTION REFERENCE:
+- get_ccc_field('field_name') - Basic field value
+- get_ccc_field_target('field_name') - Link field with target attributes
+- get_ccc_field_color('field_name') - Color field main value
+- get_ccc_field_hover_color('field_name') - Color field hover value
+- get_ccc_field_adjusted_color('field_name') - Color field adjusted value
+- get_ccc_select_values('field_name', null, null, 'string') - Select/checkbox as string
+- get_ccc_select_values('field_name', null, null, 'list') - Select/checkbox as list
+
+The PHP examples above show exactly how to fetch and display each field type. Use these examples as your foundation and build the HTML/CSS around them.`
 
     // Add reference image instruction if image is uploaded
     if (referenceImage) {
       prompt += `\n\nDesign Reference: I have uploaded a reference image that shows the desired design style and layout. Please create a design that closely matches the visual style, layout structure, and overall aesthetic shown in the reference image.`
     }
 
-    prompt += `\n\nPlease provide the complete HTML and CSS code that I can directly use in the WordPress component template.`
+    prompt += `\n\nPlease provide the complete HTML and CSS code that I can directly use in the WordPress component template. The PHP code is already provided above - focus on creating beautiful, responsive HTML/CSS that works with that PHP code.`
     
     return prompt
   }
@@ -386,7 +530,9 @@ Requirements:
                <li>5. ChatGPT will generate HTML/CSS code based on your component's fields and reference image</li>
                <li>6. Copy the generated code and paste it into your component template file</li>
                <li>7. The template file is located at: <code className="bg-yellow-100 px-1 rounded">your-theme/ccc-templates/{component.handle_name}.php</code></li>
-               <li>8. Use the PHP examples above to fetch your field data in the template</li>
+               <li>8. The PHP examples above are ready-to-use code that you can copy directly into your template</li>
+               <li>9. The examples include proper escaping, conditional logic, and field-specific handling</li>
+               <li>10. Use the field names exactly as shown in the examples for your specific component</li>
              </ol>
            </div>
         </div>
