@@ -237,6 +237,40 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
     const fieldList = generateFieldList(component.fields)
     const fieldExamples = generateFieldExamples()
     
+    // CSS Library specific instructions
+    let cssLibraryInstructions = ""
+    if (selectedCSSLibrary === "tailwind") {
+      cssLibraryInstructions = `
+CSS FRAMEWORK REQUIREMENTS - TAILWIND CSS:
+- Use ONLY Tailwind CSS utility classes for styling
+- Do NOT include any custom CSS unless absolutely necessary
+- Use Tailwind's responsive prefixes (sm:, md:, lg:, xl:) for mobile-first design
+- Utilize Tailwind's color palette, spacing, and typography utilities
+- Include proper Tailwind classes for hover states, transitions, and animations
+- Make sure all styling is done through Tailwind utility classes
+- The design should work immediately with Tailwind CSS installed`
+    } else if (selectedCSSLibrary === "bootstrap") {
+      cssLibraryInstructions = `
+CSS FRAMEWORK REQUIREMENTS - BOOTSTRAP:
+- Use Bootstrap 5 classes and components extensively
+- Utilize Bootstrap's grid system, utilities, and component classes
+- Include proper Bootstrap responsive classes (col-sm, col-md, col-lg, col-xl)
+- Use Bootstrap's built-in components like cards, buttons, alerts, etc.
+- Apply Bootstrap's utility classes for spacing, colors, and typography
+- Include Bootstrap's JavaScript components if needed (collapse, modal, etc.)
+- The design should work immediately with Bootstrap CSS and JS included`
+    } else {
+      cssLibraryInstructions = `
+CSS FRAMEWORK REQUIREMENTS - CUSTOM CSS:
+- Create custom CSS using modern CSS features
+- Use CSS Grid and Flexbox for layouts
+- Include CSS custom properties (variables) for consistent theming
+- Use modern CSS features like clamp(), min(), max() for responsive values
+- Include proper CSS animations and transitions
+- Use a mobile-first approach with media queries
+- Ensure the CSS is self-contained and doesn't conflict with other styles`
+    }
+    
     let prompt = `Create a modern, responsive HTML/CSS design for a WordPress component called "${component.name}".
 
 Component Description: ${component.description || 'A custom WordPress component'}
@@ -263,6 +297,8 @@ IMPORTANT REQUIREMENTS:
 13. Include proper error handling for missing data
 14. Make the design responsive and mobile-friendly
 15. Use the exact field names from the component configuration
+
+${cssLibraryInstructions}
 
 PHP FUNCTION REFERENCE:
 - get_ccc_field('field_name') - Basic field value
@@ -351,6 +387,7 @@ The PHP examples above show exactly how to fetch and display each field type. Us
     setCopied(false)
     setReferenceImage(null)
     setImagePreview("")
+    setSelectedCSSLibrary("custom") // Reset CSS library selection
     onClose()
   }
 
@@ -452,54 +489,171 @@ The PHP examples above show exactly how to fetch and display each field type. Us
              </div>
            </div>
 
-           {/* Reference Image Upload */}
-           <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-             <h3 className="font-semibold text-orange-900 mb-3">Design Reference Image (Optional)</h3>
-             <p className="text-orange-800 text-sm mb-3">
-               Upload a reference image to help ChatGPT create a design that matches your desired style and layout.
-             </p>
-             
-             {!imagePreview ? (
-               <div className="border-2 border-dashed border-orange-300 rounded-lg p-6 text-center">
-                 <input
-                   type="file"
-                   accept="image/*"
-                   onChange={handleImageUpload}
-                   className="hidden"
-                   id="reference-image-upload"
-                 />
-                 <label
-                   htmlFor="reference-image-upload"
-                   className="cursor-pointer flex flex-col items-center gap-2"
-                 >
-                   <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                     <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                     </svg>
-                   </div>
-                   <span className="text-orange-700 font-medium">Click to upload reference image</span>
-                   <span className="text-orange-600 text-sm">PNG, JPG, GIF up to 5MB</span>
-                 </label>
-               </div>
-             ) : (
-               <div className="relative">
-                 <img
-                   src={imagePreview}
-                   alt="Reference design"
-                   className="w-full max-w-md mx-auto rounded-lg border border-orange-200"
-                 />
-                 <button
-                   onClick={removeReferenceImage}
-                   className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition-colors"
-                   title="Remove image"
-                 >
-                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                   </svg>
-                 </button>
-               </div>
-             )}
-           </div>
+                       {/* Reference Image Upload */}
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+              <h3 className="font-semibold text-orange-900 mb-3">Design Reference Image (Optional)</h3>
+              <p className="text-orange-800 text-sm mb-3">
+                Upload a reference image to help ChatGPT create a design that matches your desired style and layout.
+              </p>
+              
+              {!imagePreview ? (
+                <div className="border-2 border-dashed border-orange-300 rounded-lg p-6 text-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="reference-image-upload"
+                  />
+                  <label
+                    htmlFor="reference-image-upload"
+                    className="cursor-pointer flex flex-col items-center gap-2"
+                  >
+                    <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </div>
+                    <span className="text-orange-700 font-medium">Click to upload reference image</span>
+                    <span className="text-orange-600 text-sm">PNG, JPG, GIF up to 5MB</span>
+                  </label>
+                </div>
+              ) : (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Reference design"
+                    className="w-full max-w-md mx-auto rounded-lg border border-orange-200"
+                  />
+                  <button
+                    onClick={removeReferenceImage}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition-colors"
+                    title="Remove image"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* CSS Library Selection */}
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+              <h3 className="font-semibold text-indigo-900 mb-3">CSS Framework Selection</h3>
+              <p className="text-indigo-800 text-sm mb-3">
+                Choose your preferred CSS framework to generate designs that work with your existing setup.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Tailwind CSS Option */}
+                <label className="relative cursor-pointer">
+                  <input
+                    type="radio"
+                    name="css-library"
+                    value="tailwind"
+                    checked={selectedCSSLibrary === "tailwind"}
+                    onChange={(e) => setSelectedCSSLibrary(e.target.value)}
+                    className="sr-only"
+                  />
+                  <div className={`p-4 rounded-lg border-2 transition-all ${
+                    selectedCSSLibrary === "tailwind" 
+                      ? "border-indigo-500 bg-indigo-100" 
+                      : "border-indigo-200 bg-white hover:border-indigo-300"
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        selectedCSSLibrary === "tailwind" 
+                          ? "border-indigo-500 bg-indigo-500" 
+                          : "border-indigo-300"
+                      }`}>
+                        {selectedCSSLibrary === "tailwind" && (
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">Tailwind CSS</div>
+                        <div className="text-sm text-gray-600">Utility-first CSS framework</div>
+                      </div>
+                    </div>
+                  </div>
+                </label>
+
+                {/* Bootstrap Option */}
+                <label className="relative cursor-pointer">
+                  <input
+                    type="radio"
+                    name="css-library"
+                    value="bootstrap"
+                    checked={selectedCSSLibrary === "bootstrap"}
+                    onChange={(e) => setSelectedCSSLibrary(e.target.value)}
+                    className="sr-only"
+                  />
+                  <div className={`p-4 rounded-lg border-2 transition-all ${
+                    selectedCSSLibrary === "bootstrap" 
+                      ? "border-indigo-500 bg-indigo-100" 
+                      : "border-indigo-200 bg-white hover:border-indigo-300"
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        selectedCSSLibrary === "bootstrap" 
+                          ? "border-indigo-500 bg-indigo-500" 
+                          : "border-indigo-300"
+                      }`}>
+                        {selectedCSSLibrary === "bootstrap" && (
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">Bootstrap</div>
+                        <div className="text-sm text-gray-600">Component-based CSS framework</div>
+                      </div>
+                    </div>
+                  </div>
+                </label>
+
+                {/* Custom CSS Option */}
+                <label className="relative cursor-pointer">
+                  <input
+                    type="radio"
+                    name="css-library"
+                    value="custom"
+                    checked={selectedCSSLibrary === "custom"}
+                    onChange={(e) => setSelectedCSSLibrary(e.target.value)}
+                    className="sr-only"
+                  />
+                  <div className={`p-4 rounded-lg border-2 transition-all ${
+                    selectedCSSLibrary === "custom" 
+                      ? "border-indigo-500 bg-indigo-100" 
+                      : "border-indigo-200 bg-white hover:border-indigo-300"
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        selectedCSSLibrary === "custom" 
+                          ? "border-indigo-500 bg-indigo-500" 
+                          : "border-indigo-300"
+                      }`}>
+                        {selectedCSSLibrary === "custom" && (
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">Custom CSS</div>
+                        <div className="text-sm text-gray-600">Vanilla CSS with modern features</div>
+                      </div>
+                    </div>
+                  </div>
+                </label>
+              </div>
+              
+              <div className="mt-3 p-3 bg-indigo-100 rounded-lg">
+                <p className="text-sm text-indigo-800">
+                  <strong>Selected:</strong> {selectedCSSLibrary === "tailwind" ? "Tailwind CSS - Will generate utility classes" : 
+                                           selectedCSSLibrary === "bootstrap" ? "Bootstrap - Will generate Bootstrap classes and components" : 
+                                           "Custom CSS - Will generate vanilla CSS with modern features"}
+                </p>
+              </div>
+            </div>
 
           {/* Action Buttons */}
           <div className="flex gap-3">
@@ -524,15 +678,17 @@ The PHP examples above show exactly how to fetch and display each field type. Us
              <h3 className="font-semibold text-yellow-900 mb-2">How to Use</h3>
              <ol className="text-yellow-800 space-y-1 text-sm">
                <li>1. (Optional) Upload a reference image to match your desired design style</li>
-               <li>2. Click "Open ChatGPT with Design Prompt" to go to ChatGPT</li>
-               <li>3. If you uploaded an image: Paste the copied prompt and upload your reference image manually</li>
-               <li>4. If no image: The prompt will be pre-filled automatically</li>
-               <li>5. ChatGPT will generate HTML/CSS code based on your component's fields and reference image</li>
-               <li>6. Copy the generated code and paste it into your component template file</li>
-               <li>7. The template file is located at: <code className="bg-yellow-100 px-1 rounded">your-theme/ccc-templates/{component.handle_name}.php</code></li>
-               <li>8. The PHP examples above are ready-to-use code that you can copy directly into your template</li>
-               <li>9. The examples include proper escaping, conditional logic, and field-specific handling</li>
-               <li>10. Use the field names exactly as shown in the examples for your specific component</li>
+               <li>2. Select your preferred CSS framework (Tailwind, Bootstrap, or Custom CSS)</li>
+               <li>3. Click "Open ChatGPT with Design Prompt" to go to ChatGPT</li>
+               <li>4. If you uploaded an image: Paste the copied prompt and upload your reference image manually</li>
+               <li>5. If no image: The prompt will be pre-filled automatically</li>
+               <li>6. ChatGPT will generate HTML/CSS code based on your component's fields, reference image, and selected CSS framework</li>
+               <li>7. Copy the generated code and paste it into your component template file</li>
+               <li>8. The template file is located at: <code className="bg-yellow-100 px-1 rounded">your-theme/ccc-templates/{component.handle_name}.php</code></li>
+               <li>9. The PHP examples above are ready-to-use code that you can copy directly into your template</li>
+               <li>10. The examples include proper escaping, conditional logic, and field-specific handling</li>
+               <li>11. Use the field names exactly as shown in the examples for your specific component</li>
+               <li>12. The generated CSS will be compatible with your selected framework</li>
              </ol>
            </div>
         </div>
