@@ -324,18 +324,13 @@ The PHP examples above show exactly how to fetch and display each field type. Us
   const openChatGPT = () => {
     const prompt = generateChatGPTPrompt()
     
-    if (referenceImage) {
-      // If there's a reference image, we need to copy the prompt to clipboard
-      // since ChatGPT URL doesn't support file uploads
-      copyToClipboard(prompt)
-      showMessage('Prompt copied to clipboard! Please paste it in ChatGPT and upload your reference image manually.', 'info')
-      // Still open ChatGPT but without the prompt
-      window.open('https://chat.openai.com', '_blank')
-    } else {
-      // No image, can use URL parameter
-      const encodedPrompt = encodeURIComponent(prompt)
-      window.open(`https://chat.openai.com/?prompt=${encodedPrompt}`, '_blank')
-    }
+    // Always copy to clipboard and open ChatGPT without URL parameters
+    // This avoids HTTP 431 errors with long prompts
+    copyToClipboard(prompt)
+    showMessage('Prompt copied to clipboard! Please paste it in ChatGPT.', 'success')
+    
+    // Open ChatGPT in a new tab
+    window.open('https://chat.openai.com', '_blank')
   }
 
   const handleImageUpload = (event) => {
@@ -655,23 +650,31 @@ The PHP examples above show exactly how to fetch and display each field type. Us
               </div>
             </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <button
-              onClick={openChatGPT}
-              className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
-            >
-              <Bot className="h-5 w-5" />
-              Open ChatGPT with Design Prompt
-            </button>
-            <button
-              onClick={() => copyToClipboard(generateChatGPTPrompt())}
-              className="flex items-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors"
-            >
-              {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-              {copied ? 'Copied!' : 'Copy Prompt'}
-            </button>
-          </div>
+                      {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={openChatGPT}
+                className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
+              >
+                <Bot className="h-5 w-5" />
+                Open ChatGPT with Design Prompt
+              </button>
+              <button
+                onClick={() => copyToClipboard(generateChatGPTPrompt())}
+                className="flex items-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors"
+              >
+                {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+                {copied ? 'Copied!' : 'Copy Prompt'}
+              </button>
+            </div>
+            
+            {/* Clipboard Note */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> The prompt is automatically copied to your clipboard when you click "Open ChatGPT with Design Prompt". 
+                This ensures all the detailed instructions and PHP examples are included without any URL length limitations.
+              </p>
+            </div>
 
                      {/* Instructions */}
            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
@@ -680,8 +683,8 @@ The PHP examples above show exactly how to fetch and display each field type. Us
                <li>1. (Optional) Upload a reference image to match your desired design style</li>
                <li>2. Select your preferred CSS framework (Tailwind, Bootstrap, or Custom CSS)</li>
                <li>3. Click "Open ChatGPT with Design Prompt" to go to ChatGPT</li>
-               <li>4. If you uploaded an image: Paste the copied prompt and upload your reference image manually</li>
-               <li>5. If no image: The prompt will be pre-filled automatically</li>
+               <li>4. The prompt will be automatically copied to your clipboard</li>
+               <li>5. Paste the prompt in ChatGPT and upload your reference image if you have one</li>
                <li>6. ChatGPT will generate HTML/CSS code based on your component's fields, reference image, and selected CSS framework</li>
                <li>7. Copy the generated code and paste it into your component template file</li>
                <li>8. The template file is located at: <code className="bg-yellow-100 px-1 rounded">your-theme/ccc-templates/{component.handle_name}.php</code></li>
