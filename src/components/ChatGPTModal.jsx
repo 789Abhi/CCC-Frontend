@@ -73,7 +73,7 @@ Make sure to include all the necessary fields as children of the repeater field.
 
     prompt += `
 
-Available field types: text, textarea, image, video, color, select, checkbox, radio, wysiwyg, link, repeater, number, range, email, file, oembed, relationship, taxonomy_term, toggle, user
+Available field types: text, textarea, image, video, color, select, checkbox, radio, wysiwyg, Link, Repeater, o-Embed, Email, Number, Range,File, toggle
 Please return ONLY the JSON response, no additional text.`;
 
     return prompt;
@@ -87,7 +87,7 @@ Please return ONLY the JSON response, no additional text.`;
         showMessage("Prompt copied to clipboard!", "success");
         return;
       }
-      
+
       // Fallback for older browsers or non-secure contexts
       const textArea = document.createElement("textarea");
       textArea.value = text;
@@ -97,7 +97,7 @@ Please return ONLY the JSON response, no additional text.`;
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
-      
+
       try {
         document.execCommand("copy");
         showMessage("Prompt copied to clipboard!", "success");
@@ -105,7 +105,7 @@ Please return ONLY the JSON response, no additional text.`;
         // If execCommand fails, show the text in an alert for manual copy
         showMessage(`Please copy this prompt manually:\n\n${text}`, "info");
       }
-      
+
       document.body.removeChild(textArea);
     } catch (err) {
       // Final fallback - show text in alert
@@ -119,7 +119,7 @@ Please return ONLY the JSON response, no additional text.`;
 
     // Encode the prompt for URL
     const encodedPrompt = encodeURIComponent(prompt);
-    
+
     // Open ChatGPT with pre-filled prompt
     window.open(`https://chat.openai.com/?prompt=${encodedPrompt}`, "_blank");
   };
@@ -203,8 +203,8 @@ Please return ONLY the JSON response, no additional text.`;
         repeat: "repeater",
         user: "user",
         users: "user",
-        "user_select": "user",
-        "user_picker": "user",
+        user_select: "user",
+        user_picker: "user",
       };
 
       const normalizedFields = componentData.fields.map((field, index) => {
@@ -250,47 +250,47 @@ Please return ONLY the JSON response, no additional text.`;
           normalizedField.config = {
             role_filter: field.roles || field.role_filter || [],
             multiple: field.multiple || field.multi || false,
-            return_type: field.return_type || field.return_format || 'id',
-            searchable: field.searchable !== undefined ? field.searchable : true,
-            orderby: field.orderby || field.order_by || 'display_name',
-            order: field.order || 'ASC'
+            return_type: field.return_type || field.return_format || "id",
+            searchable:
+              field.searchable !== undefined ? field.searchable : true,
+            orderby: field.orderby || field.order_by || "display_name",
+            order: field.order || "ASC",
           };
         } else if (normalizedField.type === "repeater" && field.children) {
           // Handle repeater field with nested children from ChatGPT
-          const nestedFields = field.children.map(
-            (child, childIndex) => {
-              const nestedField = {
-                label:
-                  child.label || child.name || `Nested Field ${childIndex + 1}`,
-                name:
-                  child.name ||
-                  child.label?.toLowerCase().replace(/\s+/g, "_") ||
-                  `nested_field_${childIndex + 1}`,
-                type: fieldTypeMapping[child.type?.toLowerCase()] || "text",
-                required: child.required || false,
-                placeholder: child.placeholder || "",
-                config: {},
+          const nestedFields = field.children.map((child, childIndex) => {
+            const nestedField = {
+              label:
+                child.label || child.name || `Nested Field ${childIndex + 1}`,
+              name:
+                child.name ||
+                child.label?.toLowerCase().replace(/\s+/g, "_") ||
+                `nested_field_${childIndex + 1}`,
+              type: fieldTypeMapping[child.type?.toLowerCase()] || "text",
+              required: child.required || false,
+              placeholder: child.placeholder || "",
+              config: {},
+            };
+
+            // Handle nested user field configuration
+            if (nestedField.type === "user") {
+              nestedField.config = {
+                role_filter: child.roles || child.role_filter || [],
+                multiple: child.multiple || child.multi || false,
+                return_type: child.return_type || child.return_format || "id",
+                searchable:
+                  child.searchable !== undefined ? child.searchable : true,
+                orderby: child.orderby || child.order_by || "display_name",
+                order: child.order || "ASC",
               };
-
-              // Handle nested user field configuration
-              if (nestedField.type === "user") {
-                nestedField.config = {
-                  role_filter: child.roles || child.role_filter || [],
-                  multiple: child.multiple || child.multi || false,
-                  return_type: child.return_type || child.return_format || 'id',
-                  searchable: child.searchable !== undefined ? child.searchable : true,
-                  orderby: child.orderby || child.order_by || 'display_name',
-                  order: child.order || 'ASC'
-                };
-              }
-
-              return nestedField;
             }
-          );
-          
+
+            return nestedField;
+          });
+
           // Store nested fields in the config for the repeater field
           normalizedField.config = {
-            nested_fields: nestedFields
+            nested_fields: nestedFields,
           };
         }
 
@@ -389,7 +389,10 @@ Please return ONLY the JSON response, no additional text.`;
           console.log("Field config:", fieldData.config); // Debug log for repeater fields
           console.log("Field type:", fieldData.type); // Debug log for field type
           if (fieldData.type === "repeater") {
-            console.log("Repeater field detected, nested fields:", fieldData.config?.nested_fields);
+            console.log(
+              "Repeater field detected, nested fields:",
+              fieldData.config?.nested_fields
+            );
           }
 
           const fieldResponse = await axios.post(
@@ -533,42 +536,44 @@ Please return ONLY the JSON response, no additional text.`;
                 className="w-full h-24 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-white"
               />
 
-                             {/* Action Buttons - Right after input */}
-               <div className="mt-4">
-                 <div className="flex gap-3 mb-2">
-                   <button
-                     onClick={openChatGPT}
-                     disabled={!contextPrompt.trim()}
-                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-                   >
-                     <Bot className="h-5 w-5" />
-                     Generate
-                   </button>
-                   <button
-                     onClick={openChatGPTManually}
-                     disabled={contextPrompt.trim()}
-                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-                   >
-                     <svg
-                       className="h-5 w-5"
-                       fill="none"
-                       viewBox="0 0 24 24"
-                       stroke="currentColor"
-                     >
-                       <path
-                         strokeLinecap="round"
-                         strokeLinejoin="round"
-                         strokeWidth={2}
-                         d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                       />
-                     </svg>
-                     Open ChatGPT Manually
-                   </button>
-                 </div>
-                 <p className="text-xs text-gray-600">
-                   💡 <strong>Generate:</strong> Opens ChatGPT with AI-generated prompt pre-filled. <strong>Manual:</strong> Opens ChatGPT with blank page.
-                 </p>
-               </div>
+              {/* Action Buttons - Right after input */}
+              <div className="mt-4">
+                <div className="flex gap-3 mb-2">
+                  <button
+                    onClick={openChatGPT}
+                    disabled={!contextPrompt.trim()}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                  >
+                    <Bot className="h-5 w-5" />
+                    Generate
+                  </button>
+                  <button
+                    onClick={openChatGPTManually}
+                    disabled={contextPrompt.trim()}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                  >
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      />
+                    </svg>
+                    Open ChatGPT Manually
+                  </button>
+                </div>
+                <p className="text-xs text-gray-600">
+                  💡 <strong>Generate:</strong> Opens ChatGPT with AI-generated
+                  prompt pre-filled. <strong>Manual:</strong> Opens ChatGPT with
+                  blank page.
+                </p>
+              </div>
 
               {/* Repeater Option */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -663,22 +668,24 @@ Please return ONLY the JSON response, no additional text.`;
                   </span>
                   <span>Describe your component in the textarea above</span>
                 </li>
-                                 <li className="flex items-start gap-2">
-                   <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">
-                     2
-                   </span>
-                   <span>
-                     Click "Generate" for AI-generated prompts or "Open ChatGPT Manually" for blank page
-                   </span>
-                 </li>
-                 <li className="flex items-start gap-2">
-                   <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">
-                     3
-                   </span>
-                   <span>
-                     For Generate: ChatGPT opens with prompt pre-filled. For manual: Type your own prompt.
-                   </span>
-                 </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">
+                    2
+                  </span>
+                  <span>
+                    Click "Generate" for AI-generated prompts or "Open ChatGPT
+                    Manually" for blank page
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">
+                    3
+                  </span>
+                  <span>
+                    For Generate: ChatGPT opens with prompt pre-filled. For
+                    manual: Type your own prompt.
+                  </span>
+                </li>
                 <li className="flex items-start gap-2">
                   <span className="bg-gray-200 text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">
                     4
