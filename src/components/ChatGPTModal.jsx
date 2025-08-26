@@ -73,7 +73,7 @@ Make sure to include all the necessary fields as children of the repeater field.
 
     prompt += `
 
-Available field types: text, textarea, image, video, color, select, checkbox, radio, wysiwyg
+Available field types: text, textarea, image, video, color, select, checkbox, radio, wysiwyg, link, repeater, number, range, email, file, oembed, relationship, taxonomy_term, toggle, user
 Please return ONLY the JSON response, no additional text.`;
 
     return prompt;
