@@ -84,9 +84,23 @@ const ComponentList = () => {
   const [exportType, setExportType] = useState("component") // "component" or "fields"
   const [importType, setImportType] = useState("component") // "component" or "fields"
   const [selectedComponentForImport, setSelectedComponentForImport] = useState(null)
+  const [showExportTypeDropdown, setShowExportTypeDropdown] = useState({}) // Track dropdown state for each component
 
+  // Add useEffect to handle clicking outside dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Close all export type dropdowns when clicking outside
+      const isDropdownClick = event.target.closest('.export-dropdown-container')
+      if (!isDropdownClick) {
+        setShowExportTypeDropdown({})
+      }
+    }
 
-  // Remove all revision-related state, functions, and UI. Only keep component management, assignment, and field editing logic.
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const generateHandle = (name) => {
     return name
@@ -642,6 +656,14 @@ const ComponentList = () => {
       version: "1.0"
     }
     return JSON.stringify(exportData, null, 2)
+  }
+
+  const handleExportComponentOrFields = (component, type) => {
+    if (type === "fields") {
+      return handleExportComponentFields(component)
+    } else {
+      return handleExportComponent(component)
+    }
   }
 
   const handleExportAllComponents = () => {
@@ -1236,7 +1258,7 @@ const ComponentList = () => {
               </button>
               
               <button
-                onClick={() => setShowExportModal(true)}
+                onClick={() => setShowExportAllModal(true)}
                 className="text-white px-6 py-3 text-lg rounded-custom flex border border-purple-600 bg-purple-600 hover:bg-purple-700 items-center gap-3 font-medium transition-colors"
               >
                 <Download className="h-[30px] w-[30px]" />
@@ -1411,14 +1433,50 @@ const ComponentList = () => {
                       />
                
                                              <div
-                         className="w-[25px] h-[25px] cursor-pointer text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                         className="w-[25px] h-[25px] cursor-pointer text-blue-600 hover:text-blue-800 transition-colors duration-200 relative export-dropdown-container"
                          title="Export Component"
-                         onClick={() => {
-                           setComponentToExport(comp)
-                           setShowExportModal(true)
-                         }}
                        >
-                         <Download className="w-[25px] h-[25px]" />
+                         <Download 
+                           className="w-[25px] h-[25px]" 
+                           onClick={() => {
+                             setShowExportTypeDropdown(prev => ({
+                               ...prev,
+                               [comp.id]: !prev[comp.id]
+                             }))
+                           }}
+                         />
+                         {showExportTypeDropdown[comp.id] && (
+                           <div className="absolute top-full right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                             <button
+                               onClick={() => {
+                                 setComponentToExport(comp)
+                                 setExportType("component")
+                                 setShowExportModal(true)
+                                 setShowExportTypeDropdown(prev => ({
+                                   ...prev,
+                                   [comp.id]: false
+                                 }))
+                               }}
+                               className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100"
+                             >
+                               Export Component
+                             </button>
+                             <button
+                               onClick={() => {
+                                 setComponentToExport(comp)
+                                 setExportType("fields")
+                                 setShowExportModal(true)
+                                 setShowExportTypeDropdown(prev => ({
+                                   ...prev,
+                                   [comp.id]: false
+                                 }))
+                               }}
+                               className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                             >
+                               Export Fields
+                             </button>
+                           </div>
+                         )}
                        </div>
                        <div
                          className="w-[25px] h-[25px] cursor-pointer text-green-600 hover:text-green-800 transition-colors duration-200"
@@ -1637,10 +1695,14 @@ const ComponentList = () => {
                  Create New
                </button>
                <button
-                 onClick={() => setShowImportModal(true)}
+                 onClick={() => {
+                   setImportType("component")
+                   setShowImportModal(true)
+                   setShowNewComponentDialog(false)
+                 }}
                  className="flex-1 py-3 px-4 text-center text-gray-600 hover:text-gray-800 border-b-2 border-transparent hover:border-purple-300 transition-all duration-200"
                >
-                 Import JSON
+                 Import Component
                </button>
              </div>
              
@@ -1810,11 +1872,14 @@ const ComponentList = () => {
            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl transform transition-all duration-300">
              <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 rounded-t-2xl text-white">
                <div className="flex justify-between items-center">
-                 <h3 className="text-xl font-bold">Export Component: {componentToExport.name}</h3>
+                 <h3 className="text-xl font-bold">
+                   Export {exportType === "fields" ? "Fields" : "Component"}: {componentToExport.name}
+                 </h3>
                  <button
                    onClick={() => {
                      setShowExportModal(false)
                      setComponentToExport(null)
+                     setExportType("component")
                    }}
                    className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
                  >
@@ -1827,10 +1892,10 @@ const ComponentList = () => {
              <div className="p-6">
                <div className="mb-4">
                  <p className="text-gray-600 mb-2">
-                   Copy the JSON below to import this component on another site:
+                   Copy the JSON below to import {exportType === "fields" ? "these fields" : "this component"} on another site:
                  </p>
                  <button
-                   onClick={() => copyToClipboard(handleExportComponent(componentToExport))}
+                   onClick={() => copyToClipboard(handleExportComponentOrFields(componentToExport, exportType))}
                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
                  >
                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1841,7 +1906,7 @@ const ComponentList = () => {
                </div>
                <div className="bg-gray-100 rounded-lg p-4 max-h-96 overflow-y-auto">
                  <pre className="text-sm text-gray-800 whitespace-pre-wrap">
-                   {handleExportComponent(componentToExport)}
+                   {handleExportComponentOrFields(componentToExport, exportType)}
                  </pre>
                </div>
              </div>
@@ -1855,12 +1920,17 @@ const ComponentList = () => {
            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all duration-300">
              <div className="bg-gradient-to-r from-green-500 to-blue-500 p-6 rounded-t-2xl text-white">
                <div className="flex justify-between items-center">
-                 <h3 className="text-xl font-bold">Import Component</h3>
+                 <h3 className="text-xl font-bold">
+                   {importType === "fields" ? "Import Fields" : "Import Component"}
+                   {selectedComponentForImport && ` to ${selectedComponentForImport.name}`}
+                 </h3>
                  <button
                    onClick={() => {
                      setShowImportModal(false)
                      setImportJson("")
                      setImportError("")
+                     setSelectedComponentForImport(null)
+                     setImportType("component")
                    }}
                    className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
                  >
@@ -1873,13 +1943,13 @@ const ComponentList = () => {
              <div className="p-6 space-y-6">
                <div>
                  <label htmlFor="importJson" className="block text-sm font-medium text-gray-700 mb-2">
-                   Paste Component JSON
+                   Paste {importType === "fields" ? "Fields" : "Component"} JSON
                  </label>
                  <textarea
                    id="importJson"
                    value={importJson}
                    onChange={(e) => setImportJson(e.target.value)}
-                   placeholder="Paste the exported JSON here..."
+                   placeholder={`Paste the exported ${importType === "fields" ? "fields" : "component"} JSON here...`}
                    className="w-full h-64 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-mono text-sm"
                  />
                  {importError && (
@@ -1893,16 +1963,18 @@ const ComponentList = () => {
                      setShowImportModal(false)
                      setImportJson("")
                      setImportError("")
+                     setSelectedComponentForImport(null)
+                     setImportType("component")
                    }}
                    className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl transition-all duration-200 font-medium"
                  >
                    Cancel
                  </button>
                  <button
-                   onClick={handleImportComponent}
+                   onClick={importType === "fields" ? handleImportFieldsOnly : handleImportComponent}
                    className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
                  >
-                   Import Component
+                   {importType === "fields" ? "Import Fields" : "Import Component"}
                  </button>
                </div>
              </div>
