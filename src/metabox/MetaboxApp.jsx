@@ -163,9 +163,14 @@ function MetaboxApp() {
       });
       const data = await response.json();
       if (data.success && Array.isArray(data.data?.components)) {
-        // Add isHidden and isPendingDelete property for UI, and sort by order
+        // Add isHidden, isPendingDelete, and isDeleted properties for UI, and sort by order
         const sorted = [...data.data.components].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-                const sortedComponents = sorted.map(c => ({ ...c, isHidden: c.isHidden ?? false, isPendingDelete: false }));
+        const sortedComponents = sorted.map(c => ({ 
+          ...c, 
+          isHidden: c.isHidden ?? false, 
+          isPendingDelete: false,
+          isDeleted: c.isDeleted ?? false
+        }));
         componentsRef.current = sortedComponents;
         setComponents(sortedComponents);
         

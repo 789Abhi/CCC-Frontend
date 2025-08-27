@@ -22,13 +22,20 @@ import RepeaterField from '../fields/RepeaterField';
 import UserField from '../fields/UserField';
 import ToggleField from '../fields/ToggleField';
 
-const ToggleSwitch = ({ checked, onChange }) => {
+const ToggleSwitch = ({ checked, onChange, disabled = false }) => {
   return (
     <button
       type="button"
-      className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors duration-200 focus:outline-none border-2 border-pink-400 ${checked ? 'bg-green-400' : 'bg-gray-200'}`}
-      onClick={onChange}
+      className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors duration-200 focus:outline-none border-2 ${
+        disabled 
+          ? 'border-gray-300 bg-gray-200 cursor-not-allowed opacity-50' 
+          : checked 
+            ? 'border-pink-400 bg-green-400' 
+            : 'border-pink-400 bg-gray-200'
+      }`}
+      onClick={disabled ? undefined : onChange}
       aria-pressed={checked}
+      disabled={disabled}
     >
       <span
         className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-6' : 'translate-x-1'}`}
@@ -163,7 +170,11 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col border-2 border-pink-400 rounded-lg mb-4 bg-gray-100 transition-all duration-200 ${component.isPendingDelete ? 'opacity-50 bg-red-50' : ''} ${component.isHidden ? 'opacity-50' : 'opacity-100'}`}
+      className={`flex flex-col border-2 rounded-lg mb-4 transition-all duration-200 ${
+        component.isDeleted 
+          ? 'border-red-500 bg-red-50' 
+          : 'border-pink-400 bg-gray-100'
+      } ${component.isPendingDelete ? 'opacity-50 bg-red-50' : ''} ${component.isHidden ? 'opacity-50' : 'opacity-100'}`}
     >
       <div className="flex items-center px-4 py-3" onClick={e => {
         if (!e.target.closest('.ccc-drag-handle') && !e.target.closest('.ccc-action-btn') && !e.target.closest('.ccc-dot-menu')) {
@@ -189,17 +200,33 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
           </div>
         </div>
         <div className="flex-1 ml-4">
-          <div className="font-semibold text-gray-800 text-lg">{component.name}</div>
+          <div className="font-semibold text-gray-800 text-lg flex items-center gap-2">
+            {component.name}
+            {component.isDeleted && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                Deleted
+              </span>
+            )}
+          </div>
           <div className="text-xs text-gray-500">@{component.handle_name}</div>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0" style={{ opacity: 1 }}>
-          <ToggleSwitch checked={!component.isHidden} onChange={e => { e.stopPropagation(); onToggleHide(); }} />
+          <ToggleSwitch 
+            checked={!component.isHidden} 
+            onChange={e => { e.stopPropagation(); onToggleHide(); }} 
+            disabled={component.isDeleted}
+          />
           <DotMenu onDelete={onRemove} />
         </div>
       </div>
       {isExpanded && (
         <div className="px-8 pb-4 pt-2 bg-gray-50 border-t border-pink-100 text-sm text-gray-700 animate-fade-in">
-          {loadingFields ? (
+          {component.isDeleted ? (
+            <div className="text-center py-4 text-red-600 bg-red-50 rounded-lg border border-red-200">
+              <p className="font-medium">This component has been deleted from the plugin.</p>
+              <p className="text-sm text-red-500 mt-1">Fields are no longer available. You can remove this component or restore it from the plugin.</p>
+            </div>
+          ) : loadingFields ? (
             <div className="text-center text-gray-400 italic">Loading fields...</div>
           ) : fields.length === 0 ? (
             <div className="text-center text-gray-400 italic">No fields for this component</div>
