@@ -216,7 +216,14 @@ Fields: ${fieldList}
 
 CSS: ${cssInstructions}
 
-PHP: Use get_ccc_field('field_name') and related CCC functions for data fetching.
+PHP Data Fetching: Use ONLY these functions to get field values:
+- get_ccc_field('field_name') - for basic field values (text, image, video, file, email, number, range, gallery, checkbox, radio, oembed)
+- get_ccc_field_target('field_name') - for link fields (returns array with url, target, title)
+- get_ccc_field_color('field_name') - for color fields (returns main color)
+- get_ccc_field_hover_color('field_name') - for hover colors
+- get_ccc_field_adjusted_color('field_name') - for adjusted colors
+- get_ccc_select_values('field_name', null, null, 'string') - for select/toggle/checkbox fields (string format)
+- get_ccc_select_values('field_name', null, null, 'list') - for select/toggle/checkbox fields (list format)
 
 Include complete HTML/CSS code with field names: ${component.fields.map(f => f.name).join(', ')}`
 
