@@ -637,12 +637,33 @@ const ComponentList = () => {
     setSelectedComponentForDesign(null)
   }
 
+  // Helper function to clean field data for export (remove database IDs)
+  const cleanFieldsForExport = (fields) => {
+    if (!Array.isArray(fields)) return []
+    
+    return fields.map(field => {
+      const cleanField = {
+        label: field.label,
+        name: field.name,
+        type: field.type,
+        required: field.required || false
+      }
+      
+      // Handle nested fields for repeater type
+      if (field.type === "repeater" && field.children && Array.isArray(field.children)) {
+        cleanField.children = cleanFieldsForExport(field.children)
+      }
+      
+      return cleanField
+    })
+  }
+
   // Import/Export functions
   const handleExportComponent = (component) => {
     const exportData = {
       name: component.name,
       handle_name: component.handle_name,
-      fields: component.fields || [],
+      fields: cleanFieldsForExport(component.fields || []),
       export_date: new Date().toISOString(),
       version: "1.0"
     }
@@ -651,7 +672,7 @@ const ComponentList = () => {
 
   const handleExportComponentFields = (component) => {
     const exportData = {
-      fields: component.fields || [],
+      fields: cleanFieldsForExport(component.fields || []),
       export_date: new Date().toISOString(),
       version: "1.0"
     }
@@ -671,13 +692,40 @@ const ComponentList = () => {
       components: components.map(comp => ({
         name: comp.name,
         handle_name: comp.handle_name,
-        fields: comp.fields || [],
+        fields: cleanFieldsForExport(comp.fields || []),
         export_date: new Date().toISOString(),
         version: "1.0"
       })),
       export_date: new Date().toISOString(),
       version: "1.0"
     }
+    return JSON.stringify(exportData, null, 2)
+  }
+
+  const handleExportAllFields = () => {
+    // Collect all fields from all components
+    const allFields = []
+    
+    components.forEach(comp => {
+      if (comp.fields && comp.fields.length > 0) {
+        comp.fields.forEach(field => {
+          allFields.push({
+            component_name: comp.name,
+            component_handle: comp.handle_name,
+            ...cleanFieldsForExport([field])[0] // Clean the field and add component info
+          })
+        })
+      }
+    })
+    
+    const exportData = {
+      fields: allFields,
+      total_fields: allFields.length,
+      total_components: components.length,
+      export_date: new Date().toISOString(),
+      version: "1.0"
+    }
+    
     return JSON.stringify(exportData, null, 2)
   }
 
@@ -1257,13 +1305,43 @@ const ComponentList = () => {
                 Use ChatGPT
               </button>
               
-              <button
-                onClick={() => setShowExportAllModal(true)}
-                className="text-white px-6 py-3 text-lg rounded-custom flex border border-purple-600 bg-purple-600 hover:bg-purple-700 items-center gap-3 font-medium transition-colors"
-              >
-                <Download className="h-[30px] w-[30px]" />
-                Export Components
-              </button>
+                             <div className="relative">
+                 <button
+                   onClick={() => setShowExportAllDropdown(!showExportAllDropdown)}
+                   className="text-white px-6 py-3 text-lg rounded-custom flex border border-purple-600 bg-purple-600 hover:bg-purple-700 items-center gap-3 font-medium transition-colors"
+                 >
+                   <Download className="h-[30px] w-[30px]" />
+                   Export Components
+                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                   </svg>
+                 </button>
+                 
+                 {showExportAllDropdown && (
+                   <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                     <button
+                       onClick={() => {
+                         setShowExportAllModal(true)
+                         setShowExportAllDropdown(false)
+                       }}
+                       className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100 font-medium"
+                     >
+                       <Download className="w-4 h-4 inline mr-2" />
+                       Export All Components
+                     </button>
+                     <button
+                       onClick={() => {
+                         setShowExportAllFieldsModal(true)
+                         setShowExportAllDropdown(false)
+                       }}
+                       className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 font-medium"
+                     >
+                       <FileText className="w-4 h-4 inline mr-2" />
+                       Export All Fields
+                     </button>
+                   </div>
+                 )}
+               </div>
               
               <button
                 onClick={() => setShowImportMultipleModal(true)}
@@ -2017,6 +2095,48 @@ const ComponentList = () => {
                <div className="bg-gray-100 rounded-lg p-4 max-h-96 overflow-y-auto">
                  <pre className="text-sm text-gray-800 whitespace-pre-wrap">
                    {handleExportAllComponents()}
+                 </pre>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* Export All Fields Modal */}
+       {showExportAllFieldsModal && (
+         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl transform transition-all duration-300">
+             <div className="bg-gradient-to-r from-green-500 to-blue-500 p-6 rounded-t-2xl text-white">
+               <div className="flex justify-between items-center">
+                 <h3 className="text-xl font-bold">Export All Fields</h3>
+                 <button
+                   onClick={() => setShowExportAllFieldsModal(false)}
+                   className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
+                 >
+                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                   </svg>
+                 </button>
+               </div>
+             </div>
+             <div className="p-6">
+               <div className="mb-4">
+                 <p className="text-gray-600 mb-2">
+                   Copy the JSON below to import all fields on another site:
+                 </p>
+                 <button
+                   onClick={() => copyToClipboard(handleExportAllFields())}
+                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                 >
+                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                   </svg>
+                   Copy JSON
+                 </button>
+               </div>
+               <div className="bg-gray-100 rounded-lg p-4 max-h-96 overflow-y-auto">
+                 <pre className="text-sm text-gray-800 whitespace-pre-wrap">
+                   {handleExportAllFields()}
                  </pre>
                </div>
              </div>
