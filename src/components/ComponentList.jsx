@@ -35,6 +35,168 @@ import ComponentEditNameModal from "./ComponentEditModal"
 import FieldVisualTreeModal from "./FieldVisualTreeModal"
 import DesignChatGPTModal from "./DesignChatGPTModal"
 
+// Sortable Field Component - moved outside main component to fix re-rendering issues
+const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText }) => {
+  console.log('SortableField rendered with props:', { field, component, onEdit, onDelete, onCopy, copiedText })
+  
+  try {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: field.id.toString() })
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    }
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`border border-bgPrimary rounded-custom transition-all duration-200 ${
+          isDragging ? 'shadow-2xl scale-105 z-50' : ''
+        }`}
+      >
+        <div className="flex items-center justify-between p-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center">
+              <div
+                {...attributes}
+                {...listeners}
+                className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors mr-2"
+              >
+                <GripVertical className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-800 text-lg">{field.label}</span>
+                <span className="text-gray-400">•</span>
+                <div className="relative">
+                  <code
+                    className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
+                    onClick={() => onCopy(field.name)}
+                  >
+                    {field.name}
+                  </code>
+                  {copiedText === field.name && (
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 shadow-lg">
+                      Copied!
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mt-1">
+              <span className="bg-blue-100 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
+                {field.type}
+              </span>
+              {field.type === "repeater" && Array.isArray(field.children) && field.children.length > 0 && (
+                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                  {field.children.length} nested field
+                  {field.children.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+    
+            <img
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Edit button clicked for field:', field)
+                console.log('Component:', component)
+                console.log('onEdit function:', onEdit)
+                if (typeof onEdit === 'function') {
+                  onEdit(component, field)
+                } else {
+                  console.error('onEdit is not a function:', onEdit)
+                }
+              }}
+              src={editIcon || "/placeholder.svg"}
+              className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
+              alt="edit-icon"
+              title="Edit Field"
+            />
+            <img
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Delete button clicked for field:', field)
+                console.log('Field ID:', field.id)
+                console.log('onDelete function:', onDelete)
+                if (typeof onDelete === 'function') {
+                  onDelete(field.id)
+                } else {
+                  console.error('onDelete is not a function:', onDelete)
+                }
+              }}
+              className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
+              src={deleteIcon || "/placeholder.svg"}
+              alt="delete-icon"
+              title="Delete Field"
+            />
+          </div>
+        </div>
+      </div>
+    )
+  } catch (error) {
+    console.error('Error rendering SortableField:', error)
+    // Fallback to a simple field display if useSortable fails
+    return (
+      <div className="border border-bgPrimary rounded-custom p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-gray-800 text-lg">{field.label}</span>
+            <span className="text-gray-400">•</span>
+            <code className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono">
+              {field.name}
+            </code>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="bg-blue-100 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
+              {field.type}
+            </span>
+            <img
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Edit button clicked for field (fallback):', field)
+                if (typeof onEdit === 'function') {
+                  onEdit(component, field)
+                }
+              }}
+              src={editIcon || "/placeholder.svg"}
+              className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
+              alt="edit-icon"
+              title="Edit Field"
+            />
+            <img
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Delete button clicked for field (fallback):', field)
+                if (typeof onDelete === 'function') {
+                  onDelete(field.id)
+                }
+              }}
+              className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
+              src={deleteIcon || "/placeholder.svg"}
+              alt="delete-icon"
+              title="Delete Field"
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
+}
+
 const ComponentList = () => {
   const [showNewComponentDialog, setShowNewComponentDialog] = useState(false)
   const [componentName, setComponentName] = useState("")
@@ -1070,101 +1232,6 @@ const ComponentList = () => {
         console.error("Error updating field order:", error)
       }
     }
-  }
-
-  // Sortable Field Component
-  const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText }) => {
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      transform,
-      transition,
-      isDragging,
-    } = useSortable({ id: field.id.toString() })
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
-    }
-
-    return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        className={`border border-bgPrimary rounded-custom transition-all duration-200 ${
-          isDragging ? 'shadow-2xl scale-105 z-50' : ''
-        }`}
-      >
-        <div className="flex items-center justify-between p-3">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center">
-              <div
-                {...attributes}
-                {...listeners}
-                className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors mr-2"
-              >
-                <GripVertical className="w-5 h-5 text-gray-400 hover:text-gray-600" />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-gray-800 text-lg">{field.label}</span>
-                <span className="text-gray-400">•</span>
-                <div className="relative">
-                  <code
-                    className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
-                    onClick={() => onCopy(field.name)}
-                  >
-                    {field.name}
-                  </code>
-                  {copiedText === field.name && (
-                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 shadow-lg">
-                      Copied!
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 mt-1">
-              <span className="bg-blue-100 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
-                {field.type}
-              </span>
-              {field.type === "repeater" && Array.isArray(field.children) && field.children.length > 0 && (
-                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                  {field.children.length} nested field
-                  {field.children.length !== 1 ? "s" : ""}
-                </span>
-              )}
-            </div>
-      
-            <img
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                console.log('Edit button clicked for field:', field)
-                onEdit(component, field)
-              }}
-              src={editIcon || "/placeholder.svg"}
-              className="h-[18px] w-[18px] cursor-pointer"
-              alt="edit-icon"
-            />
-            <img
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                console.log('Delete button clicked for field:', field)
-                onDelete(field.id)
-              }}
-              className="h-[18px] w-[18px] cursor-pointer"
-              src={deleteIcon || "/placeholder.svg"}
-              alt="delete-icon"
-            />
-          </div>
-        </div>
-      </div>
-    )
   }
 
   const filteredComponents = components.filter((comp) => {
