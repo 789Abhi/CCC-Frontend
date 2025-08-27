@@ -933,25 +933,31 @@ const ComponentList = () => {
                         className="w-[25px] h-[25px] cursor-pointer"
                         src={plusIcon || "/placeholder.svg"}
                         alt="add field"
+                        title="Add Field"
                       />
-                        <GitBranch
-                        className="w-[25px] h-[25px] cursor-pointer text-emerald-600 hover:text-emerald-800 transition-colors duration-200"
-                        title="View Field Structure"
-                        onClick={() => {
-                          setSelectedComponentForTree(comp)
-                          setShowTreeModal(true)
-                        }}
-                      />
-                      <Palette
-                        className="w-[25px] h-[25px] cursor-pointer text-purple-600 hover:text-purple-800 transition-colors duration-200"
-                        title="Design with ChatGPT"
-                        onClick={() => openDesignModal(comp)}
-                      />
+                      {comp.fields && comp.fields.length > 0 && (
+                        <>
+                          <GitBranch
+                            className="w-[25px] h-[25px] cursor-pointer text-emerald-600 hover:text-emerald-800 transition-colors duration-200"
+                            title="View Field Structure"
+                            onClick={() => {
+                              setSelectedComponentForTree(comp)
+                              setShowTreeModal(true)
+                            }}
+                          />
+                          <Palette
+                            className="w-[25px] h-[25px] cursor-pointer text-purple-600 hover:text-purple-800 transition-colors duration-200"
+                            title="Design with ChatGPT"
+                            onClick={() => openDesignModal(comp)}
+                          />
+                        </>
+                      )}
                       <img
                         onClick={() => openEditComponentNameModal(comp)}
                         className="w-[25px] h-[25px] cursor-pointer"
                         src={editIcon || "/placeholder.svg"}
                         alt="edit Component"
+                        title="Edit Component Name"
                       />
                
                       <img
@@ -959,6 +965,7 @@ const ComponentList = () => {
                         className="w-[25px] h-[25px] cursor-pointer"
                         src={deleteIcon || "/placeholder.svg"}
                         alt="Delete Component"
+                        title="Delete Component"
                       />
                     </div>
                   </div>
