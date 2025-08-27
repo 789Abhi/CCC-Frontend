@@ -58,6 +58,7 @@ const ComponentList = () => {
   const [copiedText, setCopiedText] = useState(null)
   const [showEditComponentNameModal, setShowEditComponentNameModal] = useState(false)
   const [componentToEditName, setComponentToEditName] = useState(null)
+  const [postsLoading, setPostsLoading] = useState(false)
   
   // Tree modal state
   const [showTreeModal, setShowTreeModal] = useState(false)
@@ -183,27 +184,38 @@ const ComponentList = () => {
 
   const fetchPosts = async (type) => {
     try {
+      // Validate post type
+      if (!type || typeof type !== 'string') {
+        console.error('CCC: Invalid post type:', type)
+        setError("Invalid post type specified.")
+        return
+      }
+      
+      console.log('CCC: Fetching posts for post type:', type)
+      setPostsLoading(true)
+      setError("") // Clear any previous errors
+      
       const formData = new FormData()
       formData.append("action", "ccc_get_posts_with_components")
       formData.append("post_type", type)
       formData.append("nonce", window.cccData.nonce)
       const response = await axios.post(window.cccData.ajaxUrl, formData)
       console.log('CCC: fetchPosts response:', response.data);
-      if (response.data.success && Array.isArray(response.data.data?.posts)) {
-        setPosts(response.data.data.posts)
+      if (response.data.success && Array.isArray(response.data.posts)) {
+        setPosts(response.data.posts)
         
         // IMPORTANT: Show posts as selected if they were assigned via main interface, regardless of current component count
         // This ensures metabox changes don't affect main interface selection
-        const initiallySelected = response.data.data.posts
+        const initiallySelected = response.data.posts
           .filter((post) => post.assigned_via_main_interface)
           .map((post) => post.id)
         
         setSelectedPosts(initiallySelected)
 
         // Check if all posts are assigned via main interface (for "select all" functionality)
-        const postsAssignedViaMain = response.data.data.posts.filter((post) => post.assigned_via_main_interface)
+        const postsAssignedViaMain = response.data.posts.filter((post) => post.assigned_via_main_interface)
         
-        if (postsAssignedViaMain.length > 0 && postsAssignedViaMain.length === response.data.data.posts.length) {
+        if (postsAssignedViaMain.length > 0 && postsAssignedViaMain.length === response.data.posts.length) {
           // All posts are assigned via main interface
           if (type === "page") setSelectAllPages(true)
           if (type === "post") setSelectAllPosts(true)
@@ -213,11 +225,11 @@ const ComponentList = () => {
           if (type === "post") setSelectAllPosts(false)
         }
         
-        console.log('CCC: Fetched posts:', response.data.data.posts)
+        console.log('CCC: Fetched posts:', response.data.posts)
         console.log('CCC: Initially selected posts (main interface only):', initiallySelected)
         
         // DEBUG: Log detailed information for each post
-        response.data.data.posts.forEach(post => {
+        response.data.posts.forEach(post => {
           console.log(`CCC DEBUG Post ${post.id} (${post.title}):`, {
             has_components: post.has_components,
             assigned_via_main_interface: post.assigned_via_main_interface,
@@ -230,11 +242,31 @@ const ComponentList = () => {
         setSelectedPosts([])
         setSelectAllPages(false)
         setSelectAllPosts(false)
-        setError("Failed to fetch posts.")
+        const errorMessage = response.data.message || "Failed to fetch posts."
+        setError(errorMessage)
+        console.error("Failed to fetch posts:", response.data)
       }
     } catch (err) {
-      setError("Failed to fetch posts. Please try again.")
+      let errorMessage = "Failed to fetch posts. Please try again."
+      
+      if (err.response) {
+        // Server responded with error status
+        if (err.response.data && err.response.data.message) {
+          errorMessage = err.response.data.message
+        } else if (err.response.status === 500) {
+          errorMessage = "Server error occurred. Please check if the plugin is properly configured."
+        } else if (err.response.status === 400) {
+          errorMessage = "Invalid request. Please refresh the page and try again."
+        }
+      } else if (err.request) {
+        // Request was made but no response received
+        errorMessage = "No response from server. Please check your connection."
+      }
+      
+      setError(errorMessage)
       console.error("Failed to fetch posts", err)
+    } finally {
+      setPostsLoading(false)
     }
   }
 
@@ -1042,11 +1074,18 @@ const ComponentList = () => {
               </select>
             </div>
 
-            <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">
-                Select {postType === "page" ? "Pages" : "Posts"} to Assign All Components To
-              </h4>
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3 max-h-64 overflow-y-auto">
+                         <div>
+               <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                 Select {postType === "page" ? "Pages" : "Posts"} to Assign All Components To
+               </h4>
+               {postsLoading ? (
+                 <div className="bg-gray-50 rounded-xl p-8 text-center">
+                   <div className="animate-spin rounded-full h-8 w-8 border-4 border-purple-200 mx-auto mb-3"></div>
+                   <div className="animate-spin rounded-full h-8 w-8 border-t-4 border-purple-600 absolute top-0 left-0"></div>
+                   <p className="text-gray-600">Loading {postType === "page" ? "pages" : "posts"}...</p>
+                 </div>
+               ) : (
+               <div className="bg-gray-50 rounded-xl p-4 space-y-3 max-h-64 overflow-y-auto">
                 {postType === "page" && (
                   <label className="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200">
                     <input
@@ -1069,28 +1108,41 @@ const ComponentList = () => {
                     <span className="font-semibold text-gray-800">All Posts</span>
                   </label>
                 )}
-                {posts.map((post) => (
-                  <label
-                    key={post.id}
-                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200"
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedPosts.includes(post.id)}
-                        onChange={(e) => handlePostSelectionChange(post.id, e.target.checked)}
-                        className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                      />
-                      <span className="text-gray-800">{post.title}</span>
+                {posts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 mb-3">
+                      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
                     </div>
-                    {post.has_components && (
-                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                        Components Assigned
-                      </span>
-                    )}
-                  </label>
-                ))}
+                    <p className="text-gray-500 mb-2">No {postType === "page" ? "pages" : "posts"} found</p>
+                    <p className="text-gray-400 text-sm">Create some {postType === "page" ? "pages" : "posts"} first to assign components to them.</p>
+                  </div>
+                ) : (
+                  posts.map((post) => (
+                    <label
+                      key={post.id}
+                      className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200"
+                    >
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedPosts.includes(post.id)}
+                          onChange={(e) => handlePostSelectionChange(post.id, e.target.checked)}
+                          className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                        />
+                        <span className="text-gray-800">{post.title}</span>
+                      </div>
+                      {post.has_components && (
+                        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
+                          Components Assigned
+                        </span>
+                      )}
+                    </label>
+                  ))
+                )}
               </div>
+               )}
             </div>
 
             <button
