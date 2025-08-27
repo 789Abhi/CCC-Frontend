@@ -77,7 +77,12 @@ const ComponentList = () => {
   const [componentToExport, setComponentToExport] = useState(null)
   const [importJson, setImportJson] = useState("")
   const [importError, setImportError] = useState("")
+  
+  // New state for revised import/export functionality
+  const [showExportAllModal, setShowExportAllModal] = useState(false)
   const [showImportMultipleModal, setShowImportMultipleModal] = useState(false)
+  const [exportType, setExportType] = useState("component") // "component" or "fields"
+  const [importType, setImportType] = useState("component") // "component" or "fields"
   const [selectedComponentForImport, setSelectedComponentForImport] = useState(null)
 
 
@@ -1829,7 +1834,7 @@ const ComponentList = () => {
                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
                  >
                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                    </svg>
                    Copy JSON
                  </button>
@@ -1898,6 +1903,109 @@ const ComponentList = () => {
                    className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
                  >
                    Import Component
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* Export All Components Modal */}
+       {showExportAllModal && (
+         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl transform transition-all duration-300">
+             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 rounded-t-2xl text-white">
+               <div className="flex justify-between items-center">
+                 <h3 className="text-xl font-bold">Export All Components</h3>
+                 <button
+                   onClick={() => setShowExportAllModal(false)}
+                   className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
+                 >
+                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                   </svg>
+                 </button>
+               </div>
+             </div>
+             <div className="p-6">
+               <div className="mb-4">
+                 <p className="text-gray-600 mb-2">
+                   Copy the JSON below to import all components on another site:
+                 </p>
+                 <button
+                   onClick={() => copyToClipboard(handleExportAllComponents())}
+                   className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                 >
+                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                   </svg>
+                   Copy JSON
+                 </button>
+               </div>
+               <div className="bg-gray-100 rounded-lg p-4 max-h-96 overflow-y-auto">
+                 <pre className="text-sm text-gray-800 whitespace-pre-wrap">
+                   {handleExportAllComponents()}
+                 </pre>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* Import Multiple Components Modal */}
+       {showImportMultipleModal && (
+         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all duration-300">
+             <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 rounded-t-2xl text-white">
+               <div className="flex justify-between items-center">
+                 <h3 className="text-xl font-bold">Import Multiple Components</h3>
+                 <button
+                   onClick={() => {
+                     setShowImportMultipleModal(false)
+                     setImportJson("")
+                     setImportError("")
+                   }}
+                   className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
+                 >
+                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                   </svg>
+                 </button>
+               </div>
+             </div>
+             <div className="p-6 space-y-6">
+               <div>
+                 <label htmlFor="importMultipleJson" className="block text-sm font-medium text-gray-700 mb-2">
+                   Paste Multiple Component JSON
+                 </label>
+                 <textarea
+                   id="importMultipleJson"
+                   value={importJson}
+                   onChange={(e) => setImportJson(e.target.value)}
+                   placeholder="Paste multiple component JSON data here..."
+                   className="w-full h-64 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-mono text-sm"
+                 />
+                 {importError && (
+                   <p className="text-red-600 text-sm mt-2">{importError}</p>
+                 )}
+               </div>
+               <div className="flex justify-end gap-3">
+                 <button
+                   type="button"
+                   onClick={() => {
+                     setShowImportMultipleModal(false)
+                     setImportJson("")
+                     setImportError("")
+                   }}
+                   className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl transition-all duration-200 font-medium"
+                 >
+                   Cancel
+                 </button>
+                 <button
+                   onClick={handleImportMultipleComponents}
+                   className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+                 >
+                   Import Components
                  </button>
                </div>
              </div>
