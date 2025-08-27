@@ -81,12 +81,24 @@ const ComponentList = () => {
   }
 
   const showMessage = (msg, type) => {
-    if (type === 'success') {
-      toast.success(msg)
-    } else if (type === 'error') {
-      toast.error(msg)
-    } else {
-      toast(msg)
+    console.log(`Showing message: ${msg} (type: ${type})`)
+    
+    try {
+      if (type === 'success') {
+        toast.success(msg)
+      } else if (type === 'error') {
+        toast.error(msg)
+      } else {
+        toast(msg)
+      }
+    } catch (error) {
+      console.error("Toast error:", error)
+      // Fallback to alert if toast fails
+      if (type === 'error') {
+        alert(`Error: ${msg}`)
+      } else {
+        alert(msg)
+      }
     }
   }
 
@@ -238,8 +250,16 @@ const ComponentList = () => {
     formData.append("handle", handle || generateHandle(componentName))
     formData.append("nonce", window.cccData.nonce)
 
+    console.log("Creating component:", {
+      name: componentName,
+      handle: handle || generateHandle(componentName),
+      action: "ccc_create_component"
+    })
+
     try {
       const response = await axios.post(window.cccData.ajaxUrl, formData)
+      
+      console.log("Component creation response:", response.data)
 
       if (response.data.success) {
         showMessage(response.data.message || "Component created successfully.", "success")
@@ -249,11 +269,47 @@ const ComponentList = () => {
         setComponentName("")
         setHandle("")
       } else {
-        showMessage(response.data.message || "Failed to create component.", "error")
+        // Handle error response
+        console.log("Error response received:", response.data)
+        
+        let errorMessage = "Failed to create component."
+        
+        // Try different possible error message locations
+        if (response.data.message) {
+          errorMessage = response.data.message
+        } else if (response.data.data && response.data.data.message) {
+          errorMessage = response.data.data.message
+        } else if (response.data.error) {
+          errorMessage = response.data.error
+        } else if (typeof response.data === 'string') {
+          errorMessage = response.data
+        }
+        
+        showMessage(errorMessage, "error")
+        console.error("Component creation failed:", response.data)
       }
     } catch (error) {
       console.error("Error creating component:", error)
-      showMessage("Error connecting to server. Please try again.", "error")
+      
+      // Handle different types of errors
+      let errorMessage = "Error connecting to server. Please try again."
+      
+      if (error.response) {
+        // Server responded with error status
+        const serverError = error.response.data?.message || error.response.data?.data?.message
+        if (serverError) {
+          errorMessage = serverError
+        } else if (error.response.status === 400) {
+          errorMessage = "Invalid request. Please check your input."
+        } else if (error.response.status === 500) {
+          errorMessage = "Server error. Please try again later."
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = "No response from server. Please check your connection."
+      }
+      
+      showMessage(errorMessage, "error")
     }
   }
 
