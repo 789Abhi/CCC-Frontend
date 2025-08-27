@@ -139,7 +139,12 @@ PHP Data Fetching: Use ONLY these functions to get field values:
 - get_ccc_select_values('field_name', null, null, 'string') - for select/toggle/checkbox fields (string format)
 - get_ccc_select_values('field_name', null, null, 'list') - for select/toggle/checkbox fields (list format)
 
-Create a professional layout that ChatGPT thinks would work best for this component type.`
+IMPORTANT TEMPLATE STRUCTURE:
+1. First: Initialize all variables and fetch field values using the functions above
+2. Second: Create the HTML section structure with proper semantic markup
+3. Third: Add the CSS styling section at the end
+
+Follow this exact order: Variables → HTML → CSS. Create a professional layout that ChatGPT thinks would work best for this component type.`
 
 
     
@@ -224,6 +229,8 @@ PHP Data Fetching: Use ONLY these functions to get field values:
 - get_ccc_field_adjusted_color('field_name') - for adjusted colors
 - get_ccc_select_values('field_name', null, null, 'string') - for select/toggle/checkbox fields (string format)
 - get_ccc_select_values('field_name', null, null, 'list') - for select/toggle/checkbox fields (list format)
+
+TEMPLATE STRUCTURE: Variables → HTML → CSS. First fetch all field values, then create HTML structure, then add CSS styling.
 
 Include complete HTML/CSS code with field names: ${component.fields.map(f => f.name).join(', ')}`
 
