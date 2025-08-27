@@ -69,7 +69,7 @@ const ComponentList = () => {
   // Design ChatGPT modal state
   const [showDesignModal, setShowDesignModal] = useState(false)
   const [selectedComponentForDesign, setSelectedComponentForDesign] = useState(null)
-  const [isFixingHandles, setIsFixingHandles] = useState(false)
+
 
   // Remove all revision-related state, functions, and UI. Only keep component management, assignment, and field editing logic.
 
@@ -310,33 +310,7 @@ const ComponentList = () => {
     }
   }
 
-  const handleFixHandleMismatches = async () => {
-    if (!window.confirm("This will fix any handle mismatches between the database and template files. Continue?")) {
-      return
-    }
 
-    setIsFixingHandles(true)
-    try {
-      const formData = new FormData()
-      formData.append("action", "ccc_fix_handle_mismatches")
-      formData.append("nonce", window.cccData.nonce)
-
-      const response = await axios.post(window.cccData.ajaxUrl, formData)
-
-      if (response.data.success) {
-        showMessage(response.data.message || "Handle mismatches fixed successfully.", "success")
-        // Refresh components to show updated handles
-        fetchComponents()
-      } else {
-        showMessage(response.data.message || "Failed to fix handle mismatches.", "error")
-      }
-    } catch (error) {
-      console.error("Error fixing handle mismatches:", error)
-      showMessage("Error connecting to server. Please try again.", "error")
-    } finally {
-      setIsFixingHandles(false)
-    }
-  }
 
   const handleUpdateComponentFields = async (componentId, updatedFields) => {
     try {
@@ -775,16 +749,7 @@ const ComponentList = () => {
                 Use ChatGPT
               </button>
               
-              <button
-                onClick={handleFixHandleMismatches}
-                disabled={isFixingHandles}
-                className="text-white px-6 py-3 text-lg rounded-custom flex border border-orange-600 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed items-center gap-3 font-medium transition-colors"
-              >
-                <svg className="h-[30px] w-[30px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                {isFixingHandles ? "Fixing..." : "Fix Handles"}
-              </button>
+
             </div>
 
             <div className="flex flex-row items-center gap-4">
