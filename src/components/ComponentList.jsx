@@ -80,6 +80,8 @@ const ComponentList = () => {
   
   // New state for revised import/export functionality
   const [showExportAllModal, setShowExportAllModal] = useState(false)
+  const [showExportAllFieldsModal, setShowExportAllFieldsModal] = useState(false)
+  const [showExportAllDropdown, setShowExportAllDropdown] = useState(false)
   const [showImportMultipleModal, setShowImportMultipleModal] = useState(false)
   const [exportType, setExportType] = useState("component") // "component" or "fields"
   const [importType, setImportType] = useState("component") // "component" or "fields"
@@ -91,8 +93,14 @@ const ComponentList = () => {
     const handleClickOutside = (event) => {
       // Close all export type dropdowns when clicking outside
       const isDropdownClick = event.target.closest('.export-dropdown-container')
+      const isExportAllDropdownClick = event.target.closest('.export-all-dropdown-container')
+      
       if (!isDropdownClick) {
         setShowExportTypeDropdown({})
+      }
+      
+      if (!isExportAllDropdownClick) {
+        setShowExportAllDropdown(false)
       }
     }
 
@@ -1305,7 +1313,7 @@ const ComponentList = () => {
                 Use ChatGPT
               </button>
               
-                             <div className="relative">
+                             <div className="relative export-all-dropdown-container">
                  <button
                    onClick={() => setShowExportAllDropdown(!showExportAllDropdown)}
                    className="text-white px-6 py-3 text-lg rounded-custom flex border border-purple-600 bg-purple-600 hover:bg-purple-700 items-center gap-3 font-medium transition-colors"
