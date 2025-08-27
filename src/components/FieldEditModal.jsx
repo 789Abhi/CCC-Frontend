@@ -122,6 +122,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
   const isEditing = !!field
 
+  // Add the missing generateHandle function
+  const generateHandle = (name) => {
+    return name
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_]+/g, "")
+  }
+
   // Memoized callback for toggle config changes to prevent unnecessary rerenders
   const handleToggleConfigChange = useCallback((config) => {
     setToggleConfig(prev => ({ ...prev, ...config }));
@@ -809,56 +817,43 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     }
   };
 
-  const generateHandle = (inputLabel) => {
-    return inputLabel
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^\w_]+/g, "")
-  }
-
   const handleCopy = (text) => {
-    console.log("Attempting to copy text:", text)
-
-    const copyFallback = (textToCopy) => {
-      const textArea = document.createElement("textarea")
-      textArea.value = textToCopy
-      document.body.appendChild(textArea)
-      textArea.select()
-
-      try {
-        document.execCommand("copy")
-        console.log("Copy successful using fallback")
-        return true
-      } catch (err) {
-        console.error("Fallback copy failed:", err)
-        return false
-      } finally {
-        document.body.removeChild(textArea)
-      }
-    }
-
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard
-        .writeText(text)
+      navigator.clipboard.writeText(text)
         .then(() => {
-          console.log("Text copied to clipboard:", text)
           setCopiedText(text)
           setTimeout(() => setCopiedText(null), 2000)
         })
-        .catch((err) => {
-          console.error("Failed to copy text with clipboard API:", err)
-          const success = copyFallback(text)
-          if (success) {
+        .catch(() => {
+          // Fallback for older browsers
+          const textArea = document.createElement("textarea")
+          textArea.value = text
+          document.body.appendChild(textArea)
+          textArea.select()
+          try {
+            document.execCommand("copy")
             setCopiedText(text)
             setTimeout(() => setCopiedText(null), 2000)
+          } catch (err) {
+            console.error("Failed to copy text:", err)
+          } finally {
+            document.body.removeChild(textArea)
           }
         })
     } else {
-      console.warn("Clipboard API not supported, using fallback")
-      const success = copyFallback(text)
-      if (success) {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea")
+      textArea.value = text
+      document.body.appendChild(textArea)
+      textArea.select()
+      try {
+        document.execCommand("copy")
         setCopiedText(text)
         setTimeout(() => setCopiedText(null), 2000)
+      } catch (err) {
+        console.error("Failed to copy text:", err)
+      } finally {
+        document.body.removeChild(textArea)
       }
     }
   }
@@ -871,11 +866,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   }
 
   const handleUpdateNestedField = (updatedField) => {
-    console.log("FieldEditModal: Updating nested field at index:", editingNestedFieldIndex, "with data:", updatedField)
-    setNestedFieldDefinitions((prev) => prev.map((f, i) => (i === editingNestedFieldIndex ? updatedField : f)))
-    setEditingNestedFieldIndex(null)
+    setNestedFieldDefinitions(prev => 
+      prev.map((field, index) => 
+        index === editingNestedFieldIndex ? updatedField : field
+      )
+    )
     setShowFieldPopup(false)
     setCurrentNestedField(null)
+    setEditingNestedFieldIndex(null)
   }
 
   const handleDeleteNestedField = (indexToDelete) => {

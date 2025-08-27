@@ -1301,47 +1301,34 @@ const ComponentList = () => {
                 Use AI
               </button>
 
-              {/* Test button for FieldEditModal */}
-              <button
-                onClick={() => {
-                  console.log('Test button clicked')
-                  setSelectedComponentForField(components[0] || { id: 1, name: 'Test Component' })
-                  setEditingField(null)
-                  setShowFieldEditModal(true)
-                }}
-                className="text-white px-6 py-3 text-lg rounded-custom flex border border-orange-600 bg-orange-600 hover:bg-orange-700 items-center gap-3 font-medium transition-colors"
-              >
-                Test Modal
-              </button>
-              
-                             {/* Only show export button if there are components */}
-                             {components.length > 0 && (
-                               <div className="relative export-all-dropdown-container">
-                                 <button
-                                   onClick={() => setShowExportAllDropdown(!showExportAllDropdown)}
-                                   className="text-white p-3 text-lg rounded-custom flex border border-purple-600 bg-purple-600 hover:bg-purple-700 items-center justify-center transition-colors"
-                                   title="Export All Components - Export complete components with their fields"
-                                 >
-                                   <Upload className="h-[30px] w-[30px]" />
-                                 </button>
-                                 
-                                 {showExportAllDropdown && (
-                                   <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                                     <button
-                                       onClick={() => {
-                                         setShowExportAllModal(true)
-                                         setShowExportAllDropdown(false)
-                                       }}
-                                       className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100 font-medium"
-                                     >
-                                       <Download className="w-4 h-4 inline mr-2" />
-                                       Export All Components
-                                     </button>
+              {/* Only show export button if there are components */}
+              {components.length > 0 && (
+                <div className="relative export-all-dropdown-container">
+                  <button
+                    onClick={() => setShowExportAllDropdown(!showExportAllDropdown)}
+                    className="text-white p-3 text-lg rounded-custom flex border border-purple-600 bg-purple-600 hover:bg-purple-700 items-center justify-center transition-colors"
+                    title="Export All Components - Export complete components with their fields"
+                  >
+                    <Upload className="h-[30px] w-[30px]" />
+                  </button>
+                  
+                  {showExportAllDropdown && (
+                    <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                      <button
+                        onClick={() => {
+                          setShowExportAllModal(true)
+                          setShowExportAllDropdown(false)
+                        }}
+                        className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100 font-medium"
+                      >
+                        <Download className="w-4 h-4 inline mr-2" />
+                        Export All Components
+                      </button>
 
-                                   </div>
-                                 )}
-                               </div>
-                             )}
+                    </div>
+                  )}
+                </div>
+              )}
               
               <button
                 onClick={() => setShowImportMultipleModal(true)}
@@ -1852,26 +1839,7 @@ const ComponentList = () => {
         />
       )}
 
-      {/* Debug indicator */}
-      {showFieldEditModal && (
-        <div style={{
-          position: 'fixed',
-          top: '10px',
-          right: '10px',
-          background: 'red',
-          color: 'white',
-          padding: '10px',
-          zIndex: 9999,
-          fontSize: '12px'
-        }}>
-          Modal should be open!<br/>
-          showFieldEditModal: {showFieldEditModal.toString()}<br/>
-          selectedComponentForField: {selectedComponentForField ? 'Yes' : 'No'}<br/>
-          editingField: {editingField ? 'Yes' : 'No'}
-        </div>
-      )}
-
-      {showEditComponentNameModal && (
+        {showEditComponentNameModal && (
         <ComponentEditNameModal
           isOpen={showEditComponentNameModal}
           component={componentToEditName}
