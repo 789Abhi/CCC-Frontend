@@ -77,6 +77,8 @@ const ComponentList = () => {
   const [componentToExport, setComponentToExport] = useState(null)
   const [importJson, setImportJson] = useState("")
   const [importError, setImportError] = useState("")
+  const [showImportMultipleModal, setShowImportMultipleModal] = useState(false)
+  const [selectedComponentForImport, setSelectedComponentForImport] = useState(null)
 
 
   // Remove all revision-related state, functions, and UI. Only keep component management, assignment, and field editing logic.
@@ -628,6 +630,30 @@ const ComponentList = () => {
     return JSON.stringify(exportData, null, 2)
   }
 
+  const handleExportComponentFields = (component) => {
+    const exportData = {
+      fields: component.fields || [],
+      export_date: new Date().toISOString(),
+      version: "1.0"
+    }
+    return JSON.stringify(exportData, null, 2)
+  }
+
+  const handleExportAllComponents = () => {
+    const exportData = {
+      components: components.map(comp => ({
+        name: comp.name,
+        handle_name: comp.handle_name,
+        fields: comp.fields || [],
+        export_date: new Date().toISOString(),
+        version: "1.0"
+      })),
+      export_date: new Date().toISOString(),
+      version: "1.0"
+    }
+    return JSON.stringify(exportData, null, 2)
+  }
+
   const handleImportComponent = async () => {
     try {
       setImportError("")
@@ -701,6 +727,189 @@ const ComponentList = () => {
       }
     } catch (error) {
       console.error("Error importing component:", error)
+      setImportError("Error connecting to server. Please try again.")
+    }
+  }
+
+  const handleImportMultipleComponents = async () => {
+    try {
+      setImportError("")
+      
+      if (!importJson.trim()) {
+        setImportError("Please paste the JSON data")
+        return
+      }
+
+      let parsedData
+      try {
+        parsedData = JSON.parse(importJson)
+      } catch (parseError) {
+        setImportError("Invalid JSON format. Please check your data.")
+        return
+      }
+
+      // Check if it's a single component or multiple components
+      let componentsToImport = []
+      if (parsedData.components && Array.isArray(parsedData.components)) {
+        // Multiple components
+        componentsToImport = parsedData.components
+      } else if (parsedData.name && parsedData.handle_name) {
+        // Single component
+        componentsToImport = [parsedData]
+      } else {
+        setImportError("Invalid data format. Expected component(s) data.")
+        return
+      }
+
+      let successCount = 0
+      let errorCount = 0
+
+      for (const componentData of componentsToImport) {
+        try {
+          // Validate required fields
+          if (!componentData.name || !componentData.handle_name || !Array.isArray(componentData.fields)) {
+            errorCount++
+            continue
+          }
+
+          // Check if component with same handle already exists
+          const existingComponent = components.find(comp => comp.handle_name === componentData.handle_name)
+          if (existingComponent) {
+            errorCount++
+            continue
+          }
+
+          // Create the component
+          const formData = new FormData()
+          formData.append("action", "ccc_create_component")
+          formData.append("name", componentData.name)
+          formData.append("handle", componentData.handle_name)
+          formData.append("nonce", window.cccData.nonce)
+
+          const response = await axios.post(window.cccData.ajaxUrl, formData)
+
+          if (response.data.success) {
+            const newComponentId = response.data.data.id
+
+            // If there are fields, create them
+            if (componentData.fields && componentData.fields.length > 0) {
+              for (const field of componentData.fields) {
+                const fieldFormData = new FormData()
+                fieldFormData.append("action", "ccc_create_field")
+                fieldFormData.append("component_id", newComponentId)
+                fieldFormData.append("label", field.label)
+                fieldFormData.append("name", field.name)
+                fieldFormData.append("type", field.type)
+                fieldFormData.append("required", field.required || false)
+                fieldFormData.append("nonce", window.cccData.nonce)
+
+                // Handle nested fields for repeater type
+                if (field.type === "repeater" && field.children && Array.isArray(field.children)) {
+                  fieldFormData.append("children", JSON.stringify(field.children))
+                }
+
+                await axios.post(window.cccData.ajaxUrl, fieldFormData)
+              }
+            }
+            successCount++
+          } else {
+            errorCount++
+          }
+        } catch (error) {
+          console.error("Error importing component:", componentData.name, error)
+          errorCount++
+        }
+      }
+
+      if (successCount > 0) {
+        showMessage(`${successCount} component(s) imported successfully!${errorCount > 0 ? ` ${errorCount} failed.` : ''}`, "success")
+        setShowImportMultipleModal(false)
+        setImportJson("")
+        fetchComponents()
+        fetchPosts(postType)
+      } else {
+        setImportError(`Failed to import any components. ${errorCount} errors occurred.`)
+      }
+    } catch (error) {
+      console.error("Error importing components:", error)
+      setImportError("Error connecting to server. Please try again.")
+    }
+  }
+
+  const handleImportFieldsOnly = async () => {
+    try {
+      setImportError("")
+      
+      if (!importJson.trim()) {
+        setImportError("Please paste the JSON data")
+        return
+      }
+
+      if (!selectedComponentForImport) {
+        setImportError("No component selected for field import")
+        return
+      }
+
+      let parsedData
+      try {
+        parsedData = JSON.parse(importJson)
+      } catch (parseError) {
+        setImportError("Invalid JSON format. Please check your data.")
+        return
+      }
+
+      // Validate fields data
+      if (!Array.isArray(parsedData.fields)) {
+        setImportError("Invalid data format. Expected fields array.")
+        return
+      }
+
+      // Delete existing fields first
+      if (selectedComponentForImport.fields && selectedComponentForImport.fields.length > 0) {
+        for (const field of selectedComponentForImport.fields) {
+          try {
+            const deleteFormData = new FormData()
+            deleteFormData.append("action", "ccc_delete_field")
+            deleteFormData.append("field_id", field.id)
+            deleteFormData.append("nonce", window.cccData.nonce)
+            await axios.post(window.cccData.ajaxUrl, deleteFormData)
+          } catch (error) {
+            console.error("Error deleting existing field:", field.id, error)
+          }
+        }
+      }
+
+      // Create new fields
+      for (const field of parsedData.fields) {
+        try {
+          const fieldFormData = new FormData()
+          fieldFormData.append("action", "ccc_create_field")
+          fieldFormData.append("component_id", selectedComponentForImport.id)
+          fieldFormData.append("label", field.label)
+          fieldFormData.append("name", field.name)
+          fieldFormData.append("type", field.type)
+          fieldFormData.append("required", field.required || false)
+          fieldFormData.append("nonce", window.cccData.nonce)
+
+          // Handle nested fields for repeater type
+          if (field.type === "repeater" && field.children && Array.isArray(field.children)) {
+            fieldFormData.append("children", JSON.stringify(field.children))
+          }
+
+          await axios.post(window.cccData.ajaxUrl, fieldFormData)
+        } catch (error) {
+          console.error("Error creating field:", field.name, error)
+        }
+      }
+
+      showMessage("Fields imported successfully!", "success")
+      setShowImportModal(false)
+      setImportJson("")
+      setSelectedComponentForImport(null)
+      fetchComponents()
+      fetchPosts(postType)
+    } catch (error) {
+      console.error("Error importing fields:", error)
       setImportError("Error connecting to server. Please try again.")
     }
   }
@@ -1011,23 +1220,31 @@ const ComponentList = () => {
                 />
               </button>
               
-                             <button
-                 onClick={() => setShowChatGPTModal(true)}
-                 className="text-white px-6 py-3 text-lg rounded-custom flex border border-green-600 bg-green-600 hover:bg-green-700 items-center gap-3 font-medium transition-colors"
-               >
-                 <svg className="h-[30px] w-[30px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                 </svg>
-                 Use ChatGPT
-               </button>
-               
-               <button
-                 onClick={() => setShowImportModal(true)}
-                 className="text-white px-6 py-3 text-lg rounded-custom flex border border-blue-600 bg-blue-600 hover:bg-blue-700 items-center gap-3 font-medium transition-colors"
-               >
-                 <Upload className="h-[30px] w-[30px]" />
-                 Import Components
-               </button>
+              <button
+                onClick={() => setShowChatGPTModal(true)}
+                className="text-white px-6 py-3 text-lg rounded-custom flex border border-green-600 bg-green-600 hover:bg-green-700 items-center gap-3 font-medium transition-colors"
+              >
+                <svg className="h-[30px] w-[30px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Use ChatGPT
+              </button>
+              
+              <button
+                onClick={() => setShowExportModal(true)}
+                className="text-white px-6 py-3 text-lg rounded-custom flex border border-purple-600 bg-purple-600 hover:bg-purple-700 items-center gap-3 font-medium transition-colors"
+              >
+                <Download className="h-[30px] w-[30px]" />
+                Export Components
+              </button>
+              
+              <button
+                onClick={() => setShowImportMultipleModal(true)}
+                className="text-white px-6 py-3 text-lg rounded-custom flex border border-blue-600 bg-blue-600 hover:bg-blue-700 items-center gap-3 font-medium transition-colors"
+              >
+                <Upload className="h-[30px] w-[30px]" />
+                Import Components
+              </button>
               
 
             </div>
