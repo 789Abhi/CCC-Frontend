@@ -908,7 +908,18 @@ const ComponentList = () => {
 
             // Handle nested fields for repeater type
             if (field.type === "repeater" && field.children && Array.isArray(field.children)) {
+              console.log(`Creating repeater field "${field.name}" with ${field.children.length} nested fields`)
+              console.log(`Nested children data:`, field.children)
+              
+              // Try both field names - the backend might expect 'sub_fields' instead of 'children'
               fieldFormData.append("children", JSON.stringify(field.children))
+              fieldFormData.append("sub_fields", JSON.stringify(field.children))
+              
+              // Log the form data being sent
+              console.log(`Form data for repeater field "${field.name}":`)
+              for (let [key, value] of fieldFormData.entries()) {
+                console.log(`  ${key}:`, value)
+              }
             }
 
             await axios.post(window.cccData.ajaxUrl, fieldFormData)
@@ -961,11 +972,14 @@ const ComponentList = () => {
 
       let successCount = 0
       let errorCount = 0
+      let fieldSuccessCount = 0
+      let fieldErrorCount = 0
 
       for (const componentData of componentsToImport) {
         try {
           // Validate required fields
           if (!componentData.name || !componentData.handle_name || !Array.isArray(componentData.fields)) {
+            console.error("Invalid component data:", componentData)
             errorCount++
             continue
           }
@@ -973,6 +987,7 @@ const ComponentList = () => {
           // Check if component with same handle already exists
           const existingComponent = components.find(comp => comp.handle_name === componentData.handle_name)
           if (existingComponent) {
+            console.warn(`Component with handle "${componentData.handle_name}" already exists, skipping`)
             errorCount++
             continue
           }
@@ -988,30 +1003,58 @@ const ComponentList = () => {
 
           if (response.data.success) {
             const newComponentId = response.data.data.id
+            console.log(`Component "${componentData.name}" created with ID: ${newComponentId}`)
 
             // If there are fields, create them
             if (componentData.fields && componentData.fields.length > 0) {
+              console.log(`Creating ${componentData.fields.length} fields for component "${componentData.name}"`)
+              
               for (const field of componentData.fields) {
-                const fieldFormData = new FormData()
-                fieldFormData.append("action", "ccc_create_field")
-                fieldFormData.append("component_id", newComponentId)
-                fieldFormData.append("label", field.label)
-                fieldFormData.append("name", field.name)
-                fieldFormData.append("type", field.type)
-                fieldFormData.append("required", field.required || false)
-                fieldFormData.append("nonce", window.cccData.nonce)
+                try {
+                  const fieldFormData = new FormData()
+                  fieldFormData.append("action", "ccc_create_field")
+                  fieldFormData.append("component_id", newComponentId)
+                  fieldFormData.append("label", field.label)
+                  fieldFormData.append("name", field.name)
+                  fieldFormData.append("type", field.type)
+                  fieldFormData.append("required", field.required || false)
+                  fieldFormData.append("nonce", window.cccData.nonce)
 
-                // Handle nested fields for repeater type
-                if (field.type === "repeater" && field.children && Array.isArray(field.children)) {
-                  fieldFormData.append("children", JSON.stringify(field.children))
+                  // Handle nested fields for repeater type
+                  if (field.type === "repeater" && field.children && Array.isArray(field.children)) {
+                    console.log(`Creating repeater field "${field.name}" with ${field.children.length} nested fields`)
+                    console.log(`Nested children data:`, field.children)
+                    
+                    // Try both field names - the backend might expect 'sub_fields' instead of 'children'
+                    fieldFormData.append("children", JSON.stringify(field.children))
+                    fieldFormData.append("sub_fields", JSON.stringify(field.children))
+                    
+                    // Log the form data being sent
+                    console.log(`Form data for repeater field "${field.name}":`)
+                    for (let [key, value] of fieldFormData.entries()) {
+                      console.log(`  ${key}:`, value)
+                    }
+                  }
+
+                  const fieldResponse = await axios.post(window.cccData.ajaxUrl, fieldFormData)
+                  
+                  if (fieldResponse.data.success) {
+                    fieldSuccessCount++
+                    console.log(`Field "${field.name}" created successfully`)
+                  } else {
+                    fieldErrorCount++
+                    console.error(`Failed to create field "${field.name}":`, fieldResponse.data.message)
+                  }
+                } catch (fieldError) {
+                  fieldErrorCount++
+                  console.error(`Error creating field "${field.name}":`, fieldError)
                 }
-
-                await axios.post(window.cccData.ajaxUrl, fieldFormData)
               }
             }
             successCount++
           } else {
             errorCount++
+            console.error(`Failed to create component "${componentData.name}":`, response.data.message)
           }
         } catch (error) {
           console.error("Error importing component:", componentData.name, error)
@@ -1020,7 +1063,12 @@ const ComponentList = () => {
       }
 
       if (successCount > 0) {
-        showMessage(`${successCount} component(s) imported successfully!${errorCount > 0 ? ` ${errorCount} failed.` : ''}`, "success")
+        const message = `${successCount} component(s) imported successfully!`
+        const fieldMessage = fieldSuccessCount > 0 ? ` ${fieldSuccessCount} fields created.` : ''
+        const errorMessage = errorCount > 0 ? ` ${errorCount} components failed.` : ''
+        const fieldErrorMessage = fieldErrorCount > 0 ? ` ${fieldErrorCount} fields failed.` : ''
+        
+        showMessage(message + fieldMessage + errorMessage + fieldErrorMessage, "success")
         setShowImportMultipleModal(false)
         setImportJson("")
         fetchComponents()
