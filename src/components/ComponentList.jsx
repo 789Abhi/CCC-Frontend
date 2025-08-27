@@ -1031,19 +1031,23 @@ const ComponentList = () => {
                       />
                       {comp.fields && comp.fields.length > 0 && (
                         <>
-                          <GitBranch
+                          <div
                             className="w-[25px] h-[25px] cursor-pointer text-emerald-600 hover:text-emerald-800 transition-colors duration-200"
                             title="View Field Structure"
                             onClick={() => {
                               setSelectedComponentForTree(comp)
                               setShowTreeModal(true)
                             }}
-                          />
-                          <Palette
+                          >
+                            <GitBranch className="w-[25px] h-[25px]" />
+                          </div>
+                          <div
                             className="w-[25px] h-[25px] cursor-pointer text-purple-600 hover:text-purple-800 transition-colors duration-200"
                             title="Design with ChatGPT"
                             onClick={() => openDesignModal(comp)}
-                          />
+                          >
+                            <Palette className="w-[25px] h-[25px]" />
+                          </div>
                         </>
                       )}
                       <img
