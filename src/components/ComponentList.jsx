@@ -29,7 +29,7 @@ import FilterIcon from "/Filter.svg"
 import dragDropIcon from "/drag-drop-icon.svg"
 import deleteIcon from "/delete.svg"
 import editIcon from "/Edit.svg"
-import { LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users, Palette, GripVertical, GitBranch } from "lucide-react"
+import { LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users, Palette, GripVertical, GitBranch, Download, Upload } from "lucide-react"
 import ChatGPTModal from "./ChatGPTModal"
 import ComponentEditNameModal from "./ComponentEditModal"
 import FieldVisualTreeModal from "./FieldVisualTreeModal"
@@ -70,6 +70,13 @@ const ComponentList = () => {
   // Design ChatGPT modal state
   const [showDesignModal, setShowDesignModal] = useState(false)
   const [selectedComponentForDesign, setSelectedComponentForDesign] = useState(null)
+
+  // Import/Export modal state
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [componentToExport, setComponentToExport] = useState(null)
+  const [importJson, setImportJson] = useState("")
+  const [importError, setImportError] = useState("")
 
 
   // Remove all revision-related state, functions, and UI. Only keep component management, assignment, and field editing logic.
@@ -609,6 +616,121 @@ const ComponentList = () => {
     setSelectedComponentForDesign(null)
   }
 
+  // Import/Export functions
+  const handleExportComponent = (component) => {
+    const exportData = {
+      name: component.name,
+      handle_name: component.handle_name,
+      fields: component.fields || [],
+      export_date: new Date().toISOString(),
+      version: "1.0"
+    }
+    return JSON.stringify(exportData, null, 2)
+  }
+
+  const handleImportComponent = async () => {
+    try {
+      setImportError("")
+      
+      if (!importJson.trim()) {
+        setImportError("Please paste the JSON data")
+        return
+      }
+
+      let parsedData
+      try {
+        parsedData = JSON.parse(importJson)
+      } catch (parseError) {
+        setImportError("Invalid JSON format. Please check your data.")
+        return
+      }
+
+      // Validate required fields
+      if (!parsedData.name || !parsedData.handle_name || !Array.isArray(parsedData.fields)) {
+        setImportError("Invalid component data. Missing required fields.")
+        return
+      }
+
+      // Check if component with same handle already exists
+      const existingComponent = components.find(comp => comp.handle_name === parsedData.handle_name)
+      if (existingComponent) {
+        setImportError(`A component with handle "${parsedData.handle_name}" already exists. Please use a different handle.`)
+        return
+      }
+
+      // Create the component
+      const formData = new FormData()
+      formData.append("action", "ccc_create_component")
+      formData.append("name", parsedData.name)
+      formData.append("handle", parsedData.handle_name)
+      formData.append("nonce", window.cccData.nonce)
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData)
+
+      if (response.data.success) {
+        const newComponentId = response.data.data.id
+
+        // If there are fields, create them
+        if (parsedData.fields && parsedData.fields.length > 0) {
+          for (const field of parsedData.fields) {
+            const fieldFormData = new FormData()
+            fieldFormData.append("action", "ccc_create_field")
+            fieldFormData.append("component_id", newComponentId)
+            fieldFormData.append("label", field.label)
+            fieldFormData.append("name", field.name)
+            fieldFormData.append("type", field.type)
+            fieldFormData.append("required", field.required || false)
+            fieldFormData.append("nonce", window.cccData.nonce)
+
+            // Handle nested fields for repeater type
+            if (field.type === "repeater" && field.children && Array.isArray(field.children)) {
+              fieldFormData.append("children", JSON.stringify(field.children))
+            }
+
+            await axios.post(window.cccData.ajaxUrl, fieldFormData)
+          }
+        }
+
+        showMessage("Component imported successfully!", "success")
+        setShowImportModal(false)
+        setImportJson("")
+        fetchComponents()
+        fetchPosts(postType)
+      } else {
+        setImportError(response.data.message || "Failed to create component")
+      }
+    } catch (error) {
+      console.error("Error importing component:", error)
+      setImportError("Error connecting to server. Please try again.")
+    }
+  }
+
+  const copyToClipboard = (text) => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          toast.success("JSON copied to clipboard!")
+        })
+        .catch(() => {
+          toast.error("Failed to copy to clipboard")
+        })
+    } else {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea")
+      textArea.value = text
+      document.body.appendChild(textArea)
+      textArea.select()
+      try {
+        document.execCommand("copy")
+        toast.success("JSON copied to clipboard!")
+      } catch (err) {
+        toast.error("Failed to copy to clipboard")
+      } finally {
+        document.body.removeChild(textArea)
+      }
+    }
+  }
+
   // Remove all revision-related state, functions, and UI. Only keep component management, assignment, and field editing logic.
 
   const getFieldIcon = (type) => {
@@ -889,15 +1011,23 @@ const ComponentList = () => {
                 />
               </button>
               
-              <button
-                onClick={() => setShowChatGPTModal(true)}
-                className="text-white px-6 py-3 text-lg rounded-custom flex border border-green-600 bg-green-600 hover:bg-green-700 items-center gap-3 font-medium transition-colors"
-              >
-                <svg className="h-[30px] w-[30px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                Use ChatGPT
-              </button>
+                             <button
+                 onClick={() => setShowChatGPTModal(true)}
+                 className="text-white px-6 py-3 text-lg rounded-custom flex border border-green-600 bg-green-600 hover:bg-green-700 items-center gap-3 font-medium transition-colors"
+               >
+                 <svg className="h-[30px] w-[30px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                 </svg>
+                 Use ChatGPT
+               </button>
+               
+               <button
+                 onClick={() => setShowImportModal(true)}
+                 className="text-white px-6 py-3 text-lg rounded-custom flex border border-blue-600 bg-blue-600 hover:bg-blue-700 items-center gap-3 font-medium transition-colors"
+               >
+                 <Upload className="h-[30px] w-[30px]" />
+                 Import Components
+               </button>
               
 
             </div>
@@ -1058,13 +1188,30 @@ const ComponentList = () => {
                         title="Edit Component Name"
                       />
                
-                      <img
-                        onClick={() => handleDeleteComponent(comp.id)}
-                        className="w-[25px] h-[25px] cursor-pointer"
-                        src={deleteIcon || "/placeholder.svg"}
-                        alt="Delete Component"
-                        title="Delete Component"
-                      />
+                                             <div
+                         className="w-[25px] h-[25px] cursor-pointer text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                         title="Export Component"
+                         onClick={() => {
+                           setComponentToExport(comp)
+                           setShowExportModal(true)
+                         }}
+                       >
+                         <Download className="w-[25px] h-[25px]" />
+                       </div>
+                       <div
+                         className="w-[25px] h-[25px] cursor-pointer text-green-600 hover:text-green-800 transition-colors duration-200"
+                         title="Import Component"
+                         onClick={() => setShowImportModal(true)}
+                       >
+                         <Upload className="w-[25px] h-[25px]" />
+                       </div>
+                       <img
+                         onClick={() => handleDeleteComponent(comp.id)}
+                         className="w-[25px] h-[25px] cursor-pointer"
+                         src={deleteIcon || "/placeholder.svg"}
+                         alt="Delete Component"
+                         title="Delete Component"
+                       />
                     </div>
                   </div>
                 </div>
@@ -1242,75 +1389,92 @@ const ComponentList = () => {
         </div>
       </div>
 
-      {showNewComponentDialog && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300">
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 rounded-t-2xl text-white">
-              <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold">Create New Component</h3>
-                <button
-                  onClick={() => setShowNewComponentDialog(false)}
-                  className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div className="p-6 space-y-6">
-              <div>
-                <label htmlFor="componentName" className="block text-sm font-medium text-gray-700 mb-2">
-                  Component Name *
-                </label>
-                <input
-                  id="componentName"
-                  type="text"
-                  value={componentName}
-                  onChange={(e) => {
-                    const value = e.target.value
-                    setComponentName(value)
-                    // Always update the handle when the name changes
-                    setHandle(generateHandle(value))
-                  }}
-                  placeholder="e.g., Hero Section"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-                />
-              </div>
-              <div>
-                <label htmlFor="handle" className="block text-sm font-medium text-gray-700 mb-2">
-                  Handle (Auto-generated)
-                </label>
-                <input
-                  id="handle"
-                  type="text"
-                  value={handle}
-                  onChange={(e) => setHandle(e.target.value)}
-                  placeholder="e.g., hero_section"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 focus:outline-none"
-                  disabled={true}
-                />
-                <p className="text-xs text-gray-500 mt-2">This handle will be used in templates and code.</p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 p-6 bg-gray-50 rounded-b-2xl">
-              <button
-                type="button"
-                onClick={() => setShowNewComponentDialog(false)}
-                className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl transition-all duration-200 font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitNewComponent}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
-              >
-                Create Component
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+             {showNewComponentDialog && (
+         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all duration-300">
+             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 rounded-t-2xl text-white">
+               <div className="flex justify-between items-center">
+                 <h3 className="text-xl font-bold">Create New Component</h3>
+                 <button
+                   onClick={() => setShowNewComponentDialog(false)}
+                   className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
+                 >
+                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                   </svg>
+                 </button>
+               </div>
+             </div>
+             
+             {/* Tabs */}
+             <div className="flex border-b border-gray-200">
+               <button
+                 onClick={() => setComponentName("")}
+                 className="flex-1 py-3 px-4 text-center text-gray-600 hover:text-gray-800 border-b-2 border-transparent hover:border-purple-300 transition-all duration-200"
+               >
+                 Create New
+               </button>
+               <button
+                 onClick={() => setShowImportModal(true)}
+                 className="flex-1 py-3 px-4 text-center text-gray-600 hover:text-gray-800 border-b-2 border-transparent hover:border-purple-300 transition-all duration-200"
+               >
+                 Import JSON
+               </button>
+             </div>
+             
+             <div className="p-6 space-y-6">
+               <div>
+                 <label htmlFor="componentName" className="block text-sm font-medium text-gray-700 mb-2">
+                   Component Name *
+                 </label>
+                 <input
+                   id="componentName"
+                   type="text"
+                   value={componentName}
+                   onChange={(e) => {
+                     const value = e.target.value
+                     setComponentName(value)
+                     // Always update the handle when the name changes
+                     setHandle(generateHandle(value))
+                   }}
+                   placeholder="e.g., Hero Section"
+                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                 />
+               </div>
+               <div>
+                 <label htmlFor="handle" className="block text-sm font-medium text-gray-700 mb-2">
+                   Handle (Auto-generated)
+                 </label>
+                 <input
+                   id="handle"
+                   type="text"
+                   value={handle}
+                   onChange={(e) => setHandle(e.target.value)}
+                   placeholder="e.g., hero_section"
+                   className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 focus:outline-none"
+                   disabled={true}
+                 />
+                 <p className="text-xs text-gray-500 mt-2">This handle will be used in templates and code.</p>
+               </div>
+             </div>
+             <div className="flex justify-end gap-3 p-6 bg-gray-50 rounded-b-2xl">
+               <button
+                 type="button"
+                 onClick={() => setShowNewComponentDialog(false)}
+                 className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl transition-all duration-200 font-medium"
+               >
+                 Cancel
+               </button>
+               <button
+                 onClick={handleSubmitNewComponent}
+                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+               >
+                 Create Component
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
 
       {showFieldEditModal && (
         <FieldEditModal
@@ -1411,14 +1575,120 @@ const ComponentList = () => {
         onComponentCreated={handleChatGPTComponentCreated}
       />
 
-      {/* Design ChatGPT Modal */}
-      <DesignChatGPTModal
-        isOpen={showDesignModal}
-        component={selectedComponentForDesign}
-        onClose={closeDesignModal}
-      />
-    </div>
-  )
-}
+             {/* Design ChatGPT Modal */}
+       <DesignChatGPTModal
+         isOpen={showDesignModal}
+         component={selectedComponentForDesign}
+         onClose={closeDesignModal}
+       />
+
+       {/* Export Modal */}
+       {showExportModal && componentToExport && (
+         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl transform transition-all duration-300">
+             <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 rounded-t-2xl text-white">
+               <div className="flex justify-between items-center">
+                 <h3 className="text-xl font-bold">Export Component: {componentToExport.name}</h3>
+                 <button
+                   onClick={() => {
+                     setShowExportModal(false)
+                     setComponentToExport(null)
+                   }}
+                   className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
+                 >
+                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                   </svg>
+                 </button>
+               </div>
+             </div>
+             <div className="p-6">
+               <div className="mb-4">
+                 <p className="text-gray-600 mb-2">
+                   Copy the JSON below to import this component on another site:
+                 </p>
+                 <button
+                   onClick={() => copyToClipboard(handleExportComponent(componentToExport))}
+                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                 >
+                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                   </svg>
+                   Copy JSON
+                 </button>
+               </div>
+               <div className="bg-gray-100 rounded-lg p-4 max-h-96 overflow-y-auto">
+                 <pre className="text-sm text-gray-800 whitespace-pre-wrap">
+                   {handleExportComponent(componentToExport)}
+                 </pre>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* Import Modal */}
+       {showImportModal && (
+         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all duration-300">
+             <div className="bg-gradient-to-r from-green-500 to-blue-500 p-6 rounded-t-2xl text-white">
+               <div className="flex justify-between items-center">
+                 <h3 className="text-xl font-bold">Import Component</h3>
+                 <button
+                   onClick={() => {
+                     setShowImportModal(false)
+                     setImportJson("")
+                     setImportError("")
+                   }}
+                   className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/20 transition-all duration-200"
+                 >
+                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                   </svg>
+                 </button>
+               </div>
+             </div>
+             <div className="p-6 space-y-6">
+               <div>
+                 <label htmlFor="importJson" className="block text-sm font-medium text-gray-700 mb-2">
+                   Paste Component JSON
+                 </label>
+                 <textarea
+                   id="importJson"
+                   value={importJson}
+                   onChange={(e) => setImportJson(e.target.value)}
+                   placeholder="Paste the exported JSON here..."
+                   className="w-full h-64 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-mono text-sm"
+                 />
+                 {importError && (
+                   <p className="text-red-600 text-sm mt-2">{importError}</p>
+                 )}
+               </div>
+               <div className="flex justify-end gap-3">
+                 <button
+                   type="button"
+                   onClick={() => {
+                     setShowImportModal(false)
+                     setImportJson("")
+                     setImportError("")
+                   }}
+                   className="px-6 py-3 text-gray-600 border border-gray-200 rounded-xl transition-all duration-200 font-medium"
+                 >
+                   Cancel
+                 </button>
+                 <button
+                   onClick={handleImportComponent}
+                   className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+                 >
+                   Import Component
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+     </div>
+   )
+ }
 
 export default ComponentList
