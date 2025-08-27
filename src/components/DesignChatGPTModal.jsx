@@ -10,6 +10,7 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
   const [referenceImage, setReferenceImage] = useState(null)
   const [imagePreview, setImagePreview] = useState("")
   const [selectedCSSLibrary, setSelectedCSSLibrary] = useState("custom") // New state for CSS library selection
+  const [showHowToUse, setShowHowToUse] = useState(false)
 
   const showMessage = (message, type = 'info') => {
     console.log(`${type.toUpperCase()}: ${message}`)
@@ -98,19 +99,13 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
     
     const generateFieldList = (fields) => {
       return fields.map(field => {
-        let fieldInfo = `- ${field.label} (${field.type}): ${field.name}`
+        let fieldInfo = `${field.label} (${field.type}): ${field.name}`
         
         // Add nested fields for repeater
         if (field.type === 'repeater' && field.config && field.config.nested_fields) {
-          fieldInfo += '\n  Nested fields:'
-          field.config.nested_fields.forEach(nestedField => {
-            fieldInfo += `\n    • ${nestedField.label} (${nestedField.type}): ${nestedField.name}`
-          })
+          fieldInfo += ` [nested: ${field.config.nested_fields.map(nf => nf.name).join(', ')}]`
         } else if (field.type === 'repeater' && field.children && field.children.length > 0) {
-          fieldInfo += '\n  Nested fields:'
-          field.children.forEach(nestedField => {
-            fieldInfo += `\n    • ${nestedField.label} (${nestedField.type}): ${nestedField.name}`
-          })
+          fieldInfo += ` [nested: ${field.children.map(nf => nf.name).join(', ')}]`
         }
         
         return fieldInfo
@@ -119,69 +114,34 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
     
     const fieldList = generateFieldList(component.fields)
     
-    // CSS Library specific instructions
-    let cssLibraryInstructions = ""
+    // CSS Library specific instructions (condensed)
+    let cssInstructions = ""
     if (selectedCSSLibrary === "tailwind") {
-      cssLibraryInstructions = `
-CSS FRAMEWORK REQUIREMENTS - TAILWIND CSS:
-- Use ONLY Tailwind CSS utility classes for styling
-- Do NOT include any custom CSS unless absolutely necessary
-- Use Tailwind's responsive prefixes (sm:, md:, lg:, xl:) for mobile-first design
-- Utilize Tailwind's color palette, spacing, and typography utilities
-- Include proper Tailwind classes for hover states, transitions, and animations
-- Make sure all styling is done through Tailwind utility classes
-- The design should work immediately with Tailwind CSS installed`
+      cssInstructions = "Use ONLY Tailwind CSS utility classes, mobile-first design, responsive prefixes (sm:, md:, lg:)"
     } else if (selectedCSSLibrary === "bootstrap") {
-      cssLibraryInstructions = `
-CSS FRAMEWORK REQUIREMENTS - BOOTSTRAP:
-- Use Bootstrap 5 classes and components extensively
-- Utilize Bootstrap's grid system, utilities, and component classes
-- Include proper Bootstrap responsive classes (col-sm, col-md, col-lg, col-xl)
-- Use Bootstrap's built-in components like cards, buttons, alerts, etc.
-- Apply Bootstrap's utility classes for spacing, colors, and typography
-- Include Bootstrap's JavaScript components if needed (collapse, modal, etc.)
-- The design should work immediately with Bootstrap CSS and JS included`
+      cssInstructions = "Use Bootstrap 5 classes extensively, grid system, responsive classes (col-sm, col-md, col-lg)"
     } else {
-      cssLibraryInstructions = `
-CSS FRAMEWORK REQUIREMENTS - CUSTOM CSS:
-- Create custom CSS using modern CSS features
-- Use CSS Grid and Flexbox for layouts
-- Include CSS custom properties (variables) for consistent theming
-- Use modern CSS features like clamp(), min(), max() for responsive values
-- Include proper CSS animations and transitions
-- Use a mobile-first approach with media queries
-- Ensure the CSS is self-contained and doesn't conflict with other styles`
+      cssInstructions = "Create custom CSS with modern features, Flexbox/Grid, CSS variables, mobile-first approach"
     }
     
-   let prompt = `Create a modern, responsive HTML/CSS design for a WordPress component called "${component.name}".
+    let prompt = `Create a modern responsive HTML/CSS layout for WordPress component "${component.name}".
 
-Component Description: ${component.description || 'A custom WordPress component'}
+Fields: ${fieldList}
 
-Available Fields:
-${fieldList}
+CSS: ${cssInstructions}
 
-IMPORTANT REQUIREMENTS:
-1. Create a complete HTML structure with proper semantic markup
-2. Include modern CSS with responsive design (mobile-first approach)
-3. Make it visually appealing and professional
-4. Include hover effects and smooth transitions
-5. Use modern CSS features like Flexbox/Grid
-6. Ensure accessibility (proper ARIA labels, semantic HTML)
-7. Add comments explaining the structure
-8. Make it work well in WordPress themes
-9. Make the design responsive and mobile-friendly
-10. Use the exact field names from the component configuration
+PHP Data Fetching: Use ONLY these functions to get field values:
+- get_ccc_field('field_name') - for basic field values (text, image, video, file, email, number, range, gallery, checkbox, radio, oembed)
+- get_ccc_field_target('field_name') - for link fields (returns array with url, target, title)
+- get_ccc_field_color('field_name') - for color fields (returns main color)
+- get_ccc_field_hover_color('field_name') - for hover colors
+- get_ccc_field_adjusted_color('field_name') - for adjusted colors
+- get_ccc_select_values('field_name', null, null, 'string') - for select/toggle/checkbox fields (string format)
+- get_ccc_select_values('field_name', null, null, 'list') - for select/toggle/checkbox fields (list format)
 
-${cssLibraryInstructions}
+Create a professional layout that ChatGPT thinks would work best for this component type.`
 
-Please provide the complete HTML and CSS code that I can directly use in the WordPress component template. Focus on creating beautiful, responsive HTML/CSS that works with the field names provided above.`
 
-    // Add reference image instruction if image is uploaded
-    if (referenceImage) {
-      prompt += `\n\nDesign Reference: I have uploaded a reference image that shows the desired design style and layout. Please create a design that closely matches the visual style, layout structure, and overall aesthetic shown in the reference image.`
-    }
-
-    prompt += `\n\nPlease provide the complete HTML and CSS code that I can directly use in the WordPress component template.`
     
     return prompt
   }
@@ -191,14 +151,14 @@ Please provide the complete HTML and CSS code that I can directly use in the Wor
     
     // Try to open ChatGPT with URL parameters first
     try {
-      // Use the newer ChatGPT URL format for better prompt handling
-      const chatGPTUrl = 'https://chat.openai.com/c/new?prompt=' + encodeURIComponent(prompt)
+      // Use the correct ChatGPT URL format that actually works
+      const chatGPTUrl = 'https://chat.openai.com/?prompt=' + encodeURIComponent(prompt)
       
       // Check if URL is too long (ChatGPT has limits around 2000-3000 chars)
       if (chatGPTUrl.length > 2500) {
         // URL too long, try to optimize the prompt
         const optimizedPrompt = generateOptimizedPrompt()
-        const optimizedUrl = 'https://chat.openai.com/c/new?prompt=' + encodeURIComponent(optimizedPrompt)
+        const optimizedUrl = 'https://chat.openai.com/?prompt=' + encodeURIComponent(optimizedPrompt)
         
         if (optimizedUrl.length <= 2500) {
           // Optimized prompt fits, use it
@@ -208,7 +168,7 @@ Please provide the complete HTML and CSS code that I can directly use in the Wor
           // Even optimized is too long, fall back to clipboard method
           copyToClipboard(prompt)
           showMessage('Prompt copied to clipboard! Opening ChatGPT...', 'success')
-          window.open('https://chat.openai.com/c/new', '_blank')
+          window.open('https://chat.openai.com', '_blank')
         }
       } else {
         // URL is fine, open with prompt pre-filled
@@ -219,7 +179,7 @@ Please provide the complete HTML and CSS code that I can directly use in the Wor
       // Fallback to clipboard method
       copyToClipboard(prompt)
       showMessage('Prompt copied to clipboard! Opening ChatGPT...', 'success')
-      window.open('https://chat.openai.com/c/new', '_blank')
+      window.open('https://chat.openai.com', '_blank')
     }
   }
 
@@ -254,15 +214,13 @@ Please provide the complete HTML and CSS code that I can directly use in the Wor
 
 Fields: ${fieldList}
 
-Requirements: Semantic HTML, responsive design, hover effects, accessibility, WordPress compatible.
 CSS: ${cssInstructions}
+
+PHP: Use get_ccc_field('field_name') and related CCC functions for data fetching.
 
 Include complete HTML/CSS code with field names: ${component.fields.map(f => f.name).join(', ')}`
 
-    // Add reference image instruction if image is uploaded
-    if (referenceImage) {
-      optimizedPrompt += `\n\nDesign Reference: Match the visual style and layout from the uploaded reference image.`
-    }
+
     
     return optimizedPrompt
   }
@@ -332,10 +290,16 @@ Include complete HTML/CSS code with field names: ${component.fields.map(f => f.n
               <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
                 <Code className="h-6 w-6 text-purple-600" />
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Design with ChatGPT</h2>
-                <p className="text-gray-600">Generate HTML/CSS layout for "{component.name}"</p>
-              </div>
+                             <div>
+                 <h2 className="text-2xl font-bold text-gray-900">Design with ChatGPT</h2>
+                 <p className="text-gray-600">Generate HTML/CSS layout for "{component.name}"</p>
+                 <button
+                   onClick={() => setShowHowToUse(true)}
+                   className="mt-2 text-sm text-purple-600 hover:text-purple-700 underline"
+                 >
+                   How to Use
+                 </button>
+               </div>
             </div>
             <button
               onClick={handleClose}
@@ -408,56 +372,7 @@ Include complete HTML/CSS code with field names: ${component.fields.map(f => f.n
             </div>
           </div>
 
-                     
 
-                       {/* Reference Image Upload */}
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-              <h3 className="font-semibold text-orange-900 mb-3">Design Reference Image (Optional)</h3>
-              <p className="text-orange-800 text-sm mb-3">
-                Upload a reference image to help ChatGPT create a design that matches your desired style and layout.
-              </p>
-              
-              {!imagePreview ? (
-                <div className="border-2 border-dashed border-orange-300 rounded-lg p-6 text-center">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="reference-image-upload"
-                  />
-                  <label
-                    htmlFor="reference-image-upload"
-                    className="cursor-pointer flex flex-col items-center gap-2"
-                  >
-                    <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </div>
-                    <span className="text-orange-700 font-medium">Click to upload reference image</span>
-                    <span className="text-orange-600 text-sm">PNG, JPG, GIF up to 5MB</span>
-                  </label>
-                </div>
-              ) : (
-                <div className="relative">
-                  <img
-                    src={imagePreview}
-                    alt="Reference design"
-                    className="w-full max-w-md mx-auto rounded-lg border border-orange-200"
-                  />
-                  <button
-                    onClick={removeReferenceImage}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition-colors"
-                    title="Remove image"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              )}
-            </div>
 
             {/* CSS Library Selection */}
             <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
@@ -601,24 +516,7 @@ Include complete HTML/CSS code with field names: ${component.fields.map(f => f.n
                 </p>
               </div>
 
-                     {/* Instructions */}
-           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-             <h3 className="font-semibold text-yellow-900 mb-2">How to Use</h3>
-             <ol className="text-yellow-800 space-y-1 text-sm">
-               <li>1. (Optional) Upload a reference image to match your desired design style</li>
-               <li>2. Select your preferred CSS framework (Tailwind, Bootstrap, or Custom CSS)</li>
-               <li>3. Click "Open ChatGPT with Design Prompt" to go to ChatGPT</li>
-                               <li>4. The prompt will automatically appear in ChatGPT input field (optimized version used if needed)</li>
-               <li>5. Upload your reference image in ChatGPT if you have one</li>
-               <li>6. ChatGPT will generate HTML/CSS code based on your component's fields, reference image, and selected CSS framework</li>
-               <li>7. Copy the generated code and paste it into your component template file</li>
-               <li>8. The template file is located at: <code className="bg-yellow-100 px-1 rounded">your-theme/ccc-templates/{component.handle_name}.php</code></li>
-                               <li>9. ChatGPT will provide PHP code examples for data fetching in the generated response</li>
-                <li>10. The generated PHP code will include proper escaping, conditional logic, and field-specific handling</li>
-               <li>11. Use the field names exactly as shown in the examples for your specific component</li>
-               <li>12. The generated CSS will be compatible with your selected framework</li>
-             </ol>
-           </div>
+                     
         </div>
 
         {/* Footer */}
@@ -629,10 +527,90 @@ Include complete HTML/CSS code with field names: ${component.fields.map(f => f.n
           >
             Close
           </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+                 </div>
+       </div>
+
+       {/* How to Use Modal */}
+       {showHowToUse && (
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+             {/* Header */}
+             <div className="p-6 border-b border-gray-200 flex-shrink-0">
+               <div className="flex items-center justify-between">
+                 <h2 className="text-2xl font-bold text-gray-900">How to Use Design with ChatGPT</h2>
+                 <button
+                   onClick={() => setShowHowToUse(false)}
+                   className="text-gray-400 hover:text-gray-600 transition-colors"
+                 >
+                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                   </svg>
+                 </button>
+               </div>
+             </div>
+
+             {/* Content */}
+             <div className="flex-1 overflow-y-auto p-6">
+               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                 <ol className="text-yellow-800 space-y-3 text-sm">
+                   <li className="flex items-start gap-3">
+                     <span className="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold min-w-[20px] text-center">1</span>
+                     <span>Select your preferred CSS framework (Tailwind, Bootstrap, or Custom CSS)</span>
+                   </li>
+                   <li className="flex items-start gap-3">
+                     <span className="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold min-w-[20px] text-center">2</span>
+                     <span>Click "Open ChatGPT with Design Prompt" to go to ChatGPT</span>
+                   </li>
+                   <li className="flex items-start gap-3">
+                     <span className="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold min-w-[20px] text-center">3</span>
+                     <span>The prompt will automatically appear in ChatGPT input field (optimized version used if needed)</span>
+                   </li>
+                   <li className="flex items-start gap-3">
+                     <span className="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold min-w-[20px] text-center">4</span>
+                     <span>ChatGPT will generate HTML/CSS code based on your component's fields and selected CSS framework</span>
+                   </li>
+                   <li className="flex items-start gap-3">
+                     <span className="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold min-w-[20px] text-center">5</span>
+                     <span>Copy the generated code and paste it into your component template file</span>
+                   </li>
+                   <li className="flex items-start gap-3">
+                     <span className="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold min-w-[20px] text-center">6</span>
+                     <span>The template file is located at: <code className="bg-yellow-100 px-1 rounded">your-theme/ccc-templates/{component.handle_name}.php</code></span>
+                   </li>
+                   <li className="flex items-start gap-3">
+                     <span className="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold min-w-[20px] text-center">7</span>
+                     <span>ChatGPT will provide PHP code examples for data fetching in the generated response</span>
+                   </li>
+                   <li className="flex items-start gap-3">
+                     <span className="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold min-w-[20px] text-center">8</span>
+                     <span>The generated PHP code will include proper escaping, conditional logic, and field-specific handling</span>
+                   </li>
+                   <li className="flex items-start gap-3">
+                     <span className="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold min-w-[20px] text-center">9</span>
+                     <span>Use the field names exactly as shown in the examples for your specific component</span>
+                   </li>
+                   <li className="flex items-start gap-3">
+                     <span className="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold min-w-[20px] text-center">10</span>
+                     <span>The generated CSS will be compatible with your selected framework</span>
+                   </li>
+                 </ol>
+               </div>
+             </div>
+
+             {/* Footer */}
+             <div className="flex justify-end gap-3 p-6 bg-gray-50 border-t border-gray-200 flex-shrink-0">
+               <button
+                 onClick={() => setShowHowToUse(false)}
+                 className="px-6 py-3 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+               >
+                 Close
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+     </div>
+   )
+ }
 
 export default DesignChatGPTModal 
