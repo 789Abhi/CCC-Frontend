@@ -192,6 +192,8 @@ const ComponentList = () => {
       }
       
       console.log('CCC: Fetching posts for post type:', type)
+      console.log('CCC: AJAX URL:', window.cccData.ajaxUrl)
+      console.log('CCC: Nonce:', window.cccData.nonce)
       setPostsLoading(true)
       setError("") // Clear any previous errors
       
@@ -199,52 +201,97 @@ const ComponentList = () => {
       formData.append("action", "ccc_get_posts_with_components")
       formData.append("post_type", type)
       formData.append("nonce", window.cccData.nonce)
-      const response = await axios.post(window.cccData.ajaxUrl, formData)
-      console.log('CCC: fetchPosts response:', response.data);
-      if (response.data.success && Array.isArray(response.data.posts)) {
-        setPosts(response.data.posts)
+      console.log('CCC: FormData contents:')
+      for (let [key, value] of formData.entries()) {
+        console.log('  ', key, ':', value)
+      }
+      let response
+      try {
+        response = await axios.post(window.cccData.ajaxUrl, formData)
+        console.log('CCC: fetchPosts response:', response.data);
+        console.log('CCC: Response status:', response.status);
+        console.log('CCC: Response headers:', response.headers);
+        console.log('CCC: Response structure - success:', response.data.success);
+        console.log('CCC: Response structure - data:', response.data.data);
+        console.log('CCC: Response structure - posts array:', response.data.data?.posts);
+        console.log('CCC: Full response object:', response);
+      } catch (ajaxError) {
+        console.error('CCC: AJAX request failed:', ajaxError)
+        console.error('CCC: AJAX error response:', ajaxError.response)
+        console.error('CCC: AJAX error status:', ajaxError.response?.status)
+        console.error('CCC: AJAX error data:', ajaxError.response?.data)
+        throw ajaxError
+      }
+      
+      // Handle successful response
+      if (response.data.success) {
+        let posts = null
         
-        // IMPORTANT: Show posts as selected if they were assigned via main interface, regardless of current component count
-        // This ensures metabox changes don't affect main interface selection
-        const initiallySelected = response.data.posts
-          .filter((post) => post.assigned_via_main_interface)
-          .map((post) => post.id)
-        
-        setSelectedPosts(initiallySelected)
-
-        // Check if all posts are assigned via main interface (for "select all" functionality)
-        const postsAssignedViaMain = response.data.posts.filter((post) => post.assigned_via_main_interface)
-        
-        if (postsAssignedViaMain.length > 0 && postsAssignedViaMain.length === response.data.posts.length) {
-          // All posts are assigned via main interface
-          if (type === "page") setSelectAllPages(true)
-          if (type === "post") setSelectAllPosts(true)
-        } else {
-          // Not all posts are assigned via main interface
-          if (type === "page") setSelectAllPages(false)
-          if (type === "post") setSelectAllPosts(false)
+        // Check different possible locations for posts data
+        if (Array.isArray(response.data.data?.posts)) {
+          posts = response.data.data.posts
+          console.log('CCC: Found posts in response.data.data.posts');
+        } else if (Array.isArray(response.data.posts)) {
+          posts = response.data.posts
+          console.log('CCC: Found posts in response.data.posts');
+        } else if (Array.isArray(response.data.data)) {
+          posts = response.data.data
+          console.log('CCC: Found posts in response.data.data (array)');
         }
         
-        console.log('CCC: Fetched posts:', response.data.posts)
-        console.log('CCC: Initially selected posts (main interface only):', initiallySelected)
-        
-        // DEBUG: Log detailed information for each post
-        response.data.posts.forEach(post => {
-          console.log(`CCC DEBUG Post ${post.id} (${post.title}):`, {
-            has_components: post.has_components,
-            assigned_via_main_interface: post.assigned_via_main_interface,
-            will_be_selected: post.assigned_via_main_interface, // Changed: only depends on main interface flag
-            component_count: post.assigned_components ? post.assigned_components.length : 0
+        if (posts !== null) {
+          setPosts(posts)
+          
+          // IMPORTANT: Show posts as selected if they were assigned via main interface, regardless of current component count
+          // This ensures metabox changes don't affect main interface selection
+          const initiallySelected = posts
+            .filter((post) => post.assigned_via_main_interface)
+            .map((post) => post.id)
+          
+          setSelectedPosts(initiallySelected)
+
+          // Check if all posts are assigned via main interface (for "select all" functionality)
+          const postsAssignedViaMain = posts.filter((post) => post.assigned_via_main_interface)
+          
+          if (postsAssignedViaMain.length > 0 && postsAssignedViaMain.length === posts.length) {
+            // All posts are assigned via main interface
+            if (type === "page") setSelectAllPages(true)
+            if (type === "post") setSelectAllPosts(true)
+          } else {
+            // Not all posts are assigned via main interface
+            if (type === "page") setSelectAllPages(false)
+            if (type === "post") setSelectAllPosts(false)
+          }
+          
+          console.log('CCC: Fetched posts:', posts)
+          console.log('CCC: Initially selected posts (main interface only):', initiallySelected)
+          
+          // DEBUG: Log detailed information for each post
+          posts.forEach(post => {
+            console.log(`CCC DEBUG Post ${post.id} (${post.title}):`, {
+              has_components: post.has_components,
+              assigned_via_main_interface: post.assigned_via_main_interface,
+              will_be_selected: post.assigned_via_main_interface,
+              component_count: post.assigned_components ? post.assigned_components.length : 0
+            });
           });
-        });
+        } else {
+          // No posts found in expected locations
+          setPosts([])
+          setSelectedPosts([])
+          setSelectAllPages(false)
+          setSelectAllPosts(false)
+          console.log('CCC: No posts found in response, setting empty array');
+        }
       } else {
+        // Response indicates failure
         setPosts([])
         setSelectedPosts([])
         setSelectAllPages(false)
         setSelectAllPosts(false)
         const errorMessage = response.data.message || "Failed to fetch posts."
         setError(errorMessage)
-        console.error("Failed to fetch posts:", response.data)
+        console.error("Failed to fetch posts - server returned failure:", response.data)
       }
     } catch (err) {
       let errorMessage = "Failed to fetch posts. Please try again."
@@ -488,6 +535,21 @@ const ComponentList = () => {
 
   useEffect(() => {
     fetchComponents()
+    
+    // Test the AJAX system
+    const testAjax = async () => {
+      try {
+        const formData = new FormData()
+        formData.append("action", "ccc_test")
+        formData.append("nonce", window.cccData.nonce)
+        const response = await axios.post(window.cccData.ajaxUrl, formData)
+        console.log('CCC: Test AJAX response:', response.data)
+      } catch (err) {
+        console.error('CCC: Test AJAX failed:', err)
+      }
+    }
+    
+    testAjax()
   }, [])
 
   useEffect(() => {
