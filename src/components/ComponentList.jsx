@@ -1316,13 +1316,15 @@ const ComponentList = () => {
                              <div className="relative export-all-dropdown-container">
                  <button
                    onClick={() => setShowExportAllDropdown(!showExportAllDropdown)}
-                   className="text-white px-6 py-3 text-lg rounded-custom flex border border-purple-600 bg-purple-600 hover:bg-purple-700 items-center gap-3 font-medium transition-colors"
+                   className="text-white p-3 text-lg rounded-custom flex border border-purple-600 bg-purple-600 hover:bg-purple-700 items-center justify-center transition-colors"
+                   title="Export Components - Choose to export all components or all fields"
                  >
                    <Download className="h-[30px] w-[30px]" />
-                   Export Components
-                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                   </svg>
+                   {showExportAllDropdown && (
+                     <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                     </svg>
+                   )}
                  </button>
                  
                  {showExportAllDropdown && (
@@ -1353,10 +1355,10 @@ const ComponentList = () => {
               
               <button
                 onClick={() => setShowImportMultipleModal(true)}
-                className="text-white px-6 py-3 text-lg rounded-custom flex border border-blue-600 bg-blue-600 hover:bg-blue-700 items-center gap-3 font-medium transition-colors"
+                className="text-white p-3 text-lg rounded-custom flex border border-blue-600 bg-blue-600 hover:bg-blue-700 items-center justify-center transition-colors"
+                title="Import Components - Import single or multiple components"
               >
                 <Upload className="h-[30px] w-[30px]" />
-                Import Components
               </button>
               
 
@@ -1566,8 +1568,12 @@ const ComponentList = () => {
                        </div>
                        <div
                          className="w-[25px] h-[25px] cursor-pointer text-green-600 hover:text-green-800 transition-colors duration-200"
-                         title="Import Component"
-                         onClick={() => setShowImportModal(true)}
+                         title="Import Fields Only"
+                         onClick={() => {
+                           setSelectedComponentForImport(comp)
+                           setImportType("fields")
+                           setShowImportModal(true)
+                         }}
                        >
                          <Upload className="w-[25px] h-[25px]" />
                        </div>
