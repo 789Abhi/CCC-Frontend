@@ -1319,7 +1319,7 @@ const ComponentList = () => {
                    className="text-white p-3 text-lg rounded-custom flex border border-purple-600 bg-purple-600 hover:bg-purple-700 items-center justify-center transition-colors"
                    title="Export Components - Choose to export all components or all fields"
                  >
-                   <Download className="h-[30px] w-[30px]" />
+                   <Upload className="h-[30px] w-[30px]" />
                    {showExportAllDropdown && (
                      <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1358,7 +1358,7 @@ const ComponentList = () => {
                 className="text-white p-3 text-lg rounded-custom flex border border-blue-600 bg-blue-600 hover:bg-blue-700 items-center justify-center transition-colors"
                 title="Import Components - Import single or multiple components"
               >
-                <Upload className="h-[30px] w-[30px]" />
+                <Download className="h-[30px] w-[30px]" />
               </button>
               
 
