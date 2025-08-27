@@ -12,14 +12,7 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
   const [selectedCSSLibrary, setSelectedCSSLibrary] = useState("custom") // New state for CSS library selection
   const [showHowToUse, setShowHowToUse] = useState(false)
 
-  const showMessage = (message, type = 'info') => {
-    console.log(`${type.toUpperCase()}: ${message}`)
-    if (type === 'success') {
-      alert(`✅ ${message}`)
-    } else if (type === 'error') {
-      alert(`❌ ${message}`)
-    }
-  }
+
 
   const generateFieldExamples = () => {
     if (!component || !component.fields) return ""
@@ -168,22 +161,18 @@ Follow this exact order: Variables → HTML → CSS. Create a professional layou
         if (optimizedUrl.length <= 2500) {
           // Optimized prompt fits, use it
           window.open(optimizedUrl, '_blank')
-          showMessage('Opening ChatGPT with optimized prompt pre-filled!', 'success')
         } else {
           // Even optimized is too long, fall back to clipboard method
           copyToClipboard(prompt)
-          showMessage('Prompt copied to clipboard! Opening ChatGPT...', 'success')
           window.open('https://chat.openai.com', '_blank')
         }
       } else {
         // URL is fine, open with prompt pre-filled
         window.open(chatGPTUrl, '_blank')
-        showMessage('Opening ChatGPT with your prompt pre-filled!', 'success')
       }
     } catch (error) {
       // Fallback to clipboard method
       copyToClipboard(prompt)
-      showMessage('Prompt copied to clipboard! Opening ChatGPT...', 'success')
       window.open('https://chat.openai.com', '_blank')
     }
   }
@@ -249,9 +238,8 @@ Include complete HTML/CSS code with field names: ${component.fields.map(f => f.n
           setImagePreview(e.target.result)
         }
         reader.readAsDataURL(file)
-        showMessage('Reference image uploaded successfully!', 'success')
       } else {
-        showMessage('Please select a valid image file.', 'error')
+        // Could add toast notification here if needed
       }
     }
   }
@@ -266,7 +254,6 @@ Include complete HTML/CSS code with field names: ${component.fields.map(f => f.n
       await navigator.clipboard.writeText(text)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-      showMessage('Design code copied to clipboard!', 'success')
     } catch (err) {
       // Fallback for older browsers
       const textArea = document.createElement('textarea')
@@ -277,7 +264,6 @@ Include complete HTML/CSS code with field names: ${component.fields.map(f => f.n
       document.body.removeChild(textArea)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-      showMessage('Design code copied to clipboard!', 'success')
     }
   }
 
