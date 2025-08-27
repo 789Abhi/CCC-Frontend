@@ -90,123 +90,6 @@ const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
       processField(field)
     })
     
-    // Add comprehensive usage examples
-    examples += "\n// ===== USAGE EXAMPLES =====\n\n"
-    
-    examples += "// Toggle/Checkbox fields\n"
-    examples += "<?php if ($${component.fields.find(f => f.type === 'toggle')?.name || 'enable_title'}): ?>\n"
-    examples += "    <h1><?php echo esc_html(${component.fields.find(f => f.type === 'text')?.name || 'title'}); ?></h1>\n"
-    examples += "<?php endif; ?>\n\n"
-    
-    examples += "// Text and textarea fields\n"
-    examples += "<h1><?php echo esc_html(${component.fields.find(f => f.type === 'textarea')?.name || 'text_area'}); ?></h1>\n\n"
-    
-    examples += "// Image field\n"
-    examples += "<img src=\"<?php echo esc_url(${component.fields.find(f => f.type === 'image')?.name || 'image'}); ?>\" \n"
-    examples += "     alt=\"<?php echo esc_attr(${component.fields.find(f => f.type === 'text')?.name || 'title'}); ?>\">\n\n"
-    
-    examples += "// Video field\n"
-    examples += "<video controls>\n"
-    examples += "    <source src=\"<?php echo esc_url(${component.fields.find(f => f.type === 'video')?.name || 'video'}); ?>\" type=\"video/mp4\">\n"
-    examples += "    Your browser does not support the video tag.\n"
-    examples += "</video>\n\n"
-    
-    examples += "// Oembed field\n"
-    examples += "<div><?php echo ${component.fields.find(f => f.type === 'oembed')?.name || 'oembed'}; ?></div>\n\n"
-    
-    examples += "// Link fields\n"
-    examples += "<!-- Normal link -->\n"
-    examples += "<a href=\"<?php echo esc_url(${component.fields.find(f => f.type === 'link')?.name || 'link'}); ?>\">Link Text</a>\n\n"
-    
-    examples += "<!-- Link with target (opens in new tab) -->\n"
-    examples += "<a href=\"<?php echo esc_url(${component.fields.find(f => f.type === 'link')?.name || 'link'}_target['url']); ?>\" \n"
-    examples += "   <?php echo ${component.fields.find(f => f.type === 'link')?.name || 'link'}_target['target']; ?>>Link with Target</a>\n\n"
-    
-    examples += "// Email field\n"
-    examples += "<a href=\"mailto:<?php echo esc_attr(${component.fields.find(f => f.type === 'email')?.name || 'email'}); ?>\">Email Us</a>\n\n"
-    
-    examples += "// Number and range fields\n"
-    examples += "<a style=\"font-size:<?php echo esc_attr(${component.fields.find(f => f.type === 'range')?.name || 'range'}); ?>px\" \n"
-    examples += "   href=\"tel:<?php echo esc_attr(${component.fields.find(f => f.type === 'number')?.name || 'number'}); ?>\">Call Us</a>\n\n"
-    
-    examples += "// File field\n"
-    examples += "<a class=\"download-link\" target=\"_blank\" \n"
-    examples += "   href=\"<?php echo esc_url(${component.fields.find(f => f.type === 'file')?.name || 'file'}); ?>\">Download File</a>\n\n"
-    
-    examples += "// Color field\n"
-    examples += "<a style=\"color:<?php echo esc_attr(${component.fields.find(f => f.type === 'color')?.name || 'color'}_hover); ?>;\" \n"
-    examples += "   target=\"_blank\" href=\"<?php echo esc_url(${component.fields.find(f => f.type === 'file')?.name || 'file'}); ?>\">Styled Download</a>\n\n"
-    
-    examples += "// Select field\n"
-    examples += "<div>Select value: <?php echo esc_html(${component.fields.find(f => f.type === 'select')?.name || 'select'}); ?></div>\n"
-    examples += "<div>Select string: <?php echo esc_html(${component.fields.find(f => f.type === 'select')?.name || 'select'}_string); ?></div>\n"
-    examples += "<div>Select list: <?php echo ${component.fields.find(f => f.type === 'select')?.name || 'select'}_list; ?></div>\n\n"
-    
-    examples += "// Select field as array\n"
-    examples += "<?php if (is_array(${component.fields.find(f => f.type === 'select')?.name || 'select'})): ?>\n"
-    examples += "    <?php foreach (${component.fields.find(f => f.type === 'select')?.name || 'select'} as $value): ?>\n"
-    examples += "        <?php echo esc_html($value) . ' '; ?>\n"
-    examples += "    <?php endforeach; ?>\n"
-    examples += "<?php else: ?>\n"
-    examples += "    <?php echo esc_html(${component.fields.find(f => f.type === 'select')?.name || 'select'}); ?>\n"
-    examples += "<?php endif; ?>\n\n"
-    
-    examples += "// Select field as list\n"
-    examples += "<ul>\n"
-    examples += "    <?php foreach (${component.fields.find(f => f.type === 'select')?.name || 'select'} as $value): ?>\n"
-    examples += "        <li><?php echo esc_html($value); ?></li>\n"
-    examples += "    <?php endforeach; ?>\n"
-    examples += "</ul>\n\n"
-    
-    examples += "// Checkbox field\n"
-    examples += "<ul>\n"
-    examples += "    <?php foreach (${component.fields.find(f => f.type === 'checkbox')?.name || 'checkbox'} as $values): ?>\n"
-    examples += "        <li><?php echo esc_html($values); ?></li>\n"
-    examples += "    <?php endforeach; ?>\n"
-    examples += "</ul>\n\n"
-    
-    examples += "// Radio field\n"
-    examples += "<div><?php echo esc_html(${component.fields.find(f => f.type === 'radio')?.name || 'radio'}); ?></div>\n\n"
-    
-    examples += "// Gallery/Repeater field\n"
-    examples += "<div class=\"gallery\">\n"
-    examples += "    <?php if (${component.fields.find(f => f.type === 'gallery' || f.type === 'repeater')?.name || 'gallery'} && is_array(${component.fields.find(f => f.type === 'gallery' || f.type === 'repeater')?.name || 'gallery'})): ?>\n"
-    examples += "        <?php foreach (${component.fields.find(f => f.type === 'gallery' || f.type === 'repeater')?.name || 'gallery'} as $gallery_item): ?>\n"
-    examples += "            <?php \n"
-    examples += "            // Fetch nested fields from each gallery item\n"
-    examples += "            // Note: show is \"1\" or \"0\" (string), not boolean\n"
-    examples += "            $show_image = isset($gallery_item['show']) && $gallery_item['show'] === \"1\";\n"
-    examples += "            $image_url = isset($gallery_item['image']) ? $gallery_item['image'] : null;\n"
-    examples += "            ?>\n"
-    examples += "            <?php if ($show_image && $image_url): ?>\n"
-    examples += "                <div class=\"gallery-item\">\n"
-    examples += "                    <img src=\"<?php echo esc_url($image_url); ?>\" alt=\"Gallery Image\">\n"
-    examples += "                </div>\n"
-    examples += "            <?php endif; ?>\n"
-    examples += "        <?php endforeach; ?>\n"
-    examples += "    <?php else: ?>\n"
-    examples += "        <p>No gallery data available</p>\n"
-    examples += "    <?php endif; ?>\n"
-    examples += "</div>\n\n"
-    
-    examples += "// Alternative gallery loop\n"
-    examples += "<div class=\"gallery-grid\">\n"
-    examples += "    <?php foreach(${component.fields.find(f => f.type === 'gallery' || f.type === 'repeater')?.name || 'gallery'} as $idx): ?>\n"
-    examples += "        <div class=\"gallery-item\">\n"
-    examples += "            <img src=\"<?php echo esc_url($idx['image']); ?>\" alt=\"Gallery Image\">\n"
-    examples += "        </div>\n"
-    examples += "    <?php endforeach; ?>\n"
-    examples += "</div>\n\n"
-    
-    examples += "?>\n\n"
-    
-    examples += "<!-- HTML Structure Example -->\n"
-    examples += "<div class=\"component-${component.handle_name || 'component'}\">\n"
-    examples += "    <!-- Your HTML structure here using the PHP variables above -->\n"
-    examples += "    <!-- Remember to use proper escaping: esc_html(), esc_url(), esc_attr() -->\n"
-    examples += "    <!-- For HTML content, use wp_kses_post() instead of esc_html() -->\n"
-    examples += "</div>\n"
-    
     return examples
   }
 
@@ -270,7 +153,7 @@ CSS FRAMEWORK REQUIREMENTS - CUSTOM CSS:
 - Ensure the CSS is self-contained and doesn't conflict with other styles`
     }
     
-    let prompt = `Create a modern, responsive HTML/CSS design for a WordPress component called "${component.name}".
+   let prompt = `Create a modern, responsive HTML/CSS design for a WordPress component called "${component.name}".
 
 Component Description: ${component.description || 'A custom WordPress component'}
 
@@ -308,14 +191,25 @@ Please provide the complete HTML and CSS code that I can directly use in the Wor
     
     // Try to open ChatGPT with URL parameters first
     try {
-      const chatGPTUrl = 'https://chat.openai.com?prompt=' + encodeURIComponent(prompt)
+      // Use the newer ChatGPT URL format for better prompt handling
+      const chatGPTUrl = 'https://chat.openai.com/c/new?prompt=' + encodeURIComponent(prompt)
       
-      // Check if URL is too long (browsers have limits)
-      if (chatGPTUrl.length > 2000) {
-        // URL too long, fall back to clipboard method
-        copyToClipboard(prompt)
-        showMessage('Prompt copied to clipboard! Opening ChatGPT...', 'success')
-        window.open('https://chat.openai.com', '_blank')
+      // Check if URL is too long (ChatGPT has limits around 2000-3000 chars)
+      if (chatGPTUrl.length > 2500) {
+        // URL too long, try to optimize the prompt
+        const optimizedPrompt = generateOptimizedPrompt()
+        const optimizedUrl = 'https://chat.openai.com/c/new?prompt=' + encodeURIComponent(optimizedPrompt)
+        
+        if (optimizedUrl.length <= 2500) {
+          // Optimized prompt fits, use it
+          window.open(optimizedUrl, '_blank')
+          showMessage('Opening ChatGPT with optimized prompt pre-filled!', 'success')
+        } else {
+          // Even optimized is too long, fall back to clipboard method
+          copyToClipboard(prompt)
+          showMessage('Prompt copied to clipboard! Opening ChatGPT...', 'success')
+          window.open('https://chat.openai.com/c/new', '_blank')
+        }
       } else {
         // URL is fine, open with prompt pre-filled
         window.open(chatGPTUrl, '_blank')
@@ -325,8 +219,52 @@ Please provide the complete HTML and CSS code that I can directly use in the Wor
       // Fallback to clipboard method
       copyToClipboard(prompt)
       showMessage('Prompt copied to clipboard! Opening ChatGPT...', 'success')
-      window.open('https://chat.openai.com', '_blank')
+      window.open('https://chat.openai.com/c/new', '_blank')
     }
+  }
+
+  const generateOptimizedPrompt = () => {
+    if (!component || !component.fields) return ""
+    
+    // Create a more concise prompt that still includes all essential information
+    const fieldList = component.fields.map(field => {
+      let fieldInfo = `${field.label} (${field.type}): ${field.name}`
+      
+      // Add nested fields for repeater (condensed)
+      if (field.type === 'repeater' && field.config && field.config.nested_fields) {
+        fieldInfo += ` [nested: ${field.config.nested_fields.map(nf => nf.name).join(', ')}]`
+      } else if (field.type === 'repeater' && field.children && field.children.length > 0) {
+        fieldInfo += ` [nested: ${field.children.map(nf => nf.name).join(', ')}]`
+      }
+      
+      return fieldInfo
+    }).join('\n')
+    
+    // CSS Library specific instructions (condensed)
+    let cssInstructions = ""
+    if (selectedCSSLibrary === "tailwind") {
+      cssInstructions = "Use ONLY Tailwind CSS utility classes, mobile-first design, responsive prefixes (sm:, md:, lg:)"
+    } else if (selectedCSSLibrary === "bootstrap") {
+      cssInstructions = "Use Bootstrap 5 classes extensively, grid system, responsive classes (col-sm, col-md, col-lg)"
+    } else {
+      cssInstructions = "Create custom CSS with modern features, Flexbox/Grid, CSS variables, mobile-first approach"
+    }
+    
+    let optimizedPrompt = `Create modern responsive HTML/CSS for WordPress component "${component.name}".
+
+Fields: ${fieldList}
+
+Requirements: Semantic HTML, responsive design, hover effects, accessibility, WordPress compatible.
+CSS: ${cssInstructions}
+
+Include complete HTML/CSS code with field names: ${component.fields.map(f => f.name).join(', ')}`
+
+    // Add reference image instruction if image is uploaded
+    if (referenceImage) {
+      optimizedPrompt += `\n\nDesign Reference: Match the visual style and layout from the uploaded reference image.`
+    }
+    
+    return optimizedPrompt
   }
 
   const handleImageUpload = (event) => {
@@ -470,15 +408,7 @@ Please provide the complete HTML and CSS code that I can directly use in the Wor
             </div>
           </div>
 
-                     {/* PHP Examples */}
-           <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-             <h3 className="font-semibold text-green-900 mb-3">PHP Data Fetching Examples</h3>
-             <div className="bg-white rounded-lg p-4 border border-green-200">
-               <pre className="text-sm text-green-800 overflow-x-auto">
-                 <code>{generateFieldExamples()}</code>
-               </pre>
-             </div>
-           </div>
+                     
 
                        {/* Reference Image Upload */}
             <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
@@ -664,12 +594,12 @@ Please provide the complete HTML and CSS code that I can directly use in the Wor
               </button>
             </div>
             
-                         {/* Clipboard Note */}
-             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-               <p className="text-sm text-blue-800">
-                 <strong>Note:</strong> The prompt will automatically appear in ChatGPT when opened. If the prompt is too long, it will be copied to your clipboard as a fallback.
-               </p>
-             </div>
+                                                   {/* Clipboard Note */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> The prompt will automatically appear in ChatGPT when opened. For very long prompts, an optimized version will be used. If still too long, it will be copied to your clipboard as a fallback.
+                </p>
+              </div>
 
                      {/* Instructions */}
            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
@@ -678,13 +608,13 @@ Please provide the complete HTML and CSS code that I can directly use in the Wor
                <li>1. (Optional) Upload a reference image to match your desired design style</li>
                <li>2. Select your preferred CSS framework (Tailwind, Bootstrap, or Custom CSS)</li>
                <li>3. Click "Open ChatGPT with Design Prompt" to go to ChatGPT</li>
-               <li>4. The prompt will automatically appear in ChatGPT (or be copied to clipboard if too long)</li>
+                               <li>4. The prompt will automatically appear in ChatGPT input field (optimized version used if needed)</li>
                <li>5. Upload your reference image in ChatGPT if you have one</li>
                <li>6. ChatGPT will generate HTML/CSS code based on your component's fields, reference image, and selected CSS framework</li>
                <li>7. Copy the generated code and paste it into your component template file</li>
                <li>8. The template file is located at: <code className="bg-yellow-100 px-1 rounded">your-theme/ccc-templates/{component.handle_name}.php</code></li>
-               <li>9. Use the PHP examples in the green box above for data fetching</li>
-               <li>10. The examples include proper escaping, conditional logic, and field-specific handling</li>
+                               <li>9. ChatGPT will provide PHP code examples for data fetching in the generated response</li>
+                <li>10. The generated PHP code will include proper escaping, conditional logic, and field-specific handling</li>
                <li>11. Use the field names exactly as shown in the examples for your specific component</li>
                <li>12. The generated CSS will be compatible with your selected framework</li>
              </ol>
