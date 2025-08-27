@@ -595,6 +595,7 @@ const ComponentList = () => {
   }, [postType])
 
   const openFieldEditModal = async (component, field = null) => {
+    console.log('openFieldEditModal called with:', { component, field })
     // Always fetch the latest components before opening the modal
     const latestComponents = await fetchComponents();
     const latestComponent = latestComponents.find(c => c.id === component.id)
@@ -602,9 +603,11 @@ const ComponentList = () => {
     if (latestComponent && field) {
       latestField = latestComponent.fields.find(f => f.id === field.id)
     }
+    console.log('Setting modal state:', { latestComponent, latestField })
     setSelectedComponentForField(latestComponent || component)
     setEditingField(latestField)
     setShowFieldEditModal(true)
+    console.log('Modal should now be open')
   }
 
   const closeFieldEditModal = () => {
@@ -1137,13 +1140,23 @@ const ComponentList = () => {
             </div>
       
             <img
-              onClick={() => onEdit(component, field)}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Edit button clicked for field:', field)
+                onEdit(component, field)
+              }}
               src={editIcon || "/placeholder.svg"}
               className="h-[18px] w-[18px] cursor-pointer"
               alt="edit-icon"
             />
             <img
-              onClick={() => onDelete(field.id)}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Delete button clicked for field:', field)
+                onDelete(field.id)
+              }}
               className="h-[18px] w-[18px] cursor-pointer"
               src={deleteIcon || "/placeholder.svg"}
               alt="delete-icon"
@@ -1286,6 +1299,19 @@ const ComponentList = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
                 Use AI
+              </button>
+
+              {/* Test button for FieldEditModal */}
+              <button
+                onClick={() => {
+                  console.log('Test button clicked')
+                  setSelectedComponentForField(components[0] || { id: 1, name: 'Test Component' })
+                  setEditingField(null)
+                  setShowFieldEditModal(true)
+                }}
+                className="text-white px-6 py-3 text-lg rounded-custom flex border border-orange-600 bg-orange-600 hover:bg-orange-700 items-center gap-3 font-medium transition-colors"
+              >
+                Test Modal
               </button>
               
                              {/* Only show export button if there are components */}
@@ -1824,6 +1850,25 @@ const ComponentList = () => {
           onClose={closeFieldEditModal}
           onSave={closeFieldEditModal}
         />
+      )}
+
+      {/* Debug indicator */}
+      {showFieldEditModal && (
+        <div style={{
+          position: 'fixed',
+          top: '10px',
+          right: '10px',
+          background: 'red',
+          color: 'white',
+          padding: '10px',
+          zIndex: 9999,
+          fontSize: '12px'
+        }}>
+          Modal should be open!<br/>
+          showFieldEditModal: {showFieldEditModal.toString()}<br/>
+          selectedComponentForField: {selectedComponentForField ? 'Yes' : 'No'}<br/>
+          editingField: {editingField ? 'Yes' : 'No'}
+        </div>
       )}
 
       {showEditComponentNameModal && (
