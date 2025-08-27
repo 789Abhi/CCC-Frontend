@@ -890,9 +890,24 @@ const ComponentList = () => {
       formData.append("nonce", window.cccData.nonce)
 
       const response = await axios.post(window.cccData.ajaxUrl, formData)
+      console.log(`Component creation response for "${parsedData.name}":`, response.data)
 
       if (response.data.success) {
-        const newComponentId = response.data.data.id
+        // Try different possible locations for the component ID
+        let newComponentId = null
+        
+        if (response.data.data && response.data.data.id) {
+          newComponentId = response.data.data.id
+        } else if (response.data.id) {
+          newComponentId = response.data.id
+        } else if (response.data.component_id) {
+          newComponentId = response.data.component_id
+        } else {
+          console.error(`Component created but no ID returned. Response:`, response.data)
+          throw new Error("Component created but no ID returned from server")
+        }
+        
+        console.log(`Component "${parsedData.name}" created with ID: ${newComponentId}`)
 
         // If there are fields, create them
         if (parsedData.fields && parsedData.fields.length > 0) {
@@ -1002,7 +1017,20 @@ const ComponentList = () => {
           const response = await axios.post(window.cccData.ajaxUrl, formData)
 
           if (response.data.success) {
-            const newComponentId = response.data.data.id
+            // Try different possible locations for the component ID
+            let newComponentId = null
+            
+            if (response.data.data && response.data.data.id) {
+              newComponentId = response.data.data.id
+            } else if (response.data.id) {
+              newComponentId = response.data.id
+            } else if (response.data.component_id) {
+              newComponentId = response.data.component_id
+            } else {
+              console.error(`Component created but no ID returned. Response:`, response.data)
+              throw new Error("Component created but no ID returned from server")
+            }
+            
             console.log(`Component "${componentData.name}" created with ID: ${newComponentId}`)
 
             // If there are fields, create them
