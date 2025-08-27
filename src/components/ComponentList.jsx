@@ -37,8 +37,6 @@ import DesignChatGPTModal from "./DesignChatGPTModal"
 
 // Sortable Field Component - moved outside main component to fix re-rendering issues
 const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText }) => {
-  console.log('SortableField rendered with props:', { field, component, onEdit, onDelete, onCopy, copiedText })
-  
   try {
     const {
       attributes,
@@ -104,19 +102,12 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
                 </span>
               )}
             </div>
-    
+      
             <img
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                console.log('Edit button clicked for field:', field)
-                console.log('Component:', component)
-                console.log('onEdit function:', onEdit)
-                if (typeof onEdit === 'function') {
-                  onEdit(component, field)
-                } else {
-                  console.error('onEdit is not a function:', onEdit)
-                }
+                onEdit(component, field)
               }}
               src={editIcon || "/placeholder.svg"}
               className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
@@ -127,14 +118,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                console.log('Delete button clicked for field:', field)
-                console.log('Field ID:', field.id)
-                console.log('onDelete function:', onDelete)
-                if (typeof onDelete === 'function') {
-                  onDelete(field.id)
-                } else {
-                  console.error('onDelete is not a function:', onDelete)
-                }
+                onDelete(field.id)
               }}
               className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
               src={deleteIcon || "/placeholder.svg"}
@@ -166,10 +150,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                console.log('Edit button clicked for field (fallback):', field)
-                if (typeof onEdit === 'function') {
-                  onEdit(component, field)
-                }
+                onEdit(component, field)
               }}
               src={editIcon || "/placeholder.svg"}
               className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
@@ -180,10 +161,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                console.log('Delete button clicked for field (fallback):', field)
-                if (typeof onDelete === 'function') {
-                  onDelete(field.id)
-                }
+                onDelete(field.id)
               }}
               className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
               src={deleteIcon || "/placeholder.svg"}
@@ -757,7 +735,6 @@ const ComponentList = () => {
   }, [postType])
 
   const openFieldEditModal = async (component, field = null) => {
-    console.log('openFieldEditModal called with:', { component, field })
     // Always fetch the latest components before opening the modal
     const latestComponents = await fetchComponents();
     const latestComponent = latestComponents.find(c => c.id === component.id)
@@ -765,11 +742,9 @@ const ComponentList = () => {
     if (latestComponent && field) {
       latestField = latestComponent.fields.find(f => f.id === field.id)
     }
-    console.log('Setting modal state:', { latestComponent, latestField })
     setSelectedComponentForField(latestComponent || component)
     setEditingField(latestField)
     setShowFieldEditModal(true)
-    console.log('Modal should now be open')
   }
 
   const closeFieldEditModal = () => {
