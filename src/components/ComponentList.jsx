@@ -76,7 +76,7 @@ const ComponentList = () => {
     return name
       .toLowerCase()
       .replace(/\s+/g, "_")
-      .replace(/[^\w_]+/g, "")
+      .replace(/[^a-z0-9_]+/g, "")
   }
 
   const showMessage = (msg, type) => {
@@ -433,6 +433,8 @@ const ComponentList = () => {
   const closeEditComponentNameModal = () => {
     setShowEditComponentNameModal(false)
     setComponentToEditName(null)
+    // Refresh the component list to show updated names
+    fetchComponents()
   }
 
   // ChatGPT integration functions

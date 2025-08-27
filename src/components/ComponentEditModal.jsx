@@ -27,7 +27,7 @@ const ComponentEditNameModal = ({ isOpen, component, onClose, onSave }) => {
     return name
       .toLowerCase()
       .replace(/\s+/g, "_")
-      .replace(/[^\w_]+/g, "");
+      .replace(/[^a-z0-9_]+/g, "");
   };
 
   const showMessage = (msg, type) => {
