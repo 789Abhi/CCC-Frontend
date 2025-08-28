@@ -2796,6 +2796,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
       {showFieldPopup && (
         <>
+          {console.log('Rendering nested field popup, showFieldPopup:', showFieldPopup)}
           <FieldEditModal
             isOpen={showFieldPopup}
             field={currentNestedField}
