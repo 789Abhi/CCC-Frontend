@@ -1040,7 +1040,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               className="p-1 rounded-md text-blue-600 hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200"
               disabled={isSubmitting}
               title="Edit Field"
-              style={{ zIndex: 1000 }}
+             
             >
               <Edit className="w-4 h-4" />
             </button>
@@ -1053,7 +1053,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               className="p-1 rounded-md text-red-600 hover:bg-red-50 transition-colors border border-transparent hover:border-red-200"
               disabled={isSubmitting}
               title="Delete Field"
-              style={{ zIndex: 1000 }}
             >
               <X className="w-4 h-4" />
             </button>
