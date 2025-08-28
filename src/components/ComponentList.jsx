@@ -57,25 +57,22 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
 
     const handleEditClick = (e) => {
       console.log('Edit clicked for field:', field)
-      e.preventDefault()
-      e.stopPropagation()
-      e.stopImmediatePropagation()
+      if (e && e.preventDefault) e.preventDefault()
+      if (e && e.stopPropagation) e.stopPropagation()
       onEdit(component, field)
     }
 
     const handleDeleteClick = (e) => {
       console.log('Delete clicked for field:', field)
-      e.preventDefault()
-      e.stopPropagation()
-      e.stopImmediatePropagation()
+      if (e && e.preventDefault) e.preventDefault()
+      if (e && e.stopPropagation) e.stopPropagation()
       onDelete(field.id)
     }
 
     const handleCopyClick = (e) => {
       console.log('Copy clicked for field:', field)
-      e.preventDefault()
-      e.stopPropagation()
-      e.stopImmediatePropagation()
+      if (e && e.preventDefault) e.preventDefault()
+      if (e && e.stopPropagation) e.stopPropagation()
       onCopy(field.name)
     }
 
@@ -104,7 +101,6 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
                   <code
                     className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
                     onClick={handleCopyClick}
-                    onMouseDown={(e) => e.stopPropagation()}
                   >
                     {field.name}
                   </code>
@@ -133,7 +129,6 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
             <button
               type="button"
               onClick={handleEditClick}
-              onMouseDown={(e) => e.stopPropagation()}
               className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0"
               title="Edit Field"
             >
@@ -146,7 +141,6 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
             <button
               type="button"
               onClick={handleDeleteClick}
-              onMouseDown={(e) => e.stopPropagation()}
               className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0"
               title="Delete Field"
             >
@@ -184,8 +178,8 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
               type="button"
               onClick={(e) => {
                 console.log('Edit clicked (fallback) for field:', field)
-                e.preventDefault()
-                e.stopPropagation()
+                if (e && e.preventDefault) e.preventDefault()
+                if (e && e.stopPropagation) e.stopPropagation()
                 onEdit(component, field)
               }}
               className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0"
@@ -201,8 +195,8 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
               type="button"
               onClick={(e) => {
                 console.log('Delete clicked (fallback) for field:', field)
-                e.preventDefault()
-                e.stopPropagation()
+                if (e && e.preventDefault) e.preventDefault()
+                if (e && e.stopPropagation) e.stopPropagation()
                 onDelete(field.id)
               }}
               className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0"
