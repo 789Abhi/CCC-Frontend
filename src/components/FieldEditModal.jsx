@@ -1769,9 +1769,20 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                               field={nestedField}
                               index={index}
                               onEdit={() => {
+                                console.log('Nested field edit clicked:', { index, nestedField })
+                                console.log('Current showFieldPopup state:', showFieldPopup)
                                 setEditingNestedFieldIndex(index)
                                 setCurrentNestedField(nestedField)
+                                console.log('Setting showFieldPopup to true')
                                 setShowFieldPopup(true)
+                                // Force a re-render by updating state
+                                setTimeout(() => {
+                                  console.log('After timeout - showFieldPopup state:', showFieldPopup)
+                                  if (!showFieldPopup) {
+                                    console.log('Forcing re-render by updating state again')
+                                    setShowFieldPopup(true)
+                                  }
+                                }, 100)
                               }}
                               onDelete={() => handleDeleteNestedField(index)}
                               isSubmitting={isSubmitting}
@@ -2794,9 +2805,18 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         </div>
       </div>
 
+      {/* Debug info */}
+      <div style={{ display: 'none' }}>
+        Debug: showFieldPopup={showFieldPopup.toString()}, 
+        currentNestedField={currentNestedField ? 'exists' : 'null'}, 
+        editingNestedFieldIndex={editingNestedFieldIndex}
+      </div>
+
       {showFieldPopup && (
         <>
           {console.log('Rendering nested field popup, showFieldPopup:', showFieldPopup)}
+          {console.log('currentNestedField:', currentNestedField)}
+          {console.log('editingNestedFieldIndex:', editingNestedFieldIndex)}
           <FieldEditModal
             isOpen={showFieldPopup}
             field={currentNestedField}
@@ -2809,8 +2829,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 // The nested modal will calculate its own availableFields
               ]
             }}
-            onClose={() => setShowFieldPopup(false)}
+            onClose={() => {
+              console.log('Closing nested field popup')
+              setShowFieldPopup(false)
+            }}
             onSave={(updatedField) => {
+              console.log('Saving nested field:', updatedField)
               if (editingNestedFieldIndex !== null) {
                 handleUpdateNestedField(updatedField)
               } else {
