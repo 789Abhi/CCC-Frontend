@@ -903,8 +903,31 @@ const ComponentList = () => {
         } else if (response.data.component_id) {
           newComponentId = response.data.component_id
         } else {
-          console.error(`Component created but no ID returned. Response:`, response.data)
-          throw new Error("Component created but no ID returned from server")
+          // Fallback: try to get the component ID by querying for the component we just created
+          console.log(`No ID in response, trying to find component by name: "${parsedData.name}"`)
+          try {
+            const searchFormData = new FormData()
+            searchFormData.append("action", "ccc_get_components")
+            searchFormData.append("nonce", window.cccData.nonce)
+            
+            const searchResponse = await axios.post(window.cccData.ajaxUrl, searchFormData)
+            if (searchResponse.data.success && searchResponse.data.data) {
+              const foundComponent = searchResponse.data.data.find(comp => 
+                comp.name === parsedData.name || comp.label === parsedData.name
+              )
+              if (foundComponent) {
+                newComponentId = foundComponent.id
+                console.log(`Found component "${parsedData.name}" with ID: ${newComponentId}`)
+              }
+            }
+          } catch (searchError) {
+            console.error(`Error searching for component "${parsedData.name}":`, searchError)
+          }
+          
+          if (!newComponentId) {
+            console.error(`Component created but no ID returned. Response:`, response.data)
+            throw new Error("Component created but no ID returned from server")
+          }
         }
         
         console.log(`Component "${parsedData.name}" created with ID: ${newComponentId}`)
@@ -1015,6 +1038,9 @@ const ComponentList = () => {
           formData.append("nonce", window.cccData.nonce)
 
           const response = await axios.post(window.cccData.ajaxUrl, formData)
+          console.log(`Component creation response for "${componentData.name}":`, response.data)
+          console.log(`Component creation response.data:`, response.data.data)
+          console.log(`Component creation response.data keys:`, Object.keys(response.data.data || {}))
 
           if (response.data.success) {
             // Try different possible locations for the component ID
@@ -1027,8 +1053,31 @@ const ComponentList = () => {
             } else if (response.data.component_id) {
               newComponentId = response.data.component_id
             } else {
-              console.error(`Component created but no ID returned. Response:`, response.data)
-              throw new Error("Component created but no ID returned from server")
+              // Fallback: try to get the component ID by querying for the component we just created
+              console.log(`No ID in response, trying to find component by name: "${componentData.name}"`)
+              try {
+                const searchFormData = new FormData()
+                searchFormData.append("action", "ccc_get_components")
+                searchFormData.append("nonce", window.cccData.nonce)
+                
+                const searchResponse = await axios.post(window.cccData.ajaxUrl, searchFormData)
+                if (searchResponse.data.success && searchResponse.data.data) {
+                  const foundComponent = searchResponse.data.data.find(comp => 
+                    comp.name === componentData.name || comp.label === componentData.name
+                  )
+                  if (foundComponent) {
+                    newComponentId = foundComponent.id
+                    console.log(`Found component "${componentData.name}" with ID: ${newComponentId}`)
+                  }
+                }
+              } catch (searchError) {
+                console.error(`Error searching for component "${componentData.name}":`, searchError)
+              }
+              
+              if (!newComponentId) {
+                console.error(`Component created but no ID returned. Response:`, response.data)
+                throw new Error("Component created but no ID returned from server")
+              }
             }
             
             console.log(`Component "${componentData.name}" created with ID: ${newComponentId}`)
