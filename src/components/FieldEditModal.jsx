@@ -925,21 +925,51 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     }
 
     const handleEditClick = (e) => {
-      console.log('Edit clicked for nested field:', field, 'at index:', index)
-      if (e && e.preventDefault) e.preventDefault()
-      if (e && e.stopPropagation) e.stopPropagation()
-      onEdit()
+      console.log('=== EDIT BUTTON CLICKED ===')
+      console.log('Event object:', e)
+      console.log('Field:', field)
+      console.log('Index:', index)
+      console.log('onEdit function:', onEdit)
+      console.log('onEdit type:', typeof onEdit)
+      
+      if (e && e.preventDefault) {
+        console.log('Calling preventDefault')
+        e.preventDefault()
+      }
+      if (e && e.stopPropagation) {
+        console.log('Calling stopPropagation')
+        e.stopPropagation()
+      }
+      
+      console.log('About to call onEdit()')
+      try {
+        onEdit()
+        console.log('onEdit() called successfully')
+      } catch (error) {
+        console.error('Error calling onEdit:', error)
+      }
     }
 
     const handleDeleteClick = (e) => {
-      console.log('Delete clicked for nested field:', field, 'at index:', index)
+      console.log('=== DELETE BUTTON CLICKED ===')
+      console.log('Event object:', e)
+      console.log('Field:', field)
+      console.log('Index:', index)
+      console.log('onDelete function:', onDelete)
+      
       if (e && e.preventDefault) e.preventDefault()
       if (e && e.stopPropagation) e.stopPropagation()
-      onDelete()
+      
+      try {
+        onDelete()
+        console.log('onDelete() called successfully')
+      } catch (error) {
+        console.error('Error calling onDelete:', error)
+      }
     }
 
     const handleCopyClick = (e) => {
-      console.log('Copy clicked for nested field:', field)
+      console.log('=== COPY BUTTON CLICKED ===')
       if (e && e.preventDefault) e.preventDefault()
       if (e && e.stopPropagation) e.stopPropagation()
       handleCopy(field.name)
@@ -994,21 +1024,36 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 </span>
               )}
             </div>
+            
+            {/* Edit Button with enhanced debugging */}
             <button
               type="button"
               onClick={handleEditClick}
-              className="p-1 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
+              onMouseDown={(e) => {
+                console.log('Edit button mouseDown event:', e)
+                e.stopPropagation()
+              }}
+              onMouseUp={(e) => {
+                console.log('Edit button mouseUp event:', e)
+                e.stopPropagation()
+              }}
+              className="p-1 rounded-md text-blue-600 hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200"
               disabled={isSubmitting}
               title="Edit Field"
+              style={{ zIndex: 1000 }}
             >
               <Edit className="w-4 h-4" />
             </button>
+            
+            {/* Delete Button with enhanced debugging */}
             <button
               type="button"
               onClick={handleDeleteClick}
-              className="p-1 rounded-md text-red-600 hover:bg-red-50 transition-colors"
+              onMouseDown={(e) => e.stopPropagation()}
+              className="p-1 rounded-md text-red-600 hover:bg-red-50 transition-colors border border-transparent hover:border-red-200"
               disabled={isSubmitting}
               title="Delete Field"
+              style={{ zIndex: 1000 }}
             >
               <X className="w-4 h-4" />
             </button>
@@ -1769,12 +1814,18 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                               field={nestedField}
                               index={index}
                               onEdit={() => {
-                                console.log('Nested field edit clicked:', { index, nestedField })
+                                console.log('=== PARENT onEdit FUNCTION CALLED ===')
+                                console.log('Index:', index)
+                                console.log('NestedField:', nestedField)
                                 console.log('Current showFieldPopup state:', showFieldPopup)
+                                console.log('Setting editingNestedFieldIndex to:', index)
                                 setEditingNestedFieldIndex(index)
+                                console.log('Setting currentNestedField to:', nestedField)
                                 setCurrentNestedField(nestedField)
                                 console.log('Setting showFieldPopup to true')
                                 setShowFieldPopup(true)
+                                console.log('All state updates completed')
+                                
                                 // Force a re-render by updating state
                                 setTimeout(() => {
                                   console.log('After timeout - showFieldPopup state:', showFieldPopup)
