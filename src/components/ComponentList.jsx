@@ -59,6 +59,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
       console.log('Edit clicked for field:', field)
       e.preventDefault()
       e.stopPropagation()
+      e.stopImmediatePropagation()
       onEdit(component, field)
     }
 
@@ -66,11 +67,15 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
       console.log('Delete clicked for field:', field)
       e.preventDefault()
       e.stopPropagation()
+      e.stopImmediatePropagation()
       onDelete(field.id)
     }
 
-    const handleCopyClick = () => {
+    const handleCopyClick = (e) => {
       console.log('Copy clicked for field:', field)
+      e.preventDefault()
+      e.stopPropagation()
+      e.stopImmediatePropagation()
       onCopy(field.name)
     }
 
@@ -99,6 +104,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
                   <code
                     className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
                     onClick={handleCopyClick}
+                    onMouseDown={(e) => e.stopPropagation()}
                   >
                     {field.name}
                   </code>
@@ -124,20 +130,32 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
               )}
             </div>
       
-            <img
+            <button
+              type="button"
               onClick={handleEditClick}
-              src={editIcon || "/placeholder.svg"}
-              className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
-              alt="edit-icon"
+              onMouseDown={(e) => e.stopPropagation()}
+              className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0"
               title="Edit Field"
-            />
-            <img
+            >
+              <img
+                src={editIcon || "/placeholder.svg"}
+                className="h-full w-full"
+                alt="edit-icon"
+              />
+            </button>
+            <button
+              type="button"
               onClick={handleDeleteClick}
-              className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
-              src={deleteIcon || "/placeholder.svg"}
-              alt="delete-icon"
+              onMouseDown={(e) => e.stopPropagation()}
+              className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0"
               title="Delete Field"
-            />
+            >
+              <img
+                src={deleteIcon || "/placeholder.svg"}
+                className="h-full w-full"
+                alt="delete-icon"
+              />
+            </button>
           </div>
         </div>
       </div>
@@ -151,7 +169,10 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
           <div className="flex items-center gap-2">
             <span className="font-semibold text-gray-800 text-lg">{field.label}</span>
             <span className="text-gray-400">•</span>
-            <code className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono">
+            <code 
+              className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer"
+              onClick={handleCopyClick}
+            >
               {field.name}
             </code>
           </div>
@@ -159,30 +180,40 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
             <span className="bg-blue-100 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
               {field.type}
             </span>
-            <img
+            <button
+              type="button"
               onClick={(e) => {
                 console.log('Edit clicked (fallback) for field:', field)
                 e.preventDefault()
                 e.stopPropagation()
                 onEdit(component, field)
               }}
-              src={editIcon || "/placeholder.svg"}
-              className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
-              alt="edit-icon"
+              className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0"
               title="Edit Field"
-            />
-            <img
+            >
+              <img
+                src={editIcon || "/placeholder.svg"}
+                className="h-full w-full"
+                alt="edit-icon"
+              />
+            </button>
+            <button
+              type="button"
               onClick={(e) => {
                 console.log('Delete clicked (fallback) for field:', field)
                 e.preventDefault()
                 e.stopPropagation()
                 onDelete(field.id)
               }}
-              className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
-              src={deleteIcon || "/placeholder.svg"}
-              alt="delete-icon"
+              className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0"
               title="Delete Field"
-            />
+            >
+              <img
+                src={deleteIcon || "/placeholder.svg"}
+                className="h-full w-full"
+                alt="delete-icon"
+              />
+            </button>
           </div>
         </div>
       </div>
