@@ -907,6 +907,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
   // Sortable Nested Field Component with external field design
   const SortableNestedField = ({ field, index, onEdit, onDelete, isSubmitting }) => {
+    console.log('SortableNestedField rendered with:', { field, index, onEdit, onDelete, isSubmitting })
+    
     const {
       attributes,
       listeners,
@@ -920,6 +922,27 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       transform: CSS.Transform.toString(transform),
       transition,
       opacity: isDragging ? 0.5 : 1,
+    }
+
+    const handleEditClick = (e) => {
+      console.log('Edit clicked for nested field:', field, 'at index:', index)
+      if (e && e.preventDefault) e.preventDefault()
+      if (e && e.stopPropagation) e.stopPropagation()
+      onEdit(index)
+    }
+
+    const handleDeleteClick = (e) => {
+      console.log('Delete clicked for nested field:', field, 'at index:', index)
+      if (e && e.preventDefault) e.preventDefault()
+      if (e && e.stopPropagation) e.stopPropagation()
+      onDelete(index)
+    }
+
+    const handleCopyClick = (e) => {
+      console.log('Copy clicked for nested field:', field)
+      if (e && e.preventDefault) e.preventDefault()
+      if (e && e.stopPropagation) e.stopPropagation()
+      handleCopy(field.name)
     }
 
     return (
@@ -946,7 +969,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 <div className="relative">
                   <code 
                     className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
-                    onClick={() => handleCopy(field.name)}
+                    onClick={handleCopyClick}
                   >
                     {field.name}
                   </code>
@@ -972,16 +995,20 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               )}
             </div>
             <button
-              onClick={onEdit}
+              type="button"
+              onClick={handleEditClick}
               className="p-1 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
               disabled={isSubmitting}
+              title="Edit Field"
             >
               <Edit className="w-4 h-4" />
             </button>
             <button
-              onClick={onDelete}
+              type="button"
+              onClick={handleDeleteClick}
               className="p-1 rounded-md text-red-600 hover:bg-red-50 transition-colors"
               disabled={isSubmitting}
+              title="Delete Field"
             >
               <X className="w-4 h-4" />
             </button>
