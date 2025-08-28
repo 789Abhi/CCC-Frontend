@@ -37,6 +37,8 @@ import DesignChatGPTModal from "./DesignChatGPTModal"
 
 // Sortable Field Component - moved outside main component to fix re-rendering issues
 const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText }) => {
+  console.log('SortableField rendered with:', { field, component, onEdit, onDelete, onCopy })
+  
   try {
     const {
       attributes,
@@ -51,6 +53,25 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
       transform: CSS.Transform.toString(transform),
       transition,
       opacity: isDragging ? 0.5 : 1,
+    }
+
+    const handleEditClick = (e) => {
+      console.log('Edit clicked for field:', field)
+      e.preventDefault()
+      e.stopPropagation()
+      onEdit(component, field)
+    }
+
+    const handleDeleteClick = (e) => {
+      console.log('Delete clicked for field:', field)
+      e.preventDefault()
+      e.stopPropagation()
+      onDelete(field.id)
+    }
+
+    const handleCopyClick = () => {
+      console.log('Copy clicked for field:', field)
+      onCopy(field.name)
     }
 
     return (
@@ -77,7 +98,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
                 <div className="relative">
                   <code
                     className="bg-[#F672BB] border border-[#F2080C] text-white px-2 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
-                    onClick={() => onCopy(field.name)}
+                    onClick={handleCopyClick}
                   >
                     {field.name}
                   </code>
@@ -104,22 +125,14 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
             </div>
       
             <img
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onEdit(component, field)
-              }}
+              onClick={handleEditClick}
               src={editIcon || "/placeholder.svg"}
               className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
               alt="edit-icon"
               title="Edit Field"
             />
             <img
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onDelete(field.id)
-              }}
+              onClick={handleDeleteClick}
               className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity"
               src={deleteIcon || "/placeholder.svg"}
               alt="delete-icon"
@@ -148,6 +161,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
             </span>
             <img
               onClick={(e) => {
+                console.log('Edit clicked (fallback) for field:', field)
                 e.preventDefault()
                 e.stopPropagation()
                 onEdit(component, field)
@@ -159,6 +173,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
             />
             <img
               onClick={(e) => {
+                console.log('Delete clicked (fallback) for field:', field)
                 e.preventDefault()
                 e.stopPropagation()
                 onDelete(field.id)
