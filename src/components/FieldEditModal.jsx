@@ -1122,7 +1122,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             conditional_logic: conditionalLogicConfig?.conditional_logic || [],
             logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
-          console.log("Number field config for preventDatabaseSave:", fieldData.config);
         } else if (type === "range") {
           fieldData.config = {
             min_value: fieldConfig?.min_value !== undefined && fieldConfig?.min_value !== null ? fieldConfig.min_value : null,
@@ -1134,7 +1133,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             conditional_logic: conditionalLogicConfig?.conditional_logic || [],
             logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
-          console.log("Range field config for preventDatabaseSave:", fieldData.config);
         } else if (type === "toggle") {
           fieldData.config = {
             default_value: toggleConfig?.default_value || false,
@@ -1142,7 +1140,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             conditional_logic: toggleConfig?.conditional_logic || [],
             logic_operator: toggleConfig?.logic_operator || 'AND'
           }
-          console.log("Toggle field config for preventDatabaseSave:", fieldData.config);
         } else if (type === "file") {
           fieldData.config = {
             allowed_types: fieldConfig?.allowed_types || ['image', 'video', 'document', 'audio', 'archive'],
@@ -1156,7 +1153,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             conditional_logic: conditionalLogicConfig?.conditional_logic || [],
             logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
-          console.log("File field config for preventDatabaseSave:", fieldData.config);
         } else if (type === "user") {
           fieldData.config = {
             role_filter: userConfig.role_filter || [],
@@ -1170,7 +1166,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             conditional_logic: conditionalLogicConfig?.conditional_logic || [],
             logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
-          console.log("User field config for preventDatabaseSave:", fieldData.config);
         } else {
           // For all other field types, include conditional logic
           const existingConfig = fieldData.config || {};
