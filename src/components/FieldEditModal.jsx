@@ -928,14 +928,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       console.log('Edit clicked for nested field:', field, 'at index:', index)
       if (e && e.preventDefault) e.preventDefault()
       if (e && e.stopPropagation) e.stopPropagation()
-      onEdit(index)
+      onEdit()
     }
 
     const handleDeleteClick = (e) => {
       console.log('Delete clicked for nested field:', field, 'at index:', index)
       if (e && e.preventDefault) e.preventDefault()
       if (e && e.stopPropagation) e.stopPropagation()
-      onDelete(index)
+      onDelete()
     }
 
     const handleCopyClick = (e) => {
