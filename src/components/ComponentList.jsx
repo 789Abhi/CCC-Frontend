@@ -814,6 +814,12 @@ const ComponentList = () => {
       console.log('CCC: Save assignments response:', response.data)
       if (response.data.success) {
         showMessage(response.data.message || "Assignments saved successfully.", "success")
+        
+        // Update the assignedPostTypes state to reflect the actual backend assignments
+        if (postType === "post") {
+          setAssignedPostTypes(selectedPostTypes);
+        }
+        
         if (postType === "page") {
           fetchPosts(postType)
         }
@@ -914,6 +920,7 @@ const ComponentList = () => {
       // Clear post type selections when switching to pages
       setSelectedPostTypes([])
       setSelectAllPostTypes(false)
+      setAssignedPostTypes([])
     }
   }, [postType])
 
@@ -2108,11 +2115,11 @@ const ComponentList = () => {
                                </span>
                              </div>
                              <div className="flex items-center space-x-2">
-                               {selectedPostTypes.includes(postTypeItem.value) && (
-                                 <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
-                                   Components Assigned
-                                 </span>
-                               )}
+                                                               {assignedPostTypes.includes(postTypeItem.value) && (
+                                  <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
+                                    Components Assigned
+                                  </span>
+                                )}
                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
                                  Post Type
                                </span>
