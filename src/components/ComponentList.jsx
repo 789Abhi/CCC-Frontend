@@ -239,6 +239,7 @@ const ComponentList = () => {
   const [showEditComponentNameModal, setShowEditComponentNameModal] = useState(false)
   const [componentToEditName, setComponentToEditName] = useState(null)
   const [postsLoading, setPostsLoading] = useState(false)
+  const [badgeUpdating, setBadgeUpdating] = useState(false)
   
   // Tree modal state
   const [showTreeModal, setShowTreeModal] = useState(false)
