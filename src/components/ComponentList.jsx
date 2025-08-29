@@ -407,35 +407,34 @@ const ComponentList = () => {
 
   // Add this function before fetchPostTypes
   const checkPostTypeAssignments = async (postTypes) => {
-    try {
-      const assignedPostTypes = []
-      
-      for (const postType of postTypes) {
-        // Check if any posts of this type have components assigned via main interface
-        const formData = new FormData()
-        formData.append("action", "ccc_get_posts_with_components")
-        formData.append("post_type", postType.value)
-        formData.append("nonce", window.cccData.nonce)
+    const postTypesWithAssignments = [];
+    
+    for (const postType of postTypes) {
+      try {
+        const formData = new FormData();
+        formData.append("action", "ccc_get_posts_with_components");
+        formData.append("post_type", postType.value);
+        formData.append("nonce", window.cccData.nonce);
         
-        const response = await axios.post(window.cccData.ajaxUrl, formData)
+        const response = await axios.post(window.cccData.ajaxUrl, formData);
         
-        if (response.data.success && response.data.data?.posts) {
-          const posts = response.data.data.posts
-          const hasAssignedPosts = posts.some(post => post.assigned_via_main_interface)
-          
-          if (hasAssignedPosts) {
-            assignedPostTypes.push(postType.value)
+        if (response.data.success && response.data.data && response.data.data.posts) {
+          const posts = response.data.data.posts;
+          // Check if any posts in this post type have components assigned via main interface
+          const hasAssignedComponents = posts.some(post => post.assigned_via_main_interface);
+          if (hasAssignedComponents) {
+            postTypesWithAssignments.push(postType.value);
           }
         }
+      } catch (error) {
+        console.error(`CCC: Error checking assignments for post type ${postType.value}:`, error);
       }
-      
-      console.log('CCC: Post types with assigned components:', assignedPostTypes)
-      return assignedPostTypes
-    } catch (error) {
-      console.error('CCC: Error checking post type assignments:', error)
-      return []
     }
-  }
+    
+    console.log('CCC: Post types with assigned components:', postTypesWithAssignments);
+    
+    return postTypesWithAssignments;
+  };
 
   const fetchPostTypes = async () => {
     try {
@@ -449,35 +448,15 @@ const ComponentList = () => {
       
       const response = await axios.post(window.cccData.ajaxUrl, formData)
       console.log('CCC: fetchPostTypes response:', response.data)
-      console.log('CCC: response.data.data type:', typeof response.data.data)
-      console.log('CCC: response.data.data isArray:', Array.isArray(response.data.data))
-      console.log('CCC: response.data.data keys:', response.data.data ? Object.keys(response.data.data) : 'null/undefined')
       
-      if (response.data.success && response.data.data) {
-        // Handle both array and object responses
-        let postTypesData = response.data.data
+      if (response.data.success && Array.isArray(response.data)) {
+        // Backend now returns array directly
+        const postTypesData = response.data
         
-        // If data is an object, convert its values to an array
-        if (typeof postTypesData === 'object' && !Array.isArray(postTypesData)) {
-          console.log('CCC: Converting object response to array:', postTypesData)
-          // Check if there's a nested 'data' key
-          if (postTypesData.data && Array.isArray(postTypesData.data)) {
-            postTypesData = postTypesData.data
-            console.log('CCC: Found nested data array:', postTypesData)
-          } else {
-            postTypesData = Object.values(postTypesData)
-          }
-        }
-        
-        // Ensure we have an array before filtering
-        if (!Array.isArray(postTypesData)) {
-          console.error('CCC: Invalid post types data format:', postTypesData)
-          setError("Invalid data format received from server")
-          return
-        }
-        
-        // Filter out 'page' post type since we handle pages separately
-        const filteredPostTypes = postTypesData.filter(pt => pt.value !== 'page')
+        // Filter out 'page' and 'attachment' post types
+        const filteredPostTypes = postTypesData.filter(pt => 
+          pt.value !== 'page' && pt.value !== 'attachment'
+        )
         console.log('CCC: Filtered post types:', filteredPostTypes)
         
         // Check if any post types are already assigned components
@@ -485,7 +464,7 @@ const ComponentList = () => {
         
         setPostTypes(filteredPostTypes)
         setSelectedPostTypes(initiallySelected)
-        setSelectAllPostTypes(false)
+        setSelectAllPostTypes(initiallySelected.length === filteredPostTypes.length && filteredPostTypes.length > 0)
         
         console.log('CCC: Fetched post types:', filteredPostTypes)
         console.log('CCC: Initially selected post types:', initiallySelected)
@@ -2133,13 +2112,20 @@ const ComponentList = () => {
                                    }}
                                    className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                                  />
-                                 <span className="font-semibold text-gray-800">
-                                   {postTypeItem.label || postTypeItem.value || 'Unknown Post Type'}
+                                                                <span className="font-semibold text-gray-800">
+                                 {postTypeItem.label || postTypeItem.value || 'Unknown Post Type'}
+                               </span>
+                             </div>
+                             <div className="flex items-center space-x-2">
+                               {selectedPostTypes.includes(postTypeItem.value) && (
+                                 <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
+                                   Components Assigned
                                  </span>
-                               </div>
+                               )}
                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
                                  Post Type
                                </span>
+                             </div>
                              </label>
                            )
                          })}
