@@ -864,8 +864,11 @@ const ComponentList = () => {
         ? [...prev, postTypeValue]
         : prev.filter((pt) => pt !== postTypeValue);
       
-      // Update selectAllPostTypes based on whether all post types are selected
-      setSelectAllPostTypes(newSelected.length > 0 && newSelected.length === postTypes.length);
+      // Don't automatically update selectAllPostTypes - let the user control it explicitly
+      // Only update it when the user explicitly unchecks the last post type
+      if (newSelected.length === 0) {
+        setSelectAllPostTypes(false);
+      }
       
       return newSelected;
     })
