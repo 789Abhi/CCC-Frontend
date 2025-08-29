@@ -241,6 +241,12 @@ const ComponentList = () => {
   const [postsLoading, setPostsLoading] = useState(false)
   const [badgeUpdating, setBadgeUpdating] = useState(false)
   
+  // New state for post types
+  const [postTypes, setPostTypes] = useState([])
+  const [selectedPostTypes, setSelectedPostTypes] = useState([])
+  const [selectAllPostTypes, setSelectAllPostTypes] = useState(false)
+  const [postTypesLoading, setPostTypesLoading] = useState(false)
+  
   // Tree modal state
   const [showTreeModal, setShowTreeModal] = useState(false)
   const [selectedComponentForTree, setSelectedComponentForTree] = useState(null)
@@ -396,6 +402,68 @@ const ComponentList = () => {
       return []
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchPostTypes = async () => {
+    try {
+      console.log('CCC: Fetching available post types')
+      setPostTypesLoading(true)
+      setError("")
+      
+      const formData = new FormData()
+      formData.append("action", "ccc_get_available_post_types")
+      formData.append("nonce", window.cccData.nonce)
+      
+      const response = await axios.post(window.cccData.ajaxUrl, formData)
+      console.log('CCC: fetchPostTypes response:', response.data)
+      
+      if (response.data.success && response.data.data) {
+        // Filter out 'page' post type since we handle pages separately
+        const filteredPostTypes = response.data.data.filter(pt => pt.value !== 'page')
+        setPostTypes(filteredPostTypes)
+        
+        // Check if any post types are already assigned components
+        const initiallySelected = filteredPostTypes
+          .filter((pt) => {
+            // For now, we'll check if any posts of this type have components
+            // This could be enhanced later to track post type level assignments
+            return false // Start with none selected
+          })
+          .map((pt) => pt.value)
+        
+        setSelectedPostTypes(initiallySelected)
+        setSelectAllPostTypes(false)
+        
+        console.log('CCC: Fetched post types:', filteredPostTypes)
+        console.log('CCC: Initially selected post types:', initiallySelected)
+      } else {
+        setPostTypes([])
+        setSelectedPostTypes([])
+        setSelectAllPostTypes(false)
+        const errorMessage = response.data.message || "Failed to fetch post types."
+        setError(errorMessage)
+        console.error("Failed to fetch post types - server returned failure:", response.data)
+      }
+    } catch (err) {
+      let errorMessage = "Failed to fetch post types. Please try again."
+      
+      if (err.response) {
+        if (err.response.data && err.response.data.message) {
+          errorMessage = err.response.data.message
+        } else if (err.response.status === 500) {
+          errorMessage = "Server error occurred. Please check if the plugin is properly configured."
+        } else if (err.response.status === 400) {
+          errorMessage = "Invalid request. Please refresh the page and try again."
+        }
+      } else if (err.request) {
+        errorMessage = "No response from server. Please check your connection."
+      }
+      
+      setError(errorMessage)
+      console.error("Failed to fetch post types", err)
+    } finally {
+      setPostTypesLoading(false)
     }
   }
 
@@ -690,28 +758,51 @@ const ComponentList = () => {
 
   const handleSaveAssignments = async () => {
     try {
-      const assignments = {}
-      posts.forEach((post) => {
-        const isSelected =
-          (postType === "page" && selectAllPages) ||
-          (postType === "post" && selectAllPosts) ||
-          selectedPosts.includes(post.id)
-        if (isSelected) {
-          assignments[post.id] = null; // Mark as assigned, but no components yet
+      let assignments = {}
+      
+      if (postType === "page") {
+        // Handle page assignments (existing logic)
+        posts.forEach((post) => {
+          const isSelected =
+            selectAllPages ||
+            selectedPosts.includes(post.id)
+          if (isSelected) {
+            assignments[post.id] = null; // Mark as assigned, but no components yet
+          } else {
+            assignments[post.id] = [];
+          }
+        })
+      } else if (postType === "post") {
+        // Handle post type assignments
+        if (selectAllPostTypes) {
+          // Assign to all post types
+          postTypes.forEach((pt) => {
+            assignments[`post_type:${pt.value}`] = null; // Mark post type as assigned
+          })
         } else {
-          assignments[post.id] = [];
+          // Assign to selected post types only
+          selectedPostTypes.forEach((ptValue) => {
+            assignments[`post_type:${ptValue}`] = null; // Mark post type as assigned
+          })
         }
-      })
-      console.log('CCC: Assignments payload:', assignments);
+      }
+      
+      console.log('CCC: Assignments payload:', assignments)
       const formData = new FormData()
       formData.append("action", "ccc_save_component_assignments")
       formData.append("nonce", window.cccData.nonce)
       formData.append("assignments", JSON.stringify(assignments))
+      formData.append("assignment_type", postType === "post" ? "post_types" : "individual_posts")
+      
       const response = await axios.post(window.cccData.ajaxUrl, formData)
-      console.log('CCC: Save assignments response:', response.data);
+      console.log('CCC: Save assignments response:', response.data)
       if (response.data.success) {
         showMessage(response.data.message || "Assignments saved successfully.", "success")
-        fetchPosts(postType)
+        if (postType === "page") {
+          fetchPosts(postType)
+        } else {
+          fetchPostTypes()
+        }
       } else {
         showMessage(response.data.message || "Failed to save assignments.", "error")
       }
@@ -750,6 +841,26 @@ const ComponentList = () => {
     }
   }
 
+  const handlePostTypeSelectionChange = (postTypeValue, isChecked) => {
+    console.log('CCC: handlePostTypeSelectionChange', { postTypeValue, isChecked, selectedPostTypes })
+    setSelectedPostTypes((prev) => {
+      if (isChecked) {
+        return [...prev, postTypeValue]
+      } else {
+        return prev.filter((pt) => pt !== postTypeValue)
+      }
+    })
+  }
+
+  const handleSelectAllPostTypesChange = (isChecked) => {
+    setSelectAllPostTypes(isChecked)
+    if (isChecked) {
+      setSelectedPostTypes(postTypes.map((pt) => pt.value))
+    } else {
+      setSelectedPostTypes([])
+    }
+  }
+
   useEffect(() => {
     fetchComponents()
     
@@ -773,6 +884,15 @@ const ComponentList = () => {
     fetchPosts(postType)
     setSelectAllPages(false)
     setSelectAllPosts(false)
+    
+    // If "post" is selected, fetch available post types
+    if (postType === "post") {
+      fetchPostTypes()
+    } else {
+      // Clear post type selections when switching to pages
+      setSelectedPostTypes([])
+      setSelectAllPostTypes(false)
+    }
   }, [postType])
 
   const openFieldEditModal = async (component, field = null) => {
@@ -1846,72 +1966,114 @@ const ComponentList = () => {
 
                          <div>
                <h4 className="text-lg font-semibold text-gray-800 mb-4">
-                 Select {postType === "page" ? "Pages" : "Posts"} to Assign All Components To
+                 Select {postType === "page" ? "Pages" : "Post Types"} to Assign All Components To
                </h4>
-               {postsLoading ? (
-                 <div className="bg-gray-50 rounded-xl p-8 text-center">
-                   <div className="animate-spin rounded-full h-8 w-8 border-4 border-purple-200 mx-auto mb-3"></div>
-                   <div className="animate-spin rounded-full h-8 w-8 border-t-4 border-purple-600 absolute top-0 left-0"></div>
-                   <p className="text-gray-600">Loading {postType === "page" ? "pages" : "posts"}...</p>
-                 </div>
+               {postType === "page" ? (
+                 // Show individual pages
+                 postsLoading ? (
+                   <div className="bg-gray-50 rounded-xl p-8 text-center">
+                     <div className="animate-spin rounded-full h-8 w-8 border-4 border-purple-200 mx-auto mb-3"></div>
+                     <div className="animate-spin rounded-full h-8 w-8 border-t-4 border-purple-600 absolute top-0 left-0"></div>
+                     <p className="text-gray-600">Loading pages...</p>
+                   </div>
+                 ) : (
+                   <div className="bg-gray-50 rounded-xl p-4 space-y-3 max-h-64 overflow-y-auto">
+                     <label className="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200">
+                       <input
+                         type="checkbox"
+                         checked={selectAllPages}
+                         onChange={(e) => handleSelectAllPagesChange(e.target.checked)}
+                         className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                       />
+                       <span className="font-semibold text-gray-800">All Pages</span>
+                     </label>
+                     {posts.length === 0 ? (
+                       <div className="text-center py-8">
+                         <div className="text-gray-400 mb-3">
+                           <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                           </svg>
+                         </div>
+                         <p className="text-gray-500 mb-2">No pages found</p>
+                         <p className="text-gray-400 text-sm">Create some pages first to assign components to them.</p>
+                       </div>
+                     ) : (
+                       posts.map((post) => (
+                         <label
+                           key={post.id}
+                           className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200"
+                         >
+                           <div className="flex items-center">
+                             <input
+                               type="checkbox"
+                               checked={selectedPosts.includes(post.id)}
+                               onChange={(e) => handlePostSelectionChange(post.id, e.target.checked)}
+                               className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                             />
+                             <span className="text-gray-800">{post.title}</span>
+                           </div>
+                           {post.has_components && (
+                             <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
+                               Components Assigned
+                             </span>
+                           )}
+                         </label>
+                       ))
+                     )}
+                   </div>
+                 )
                ) : (
-               <div className="bg-gray-50 rounded-xl p-4 space-y-3 max-h-64 overflow-y-auto">
-                {postType === "page" && (
-                  <label className="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200">
-                    <input
-                      type="checkbox"
-                      checked={selectAllPages}
-                      onChange={(e) => handleSelectAllPagesChange(e.target.checked)}
-                      className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                    />
-                    <span className="font-semibold text-gray-800">All Pages</span>
-                  </label>
-                )}
-                {postType === "post" && (
-                  <label className="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200">
-                    <input
-                      type="checkbox"
-                      checked={selectAllPosts}
-                      onChange={(e) => handleSelectAllPostsChange(e.target.checked)}
-                      className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                    />
-                    <span className="font-semibold text-gray-800">All Posts</span>
-                  </label>
-                )}
-                {posts.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="text-gray-400 mb-3">
-                      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <p className="text-gray-500 mb-2">No {postType === "page" ? "pages" : "posts"} found</p>
-                    <p className="text-gray-400 text-sm">Create some {postType === "page" ? "pages" : "posts"} first to assign components to them.</p>
-                  </div>
-                ) : (
-                  posts.map((post) => (
-                    <label
-                      key={post.id}
-                      className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200"
-                    >
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedPosts.includes(post.id)}
-                          onChange={(e) => handlePostSelectionChange(post.id, e.target.checked)}
-                          className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                        />
-                        <span className="text-gray-800">{post.title}</span>
-                      </div>
-                      {post.has_components && (
-                        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Components Assigned
-                        </span>
-                      )}
-                    </label>
-                  ))
-                )}
-              </div>
+                 // Show post types
+                 postTypesLoading ? (
+                   <div className="bg-gray-50 rounded-xl p-8 text-center">
+                     <div className="animate-spin rounded-full h-8 w-8 border-4 border-purple-200 mx-auto mb-3"></div>
+                     <div className="animate-spin rounded-full h-8 w-8 border-t-4 border-purple-600 absolute top-0 left-0"></div>
+                     <p className="text-gray-600">Loading post types...</p>
+                   </div>
+                 ) : (
+                   <div className="bg-gray-50 rounded-xl p-4 space-y-3 max-h-64 overflow-y-auto">
+                     <label className="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200">
+                       <input
+                         type="checkbox"
+                         checked={selectAllPostTypes}
+                         onChange={(e) => handleSelectAllPostTypesChange(e.target.checked)}
+                         className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                       />
+                       <span className="font-semibold text-gray-800">All Post Types</span>
+                     </label>
+                     {postTypes.length === 0 ? (
+                       <div className="text-center py-8">
+                         <div className="text-gray-400 mb-3">
+                           <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                           </svg>
+                         </div>
+                         <p className="text-gray-500 mb-2">No post types found</p>
+                         <p className="text-gray-400 text-sm">No custom post types are available on this site.</p>
+                       </div>
+                     ) : (
+                       postTypes.map((postTypeItem) => (
+                         <label
+                           key={postTypeItem.value}
+                           className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200"
+                         >
+                           <div className="flex items-center">
+                             <input
+                               type="checkbox"
+                               checked={selectedPostTypes.includes(postTypeItem.value)}
+                               onChange={(e) => handlePostTypeSelectionChange(postTypeItem.value, e.target.checked)}
+                               className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                             />
+                             <span className="font-semibold text-gray-800">{postTypeItem.label}</span>
+                           </div>
+                           <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                             Post Type
+                           </span>
+                         </label>
+                       ))
+                     )}
+                   </div>
+                 )
                )}
             </div>
 
