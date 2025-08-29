@@ -405,6 +405,38 @@ const ComponentList = () => {
     }
   }
 
+  // Add this function before fetchPostTypes
+  const checkPostTypeAssignments = async (postTypes) => {
+    try {
+      const assignedPostTypes = []
+      
+      for (const postType of postTypes) {
+        // Check if any posts of this type have components assigned via main interface
+        const formData = new FormData()
+        formData.append("action", "ccc_get_posts_with_components")
+        formData.append("post_type", postType.value)
+        formData.append("nonce", window.cccData.nonce)
+        
+        const response = await axios.post(window.cccData.ajaxUrl, formData)
+        
+        if (response.data.success && response.data.data?.posts) {
+          const posts = response.data.data.posts
+          const hasAssignedPosts = posts.some(post => post.assigned_via_main_interface)
+          
+          if (hasAssignedPosts) {
+            assignedPostTypes.push(postType.value)
+          }
+        }
+      }
+      
+      console.log('CCC: Post types with assigned components:', assignedPostTypes)
+      return assignedPostTypes
+    } catch (error) {
+      console.error('CCC: Error checking post type assignments:', error)
+      return []
+    }
+  }
+
   const fetchPostTypes = async () => {
     try {
       console.log('CCC: Fetching available post types')
@@ -440,17 +472,12 @@ const ComponentList = () => {
         
         // Filter out 'page' post type since we handle pages separately
         const filteredPostTypes = postTypesData.filter(pt => pt.value !== 'page')
-        setPostTypes(filteredPostTypes)
+        console.log('CCC: Filtered post types:', filteredPostTypes)
         
         // Check if any post types are already assigned components
-        const initiallySelected = filteredPostTypes
-          .filter((pt) => {
-            // For now, we'll check if any posts of this type have components
-            // This could be enhanced later to track post type level assignments
-            return false // Start with none selected
-          })
-          .map((pt) => pt.value)
+        const initiallySelected = await checkPostTypeAssignments(filteredPostTypes)
         
+        setPostTypes(filteredPostTypes)
         setSelectedPostTypes(initiallySelected)
         setSelectAllPostTypes(false)
         
@@ -2055,7 +2082,10 @@ const ComponentList = () => {
                        <input
                          type="checkbox"
                          checked={selectAllPostTypes}
-                         onChange={(e) => handleSelectAllPostTypesChange(e.target.checked)}
+                         onChange={(e) => {
+                           console.log('CCC: All Post Types checkbox changed:', e.target.checked)
+                           handleSelectAllPostTypesChange(e.target.checked)
+                         }}
                          className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                        />
                        <span className="font-semibold text-gray-800">All Post Types</span>
@@ -2071,25 +2101,40 @@ const ComponentList = () => {
                          <p className="text-gray-400 text-sm">No custom post types are available on this site.</p>
                        </div>
                      ) : (
-                       postTypes.map((postTypeItem) => (
-                         <label
-                           key={postTypeItem.value}
-                           className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200"
-                         >
-                           <div className="flex items-center">
-                             <input
-                               type="checkbox"
-                               checked={selectedPostTypes.includes(postTypeItem.value)}
-                               onChange={(e) => handlePostTypeSelectionChange(postTypeItem.value, e.target.checked)}
-                               className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                             />
-                             <span className="font-semibold text-gray-800">{postTypeItem.label}</span>
-                           </div>
-                           <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                             Post Type
-                           </span>
-                         </label>
-                       ))
+                       <>
+                         {console.log('CCC: Rendering post types:', postTypes)}
+                         {console.log('CCC: Current selectedPostTypes:', selectedPostTypes)}
+                         {console.log('CCC: Current selectAllPostTypes:', selectAllPostTypes)}
+                         {postTypes.map((postTypeItem) => {
+                           console.log('CCC: Rendering post type item:', postTypeItem)
+                           const isSelected = selectedPostTypes.includes(postTypeItem.value)
+                           console.log(`CCC: Post type ${postTypeItem.value} is selected:`, isSelected)
+                           return (
+                             <label
+                               key={postTypeItem.value}
+                               className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200"
+                             >
+                               <div className="flex items-center">
+                                 <input
+                                   type="checkbox"
+                                   checked={isSelected}
+                                   onChange={(e) => {
+                                     console.log('CCC: Checkbox changed for:', postTypeItem.value, 'checked:', e.target.checked)
+                                     handlePostTypeSelectionChange(postTypeItem.value, e.target.checked)
+                                   }}
+                                   className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                                 />
+                                 <span className="font-semibold text-gray-800">
+                                   {postTypeItem.label || postTypeItem.value || 'Unknown Post Type'}
+                                 </span>
+                               </div>
+                               <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                 Post Type
+                               </span>
+                             </label>
+                           )
+                         })}
+                       </>
                      )}
                    </div>
                  )
