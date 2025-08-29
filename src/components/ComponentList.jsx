@@ -791,17 +791,16 @@ const ComponentList = () => {
         })
       } else if (postType === "post") {
         // Handle post type assignments
-        if (selectAllPostTypes) {
-          // Assign to all post types
-          postTypes.forEach((pt) => {
-            assignments[`post_type:${pt.value}`] = null; // Mark post type as assigned
-          })
-        } else {
-          // Assign to selected post types only
-          selectedPostTypes.forEach((ptValue) => {
-            assignments[`post_type:${ptValue}`] = null; // Mark post type as assigned
-          })
-        }
+        // Send ALL post types so backend can handle both assignments and unassignments
+        postTypes.forEach((pt) => {
+          if (selectedPostTypes.includes(pt.value)) {
+            // Post type is selected - assign it
+            assignments[`post_type:${pt.value}`] = null;
+          } else {
+            // Post type is not selected - unassign it
+            assignments[`post_type:${pt.value}`] = [];
+          }
+        });
       }
       
       console.log('CCC: Assignments payload:', assignments)
@@ -817,9 +816,9 @@ const ComponentList = () => {
         showMessage(response.data.message || "Assignments saved successfully.", "success")
         if (postType === "page") {
           fetchPosts(postType)
-        } else {
-          fetchPostTypes()
         }
+        // Don't call fetchPostTypes() here as it resets the UI state
+        // The user's selections should be preserved
       } else {
         showMessage(response.data.message || "Failed to save assignments.", "error")
       }
@@ -861,11 +860,14 @@ const ComponentList = () => {
   const handlePostTypeSelectionChange = (postTypeValue, isChecked) => {
     console.log('CCC: handlePostTypeSelectionChange', { postTypeValue, isChecked, selectedPostTypes })
     setSelectedPostTypes((prev) => {
-      if (isChecked) {
-        return [...prev, postTypeValue]
-      } else {
-        return prev.filter((pt) => pt !== postTypeValue)
-      }
+      const newSelected = isChecked 
+        ? [...prev, postTypeValue]
+        : prev.filter((pt) => pt !== postTypeValue);
+      
+      // Update selectAllPostTypes based on whether all post types are selected
+      setSelectAllPostTypes(newSelected.length > 0 && newSelected.length === postTypes.length);
+      
+      return newSelected;
     })
   }
 
