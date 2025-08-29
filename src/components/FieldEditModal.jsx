@@ -906,8 +906,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   }
 
   // Sortable Nested Field Component with external field design
-  const SortableNestedField = ({ field, index, onEdit, onDelete, isSubmitting, onCopy }) => {
-    console.log('SortableNestedField rendered with:', { field, index, onEdit, onDelete, isSubmitting, onCopy })
+  const SortableNestedField = ({ field, index, onEdit, onDelete, isSubmitting, onCopy, copiedText }) => {
+    console.log('SortableNestedField rendered with:', { field, index, onEdit, onDelete, isSubmitting, onCopy, copiedText })
     
     const {
       attributes,
@@ -1842,6 +1842,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                               onDelete={() => handleDeleteNestedField(index)}
                               isSubmitting={isSubmitting}
                               onCopy={handleCopy}
+                              copiedText={copiedText}
                             />
                           ))}
                   </div>
