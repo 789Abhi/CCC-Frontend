@@ -1022,24 +1022,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     {field.name}
                   </code>
                   
-                  {/* Fallback copy button */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      console.log('=== FALLBACK COPY BUTTON CLICKED ===')
-                      console.log('Field name:', field.name)
-                      e.preventDefault()
-                      e.stopPropagation()
-                      if (onCopy) {
-                        onCopy(field.name)
-                        console.log('Fallback copy function called')
-                      }
-                    }}
-                    className="ml-2 p-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-xs"
-                    title="Copy field handle"
-                  >
-                    Copy
-                  </button>
                   
                   {copiedText === field.name && (
                     <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 shadow-lg">
