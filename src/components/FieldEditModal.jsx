@@ -1851,26 +1851,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                               field={nestedField}
                               index={index}
                               onEdit={() => {
-                                console.log('=== PARENT onEdit FUNCTION CALLED ===')
-                                console.log('Index:', index)
-                                console.log('NestedField:', nestedField)
-                                console.log('Current showFieldPopup state:', showFieldPopup)
-                                console.log('Setting editingNestedFieldIndex to:', index)
                                 setEditingNestedFieldIndex(index)
-                                console.log('Setting currentNestedField to:', nestedField)
                                 setCurrentNestedField(nestedField)
-                                console.log('Setting showFieldPopup to true')
                                 setShowFieldPopup(true)
-                                console.log('All state updates completed')
-                                
-                                // Force a re-render by updating state
-                                setTimeout(() => {
-                                  console.log('After timeout - showFieldPopup state:', showFieldPopup)
-                                  if (!showFieldPopup) {
-                                    console.log('Forcing re-render by updating state again')
-                                    setShowFieldPopup(true)
-                                  }
-                                }, 100)
                               }}
                               onDelete={() => handleDeleteNestedField(index)}
                               isSubmitting={isSubmitting}
