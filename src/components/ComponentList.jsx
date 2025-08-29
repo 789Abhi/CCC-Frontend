@@ -438,65 +438,36 @@ const ComponentList = () => {
 
   const fetchPostTypes = async () => {
     try {
-      console.log('CCC: Fetching available post types')
-      setPostTypesLoading(true)
-      setError("")
-      
-      const formData = new FormData()
-      formData.append("action", "ccc_get_available_post_types")
-      formData.append("nonce", window.cccData.nonce)
-      
-      const response = await axios.post(window.cccData.ajaxUrl, formData)
-      console.log('CCC: fetchPostTypes response:', response.data)
-      
-      if (response.data.success && Array.isArray(response.data)) {
-        // Backend now returns array directly
-        const postTypesData = response.data
+      console.log('CCC: Fetching available post types');
+      const response = await axios.post(window.cccData.ajaxUrl, {
+        action: 'ccc_get_available_post_types',
+        nonce: window.cccData.nonce
+      });
+
+      console.log('CCC: fetchPostTypes response:', response.data);
+
+      // Check if response is successful and contains data
+      if (response.data.success && response.data.data && Array.isArray(response.data.data)) {
+        // Filter out 'page' and 'attachment' (Media) post types
+        const filteredPostTypes = response.data.data.filter(postType => 
+          postType.value !== 'page' && postType.value !== 'attachment'
+        );
         
-        // Filter out 'page' and 'attachment' post types
-        const filteredPostTypes = postTypesData.filter(pt => 
-          pt.value !== 'page' && pt.value !== 'attachment'
-        )
-        console.log('CCC: Filtered post types:', filteredPostTypes)
+        console.log('CCC: Filtered post types:', filteredPostTypes);
         
-        // Check if any post types are already assigned components
-        const initiallySelected = await checkPostTypeAssignments(filteredPostTypes)
+        // Check which post types have components assigned
+        const assignedPostTypes = await checkPostTypeAssignments(filteredPostTypes);
         
-        setPostTypes(filteredPostTypes)
-        setSelectedPostTypes(initiallySelected)
-        setSelectAllPostTypes(initiallySelected.length === filteredPostTypes.length && filteredPostTypes.length > 0)
-        
-        console.log('CCC: Fetched post types:', filteredPostTypes)
-        console.log('CCC: Initially selected post types:', initiallySelected)
+        setPostTypes(filteredPostTypes);
+        setSelectedPostTypes(assignedPostTypes);
+        setSelectAllPostTypes(assignedPostTypes.length > 0 && assignedPostTypes.length === filteredPostTypes.length);
       } else {
-        setPostTypes([])
-        setSelectedPostTypes([])
-        setSelectAllPostTypes(false)
-        const errorMessage = response.data.message || "Failed to fetch post types."
-        setError(errorMessage)
-        console.error("Failed to fetch post types - server returned failure:", response.data)
+        console.error('CCC: Invalid response format from getAvailablePostTypes');
       }
-    } catch (err) {
-      let errorMessage = "Failed to fetch post types. Please try again."
-      
-      if (err.response) {
-        if (err.response.data && err.response.data.message) {
-          errorMessage = err.response.data.message
-        } else if (err.response.status === 500) {
-          errorMessage = "Server error occurred. Please check if the plugin is properly configured."
-        } else if (err.response.status === 400) {
-          errorMessage = "Invalid request. Please refresh the page and try again."
-        }
-      } else if (err.request) {
-        errorMessage = "No response from server. Please check your connection."
-      }
-      
-      setError(errorMessage)
-      console.error("Failed to fetch post types", err)
-    } finally {
-      setPostTypesLoading(false)
+    } catch (error) {
+      console.error('CCC: Failed to fetch post types:', error);
     }
-  }
+  };
 
   const fetchPosts = async (type) => {
     try {
