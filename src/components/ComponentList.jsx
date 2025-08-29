@@ -246,6 +246,7 @@ const ComponentList = () => {
   const [selectedPostTypes, setSelectedPostTypes] = useState([])
   const [selectAllPostTypes, setSelectAllPostTypes] = useState(false)
   const [postTypesLoading, setPostTypesLoading] = useState(false)
+  const [assignedPostTypes, setAssignedPostTypes] = useState([])
   
   // Tree modal state
   const [showTreeModal, setShowTreeModal] = useState(false)
