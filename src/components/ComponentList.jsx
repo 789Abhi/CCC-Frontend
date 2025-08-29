@@ -439,10 +439,20 @@ const ComponentList = () => {
   const fetchPostTypes = async () => {
     try {
       console.log('CCC: Fetching available post types');
-      const response = await axios.post(window.cccData.ajaxUrl, {
-        action: 'ccc_get_available_post_types',
-        nonce: window.cccData.nonce
-      });
+      console.log('CCC: AJAX URL:', window.cccData.ajaxUrl);
+      console.log('CCC: Nonce:', window.cccData.nonce);
+      
+      const formData = new FormData();
+      formData.append("action", "ccc_get_available_post_types");
+      formData.append("nonce", window.cccData.nonce);
+      
+      // Log the FormData contents
+      console.log('CCC: FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log('  ', key, ':', value);
+      }
+      
+      const response = await axios.post(window.cccData.ajaxUrl, formData);
 
       console.log('CCC: fetchPostTypes response:', response.data);
 
@@ -463,9 +473,14 @@ const ComponentList = () => {
         setSelectAllPostTypes(assignedPostTypes.length > 0 && assignedPostTypes.length === filteredPostTypes.length);
       } else {
         console.error('CCC: Invalid response format from getAvailablePostTypes');
+        console.error('CCC: Response data:', response.data);
       }
     } catch (error) {
       console.error('CCC: Failed to fetch post types:', error);
+      if (error.response) {
+        console.error('CCC: Error response status:', error.response.status);
+        console.error('CCC: Error response data:', error.response.data);
+      }
     }
   };
 
