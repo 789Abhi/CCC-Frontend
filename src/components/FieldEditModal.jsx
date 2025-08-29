@@ -906,8 +906,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   }
 
   // Sortable Nested Field Component with external field design
-  const SortableNestedField = ({ field, index, onEdit, onDelete, isSubmitting }) => {
-    console.log('SortableNestedField rendered with:', { field, index, onEdit, onDelete, isSubmitting })
+  const SortableNestedField = ({ field, index, onEdit, onDelete, isSubmitting, onCopy }) => {
+    console.log('SortableNestedField rendered with:', { field, index, onEdit, onDelete, isSubmitting, onCopy })
     
     const {
       attributes,
@@ -972,7 +972,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       console.log('=== COPY BUTTON CLICKED ===')
       if (e && e.preventDefault) e.preventDefault()
       if (e && e.stopPropagation) e.stopPropagation()
-      handleCopy(field.name)
+      if (onCopy) {
+        onCopy(field.name)
+        console.log('Copy function called with:', field.name)
+      } else {
+        console.error('onCopy function not provided')
+      }
     }
 
     return (
@@ -1836,6 +1841,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                               }}
                               onDelete={() => handleDeleteNestedField(index)}
                               isSubmitting={isSubmitting}
+                              onCopy={handleCopy}
                             />
                           ))}
                   </div>
