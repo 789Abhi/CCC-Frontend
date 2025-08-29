@@ -970,6 +970,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
     const handleCopyClick = (e) => {
       console.log('=== COPY BUTTON CLICKED ===')
+      console.log('Field name to copy:', field.name)
       if (e && e.preventDefault) e.preventDefault()
       if (e && e.stopPropagation) e.stopPropagation()
       if (onCopy) {
