@@ -417,10 +417,29 @@ const ComponentList = () => {
       
       const response = await axios.post(window.cccData.ajaxUrl, formData)
       console.log('CCC: fetchPostTypes response:', response.data)
+      console.log('CCC: response.data.data type:', typeof response.data.data)
+      console.log('CCC: response.data.data isArray:', Array.isArray(response.data.data))
+      console.log('CCC: response.data.data keys:', response.data.data ? Object.keys(response.data.data) : 'null/undefined')
       
       if (response.data.success && response.data.data) {
+        // Handle both array and object responses
+        let postTypesData = response.data.data
+        
+        // If data is an object, convert its values to an array
+        if (typeof postTypesData === 'object' && !Array.isArray(postTypesData)) {
+          console.log('CCC: Converting object response to array:', postTypesData)
+          postTypesData = Object.values(postTypesData)
+        }
+        
+        // Ensure we have an array before filtering
+        if (!Array.isArray(postTypesData)) {
+          console.error('CCC: Invalid post types data format:', postTypesData)
+          setError("Invalid data format received from server")
+          return
+        }
+        
         // Filter out 'page' post type since we handle pages separately
-        const filteredPostTypes = response.data.data.filter(pt => pt.value !== 'page')
+        const filteredPostTypes = postTypesData.filter(pt => pt.value !== 'page')
         setPostTypes(filteredPostTypes)
         
         // Check if any post types are already assigned components
