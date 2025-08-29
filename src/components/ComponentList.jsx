@@ -460,7 +460,13 @@ const ComponentList = () => {
         // If data is an object, convert its values to an array
         if (typeof postTypesData === 'object' && !Array.isArray(postTypesData)) {
           console.log('CCC: Converting object response to array:', postTypesData)
-          postTypesData = Object.values(postTypesData)
+          // Check if there's a nested 'data' key
+          if (postTypesData.data && Array.isArray(postTypesData.data)) {
+            postTypesData = postTypesData.data
+            console.log('CCC: Found nested data array:', postTypesData)
+          } else {
+            postTypesData = Object.values(postTypesData)
+          }
         }
         
         // Ensure we have an array before filtering
@@ -2107,6 +2113,9 @@ const ComponentList = () => {
                          {console.log('CCC: Current selectAllPostTypes:', selectAllPostTypes)}
                          {postTypes.map((postTypeItem) => {
                            console.log('CCC: Rendering post type item:', postTypeItem)
+                           console.log('CCC: Post type item keys:', Object.keys(postTypeItem))
+                           console.log('CCC: Post type item value:', postTypeItem.value)
+                           console.log('CCC: Post type item label:', postTypeItem.label)
                            const isSelected = selectedPostTypes.includes(postTypeItem.value)
                            console.log(`CCC: Post type ${postTypeItem.value} is selected:`, isSelected)
                            return (
