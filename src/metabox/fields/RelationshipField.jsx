@@ -44,12 +44,12 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting, fieldId 
       }
 
       console.log('RelationshipField: Making AJAX call to fetch post types');
-      const response = await fetch(cccData.ajaxUrl, {
+      const response = await fetch(window.getAjaxUrl ? window.getAjaxUrl() : (window.cccData?.ajaxUrl || '/wp-admin/admin-ajax.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           action: 'ccc_get_available_post_types',
-          nonce: cccData.nonce
+          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || '')
         })
       });
       
@@ -89,12 +89,12 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting, fieldId 
         return;
       }
 
-      const response = await fetch(cccData.ajaxUrl, {
+      const response = await fetch(window.getAjaxUrl ? window.getAjaxUrl() : (window.cccData?.ajaxUrl || '/wp-admin/admin-ajax.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           action: 'ccc_get_available_taxonomies',
-          nonce: cccData.nonce
+          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || '')
         })
       });
       
@@ -124,12 +124,12 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting, fieldId 
         return;
       }
 
-      const response = await fetch(cccData.ajaxUrl, {
+      const response = await fetch(window.getAjaxUrl ? window.getAjaxUrl() : (window.cccData?.ajaxUrl || '/wp-admin/admin-ajax.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           action: 'ccc_get_taxonomies_for_post_type',
-          nonce: cccData.nonce,
+          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''),
           post_type: postType
         })
       });
@@ -163,7 +163,7 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting, fieldId 
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           action: 'ccc_get_posts_by_ids',
-          nonce: cccData.nonce,
+          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''),
           post_ids: postIds.join(',')
         })
       });
@@ -205,7 +205,7 @@ const RelationshipField = memo(({ field, value, onChange, isSubmitting, fieldId 
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           action: 'ccc_search_posts',
-          nonce: cccData.nonce,
+          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''),
           search: searchTerm || '',
           post_type: postTypeFilter || '',
           taxonomy: taxonomyFilter || '',

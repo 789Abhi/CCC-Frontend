@@ -125,7 +125,7 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           action: 'ccc_get_component_fields',
-          nonce: cccData.nonce,
+          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''),
           component_id: component.id,
           post_id: postId,
           instance_id: component.instance_id

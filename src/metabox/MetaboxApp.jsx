@@ -79,8 +79,14 @@ function MetaboxApp() {
       clearValidationErrorsForField
     };
     
+    // Expose helper functions globally for metabox components
+    window.getNonce = getNonce;
+    window.getAjaxUrl = getAjaxUrl;
+    
     return () => {
       delete window.cccMetaboxApp;
+      delete window.getNonce;
+      delete window.getAjaxUrl;
     };
   }, [clearValidationErrorsForField]);
 
@@ -94,6 +100,29 @@ function MetaboxApp() {
       return parseInt(metaboxRoot.dataset.postId);
     }
     return 0;
+  };
+
+  // Get nonce from WordPress
+  const getNonce = () => {
+    if (typeof cccData !== 'undefined' && cccData.nonce) {
+      console.log('CCC Metabox: Using nonce from cccData:', cccData.nonce);
+      return cccData.nonce;
+    }
+    const metaboxRoot = document.getElementById('ccc-metabox-root');
+    if (metaboxRoot && metaboxRoot.dataset.nonce) {
+      console.log('CCC Metabox: Using nonce from data attribute:', metaboxRoot.dataset.nonce);
+      return metaboxRoot.dataset.nonce;
+    }
+    console.error('CCC Metabox: No nonce found!');
+    return '';
+  };
+
+  // Get AJAX URL from WordPress
+  const getAjaxUrl = () => {
+    if (typeof cccData !== 'undefined' && cccData.ajaxUrl) {
+      return cccData.ajaxUrl;
+    }
+    return '/wp-admin/admin-ajax.php';
   };
 
   // Load expanded state from localStorage on mount
@@ -118,14 +147,14 @@ function MetaboxApp() {
   // Load all available components from the plugin (not assigned, but all created)
   const loadAvailableComponents = async () => {
     try {
-      const response = await fetch(cccData.ajaxUrl, {
+      const response = await fetch(getAjaxUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
           action: 'ccc_get_components',
-          nonce: cccData.nonce
+          nonce: getNonce()
         })
       });
       const data = await response.json();
@@ -150,14 +179,14 @@ function MetaboxApp() {
         setIsLoading(false);
         return;
       }
-      const response = await fetch(cccData.ajaxUrl, {
+      const response = await fetch(getAjaxUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
           action: 'ccc_get_posts_with_components',
-          nonce: cccData.nonce,
+          nonce: getNonce(),
           post_id: postId
         })
       });
@@ -208,14 +237,14 @@ function MetaboxApp() {
       const componentsData = componentsToSave
         .filter(c => !c.isPendingDelete)
         .map(({ isPendingDelete, ...rest }) => rest);
-      const response = await fetch(cccData.ajaxUrl, {
+      const response = await fetch(getAjaxUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
           action: 'ccc_save_metabox_components',
-          nonce: cccData.nonce,
+          nonce: getNonce(),
           post_id: postId,
           components: JSON.stringify(componentsData)
         })
@@ -246,7 +275,7 @@ function MetaboxApp() {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           action: 'ccc_save_field_values',
-          nonce: cccData.nonce,
+          nonce: getNonce(),
           post_id: postId,
           field_values: JSON.stringify(fieldValuesData)
         })

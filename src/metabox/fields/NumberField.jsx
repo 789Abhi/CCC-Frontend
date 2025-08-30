@@ -92,7 +92,7 @@ const NumberField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired,
                     field_id: fieldConfig?.field_id || 0,
                     post_id: fieldConfig?.post_id || 0,
                     instance_id: fieldConfig?.instance_id || '',
-                    nonce: cccData.nonce
+                    nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || '')
                 })
             });
 

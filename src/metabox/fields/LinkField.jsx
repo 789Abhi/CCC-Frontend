@@ -92,12 +92,12 @@ const LinkField = ({ field, value, onChange, isSubmitting, fieldId }) => {
         return;
       }
 
-      const response = await fetch(cccData.ajaxUrl, {
+      const response = await fetch(window.getAjaxUrl ? window.getAjaxUrl() : (window.cccData?.ajaxUrl || '/wp-admin/admin-ajax.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           action: 'ccc_get_posts_by_ids',
-          nonce: cccData.nonce,
+          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''),
           post_ids: postId
         })
       });
@@ -130,12 +130,12 @@ const LinkField = ({ field, value, onChange, isSubmitting, fieldId }) => {
         return;
       }
 
-      const response = await fetch(cccData.ajaxUrl, {
+      const response = await fetch(window.getAjaxUrl ? window.getAjaxUrl() : (window.cccData?.ajaxUrl || '/wp-admin/admin-ajax.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           action: 'ccc_search_posts',
-          nonce: cccData.nonce,
+          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''),
           search: searchTerm || '',
           post_type: postTypeFilter || '',
           filter_post_types: post_types.join(','),

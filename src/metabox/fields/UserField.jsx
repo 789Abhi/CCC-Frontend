@@ -84,13 +84,13 @@ const UserField = ({
     try {
       const formData = new FormData();
       formData.append('action', 'ccc_get_users');
-      formData.append('nonce', window.cccData.nonce);
+              formData.append('nonce', window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''));
       formData.append('role_filter', JSON.stringify(roleFilter));
 
       console.log('UserField: Making AJAX request to:', window.cccData.ajaxUrl);
       console.log('UserField: Request data:', {
         action: 'ccc_get_users',
-        nonce: window.cccData.nonce,
+        nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''),
         role_filter: JSON.stringify(roleFilter)
       });
 
