@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"
 import PostTypes from "./PostTypes"
-import ImportExport from "./ImportExport"
 import ComponentList from "./ComponentList"
 import Taxonomies from "./Taxonomies"
 import logo from "/CCC-Logo.svg"
@@ -23,7 +22,6 @@ function Header() {
       'custom-craft-component': 'components',
       'custom-craft-posttypes': 'post-types',
       'custom-craft-taxonomies': 'taxonomies',
-      'custom-craft-importexport': 'import-export',
       'custom-craft-settings': 'components' // Settings redirects to components for now
     };
     return pageToTabMap[page] || 'components';
@@ -63,12 +61,6 @@ function Header() {
       description: "Manage taxonomy assignments",
       comingSoon: true,
     },
-    {
-      id: "import-export",
-      label: "Import/Export",
-      description: "Backup and migrate components",
-      comingSoon: true,
-    },
   ]
 
   const renderActiveComponent = () => {
@@ -79,8 +71,6 @@ function Header() {
         return <PostTypes />
       case "taxonomies":
         return <Taxonomies />
-      case "import-export":
-        return <ImportExport />
       default:
         return <ComponentList />
     }
