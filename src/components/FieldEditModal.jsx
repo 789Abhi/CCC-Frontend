@@ -196,7 +196,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "image",
     "video",
     "oembed",
-    "relationship",
         "link",
         "email",
         "number",
