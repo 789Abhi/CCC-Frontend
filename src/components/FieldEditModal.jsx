@@ -816,11 +816,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     }
   };
 
-  const handleCopy = (text) => {
+  const handleCopy = (text, fieldId = null, fieldName = null) => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text)
         .then(() => {
-          setCopiedText(text)
+          setCopiedText({ text, fieldId, fieldName })
           setTimeout(() => setCopiedText(null), 2000)
         })
         .catch(() => {
@@ -831,7 +831,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           textArea.select()
           try {
             document.execCommand("copy")
-            setCopiedText(text)
+            setCopiedText({ text, fieldId, fieldName })
             setTimeout(() => setCopiedText(null), 2000)
           } catch (err) {
             console.error("Failed to copy text:", err)
@@ -847,7 +847,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       textArea.select()
       try {
         document.execCommand("copy")
-        setCopiedText(text)
+        setCopiedText({ text, fieldId, fieldName })
         setTimeout(() => setCopiedText(null), 2000)
       } catch (err) {
         console.error("Failed to copy text:", err)
@@ -1022,7 +1022,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   </code>
                   
                   
-                  {copiedText === field.name && (
+                  {copiedText && copiedText.text === field.name && copiedText.fieldName === field.name && (
                     <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 shadow-lg">
                       Copied!
                     </span>
@@ -1838,7 +1838,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                               }}
                               onDelete={() => handleDeleteNestedField(index)}
                               isSubmitting={isSubmitting}
-                              onCopy={handleCopy}
+                              onCopy={(text) => handleCopy(text, nestedField.name, nestedField.name)}
                               copiedText={copiedText}
                             />
                           ))}

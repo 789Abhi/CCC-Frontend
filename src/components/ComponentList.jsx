@@ -104,7 +104,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
                   >
                     {field.name}
                   </code>
-                  {copiedText === field.name && (
+                  {copiedText && copiedText.text === field.name && copiedText.fieldId === field.id && copiedText.componentId === component.id && (
                     <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 shadow-lg">
                       Copied!
                     </span>
@@ -327,8 +327,8 @@ const ComponentList = () => {
     }
   }
 
-  const handleCopy = (text) => {
-    console.log("Attempting to copy text:", text)
+  const handleCopy = (text, fieldId, componentId) => {
+    console.log("Attempting to copy text:", text, "for field:", fieldId, "in component:", componentId)
 
     const copyFallback = (textToCopy) => {
       const textArea = document.createElement("textarea")
@@ -353,14 +353,14 @@ const ComponentList = () => {
         .writeText(text)
         .then(() => {
           console.log("Text copied to clipboard:", text)
-          setCopiedText(text)
+          setCopiedText({ text, fieldId, componentId })
           setTimeout(() => setCopiedText(null), 2000)
         })
         .catch((err) => {
           console.error("Failed to copy text with clipboard API:", err)
           const success = copyFallback(text)
           if (success) {
-            setCopiedText(text)
+            setCopiedText({ text, fieldId, componentId })
             setTimeout(() => setCopiedText(null), 2000)
           } else {
             toast.error("Failed to copy text.")
@@ -370,7 +370,7 @@ const ComponentList = () => {
       console.warn("Clipboard API not supported, using fallback")
       const success = copyFallback(text)
       if (success) {
-        setCopiedText(text)
+        setCopiedText({ text, fieldId, componentId })
         setTimeout(() => setCopiedText(null), 2000)
       } else {
         toast.error("Failed to copy text.")
@@ -1806,11 +1806,11 @@ const ComponentList = () => {
                         <div className="relative">
                           <code
                             className="bg-[#F672BB] border border-[#F2080C] text-white px-3 py-1 rounded-lg text-sm font-mono cursor-pointer hover:bg-[#F672BB]/80 transition-colors"
-                            onClick={() => handleCopy(comp.handle_name)}
+                            onClick={() => handleCopy(comp.handle_name, null, comp.id)}
                           >
                             {comp.handle_name}
                           </code>
-                          {copiedText === comp.handle_name && (
+                          {copiedText && copiedText.text === comp.handle_name && copiedText.componentId === comp.id && (
                             <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 shadow-lg">
                               Copied!
                             </span>
@@ -1942,7 +1942,7 @@ const ComponentList = () => {
                                 component={comp}
                                 onEdit={openFieldEditModal}
                                 onDelete={handleDeleteField}
-                                onCopy={handleCopy}
+                                onCopy={(text) => handleCopy(text, field.id, comp.id)}
                                 copiedText={copiedText}
                               />
                             ))}
