@@ -20,10 +20,111 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
   const [useAutoGeneration, setUseAutoGeneration] = useState(false);
   const [showApiKeySettings, setShowApiKeySettings] = useState(false);
   const [isSavingApiKey, setIsSavingApiKey] = useState(false);
-  const [showDebugPrompt, setShowDebugPrompt] = useState(false);
+  const [showManualSection, setShowManualSection] = useState(false);
+  const [isUsingCachedStructure, setIsUsingCachedStructure] = useState(false);
+  const [showCacheManager, setShowCacheManager] = useState(false);
 
   // API Configuration
   const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+  
+  // Persistent cache for component patterns to reduce API costs
+  const getComponentCache = () => {
+    try {
+      const cached = localStorage.getItem('ccc_component_cache');
+      return cached ? JSON.parse(cached) : {
+        // Default patterns
+        patterns: {
+          testimonial: {
+            name: "Testimonial",
+            handle: "testimonial", 
+            description: "Customer testimonial with photo and rating",
+            fields: [
+              { label: "Customer Name", name: "customer_name", type: "text", required: true },
+              { label: "Testimonial Content", name: "testimonial_content", type: "textarea", required: true },
+              { label: "Customer Photo", name: "customer_photo", type: "image", required: false },
+              { label: "Company Name", name: "company_name", type: "text", required: false },
+              { label: "Rating", name: "rating", type: "select", required: false, options: ["1", "2", "3", "4", "5"] }
+            ]
+          },
+          hero: {
+            name: "Hero Section",
+            handle: "hero_section",
+            description: "Hero section with title, subtitle, and call-to-action",
+            fields: [
+              { label: "Title", name: "title", type: "text", required: true },
+              { label: "Subtitle", name: "subtitle", type: "text", required: false },
+              { label: "Background Image", name: "background_image", type: "image", required: false },
+              { label: "Button Text", name: "button_text", type: "text", required: false },
+              { label: "Button Link", name: "button_link", type: "link", required: false }
+            ]
+          },
+          contact: {
+            name: "Contact Form",
+            handle: "contact_form",
+            description: "Contact form with name, email, and message fields",
+            fields: [
+              { label: "Name", name: "name", type: "text", required: true },
+              { label: "Email", name: "email", type: "email", required: true },
+              { label: "Phone", name: "phone", type: "number", required: false },
+              { label: "Message", name: "message", type: "textarea", required: true },
+              { label: "Subject", name: "subject", type: "text", required: false }
+            ]
+          },
+          gallery: {
+            name: "Image Gallery",
+            handle: "image_gallery",
+            description: "Image gallery with multiple images and layout options",
+            fields: [
+              { label: "Gallery Title", name: "gallery_title", type: "text", required: false },
+              { label: "Images", name: "images", type: "image", required: true },
+              { label: "Description", name: "description", type: "textarea", required: false },
+              { label: "Layout", name: "layout", type: "select", required: false, options: ["grid", "masonry", "slider"] }
+            ]
+          },
+          pricing: {
+            name: "Pricing Table",
+            handle: "pricing_table",
+            description: "Pricing table with plans, features, and call-to-action",
+            fields: [
+              { label: "Plan Name", name: "plan_name", type: "text", required: true },
+              { label: "Price", name: "price", type: "text", required: true },
+              { label: "Features", name: "features", type: "textarea", required: true },
+              { label: "Button Text", name: "button_text", type: "text", required: false },
+              { label: "Button Link", name: "button_link", type: "link", required: false },
+              { label: "Popular", name: "popular", type: "checkbox", required: false }
+            ]
+          }
+        },
+        // User-created patterns (saved from successful AI generations)
+        userPatterns: {}
+      };
+    } catch (error) {
+      console.error("Error loading component cache:", error);
+      return { patterns: {}, userPatterns: {} };
+    }
+  };
+
+  const saveComponentCache = (cache) => {
+    try {
+      localStorage.setItem('ccc_component_cache', JSON.stringify(cache));
+    } catch (error) {
+      console.error("Error saving component cache:", error);
+    }
+  };
+
+  const addUserPattern = (prompt, componentData) => {
+    const cache = getComponentCache();
+    const promptHash = btoa(prompt.toLowerCase().trim()).substring(0, 20); // Simple hash
+    
+    cache.userPatterns[promptHash] = {
+      prompt: prompt.toLowerCase().trim(),
+      component: componentData.component,
+      fields: componentData.fields,
+      created: new Date().toISOString()
+    };
+    
+    saveComponentCache(cache);
+  };
 
   // Load API key from localStorage and WordPress options on component mount
   React.useEffect(() => {
@@ -130,6 +231,62 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
     }
   };
 
+  // Detect component patterns (both default and user-created)
+  const detectComponentPattern = (prompt) => {
+    const cache = getComponentCache();
+    const lowerPrompt = prompt.toLowerCase().trim();
+    
+    // First check user-created patterns (exact matches)
+    for (const [hash, userPattern] of Object.entries(cache.userPatterns)) {
+      if (userPattern.prompt === lowerPrompt) {
+        return { type: 'user', hash, pattern: userPattern };
+      }
+    }
+    
+    // Then check default patterns (keyword matches)
+    if (lowerPrompt.includes('testimonial') || lowerPrompt.includes('review') || lowerPrompt.includes('customer feedback')) {
+      return { type: 'default', pattern: 'testimonial' };
+    }
+    if (lowerPrompt.includes('hero') || lowerPrompt.includes('banner') || lowerPrompt.includes('header section')) {
+      return { type: 'default', pattern: 'hero' };
+    }
+    if (lowerPrompt.includes('contact') || lowerPrompt.includes('form') || lowerPrompt.includes('email')) {
+      return { type: 'default', pattern: 'contact' };
+    }
+    if (lowerPrompt.includes('gallery') || lowerPrompt.includes('images') || lowerPrompt.includes('photos')) {
+      return { type: 'default', pattern: 'gallery' };
+    }
+    if (lowerPrompt.includes('pricing') || lowerPrompt.includes('price') || lowerPrompt.includes('plans')) {
+      return { type: 'default', pattern: 'pricing' };
+    }
+    
+    return null;
+  };
+
+  // Generate cached component structure
+  const generateCachedComponent = (detection) => {
+    const cache = getComponentCache();
+    
+    if (detection.type === 'user') {
+      return {
+        component: detection.pattern.component,
+        fields: detection.pattern.fields
+      };
+    } else if (detection.type === 'default') {
+      const pattern = cache.patterns[detection.pattern];
+      return {
+        component: {
+          name: pattern.name,
+          handle: pattern.handle,
+          description: pattern.description
+        },
+        fields: pattern.fields
+      };
+    }
+    
+    return null;
+  };
+
   // Generate the auto-generation prompt (for debugging)
   const generateAutoGenerationPrompt = () => {
     if (!contextPrompt.trim()) {
@@ -203,77 +360,121 @@ Please return ONLY the JSON response, no additional text or explanations.`;
     }
 
     setIsAutoGenerating(true);
-    setAutoGenerationStep("Generating component with AI...");
+    setAutoGenerationStep("Analyzing component requirements...");
     setAutoGenerationProgress(10);
 
     try {
-      // Create the prompt for AI generation
-      const aiPrompt = generateAutoGenerationPrompt();
-
-      setAutoGenerationStep("Sending request to OpenAI...");
-      setAutoGenerationProgress(30);
-
-      // Call OpenAI API
-      const response = await axios.post(
-        OPENAI_API_URL,
-        {
-          model: "gpt-4o-mini", // Using GPT-4.1-mini
-          messages: [
-            {
-              role: "system",
-              content: "You are a WordPress component generator. Generate valid JSON responses only."
-            },
-            {
-              role: "user",
-              content: aiPrompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 2000
-        },
-        {
-          headers: {
-            "Authorization": `Bearer ${currentApiKey}`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
-
-      setAutoGenerationStep("Processing AI response...");
-      setAutoGenerationProgress(60);
-
-      // Extract the JSON from the response
-      const aiResponse = response.data.choices[0]?.message?.content;
+      // First, try to detect if this is a common component pattern
+      const detectedPattern = detectComponentPattern(contextPrompt);
       
-      if (!aiResponse) {
-        throw new Error("No response received from AI");
-      }
-
-      // Try to extract JSON from the response (AI might add extra text)
-      let jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error("Invalid JSON response from AI");
-      }
-
-      const aiGeneratedJson = jsonMatch[0];
-      
-      setAutoGenerationStep("Validating generated component...");
-      setAutoGenerationProgress(80);
-
-      // Validate and parse the AI-generated JSON
-      setChatGPTJson(aiGeneratedJson);
-      
-      // Validate the JSON
-      const isValid = validateAndParseChatGPTJson();
-      
-      if (isValid) {
-        setAutoGenerationStep("Component generated successfully!");
-        setAutoGenerationProgress(100);
+      if (detectedPattern) {
+        // Use cached structure for common patterns (cost optimization)
+        setIsUsingCachedStructure(true);
+        setAutoGenerationStep("Using optimized cached structure...");
+        setAutoGenerationProgress(30);
         
-        // Auto-create the component
-        await processChatGPTJson();
+        const cachedComponent = generateCachedComponent(detectedPattern);
+        const cachedJson = JSON.stringify(cachedComponent, null, 2);
+        
+        setAutoGenerationStep("Validating cached component...");
+        setAutoGenerationProgress(60);
+        
+        // Validate and parse the cached JSON
+        setChatGPTJson(cachedJson);
+        const isValid = validateAndParseChatGPTJson();
+        
+        if (isValid) {
+          setAutoGenerationStep("Creating component in WordPress...");
+          setAutoGenerationProgress(80);
+          
+          // Auto-create the component
+          await processChatGPTJson();
+          
+          setAutoGenerationStep("Component created successfully!");
+          setAutoGenerationProgress(100);
+        } else {
+          throw new Error("Cached component validation failed");
+        }
       } else {
-        throw new Error("Generated component validation failed");
+        // Use AI for custom components
+        setIsUsingCachedStructure(false);
+        setAutoGenerationStep("Generating custom component with AI...");
+        setAutoGenerationProgress(20);
+        
+        // Create the prompt for AI generation
+        const aiPrompt = generateAutoGenerationPrompt();
+
+                setAutoGenerationStep("Sending request to OpenAI...");
+        setAutoGenerationProgress(40);
+
+        // Call OpenAI API
+        const response = await axios.post(
+          OPENAI_API_URL,
+          {
+            model: "gpt-4o-mini", // Using GPT-4.1-mini
+            messages: [
+              {
+                role: "system",
+                content: "You are a WordPress component generator. Generate valid JSON responses only."
+              },
+              {
+                role: "user",
+                content: aiPrompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 2000
+          },
+          {
+            headers: {
+              "Authorization": `Bearer ${currentApiKey}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+
+        setAutoGenerationStep("Processing AI response...");
+        setAutoGenerationProgress(60);
+
+        // Extract the JSON from the response
+        const aiResponse = response.data.choices[0]?.message?.content;
+        
+        if (!aiResponse) {
+          throw new Error("No response received from AI");
+        }
+
+        // Try to extract JSON from the response (AI might add extra text)
+        let jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error("Invalid JSON response from AI");
+        }
+
+        const aiGeneratedJson = jsonMatch[0];
+        
+        setAutoGenerationStep("Validating generated component...");
+        setAutoGenerationProgress(80);
+        
+        // Validate and parse the AI-generated JSON automatically
+        setChatGPTJson(aiGeneratedJson);
+        
+        // Validate the JSON
+        const isValid = validateAndParseChatGPTJson();
+        
+        if (isValid) {
+          setAutoGenerationStep("Creating component in WordPress...");
+          setAutoGenerationProgress(90);
+          
+          // Auto-create the component
+          await processChatGPTJson();
+          
+          // Save this successful generation as a user pattern for future use
+          addUserPattern(contextPrompt, parsedComponent);
+          
+          setAutoGenerationStep("Component created successfully!");
+          setAutoGenerationProgress(100);
+        } else {
+          throw new Error("Generated component validation failed");
+        }
       }
 
     } catch (error) {
@@ -379,6 +580,9 @@ Please return ONLY the JSON response, no additional text.`;
     const prompt = generateChatGPTPrompt();
     if (!prompt) return;
 
+    // Show manual section
+    setShowManualSection(true);
+
     // Encode the prompt for URL
     const encodedPrompt = encodeURIComponent(prompt);
 
@@ -387,6 +591,9 @@ Please return ONLY the JSON response, no additional text.`;
   };
 
   const openChatGPTManually = () => {
+    // Show manual section
+    setShowManualSection(true);
+    
     // Just open ChatGPT with blank page - no copying
     window.open("https://chat.openai.com", "_blank");
   };
@@ -797,6 +1004,8 @@ Please return ONLY the JSON response, no additional text.`;
     setIsAutoGenerating(false);
     setAutoGenerationStep("");
     setAutoGenerationProgress(0);
+    setShowManualSection(false);
+    setIsUsingCachedStructure(false);
     onClose();
   };
 
@@ -982,9 +1191,130 @@ Please return ONLY the JSON response, no additional text.`;
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
-            {/* Context Prompt Input */}
+                             )}
+             </div>
+             
+             {/* Cache Management */}
+             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+               <div className="flex items-center justify-between mb-4">
+                 <div className="flex items-center gap-3">
+                   <div className="h-8 w-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
+                     <svg
+                       className="h-4 w-4 text-white"
+                       fill="none"
+                       viewBox="0 0 24 24"
+                       stroke="currentColor"
+                     >
+                       <path
+                         strokeLinecap="round"
+                         strokeLinejoin="round"
+                         strokeWidth={2}
+                         d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"
+                       />
+                     </svg>
+                   </div>
+                   <div>
+                     <h3 className="font-semibold text-gray-900 text-lg">
+                       Component Cache
+                     </h3>
+                     <p className="text-sm text-gray-600">
+                       Saved patterns for cost optimization
+                     </p>
+                   </div>
+                 </div>
+                 <button
+                   onClick={() => setShowCacheManager(!showCacheManager)}
+                   className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                 >
+                   <svg
+                     className="h-4 w-4"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor"
+                   >
+                     <path
+                       strokeLinecap="round"
+                       strokeLinejoin="round"
+                       strokeWidth={2}
+                       d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                     />
+                   </svg>
+                   {showCacheManager ? "Hide" : "Manage"}
+                 </button>
+               </div>
+
+               {/* Cache Status */}
+               <div className="flex items-center gap-3 mb-4">
+                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                 <span className="text-sm font-medium">
+                   Cache Active - Saving you money on repeated components
+                 </span>
+               </div>
+
+               {/* Cache Manager */}
+               {showCacheManager && (
+                 <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                   <div>
+                     <h4 className="font-medium text-gray-900 mb-2">Your Saved Patterns</h4>
+                     <div className="space-y-2">
+                       {(() => {
+                         const cache = getComponentCache();
+                         const userPatterns = Object.entries(cache.userPatterns);
+                         
+                         if (userPatterns.length === 0) {
+                           return (
+                             <div className="text-sm text-gray-500 italic">
+                               No saved patterns yet. Create components with AI to automatically save them here!
+                             </div>
+                           );
+                         }
+                         
+                         return userPatterns.map(([hash, pattern]) => (
+                           <div key={hash} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                             <div className="flex-1">
+                               <div className="font-medium text-gray-900">{pattern.component.name}</div>
+                               <div className="text-sm text-gray-600">{pattern.prompt}</div>
+                               <div className="text-xs text-gray-500">
+                                 {pattern.fields.length} fields • Created {new Date(pattern.created).toLocaleDateString()}
+                               </div>
+                             </div>
+                             <button
+                               onClick={() => {
+                                 const newCache = getComponentCache();
+                                 delete newCache.userPatterns[hash];
+                                 saveComponentCache(newCache);
+                                 setShowCacheManager(false);
+                                 setShowCacheManager(true); // Force re-render
+                               }}
+                               className="text-red-500 hover:text-red-700 p-1"
+                             >
+                               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                               </svg>
+                             </button>
+                           </div>
+                         ));
+                       })()}
+                     </div>
+                   </div>
+                   
+                   <div className="pt-2 border-t border-gray-200">
+                     <button
+                       onClick={() => {
+                         localStorage.removeItem('ccc_component_cache');
+                         setShowCacheManager(false);
+                         setShowCacheManager(true); // Force re-render
+                       }}
+                       className="text-sm text-red-600 hover:text-red-800"
+                     >
+                       Clear All Cached Patterns
+                     </button>
+                   </div>
+                 </div>
+               )}
+             </div>
+             
+             {/* Context Prompt Input */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-8 w-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
@@ -1066,83 +1396,78 @@ Please return ONLY the JSON response, no additional text.`;
                      Open ChatGPT Manually
                    </button>
                  </div>
-                 <p className="text-xs text-gray-600">
-                   💡 <strong>Auto Generate:</strong> Uses AI to automatically create your component. <strong>Generate with ChatGPT:</strong> Opens ChatGPT with AI-generated prompt pre-filled. <strong>Manual:</strong> Opens ChatGPT with blank page.
-                 </p>
+                                   <p className="text-xs text-gray-600">
+                    💡 <strong>Auto Generate:</strong> Fully automatic AI component creation - just click and your component will be ready! <strong>Generate with ChatGPT:</strong> Opens ChatGPT with pre-filled prompt for manual copy-paste. <strong>Manual:</strong> Opens ChatGPT with blank page.
+                  </p>
                </div>
 
-               {/* Debug Prompt Section */}
-               <div className="mt-4">
-                 <button
-                   onClick={() => setShowDebugPrompt(!showDebugPrompt)}
-                   className="flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors text-sm"
-                 >
-                   <svg
-                     className="h-4 w-4"
-                     fill="none"
-                     viewBox="0 0 24 24"
-                     stroke="currentColor"
-                   >
-                     <path
-                       strokeLinecap="round"
-                       strokeLinejoin="round"
-                       strokeWidth={2}
-                       d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                     />
-                   </svg>
-                   {showDebugPrompt ? "Hide Debug Prompt" : "Show Debug Prompt"}
-                 </button>
-                 
-                 {showDebugPrompt && (
-                   <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                     <div className="flex items-center justify-between mb-3">
-                       <h4 className="text-sm font-semibold text-yellow-800">
-                         Auto-Generation Prompt (Debug)
+               
+
+                             {/* Enhanced Auto Generation Progress */}
+               {isAutoGenerating && (
+                 <div className="mt-6 p-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl shadow-lg">
+                   <div className="flex items-center gap-4 mb-4">
+                     <div className="relative">
+                       <div className="h-12 w-12 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center justify-center">
+                         <Loader2 className="h-6 w-6 text-white animate-spin" />
+                       </div>
+                       <div className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full animate-pulse"></div>
+                     </div>
+                     <div className="flex-1">
+                       <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                         AI Component Generation
                        </h4>
-                       <button
-                         onClick={() => copyToClipboard(generateAutoGenerationPrompt())}
-                         className="text-xs px-2 py-1 bg-yellow-200 text-yellow-800 rounded hover:bg-yellow-300 transition-colors"
-                       >
-                         Copy
-                       </button>
+                       <p className="text-sm text-gray-600">
+                         {autoGenerationStep}
+                       </p>
                      </div>
-                     <div className="bg-white p-3 rounded border border-yellow-300">
-                       <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
-                         {generateAutoGenerationPrompt()}
-                       </pre>
-                     </div>
-                     
-                     <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
-                       <h5 className="text-xs font-semibold text-blue-800 mb-2">
-                         Manual ChatGPT Prompt (for comparison):
-                       </h5>
-                       <div className="bg-white p-3 rounded border border-blue-300">
-                         <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
-                           {generateChatGPTPrompt() || "No prompt generated (empty context)"}
-                         </pre>
+                     <div className="text-right">
+                       <div className="text-2xl font-bold text-purple-600">
+                         {autoGenerationProgress}%
                        </div>
                      </div>
                    </div>
-                 )}
-               </div>
-
-              {/* Auto Generation Progress */}
-              {isAutoGenerating && (
-                <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Loader2 className="h-5 w-5 text-purple-600 animate-spin" />
-                    <span className="text-sm font-medium text-purple-800">
-                      {autoGenerationStep}
-                    </span>
-                  </div>
-                  <div className="w-full bg-purple-200 rounded-full h-2">
-                    <div
-                      className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${autoGenerationProgress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
+                   
+                   {/* Enhanced Progress Bar */}
+                   <div className="relative">
+                     <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                       <div
+                         className="bg-gradient-to-r from-purple-500 via-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out shadow-lg"
+                         style={{ width: `${autoGenerationProgress}%` }}
+                       ></div>
+                     </div>
+                     {/* Animated dots */}
+                     <div className="flex justify-center mt-3 space-x-1">
+                       <div className={`h-2 w-2 rounded-full transition-all duration-300 ${autoGenerationProgress >= 20 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+                       <div className={`h-2 w-2 rounded-full transition-all duration-300 ${autoGenerationProgress >= 40 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                       <div className={`h-2 w-2 rounded-full transition-all duration-300 ${autoGenerationProgress >= 60 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+                       <div className={`h-2 w-2 rounded-full transition-all duration-300 ${autoGenerationProgress >= 80 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                       <div className={`h-2 w-2 rounded-full transition-all duration-300 ${autoGenerationProgress >= 100 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                     </div>
+                   </div>
+                   
+                                       {/* AI Status Messages */}
+                    <div className="mt-4 p-3 bg-white rounded-lg border border-purple-100">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-gray-600 font-medium">
+                          {isUsingCachedStructure ? 
+                            "Using optimized cached structure for faster generation and cost savings..." :
+                            "AI is analyzing your requirements and generating the perfect component structure..."
+                          }
+                        </span>
+                      </div>
+                      {isUsingCachedStructure && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                          <span className="text-xs text-blue-600 font-medium">
+                            💰 Cost optimized: Using cached structure (saved from previous generation)
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                 </div>
+               )}
 
               {/* Repeater Option */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -1185,8 +1510,9 @@ Please return ONLY the JSON response, no additional text.`;
               </div>
             </div>
 
-            {/* ChatGPT JSON Input */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                         {/* ChatGPT JSON Input - Only show for manual mode */}
+             {showManualSection && (
+               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                   <svg
@@ -1322,13 +1648,14 @@ Please return ONLY the JSON response, no additional text.`;
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-};
+                             )}
+             </div>
+           )}
+           </div>
+         </div>
+       </div>
+     </>
+   );
+ };
 
 export default ChatGPTModal;
