@@ -724,7 +724,7 @@ const ComponentList = () => {
       toast.error("Error connecting to server. Please try again.")
     }
   }
-
+  
   const handleDeleteField = async (fieldId) => {
     if (!window.confirm("Are you sure you want to delete this field?")) return
 
