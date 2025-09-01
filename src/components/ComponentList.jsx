@@ -988,9 +988,97 @@ const ComponentList = () => {
         required: field.required || false
       }
       
-      // Handle nested fields for repeater type
-      if (field.type === "repeater" && field.children && Array.isArray(field.children)) {
-        cleanField.children = cleanFieldsForExport(field.children)
+      // Add placeholder if it exists
+      if (field.placeholder) {
+        cleanField.placeholder = field.placeholder
+      }
+      
+      // Handle field options for select, checkbox, and radio fields
+      if (["select", "checkbox", "radio"].includes(field.type)) {
+        if (field.fieldOptions && Array.isArray(field.fieldOptions)) {
+          cleanField.fieldOptions = field.fieldOptions
+        } else if (field.config && field.config.options) {
+          // Convert options object to array format
+          cleanField.fieldOptions = Object.entries(field.config.options).map(([value, label]) => ({
+            value,
+            label
+          }))
+        }
+        
+        // Add select multiple option if it exists
+        if (field.type === "select" && field.config && field.config.multiple !== undefined) {
+          cleanField.selectMultiple = field.config.multiple
+        }
+      }
+      
+      // Handle field configuration for different field types
+      if (field.config) {
+        cleanField.config = { ...field.config }
+      }
+      
+      // Handle specific field type configurations
+      if (field.type === "repeater") {
+        if (field.maxSets) cleanField.maxSets = field.maxSets
+        if (field.max_sets) cleanField.maxSets = field.max_sets
+        if (field.children && Array.isArray(field.children)) {
+          cleanField.children = cleanFieldsForExport(field.children)
+        }
+      }
+      
+      if (field.type === "image") {
+        if (field.imageReturnType) cleanField.imageReturnType = field.imageReturnType
+        if (field.config && field.config.return_type) cleanField.imageReturnType = field.config.return_type
+      }
+      
+      if (field.type === "video") {
+        if (field.videoReturnType) cleanField.videoReturnType = field.videoReturnType
+        if (field.videoSources) cleanField.videoSources = field.videoSources
+        if (field.videoPlayerOptions) cleanField.videoPlayerOptions = field.videoPlayerOptions
+        if (field.config) {
+          if (field.config.return_type) cleanField.videoReturnType = field.config.return_type
+          if (field.config.sources) cleanField.videoSources = field.config.sources
+          if (field.config.player_options) cleanField.videoPlayerOptions = field.config.player_options
+        }
+      }
+      
+      if (field.type === "wysiwyg") {
+        if (field.wysiwygSettings) cleanField.wysiwygSettings = field.wysiwygSettings
+        if (field.config && field.config.editor_settings) cleanField.wysiwygSettings = field.config.editor_settings
+      }
+      
+      if (field.type === "number") {
+        if (field.fieldConfig) cleanField.fieldConfig = field.fieldConfig
+        if (field.config) cleanField.fieldConfig = field.config
+      }
+      
+      if (field.type === "range") {
+        if (field.fieldConfig) cleanField.fieldConfig = field.fieldConfig
+        if (field.config) cleanField.fieldConfig = field.config
+      }
+      
+      if (field.type === "toggle") {
+        if (field.toggleConfig) cleanField.toggleConfig = field.toggleConfig
+        if (field.config) cleanField.toggleConfig = field.config
+      }
+      
+      if (field.type === "user") {
+        if (field.userConfig) cleanField.userConfig = field.userConfig
+        if (field.config) cleanField.userConfig = field.config
+      }
+      
+      if (field.type === "relationship") {
+        if (field.relationshipConfig) cleanField.relationshipConfig = field.relationshipConfig
+        if (field.config) cleanField.relationshipConfig = field.config
+      }
+      
+      if (field.type === "link") {
+        if (field.linkConfig) cleanField.linkConfig = field.linkConfig
+        if (field.config) cleanField.linkConfig = field.config
+      }
+      
+      if (field.type === "file") {
+        if (field.fieldConfig) cleanField.fieldConfig = field.fieldConfig
+        if (field.config) cleanField.fieldConfig = field.config
       }
       
       return cleanField
@@ -1135,19 +1223,61 @@ const ComponentList = () => {
             fieldFormData.append("required", field.required || false)
             fieldFormData.append("nonce", window.cccData.nonce)
 
-            // Handle nested fields for repeater type
-            if (field.type === "repeater" && field.children && Array.isArray(field.children)) {
-              console.log(`Creating repeater field "${field.name}" with ${field.children.length} nested fields`)
-              console.log(`Nested children data:`, field.children)
+            // Add placeholder if it exists
+            if (field.placeholder) {
+              fieldFormData.append("placeholder", field.placeholder)
+            }
+
+            // Handle field options for select, checkbox, and radio fields
+            if (["select", "checkbox", "radio"].includes(field.type) && field.fieldOptions && Array.isArray(field.fieldOptions)) {
+              console.log(`Creating ${field.type} field "${field.name}" with ${field.fieldOptions.length} options`)
               
-              // Try both field names - the backend might expect 'sub_fields' instead of 'children'
-              fieldFormData.append("children", JSON.stringify(field.children))
-              fieldFormData.append("sub_fields", JSON.stringify(field.children))
+              // Convert fieldOptions array to object format expected by backend
+              const optionsObject = {}
+              field.fieldOptions.forEach((option) => {
+                if (option.label && option.value) {
+                  optionsObject[option.value] = option.label
+                }
+              })
               
-              // Log the form data being sent
-              console.log(`Form data for repeater field "${field.name}":`)
-              for (let [key, value] of fieldFormData.entries()) {
-                console.log(`  ${key}:`, value)
+              const config = { 
+                options: optionsObject,
+                field_condition: 'always_show',
+                conditional_logic: [],
+                logic_operator: 'AND'
+              }
+              
+              // Add select multiple option if it exists
+              if (field.type === "select" && field.selectMultiple !== undefined) {
+                config.multiple = field.selectMultiple
+              }
+              
+              fieldFormData.append("field_config", JSON.stringify(config))
+            }
+
+            // Handle field configuration for other field types
+            if (field.config) {
+              fieldFormData.append("field_config", JSON.stringify(field.config))
+            }
+
+            // Handle specific field type configurations
+            if (field.type === "repeater") {
+              if (field.maxSets) {
+                fieldFormData.append("max_sets", field.maxSets)
+              }
+              if (field.children && Array.isArray(field.children)) {
+                console.log(`Creating repeater field "${field.name}" with ${field.children.length} nested fields`)
+                console.log(`Nested children data:`, field.children)
+                
+                // Try both field names - the backend might expect 'sub_fields' instead of 'children'
+                fieldFormData.append("children", JSON.stringify(field.children))
+                fieldFormData.append("sub_fields", JSON.stringify(field.children))
+                
+                // Log the form data being sent
+                console.log(`Form data for repeater field "${field.name}":`)
+                for (let [key, value] of fieldFormData.entries()) {
+                  console.log(`  ${key}:`, value)
+                }
               }
             }
 
@@ -1288,19 +1418,61 @@ const ComponentList = () => {
                   fieldFormData.append("required", field.required || false)
                   fieldFormData.append("nonce", window.cccData.nonce)
 
-                  // Handle nested fields for repeater type
-                  if (field.type === "repeater" && field.children && Array.isArray(field.children)) {
-                    console.log(`Creating repeater field "${field.name}" with ${field.children.length} nested fields`)
-                    console.log(`Nested children data:`, field.children)
+                  // Add placeholder if it exists
+                  if (field.placeholder) {
+                    fieldFormData.append("placeholder", field.placeholder)
+                  }
+
+                  // Handle field options for select, checkbox, and radio fields
+                  if (["select", "checkbox", "radio"].includes(field.type) && field.fieldOptions && Array.isArray(field.fieldOptions)) {
+                    console.log(`Creating ${field.type} field "${field.name}" with ${field.fieldOptions.length} options`)
                     
-                    // Try both field names - the backend might expect 'sub_fields' instead of 'children'
-                    fieldFormData.append("children", JSON.stringify(field.children))
-                    fieldFormData.append("sub_fields", JSON.stringify(field.children))
+                    // Convert fieldOptions array to object format expected by backend
+                    const optionsObject = {}
+                    field.fieldOptions.forEach((option) => {
+                      if (option.label && option.value) {
+                        optionsObject[option.value] = option.label
+                      }
+                    })
                     
-                    // Log the form data being sent
-                    console.log(`Form data for repeater field "${field.name}":`)
-                    for (let [key, value] of fieldFormData.entries()) {
-                      console.log(`  ${key}:`, value)
+                    const config = { 
+                      options: optionsObject,
+                      field_condition: 'always_show',
+                      conditional_logic: [],
+                      logic_operator: 'AND'
+                    }
+                    
+                    // Add select multiple option if it exists
+                    if (field.type === "select" && field.selectMultiple !== undefined) {
+                      config.multiple = field.selectMultiple
+                    }
+                    
+                    fieldFormData.append("field_config", JSON.stringify(config))
+                  }
+
+                  // Handle field configuration for other field types
+                  if (field.config) {
+                    fieldFormData.append("field_config", JSON.stringify(field.config))
+                  }
+
+                  // Handle specific field type configurations
+                  if (field.type === "repeater") {
+                    if (field.maxSets) {
+                      fieldFormData.append("max_sets", field.maxSets)
+                    }
+                    if (field.children && Array.isArray(field.children)) {
+                      console.log(`Creating repeater field "${field.name}" with ${field.children.length} nested fields`)
+                      console.log(`Nested children data:`, field.children)
+                      
+                      // Try both field names - the backend might expect 'sub_fields' instead of 'children'
+                      fieldFormData.append("children", JSON.stringify(field.children))
+                      fieldFormData.append("sub_fields", JSON.stringify(field.children))
+                      
+                      // Log the form data being sent
+                      console.log(`Form data for repeater field "${field.name}":`)
+                      for (let [key, value] of fieldFormData.entries()) {
+                        console.log(`  ${key}:`, value)
+                      }
                     }
                   }
 
@@ -1405,9 +1577,51 @@ const ComponentList = () => {
           fieldFormData.append("required", field.required || false)
           fieldFormData.append("nonce", window.cccData.nonce)
 
-          // Handle nested fields for repeater type
-          if (field.type === "repeater" && field.children && Array.isArray(field.children)) {
-            fieldFormData.append("children", JSON.stringify(field.children))
+          // Add placeholder if it exists
+          if (field.placeholder) {
+            fieldFormData.append("placeholder", field.placeholder)
+          }
+
+          // Handle field options for select, checkbox, and radio fields
+          if (["select", "checkbox", "radio"].includes(field.type) && field.fieldOptions && Array.isArray(field.fieldOptions)) {
+            console.log(`Creating ${field.type} field "${field.name}" with ${field.fieldOptions.length} options`)
+            
+            // Convert fieldOptions array to object format expected by backend
+            const optionsObject = {}
+            field.fieldOptions.forEach((option) => {
+              if (option.label && option.value) {
+                optionsObject[option.value] = option.label
+              }
+            })
+            
+            const config = { 
+              options: optionsObject,
+              field_condition: 'always_show',
+              conditional_logic: [],
+              logic_operator: 'AND'
+            }
+            
+            // Add select multiple option if it exists
+            if (field.type === "select" && field.selectMultiple !== undefined) {
+              config.multiple = field.selectMultiple
+            }
+            
+            fieldFormData.append("field_config", JSON.stringify(config))
+          }
+
+          // Handle field configuration for other field types
+          if (field.config) {
+            fieldFormData.append("field_config", JSON.stringify(field.config))
+          }
+
+          // Handle specific field type configurations
+          if (field.type === "repeater") {
+            if (field.maxSets) {
+              fieldFormData.append("max_sets", field.maxSets)
+            }
+            if (field.children && Array.isArray(field.children)) {
+              fieldFormData.append("children", JSON.stringify(field.children))
+            }
           }
 
           await axios.post(window.cccData.ajaxUrl, fieldFormData)
