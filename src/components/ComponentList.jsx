@@ -1229,34 +1229,50 @@ const ComponentList = () => {
             }
 
             // Handle field options for select, checkbox, and radio fields
-            if (["select", "checkbox", "radio"].includes(field.type) && field.fieldOptions && Array.isArray(field.fieldOptions)) {
-              console.log(`Creating ${field.type} field "${field.name}" with ${field.fieldOptions.length} options`)
+            if (["select", "checkbox", "radio"].includes(field.type)) {
+              let optionsObject = {}
+              let hasOptions = false
               
-              // Convert fieldOptions array to object format expected by backend
-              const optionsObject = {}
-              field.fieldOptions.forEach((option) => {
-                if (option.label && option.value) {
-                  optionsObject[option.value] = option.label
+              // Check for fieldOptions array format
+              if (field.fieldOptions && Array.isArray(field.fieldOptions)) {
+                console.log(`Creating ${field.type} field "${field.name}" with ${field.fieldOptions.length} options from fieldOptions`)
+                field.fieldOptions.forEach((option) => {
+                  if (option.label && option.value) {
+                    optionsObject[option.value] = option.label
+                    hasOptions = true
+                  }
+                })
+              }
+              // Check for config.options object format
+              else if (field.config && field.config.options && typeof field.config.options === 'object') {
+                console.log(`Creating ${field.type} field "${field.name}" with options from config.options`)
+                optionsObject = field.config.options
+                hasOptions = true
+              }
+              
+              if (hasOptions) {
+                const config = { 
+                  options: optionsObject,
+                  field_condition: 'always_show',
+                  conditional_logic: [],
+                  logic_operator: 'AND'
                 }
-              })
-              
-              const config = { 
-                options: optionsObject,
-                field_condition: 'always_show',
-                conditional_logic: [],
-                logic_operator: 'AND'
+                
+                // Add select multiple option if it exists
+                if (field.type === "select") {
+                  if (field.selectMultiple !== undefined) {
+                    config.multiple = field.selectMultiple
+                  } else if (field.config && field.config.multiple !== undefined) {
+                    config.multiple = field.config.multiple
+                  }
+                }
+                
+                fieldFormData.append("field_config", JSON.stringify(config))
               }
-              
-              // Add select multiple option if it exists
-              if (field.type === "select" && field.selectMultiple !== undefined) {
-                config.multiple = field.selectMultiple
-              }
-              
-              fieldFormData.append("field_config", JSON.stringify(config))
             }
 
-            // Handle field configuration for other field types
-            if (field.config) {
+            // Handle field configuration for other field types (but not select/checkbox/radio as they're handled above)
+            if (field.config && !["select", "checkbox", "radio"].includes(field.type)) {
               fieldFormData.append("field_config", JSON.stringify(field.config))
             }
 
@@ -1424,34 +1440,50 @@ const ComponentList = () => {
                   }
 
                   // Handle field options for select, checkbox, and radio fields
-                  if (["select", "checkbox", "radio"].includes(field.type) && field.fieldOptions && Array.isArray(field.fieldOptions)) {
-                    console.log(`Creating ${field.type} field "${field.name}" with ${field.fieldOptions.length} options`)
+                  if (["select", "checkbox", "radio"].includes(field.type)) {
+                    let optionsObject = {}
+                    let hasOptions = false
                     
-                    // Convert fieldOptions array to object format expected by backend
-                    const optionsObject = {}
-                    field.fieldOptions.forEach((option) => {
-                      if (option.label && option.value) {
-                        optionsObject[option.value] = option.label
+                    // Check for fieldOptions array format
+                    if (field.fieldOptions && Array.isArray(field.fieldOptions)) {
+                      console.log(`Creating ${field.type} field "${field.name}" with ${field.fieldOptions.length} options from fieldOptions`)
+                      field.fieldOptions.forEach((option) => {
+                        if (option.label && option.value) {
+                          optionsObject[option.value] = option.label
+                          hasOptions = true
+                        }
+                      })
+                    }
+                    // Check for config.options object format
+                    else if (field.config && field.config.options && typeof field.config.options === 'object') {
+                      console.log(`Creating ${field.type} field "${field.name}" with options from config.options`)
+                      optionsObject = field.config.options
+                      hasOptions = true
+                    }
+                    
+                    if (hasOptions) {
+                      const config = { 
+                        options: optionsObject,
+                        field_condition: 'always_show',
+                        conditional_logic: [],
+                        logic_operator: 'AND'
                       }
-                    })
-                    
-                    const config = { 
-                      options: optionsObject,
-                      field_condition: 'always_show',
-                      conditional_logic: [],
-                      logic_operator: 'AND'
+                      
+                      // Add select multiple option if it exists
+                      if (field.type === "select") {
+                        if (field.selectMultiple !== undefined) {
+                          config.multiple = field.selectMultiple
+                        } else if (field.config && field.config.multiple !== undefined) {
+                          config.multiple = field.config.multiple
+                        }
+                      }
+                      
+                      fieldFormData.append("field_config", JSON.stringify(config))
                     }
-                    
-                    // Add select multiple option if it exists
-                    if (field.type === "select" && field.selectMultiple !== undefined) {
-                      config.multiple = field.selectMultiple
-                    }
-                    
-                    fieldFormData.append("field_config", JSON.stringify(config))
                   }
 
-                  // Handle field configuration for other field types
-                  if (field.config) {
+                  // Handle field configuration for other field types (but not select/checkbox/radio as they're handled above)
+                  if (field.config && !["select", "checkbox", "radio"].includes(field.type)) {
                     fieldFormData.append("field_config", JSON.stringify(field.config))
                   }
 
@@ -1583,34 +1615,50 @@ const ComponentList = () => {
           }
 
           // Handle field options for select, checkbox, and radio fields
-          if (["select", "checkbox", "radio"].includes(field.type) && field.fieldOptions && Array.isArray(field.fieldOptions)) {
-            console.log(`Creating ${field.type} field "${field.name}" with ${field.fieldOptions.length} options`)
+          if (["select", "checkbox", "radio"].includes(field.type)) {
+            let optionsObject = {}
+            let hasOptions = false
             
-            // Convert fieldOptions array to object format expected by backend
-            const optionsObject = {}
-            field.fieldOptions.forEach((option) => {
-              if (option.label && option.value) {
-                optionsObject[option.value] = option.label
+            // Check for fieldOptions array format
+            if (field.fieldOptions && Array.isArray(field.fieldOptions)) {
+              console.log(`Creating ${field.type} field "${field.name}" with ${field.fieldOptions.length} options from fieldOptions`)
+              field.fieldOptions.forEach((option) => {
+                if (option.label && option.value) {
+                  optionsObject[option.value] = option.label
+                  hasOptions = true
+                }
+              })
+            }
+            // Check for config.options object format
+            else if (field.config && field.config.options && typeof field.config.options === 'object') {
+              console.log(`Creating ${field.type} field "${field.name}" with options from config.options`)
+              optionsObject = field.config.options
+              hasOptions = true
+            }
+            
+            if (hasOptions) {
+              const config = { 
+                options: optionsObject,
+                field_condition: 'always_show',
+                conditional_logic: [],
+                logic_operator: 'AND'
               }
-            })
-            
-            const config = { 
-              options: optionsObject,
-              field_condition: 'always_show',
-              conditional_logic: [],
-              logic_operator: 'AND'
+              
+              // Add select multiple option if it exists
+              if (field.type === "select") {
+                if (field.selectMultiple !== undefined) {
+                  config.multiple = field.selectMultiple
+                } else if (field.config && field.config.multiple !== undefined) {
+                  config.multiple = field.config.multiple
+                }
+              }
+              
+              fieldFormData.append("field_config", JSON.stringify(config))
             }
-            
-            // Add select multiple option if it exists
-            if (field.type === "select" && field.selectMultiple !== undefined) {
-              config.multiple = field.selectMultiple
-            }
-            
-            fieldFormData.append("field_config", JSON.stringify(config))
           }
 
-          // Handle field configuration for other field types
-          if (field.config) {
+          // Handle field configuration for other field types (but not select/checkbox/radio as they're handled above)
+          if (field.config && !["select", "checkbox", "radio"].includes(field.type)) {
             fieldFormData.append("field_config", JSON.stringify(field.config))
           }
 
