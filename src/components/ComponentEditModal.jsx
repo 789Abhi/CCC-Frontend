@@ -60,8 +60,11 @@ const ComponentEditNameModal = ({ isOpen, component, onClose, onSave }) => {
 
       const response = await axios.post(window.cccData.ajaxUrl, formData);
 
-      if (response.data.success && response.data.has_custom_content) {
-        setWarningData(response.data);
+      const wp = response && response.data ? response.data : null;
+      const payload = wp && wp.data ? wp.data : wp;
+
+      if (wp && wp.success && payload && payload.has_custom_content === true) {
+        setWarningData(payload);
         setShowWarning(true);
         return true; // Has custom content, show warning
       }
@@ -101,12 +104,17 @@ const ComponentEditNameModal = ({ isOpen, component, onClose, onSave }) => {
     try {
       const response = await axios.post(window.cccData.ajaxUrl, formData);
 
-      if (response.data.success) {
-        showMessage(response.data.message || "Component updated successfully.", "success");
+      const wp = response && response.data ? response.data : null;
+      const payload = wp && wp.data ? wp.data : wp;
+
+      if (wp && wp.success) {
+        const successMsg = (payload && payload.message) || (wp && wp.message) || "Component updated successfully.";
+        showMessage(successMsg, "success");
         onSave();
         onClose();
       } else {
-        showMessage(response.data.message || "Failed to update component.", "error");
+        const errorMsg = (payload && payload.message) || (wp && wp.message) || "Failed to update component.";
+        showMessage(errorMsg, "error");
       }
     } catch (error) {
       console.error("Error updating component:", error);
