@@ -622,7 +622,7 @@ const ComponentList = () => {
 
   const handleSubmitNewComponent = async () => {
     if (!componentName) {
-      showMessage("Please enter a component name", "error")
+      toast.error("Please enter a component name")
       return
     }
 
@@ -644,7 +644,7 @@ const ComponentList = () => {
       console.log("Component creation response:", response.data)
 
       if (response.data.success) {
-        showMessage(response.data.message || "Component created successfully.", "success")
+        toast.success(response.data.message || "Component created successfully.")
         fetchComponents()
         fetchPosts(postType)
         setShowNewComponentDialog(false)
@@ -667,7 +667,7 @@ const ComponentList = () => {
           errorMessage = response.data
         }
         
-        showMessage(errorMessage, "error")
+        toast.error(errorMessage)
         console.error("Component creation failed:", response.data)
       }
     } catch (error) {
@@ -691,7 +691,7 @@ const ComponentList = () => {
         errorMessage = "No response from server. Please check your connection."
       }
       
-      showMessage(errorMessage, "error")
+              toast.error(errorMessage)
     }
   }
 
@@ -713,15 +713,15 @@ const ComponentList = () => {
       const response = await axios.post(window.cccData.ajaxUrl, formData)
 
       if (response.data.success) {
-        showMessage("Component deleted successfully.", "success")
+        toast.success("Component deleted successfully.")
         fetchComponents()
         fetchPosts(postType)
       } else {
-        showMessage(response.data.message || "Failed to delete component.", "error")
+        toast.error(response.data.message || "Failed to delete component.")
       }
     } catch (error) {
       console.error("Error deleting component:", error)
-      showMessage("Error connecting to server. Please try again.", "error")
+      toast.error("Error connecting to server. Please try again.")
     }
   }
 
@@ -737,14 +737,14 @@ const ComponentList = () => {
       const response = await axios.post(window.cccData.ajaxUrl, formData)
 
       if (response.data.success) {
-        showMessage("Field deleted successfully.", "success")
+        toast.success("Field deleted successfully.")
         fetchComponents()
       } else {
-        showMessage(response.data.message || "Failed to delete field.", "error")
+        toast.error(response.data.message || "Failed to delete field.")
       }
     } catch (error) {
       console.error("Error deleting field:", error)
-      showMessage("Error connecting to server. Please try again.", "error")
+      toast.error("Error connecting to server. Please try again.")
     }
   }
 
@@ -761,15 +761,15 @@ const ComponentList = () => {
       const response = await axios.post(window.cccData.ajaxUrl, formData)
 
       if (response.data.success) {
-        showMessage("Component fields updated successfully.", "success")
+        toast.success("Component fields updated successfully.")
         return true
       } else {
-        showMessage(response.data.message || "Failed to update component fields.", "error")
+        toast.error(response.data.message || "Failed to update component fields.")
         return false
       }
     } catch (error) {
       console.error("Error updating component fields:", error)
-      showMessage("Error connecting to server. Please try again.", "error")
+      toast.error("Error connecting to server. Please try again.")
       return false
     }
   }
@@ -814,7 +814,7 @@ const ComponentList = () => {
       const response = await axios.post(window.cccData.ajaxUrl, formData)
       console.log('CCC: Save assignments response:', response.data)
       if (response.data.success) {
-        showMessage(response.data.message || "Assignments saved successfully.", "success")
+        toast.success(response.data.message || "Assignments saved successfully.")
         
         // Update the assignedPostTypes state to reflect the actual backend assignments
         if (postType === "post") {
@@ -827,11 +827,11 @@ const ComponentList = () => {
         // Don't call fetchPostTypes() here as it resets the UI state
         // The user's selections should be preserved
       } else {
-        showMessage(response.data.message || "Failed to save assignments.", "error")
+        toast.error(response.data.message || "Failed to save assignments.")
       }
     } catch (error) {
       console.error("Error saving assignments:", error)
-      showMessage("Error connecting to server. Please try again.", "error")
+      toast.error("Error connecting to server. Please try again.")
     }
   }
 
@@ -1301,7 +1301,7 @@ const ComponentList = () => {
           }
         }
 
-        showMessage("Component imported successfully!", "success")
+        toast.success("Component imported successfully!")
         setShowImportModal(false)
         setImportJson("")
         fetchComponents()
@@ -1540,7 +1540,7 @@ const ComponentList = () => {
         const errorMessage = errorCount > 0 ? ` ${errorCount} components failed.` : ''
         const fieldErrorMessage = fieldErrorCount > 0 ? ` ${fieldErrorCount} fields failed.` : ''
         
-        showMessage(message + fieldMessage + errorMessage + fieldErrorMessage, "success")
+        toast.success(message + fieldMessage + errorMessage + fieldErrorMessage)
         setShowImportMultipleModal(false)
         setImportJson("")
         fetchComponents()
@@ -1678,7 +1678,7 @@ const ComponentList = () => {
         }
       }
 
-      showMessage("Fields imported successfully!", "success")
+      toast.success("Fields imported successfully!")
       setShowImportModal(false)
       setImportJson("")
       setSelectedComponentForImport(null)
@@ -1776,12 +1776,12 @@ const ComponentList = () => {
         if (!response.data.success) {
           // Revert the change if the backend update failed
           setComponents(components)
-          showMessage("Failed to update field order. Please try again.", "error")
+          toast.error("Failed to update field order. Please try again.")
         }
       } catch (error) {
         // Revert the change if the request failed
         setComponents(components)
-        showMessage("Failed to update field order. Please try again.", "error")
+        toast.error("Failed to update field order. Please try again.")
         console.error("Error updating field order:", error)
       }
     }
