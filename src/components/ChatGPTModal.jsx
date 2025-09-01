@@ -20,6 +20,7 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
   const [useAutoGeneration, setUseAutoGeneration] = useState(false);
   const [showApiKeySettings, setShowApiKeySettings] = useState(false);
   const [isSavingApiKey, setIsSavingApiKey] = useState(false);
+  const [showDebugPrompt, setShowDebugPrompt] = useState(false);
 
   // API Configuration
   const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -129,6 +130,39 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
     }
   };
 
+  // Generate the auto-generation prompt (for debugging)
+  const generateAutoGenerationPrompt = () => {
+    if (!contextPrompt.trim()) {
+      return "Please describe what component you want to create";
+    }
+
+    return `Create a WordPress component based on this description: ${contextPrompt}
+
+Please generate a JSON response with the following structure:
+{
+  "component": {
+    "name": "Component Name",
+    "handle": "component_handle",
+    "description": "Component description"
+  },
+  "fields": [
+    {
+      "label": "Field Label",
+      "name": "field_name",
+      "type": "field_type",
+      "required": true/false,
+      "placeholder": "Placeholder text"
+    }
+  ]
+}
+
+Available field types: text, textarea, image, video, color, select, checkbox, radio, wysiwyg, link, repeater, oembed, email, number, password, file, range
+
+${hasRepeater ? 'IMPORTANT: This component needs to support multiple instances (repeater field). Please include a repeater field with nested children fields.' : ''}
+
+Please return ONLY the JSON response, no additional text or explanations.`;
+  };
+
   // Auto-generation function using GPT-4.1-mini
   const generateComponentWithAI = async () => {
     if (!contextPrompt.trim()) {
@@ -174,31 +208,7 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
 
     try {
       // Create the prompt for AI generation
-      const aiPrompt = `Create a WordPress component based on this description: ${contextPrompt}
-
-Please generate a JSON response with the following structure:
-{
-  "component": {
-    "name": "Component Name",
-    "handle": "component_handle",
-    "description": "Component description"
-  },
-  "fields": [
-    {
-      "label": "Field Label",
-      "name": "field_name",
-      "type": "field_type",
-      "required": true/false,
-      "placeholder": "Placeholder text"
-    }
-  ]
-}
-
-Available field types: text, textarea, image, video, color, select, checkbox, radio, wysiwyg, link, repeater, oembed, email, number, range, file, toggle, user, relationship
-
-${hasRepeater ? 'IMPORTANT: This component needs to support multiple instances (repeater field). Please include a repeater field with nested children fields.' : ''}
-
-Please return ONLY the JSON response, no additional text or explanations.`;
+      const aiPrompt = generateAutoGenerationPrompt();
 
       setAutoGenerationStep("Sending request to OpenAI...");
       setAutoGenerationProgress(30);
@@ -325,7 +335,7 @@ Make sure to include all the necessary fields as children of the repeater field.
 
     prompt += `
 
-Available field types: text, textarea, image, video, color, select, checkbox, radio, wysiwyg, Link, Repeater, o-Embed, Email, Number, Range,File, toggle
+Available field types: text, textarea, image, video, color, select, checkbox, radio, wysiwyg, link, repeater, oembed, email, number, password, file, range
 Please return ONLY the JSON response, no additional text.`;
 
     return prompt;
@@ -433,30 +443,93 @@ Please return ONLY the JSON response, no additional text.`;
         "radio",
         "wysiwyg",
         "repeater",
-        "user",
+        "link",
+        "number",
+        "email",
+        "password",
+        "file",
+        "range",
+        "oembed",
       ];
       const fieldTypeMapping = {
-        number: "text",
-        email: "text",
-        url: "text",
-        tel: "text",
-        password: "text",
-        file: "image",
+        // Number fields
+        number: "number",
+        phone: "number",
+        phone_number: "number",
+        telephone: "number",
+        tel: "number",
+        
+        // Email fields
+        email: "email",
+        e_mail: "email",
+        
+        // Password fields
+        password: "password",
+        pass: "password",
+        
+        // URL/Link fields
+        url: "link",
+        link: "link",
+        Link: "link",
+        website: "link",
+        web: "link",
+        
+        // File fields
+        file: "file",
+        upload: "file",
+        attachment: "file",
+        
+        // Image fields
         image: "image",
+        img: "image",
+        photo: "image",
+        picture: "image",
+        
+        // Video fields
         video: "video",
+        movie: "video",
+        
+        // Color fields
         color: "color",
+        colour: "color",
+        
+        // Select fields
         select: "select",
         dropdown: "select",
+        choice: "select",
+        
+        // Checkbox fields
         checkbox: "checkbox",
+        check: "checkbox",
+        
+        // Radio fields
         radio: "radio",
+        radio_button: "radio",
+        
+        // WYSIWYG fields
         wysiwyg: "wysiwyg",
         editor: "wysiwyg",
+        rich_text: "wysiwyg",
+        
+        // Repeater fields
         repeater: "repeater",
         repeat: "repeater",
-        user: "user",
-        users: "user",
-        user_select: "user",
-        user_picker: "user",
+        repeatable: "repeater",
+        
+        // Range fields
+        range: "range",
+        slider: "range",
+        
+        // oEmbed fields
+        oembed: "oembed",
+        o_embed: "oembed",
+        embed: "oembed",
+        embedded: "oembed",
+        
+        // Text fields (fallback)
+        text: "text",
+        string: "text",
+        input: "text",
       };
 
       const normalizedFields = componentData.fields.map((field, index) => {
@@ -497,16 +570,13 @@ Please return ONLY the JSON response, no additional text.`;
             options.push({ value: i.toString(), label: i.toString() });
           }
           normalizedField.config = { options };
-        } else if (normalizedField.type === "user") {
-          // Handle user field configuration
+        } else if (normalizedField.type === "number") {
+          // Handle number field configuration (including phone number)
           normalizedField.config = {
-            role_filter: field.roles || field.role_filter || [],
-            multiple: field.multiple || field.multi || false,
-            return_type: field.return_type || field.return_format || "id",
-            searchable:
-              field.searchable !== undefined ? field.searchable : true,
-            orderby: field.orderby || field.order_by || "display_name",
-            order: field.order || "ASC",
+            number_type: field.number_type || field.phone ? "phone" : "normal",
+            min: field.min || field.minimum,
+            max: field.max || field.maximum,
+            step: field.step || field.increment,
           };
         } else if (normalizedField.type === "repeater" && field.children) {
           // Handle repeater field with nested children from ChatGPT
@@ -524,16 +594,13 @@ Please return ONLY the JSON response, no additional text.`;
               config: {},
             };
 
-            // Handle nested user field configuration
-            if (nestedField.type === "user") {
+            // Handle nested number field configuration
+            if (nestedField.type === "number") {
               nestedField.config = {
-                role_filter: child.roles || child.role_filter || [],
-                multiple: child.multiple || child.multi || false,
-                return_type: child.return_type || child.return_format || "id",
-                searchable:
-                  child.searchable !== undefined ? child.searchable : true,
-                orderby: child.orderby || child.order_by || "display_name",
-                order: child.order || "ASC",
+                number_type: child.number_type || child.phone ? "phone" : "normal",
+                min: child.min || child.minimum,
+                max: child.max || child.maximum,
+                step: child.step || child.increment,
               };
             }
 
@@ -950,59 +1017,114 @@ Please return ONLY the JSON response, no additional text.`;
                 className="w-full h-24 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-white"
               />
 
-              {/* Action Buttons - Enhanced with Auto Generation */}
-              <div className="mt-4">
-                <div className="flex gap-3 mb-2">
-                  {/* Auto Generation Button */}
-                  <button
-                    onClick={generateComponentWithAI}
-                    disabled={!contextPrompt.trim() || isAutoGenerating}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-                  >
-                    {isAutoGenerating ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <Zap className="h-5 w-5" />
-                    )}
-                    {isAutoGenerating ? "Generating..." : "Auto Generate"}
-                  </button>
-                  
-                  {/* Manual ChatGPT Button */}
-                  <button
-                    onClick={openChatGPT}
-                    disabled={!contextPrompt.trim()}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-                  >
-                    <Bot className="h-5 w-5" />
-                    Generate with ChatGPT
-                  </button>
-                  
-                  {/* Manual ChatGPT Button */}
-                  <button
-                    onClick={openChatGPTManually}
-                    disabled={contextPrompt.trim()}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-                  >
-                    <svg
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                    Open ChatGPT Manually
-                  </button>
-                </div>
-                <p className="text-xs text-gray-600">
-                  💡 <strong>Auto Generate:</strong> Uses AI to automatically create your component. <strong>Generate with ChatGPT:</strong> Opens ChatGPT with AI-generated prompt pre-filled. <strong>Manual:</strong> Opens ChatGPT with blank page.
-                </p>
-              </div>
+                             {/* Action Buttons - Enhanced with Auto Generation */}
+               <div className="mt-4">
+                 <div className="flex gap-3 mb-2">
+                   {/* Auto Generation Button */}
+                   <button
+                     onClick={generateComponentWithAI}
+                     disabled={!contextPrompt.trim() || isAutoGenerating}
+                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                   >
+                     {isAutoGenerating ? (
+                       <Loader2 className="h-5 w-5 animate-spin" />
+                     ) : (
+                       <Zap className="h-5 w-5" />
+                     )}
+                     {isAutoGenerating ? "Generating..." : "Auto Generate"}
+                   </button>
+                   
+                   {/* Manual ChatGPT Button */}
+                   <button
+                     onClick={openChatGPT}
+                     disabled={!contextPrompt.trim()}
+                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                   >
+                     <Bot className="h-5 w-5" />
+                     Generate with ChatGPT
+                   </button>
+                   
+                   {/* Manual ChatGPT Button */}
+                   <button
+                     onClick={openChatGPTManually}
+                     disabled={contextPrompt.trim()}
+                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                   >
+                     <svg
+                       className="h-5 w-5"
+                       fill="none"
+                       viewBox="0 0 24 24"
+                       stroke="currentColor"
+                     >
+                       <path
+                         strokeLinecap="round"
+                         strokeLinejoin="round"
+                         strokeWidth={2}
+                         d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                       />
+                     </svg>
+                     Open ChatGPT Manually
+                   </button>
+                 </div>
+                 <p className="text-xs text-gray-600">
+                   💡 <strong>Auto Generate:</strong> Uses AI to automatically create your component. <strong>Generate with ChatGPT:</strong> Opens ChatGPT with AI-generated prompt pre-filled. <strong>Manual:</strong> Opens ChatGPT with blank page.
+                 </p>
+               </div>
+
+               {/* Debug Prompt Section */}
+               <div className="mt-4">
+                 <button
+                   onClick={() => setShowDebugPrompt(!showDebugPrompt)}
+                   className="flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors text-sm"
+                 >
+                   <svg
+                     className="h-4 w-4"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor"
+                   >
+                     <path
+                       strokeLinecap="round"
+                       strokeLinejoin="round"
+                       strokeWidth={2}
+                       d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                     />
+                   </svg>
+                   {showDebugPrompt ? "Hide Debug Prompt" : "Show Debug Prompt"}
+                 </button>
+                 
+                 {showDebugPrompt && (
+                   <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                     <div className="flex items-center justify-between mb-3">
+                       <h4 className="text-sm font-semibold text-yellow-800">
+                         Auto-Generation Prompt (Debug)
+                       </h4>
+                       <button
+                         onClick={() => copyToClipboard(generateAutoGenerationPrompt())}
+                         className="text-xs px-2 py-1 bg-yellow-200 text-yellow-800 rounded hover:bg-yellow-300 transition-colors"
+                       >
+                         Copy
+                       </button>
+                     </div>
+                     <div className="bg-white p-3 rounded border border-yellow-300">
+                       <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+                         {generateAutoGenerationPrompt()}
+                       </pre>
+                     </div>
+                     
+                     <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                       <h5 className="text-xs font-semibold text-blue-800 mb-2">
+                         Manual ChatGPT Prompt (for comparison):
+                       </h5>
+                       <div className="bg-white p-3 rounded border border-blue-300">
+                         <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+                           {generateChatGPTPrompt() || "No prompt generated (empty context)"}
+                         </pre>
+                       </div>
+                     </div>
+                   </div>
+                 )}
+               </div>
 
               {/* Auto Generation Progress */}
               {isAutoGenerating && (
