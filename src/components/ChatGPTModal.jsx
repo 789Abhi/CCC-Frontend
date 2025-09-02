@@ -519,16 +519,16 @@ Please return ONLY the JSON response, no additional text or explanations.`;
         // Directly use the cached component data instead of going through validation
         setParsedComponent(cachedComponent);
         
-        if (cachedComponent && cachedComponent.component && cachedComponent.fields) {
-          setAutoGenerationStep("Creating component in WordPress...");
-          setAutoGenerationProgress(80);
-          
-          // Auto-create the component
-          await processChatGPTJson();
-          
-          setAutoGenerationStep("Component created successfully!");
-          setAutoGenerationProgress(100);
-        } else {
+                 if (cachedComponent && cachedComponent.component && cachedComponent.fields) {
+           setAutoGenerationStep("Creating component in WordPress...");
+           setAutoGenerationProgress(80);
+           
+           // Auto-create the component - pass the data directly to avoid async state issues
+           await processChatGPTJson(cachedComponent);
+           
+           setAutoGenerationStep("Component created successfully!");
+           setAutoGenerationProgress(100);
+         } else {
           throw new Error("Invalid cached component structure");
         }
       } else {
@@ -978,9 +978,9 @@ Please return ONLY the JSON response, no additional text.`;
     }
   };
 
-  const processChatGPTJson = async () => {
-    // Get the current parsed component from state
-    const currentParsedComponent = parsedComponent;
+  const processChatGPTJson = async (componentData = null) => {
+    // Use passed componentData or fall back to state
+    const currentParsedComponent = componentData || parsedComponent;
     
     if (!currentParsedComponent) {
       showMessage("No valid component data to create", "error");
