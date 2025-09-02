@@ -1272,85 +1272,31 @@ Please return ONLY the JSON response, no additional text.`;
 
   return (
     <>
-      {/* Main ChatGPT Modal */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
-                     {/* Header - Fixed */}
-           <div className="p-6 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-purple-50 via-blue-50 to-green-50">
-             <div className="flex items-center justify-between">
-               <div className="flex items-center gap-4">
-                 <div className="relative">
-                   <div className="h-12 w-12 bg-gradient-to-r from-purple-500 via-blue-600 to-green-500 rounded-full flex items-center justify-center shadow-lg">
-                     <Bot className="h-7 w-7 text-white" />
-                   </div>
-                   <div className="absolute -top-1 -right-1 h-4 w-4 bg-green-400 rounded-full animate-pulse"></div>
-                 </div>
-                 <div>
-                   <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 bg-clip-text text-transparent">
-                     🚀 Create Component with AI
-                   </h2>
-                   <p className="text-sm text-gray-600 font-medium">
-                     AI-powered component generation with smart caching
-                   </p>
-                 </div>
-               </div>
-               <button
-                 onClick={handleClose}
-                 className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
-               >
-                 <svg
-                   className="h-6 w-6"
-                   fill="none"
-                   viewBox="0 0 24 24"
-                   stroke="currentColor"
-                 >
-                   <path
-                     strokeLinecap="round"
-                     strokeLinejoin="round"
-                     strokeWidth={2}
-                     d="M6 18L18 6M6 6l12 12"
-                   />
-                 </svg>
-               </button>
-             </div>
-           </div>
-
-          {/* Content - Scrollable */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
-            {/* API Key Settings */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
+             {/* Main ChatGPT Modal */}
+       <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+         <div className="bg-gray-900 rounded-lg w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl border border-gray-700">
+                      {/* Header - Fixed */}
+            <div className="p-4 border-b border-gray-700 flex-shrink-0 bg-gray-900">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center">
-                    <svg
-                      className="h-4 w-4 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-                      />
-                    </svg>
+                  <div className="h-8 w-8 bg-gray-700 rounded-full flex items-center justify-center">
+                    <Bot className="h-5 w-5 text-gray-300" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 text-lg">
-                      OpenAI API Key
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Required for auto-generation feature
+                    <h2 className="text-lg font-semibold text-gray-100">
+                      Create Component with AI
+                    </h2>
+                    <p className="text-sm text-gray-400">
+                      AI-powered component generation
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowApiKeySettings(!showApiKeySettings)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  onClick={handleClose}
+                  className="text-gray-400 hover:text-gray-200 transition-colors p-2 rounded-lg hover:bg-gray-800"
                 >
                   <svg
-                    className="h-4 w-4"
+                    className="h-5 w-5"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -1359,110 +1305,22 @@ Please return ONLY the JSON response, no additional text.`;
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      d="M6 18L18 6M6 6l12 12"
                     />
                   </svg>
-                  {showApiKeySettings ? "Hide" : "Configure"}
                 </button>
               </div>
+            </div>
 
-              {/* API Key Status */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className={`w-3 h-3 rounded-full ${(apiKey && apiKey !== "***configured***") || process.env.REACT_APP_OPENAI_API_KEY ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <span className="text-sm font-medium">
-                  {(apiKey && apiKey !== "***configured***") || process.env.REACT_APP_OPENAI_API_KEY ? "API Key Configured" : "API Key Not Configured"}
-                </span>
-                {(apiKey && apiKey !== "***configured***") && (
-                  <span className="text-xs text-gray-500">
-                    (Key: {apiKey.substring(0, 8)}...{apiKey.substring(apiKey.length - 4)})
-                  </span>
-                )}
-                {process.env.REACT_APP_OPENAI_API_KEY && !apiKey && (
-                  <span className="text-xs text-gray-500">
-                    (Using environment variable)
-                  </span>
-                )}
-              </div>
-
-              {/* API Key Input */}
-              {showApiKeySettings && (
-                <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      OpenAI API Key
-                    </label>
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="sk-..."
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      Get your API key from{" "}
-                      <a
-                        href="https://platform.openai.com/api-keys"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-orange-600 hover:text-orange-700 underline"
-                      >
-                        OpenAI Platform
-                      </a>
-                    </p>
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={saveApiKey}
-                      disabled={!apiKey.trim() || isSavingApiKey}
-                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isSavingApiKey ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      )}
-                      {isSavingApiKey ? "Saving..." : "Save API Key"}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setApiKey("");
-                        localStorage.removeItem('ccc_openai_api_key');
-                        showMessage("API key cleared", "success");
-                      }}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-                             )}
-             </div>
-             
-             {/* Cache Management */}
-             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-               <div className="flex items-center justify-between mb-4">
+           {/* Content - Scrollable */}
+           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-900">
+                         {/* API Key Settings */}
+             <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+               <div className="flex items-center justify-between mb-3">
                  <div className="flex items-center gap-3">
-                   <div className="h-8 w-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
+                   <div className="h-6 w-6 bg-gray-700 rounded-full flex items-center justify-center">
                      <svg
-                       className="h-4 w-4 text-white"
+                       className="h-3 w-3 text-gray-300"
                        fill="none"
                        viewBox="0 0 24 24"
                        stroke="currentColor"
@@ -1471,25 +1329,224 @@ Please return ONLY the JSON response, no additional text.`;
                          strokeLinecap="round"
                          strokeLinejoin="round"
                          strokeWidth={2}
-                         d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"
+                         d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
                        />
                      </svg>
                    </div>
                    <div>
-                     <h3 className="font-semibold text-gray-900 text-lg">
-                       AI Component Cache
+                     <h3 className="font-medium text-gray-100 text-sm">
+                       OpenAI API Key
                      </h3>
-                     <p className="text-sm text-gray-600">
-                       Your AI-generated components saved for reuse
+                     <p className="text-xs text-gray-400">
+                       Required for auto-generation
                      </p>
                    </div>
                  </div>
                  <button
-                   onClick={() => setShowCacheManager(!showCacheManager)}
-                   className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                   onClick={() => setShowApiKeySettings(!showApiKeySettings)}
+                   className="text-xs text-gray-400 hover:text-gray-200 transition-colors px-2 py-1 rounded hover:bg-gray-700"
                  >
+                   {showApiKeySettings ? "Hide" : "Configure"}
+                 </button>
+               </div>
+
+               {/* API Key Status */}
+               <div className="flex items-center gap-2 mb-3">
+                 <div className={`w-2 h-2 rounded-full ${(apiKey && apiKey !== "***configured***") || process.env.REACT_APP_OPENAI_API_KEY ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                 <span className="text-xs text-gray-300">
+                   {(apiKey && apiKey !== "***configured***") || process.env.REACT_APP_OPENAI_API_KEY ? "API Key Configured" : "API Key Not Configured"}
+                 </span>
+                 {(apiKey && apiKey !== "***configured***") && (
+                   <span className="text-xs text-gray-500">
+                     (Key: {apiKey.substring(0, 8)}...{apiKey.substring(apiKey.length - 4)})
+                   </span>
+                 )}
+                 {process.env.REACT_APP_OPENAI_API_KEY && !apiKey && (
+                   <span className="text-xs text-gray-500">
+                     (Using environment variable)
+                   </span>
+                 )}
+               </div>
+
+               {/* API Key Input */}
+               {showApiKeySettings && (
+                 <div className="space-y-3 p-3 bg-gray-700 rounded border border-gray-600">
+                   <div>
+                     <label className="block text-xs font-medium text-gray-300 mb-1">
+                       OpenAI API Key
+                     </label>
+                     <input
+                       type="password"
+                       value={apiKey}
+                       onChange={(e) => setApiKey(e.target.value)}
+                       placeholder="sk-..."
+                       className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                     />
+                     <p className="text-xs text-gray-500 mt-1">
+                       Get your API key from{" "}
+                       <a
+                         href="https://platform.openai.com/api-keys"
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="text-blue-400 hover:text-blue-300 underline"
+                       >
+                         OpenAI Platform
+                       </a>
+                     </p>
+                   </div>
+                   <div className="flex gap-2">
+                     <button
+                       onClick={saveApiKey}
+                       disabled={!apiKey.trim() || isSavingApiKey}
+                       className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+                     >
+                       {isSavingApiKey ? (
+                         <Loader2 className="h-3 w-3 animate-spin" />
+                       ) : (
+                         <svg
+                           className="h-3 w-3"
+                           fill="none"
+                           viewBox="0 0 24 24"
+                           stroke="currentColor"
+                         >
+                           <path
+                             strokeLinecap="round"
+                             strokeLinejoin="round"
+                             strokeWidth={2}
+                             d="M5 13l4 4L19 7"
+                           />
+                         </svg>
+                       )}
+                       {isSavingApiKey ? "Saving..." : "Save"}
+                     </button>
+                     <button
+                       onClick={() => {
+                         setApiKey("");
+                         localStorage.removeItem('ccc_openai_api_key');
+                         showMessage("API key cleared", "success");
+                       }}
+                       className="px-3 py-1.5 bg-gray-600 text-gray-200 rounded text-xs hover:bg-gray-500 transition-colors"
+                     >
+                       Clear
+                     </button>
+                   </div>
+                 </div>
+                              )}
+              </div>
+             
+                           {/* Cache Management */}
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-6 w-6 bg-gray-700 rounded-full flex items-center justify-center">
+                      <svg
+                        className="h-3 w-3 text-gray-300"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-100 text-sm">
+                        AI Component Cache
+                      </h3>
+                      <p className="text-xs text-gray-400">
+                        Your AI-generated components saved for reuse
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowCacheManager(!showCacheManager)}
+                    className="text-xs text-gray-400 hover:text-gray-200 transition-colors px-2 py-1 rounded hover:bg-gray-700"
+                  >
+                    {showCacheManager ? "Hide" : "Manage"}
+                  </button>
+                </div>
+
+                                {/* Cache Status */}
+                 <div className="flex items-center gap-2 mb-3">
+                   <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                   <span className="text-xs text-gray-300">
+                     AI Cache Active - Your generated components are saved for reuse
+                   </span>
+                 </div>
+
+                {/* Cache Manager */}
+                {showCacheManager && (
+                  <div className="space-y-3 p-3 bg-gray-700 rounded border border-gray-600">
+                    <div>
+                      <h4 className="font-medium text-gray-100 text-xs mb-2">Your Saved Patterns</h4>
+                      <div className="space-y-2">
+                        {(() => {
+                          const cache = getComponentCache();
+                          const userPatterns = Object.entries(cache.userPatterns);
+                          
+                          if (userPatterns.length === 0) {
+                            return (
+                              <div className="text-xs text-gray-400 italic">
+                                No saved patterns yet. Create components with AI to automatically save them here!
+                              </div>
+                            );
+                          }
+                          
+                          return userPatterns.map(([hash, pattern]) => (
+                            <div key={hash} className="flex items-center justify-between p-2 bg-gray-800 rounded border border-gray-600">
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-100 text-xs">{pattern.component.name}</div>
+                                <div className="text-xs text-gray-400">{pattern.prompt}</div>
+                                <div className="text-xs text-gray-500">
+                                  {pattern.fields.length} fields • Created {new Date(pattern.created).toLocaleDateString()}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  const newCache = getComponentCache();
+                                  delete newCache.userPatterns[hash];
+                                  saveComponentCache(newCache);
+                                  setShowCacheManager(false);
+                                  setShowCacheManager(true); // Force re-render
+                                }}
+                                className="text-red-400 hover:text-red-300 p-1"
+                              >
+                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-gray-600">
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem('ccc_component_cache');
+                          setShowCacheManager(false);
+                          setShowCacheManager(true); // Force re-render
+                        }}
+                        className="text-xs text-red-400 hover:text-red-300"
+                      >
+                        Clear All Cached Patterns
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+             
+                           {/* Context Prompt Input */}
+             <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+               <div className="flex items-center gap-3 mb-3">
+                 <div className="h-6 w-6 bg-gray-700 rounded-full flex items-center justify-center">
                    <svg
-                     className="h-4 w-4"
+                     className="h-3 w-3 text-gray-300"
                      fill="none"
                      viewBox="0 0 24 24"
                      stroke="currentColor"
@@ -1498,553 +1555,299 @@ Please return ONLY the JSON response, no additional text.`;
                        strokeLinecap="round"
                        strokeLinejoin="round"
                        strokeWidth={2}
-                       d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                       d="M13 10V3L4 14h7v7l9-11h-7z"
                      />
                    </svg>
-                   {showCacheManager ? "Hide" : "Manage"}
-                 </button>
+                 </div>
+                 <h3 className="font-medium text-gray-100 text-sm">
+                   Describe Your Component
+                 </h3>
                </div>
+               <p className="text-gray-400 text-xs mb-3">
+                 Tell us what component you want to create. Be specific about the
+                 fields and functionality you need.
+               </p>
+               <textarea
+                 value={contextPrompt}
+                 onChange={(e) => setContextPrompt(e.target.value)}
+                 placeholder="Example: I want to create a testimonials component with customer name, testimonial content, customer photo, company name, and rating. The component should be visually appealing and professional."
+                 className="w-full h-20 p-3 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
+               />
 
-                               {/* Cache Status */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="text-sm font-medium">
-                    AI Cache Active - Your generated components are saved for reuse
-                  </span>
-                </div>
-
-               {/* Cache Manager */}
-               {showCacheManager && (
-                 <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                   <div>
-                     <h4 className="font-medium text-gray-900 mb-2">Your Saved Patterns</h4>
-                     <div className="space-y-2">
-                       {(() => {
-                         const cache = getComponentCache();
-                         const userPatterns = Object.entries(cache.userPatterns);
-                         
-                         if (userPatterns.length === 0) {
-                           return (
-                             <div className="text-sm text-gray-500 italic">
-                               No saved patterns yet. Create components with AI to automatically save them here!
-                             </div>
-                           );
-                         }
-                         
-                         return userPatterns.map(([hash, pattern]) => (
-                           <div key={hash} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                             <div className="flex-1">
-                               <div className="font-medium text-gray-900">{pattern.component.name}</div>
-                               <div className="text-sm text-gray-600">{pattern.prompt}</div>
-                               <div className="text-xs text-gray-500">
-                                 {pattern.fields.length} fields • Created {new Date(pattern.created).toLocaleDateString()}
-                               </div>
-                             </div>
-                             <button
-                               onClick={() => {
-                                 const newCache = getComponentCache();
-                                 delete newCache.userPatterns[hash];
-                                 saveComponentCache(newCache);
-                                 setShowCacheManager(false);
-                                 setShowCacheManager(true); // Force re-render
-                               }}
-                               className="text-red-500 hover:text-red-700 p-1"
-                             >
-                               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                               </svg>
-                             </button>
-                           </div>
-                         ));
-                       })()}
-                     </div>
-                   </div>
-                   
-                   <div className="pt-2 border-t border-gray-200">
+                                                           {/* Action Buttons - Enhanced with Auto Generation */}
+                <div className="mt-3">
+                                    <div className="flex gap-2 mb-2">
+                     {/* Auto Generation Button */}
                      <button
-                       onClick={() => {
-                         localStorage.removeItem('ccc_component_cache');
-                         setShowCacheManager(false);
-                         setShowCacheManager(true); // Force re-render
-                       }}
-                       className="text-sm text-red-600 hover:text-red-800"
+                       onClick={generateComponentWithAI}
+                       disabled={!contextPrompt.trim() || isAutoGenerating}
+                       className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors text-sm"
                      >
-                       Clear All Cached Patterns
+                       {isAutoGenerating ? (
+                         <Loader2 className="h-4 w-4 animate-spin" />
+                       ) : (
+                         <Zap className="h-4 w-4" />
+                       )}
+                       <span className="font-medium">
+                         {isAutoGenerating ? "Building..." : "Auto Generate"}
+                       </span>
+                     </button>
+                     
+                     {/* Manual ChatGPT Button */}
+                     <button
+                       onClick={openChatGPT}
+                       disabled={!contextPrompt.trim()}
+                       className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors text-sm"
+                     >
+                       <Bot className="h-4 w-4" />
+                       <span className="font-medium">Generate with ChatGPT</span>
+                     </button>
+                     
+                     {/* Manual ChatGPT Button */}
+                     <button
+                       onClick={openChatGPTManually}
+                       disabled={contextPrompt.trim()}
+                       className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors text-sm"
+                     >
+                       <svg
+                         className="h-4 w-4"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke="currentColor"
+                       >
+                         <path
+                           strokeLinecap="round"
+                           strokeLinejoin="round"
+                           strokeWidth={2}
+                           d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                         />
+                       </svg>
+                       <span className="font-medium">Open ChatGPT Manually</span>
                      </button>
                    </div>
-                 </div>
-               )}
-             </div>
-             
-             {/* Context Prompt Input */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-8 w-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
-                  <svg
-                    className="h-4 w-4 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
+                                    <p className="text-xs text-gray-400">
+                     💡 <strong>Auto Generate:</strong> Fully automatic AI component creation. <strong>Generate with ChatGPT:</strong> Opens ChatGPT with pre-filled prompt. <strong>Manual:</strong> Opens ChatGPT with blank page.
+                   </p>
                 </div>
-                <h3 className="font-semibold text-gray-900 text-lg">
-                  Describe Your Component
-                </h3>
-              </div>
-              <p className="text-gray-600 text-sm mb-4">
-                Tell us what component you want to create. Be specific about the
-                fields and functionality you need.
-              </p>
-              <textarea
-                value={contextPrompt}
-                onChange={(e) => setContextPrompt(e.target.value)}
-                placeholder="Example: I want to create a testimonials component with customer name, testimonial content, customer photo, company name, and rating. The component should be visually appealing and professional."
-                className="w-full h-24 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-white"
-              />
-
-                             {/* Action Buttons - Enhanced with Auto Generation */}
-               <div className="mt-4">
-                                   <div className="flex gap-3 mb-2">
-                    {/* Auto Generation Button */}
-                    <button
-                      onClick={generateComponentWithAI}
-                      disabled={!contextPrompt.trim() || isAutoGenerating}
-                      className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-500 via-blue-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:via-blue-600 hover:to-purple-700 disabled:from-gray-400 disabled:via-gray-500 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
-                    >
-                      {isAutoGenerating ? (
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                      ) : (
-                        <Zap className="h-6 w-6" />
-                      )}
-                      <div className="text-left">
-                        <div className="font-bold text-lg">
-                          {isAutoGenerating ? "Building..." : "🚀 Auto Generate"}
-                        </div>
-                        <div className="text-xs opacity-90">
-                          {isAutoGenerating ? "Creating your component..." : "Instant AI generation"}
-                        </div>
-                      </div>
-                    </button>
-                    
-                    {/* Manual ChatGPT Button */}
-                    <button
-                      onClick={openChatGPT}
-                      disabled={!contextPrompt.trim()}
-                      className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
-                    >
-                      <Bot className="h-6 w-6" />
-                      <div className="text-left">
-                        <div className="font-bold">🤖 Generate with ChatGPT</div>
-                        <div className="text-xs opacity-90">Manual copy-paste</div>
-                      </div>
-                    </button>
-                    
-                    {/* Manual ChatGPT Button */}
-                    <button
-                      onClick={openChatGPTManually}
-                      disabled={contextPrompt.trim()}
-                      className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
-                    >
-                      <svg
-                        className="h-6 w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                        />
-                      </svg>
-                      <div className="text-left">
-                        <div className="font-bold">📝 Open ChatGPT Manually</div>
-                        <div className="text-xs opacity-90">Blank page</div>
-                      </div>
-                    </button>
-                  </div>
-                                   <p className="text-xs text-gray-600">
-                    💡 <strong>Auto Generate:</strong> Fully automatic AI component creation - just click and your component will be ready! <strong>Generate with ChatGPT:</strong> Opens ChatGPT with pre-filled prompt for manual copy-paste. <strong>Manual:</strong> Opens ChatGPT with blank page.
-                  </p>
-               </div>
 
                
 
-                                             {/* Enhanced Auto Generation Progress */}
-                {isAutoGenerating && (
-                  <div className="mt-6 p-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl shadow-lg">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="relative">
-                        <div className="h-16 w-16 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
-                          <Loader2 className="h-8 w-8 text-white animate-spin" />
-                        </div>
-                        <div className="absolute -top-2 -right-2 h-6 w-6 bg-green-500 rounded-full animate-pulse flex items-center justify-center">
-                          <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-xl font-bold text-gray-900 mb-2">
-                          🚀 AI Component Builder
-                        </h4>
-                        <p className="text-sm text-gray-600 font-medium">
-                          {autoGenerationStep}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-3xl font-bold text-purple-600">
-                          {autoGenerationProgress}%
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">Complete</div>
-                      </div>
-                    </div>
-                    
-                    {/* Animated Building Progress */}
-                    <div className="space-y-4">
-                      {/* Progress Bar with Building Animation */}
-                      <div className="relative">
-                        <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
-                          <div
-                            className="bg-gradient-to-r from-purple-500 via-blue-500 to-purple-600 h-4 rounded-full transition-all duration-700 ease-out shadow-lg relative"
-                            style={{ width: `${autoGenerationProgress}%` }}
-                          >
-                            {/* Animated particles */}
-                            <div className="absolute inset-0 overflow-hidden">
-                              {[...Array(5)].map((_, i) => (
-                                <div
-                                  key={i}
-                                  className="absolute w-2 h-2 bg-white rounded-full animate-pulse"
-                                  style={{
-                                    left: `${Math.random() * 100}%`,
-                                    top: `${Math.random() * 100}%`,
-                                    animationDelay: `${i * 0.2}s`,
-                                    animationDuration: '1.5s'
-                                  }}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Building Steps Indicator */}
-                        <div className="flex justify-between mt-3 text-xs text-gray-600">
-                          <div className={`flex items-center gap-1 ${autoGenerationProgress >= 10 ? 'text-purple-600 font-semibold' : ''}`}>
-                            <div className={`w-2 h-2 rounded-full ${autoGenerationProgress >= 10 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
-                            <span>Analyzing</span>
-                          </div>
-                          <div className={`flex items-center gap-1 ${autoGenerationProgress >= 30 ? 'text-purple-600 font-semibold' : ''}`}>
-                            <div className={`w-2 h-2 rounded-full ${autoGenerationProgress >= 30 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
-                            <span>Planning</span>
-                          </div>
-                          <div className={`flex items-center gap-1 ${autoGenerationProgress >= 60 ? 'text-purple-600 font-semibold' : ''}`}>
-                            <div className={`w-2 h-2 rounded-full ${autoGenerationProgress >= 60 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
-                            <span>Building</span>
-                          </div>
-                          <div className={`flex items-center gap-1 ${autoGenerationProgress >= 90 ? 'text-purple-600 font-semibold' : ''}`}>
-                            <div className={`w-2 h-2 rounded-full ${autoGenerationProgress >= 90 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
-                            <span>Finalizing</span>
-                          </div>
-                        </div>
-                      </div>
+                                                                                           {/* Enhanced Auto Generation Progress */}
+                 {isAutoGenerating && (
+                   <div className="mt-4 p-4 bg-gray-800 border border-gray-700 rounded-lg">
+                     <div className="flex items-center gap-3 mb-3">
+                       <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
+                       <div className="flex-1">
+                         <p className="text-sm text-gray-300 font-medium">
+                           {autoGenerationStep}
+                         </p>
+                         <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
+                           <div
+                             className="bg-blue-500 h-1.5 rounded-full transition-all duration-500"
+                             style={{ width: `${autoGenerationProgress}%` }}
+                           ></div>
+                         </div>
+                       </div>
+                       <div className="text-right">
+                         <div className="text-lg font-semibold text-blue-400">
+                           {autoGenerationProgress}%
+                         </div>
+                       </div>
+                     </div>
+                     
+                     {isUsingCachedStructure && (
+                       <div className="flex items-center gap-2 p-2 bg-gray-700 rounded border border-gray-600">
+                         <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                         <span className="text-xs text-gray-300">
+                           Using cached component (no API cost)
+                         </span>
+                       </div>
+                     )}
+                   </div>
+                 )}
 
-                      {/* Animated Component Building Visualization */}
-                      <div className="bg-white rounded-lg p-4 border border-purple-100 shadow-sm">
-                        <div className="flex items-center justify-between mb-3">
-                          <h5 className="font-semibold text-gray-800 text-sm">🏗️ Component Construction</h5>
-                          <div className="text-xs text-gray-500">
-                            {autoGenerationProgress >= 80 ? 'Almost Done!' : 'Building...'}
-                          </div>
-                        </div>
-                        
-                        {/* Animated Building Blocks */}
-                        <div className="flex items-end gap-2 h-16">
-                          {/* Component Base */}
-                          <div className={`flex-1 bg-gradient-to-b from-gray-200 to-gray-300 rounded-t-lg transition-all duration-500 ${autoGenerationProgress >= 20 ? 'h-8' : 'h-2'}`}>
-                            {autoGenerationProgress >= 20 && (
-                              <div className="text-center text-xs text-gray-600 pt-1">Component</div>
-                            )}
-                          </div>
-                          
-                          {/* Fields */}
-                          {[...Array(3)].map((_, i) => (
-                            <div
-                              key={i}
-                              className={`w-8 bg-gradient-to-b from-blue-200 to-blue-300 rounded-t-lg transition-all duration-500 ${
-                                autoGenerationProgress >= 40 + (i * 15) ? 'h-12' : 'h-2'
-                              }`}
-                            >
-                              {autoGenerationProgress >= 40 + (i * 15) && (
-                                <div className="text-center text-xs text-blue-600 pt-1">Field</div>
-                              )}
-                            </div>
-                          ))}
-                          
-                          {/* Configuration */}
-                          <div className={`w-6 bg-gradient-to-b from-green-200 to-green-300 rounded-t-lg transition-all duration-500 ${autoGenerationProgress >= 70 ? 'h-10' : 'h-2'}`}>
-                            {autoGenerationProgress >= 70 && (
-                              <div className="text-center text-xs text-green-600 pt-1">Config</div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Building Animation */}
-                        <div className="flex justify-center mt-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* AI Status Messages */}
-                    <div className="mt-4 p-4 bg-white rounded-lg border border-purple-100 shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm text-gray-700 font-medium">
-                          {isUsingCachedStructure ? 
-                            "⚡ Using optimized cached structure for instant generation..." :
-                            "🧠 AI is analyzing your requirements and generating the perfect component structure..."
-                          }
-                        </span>
-                      </div>
-                      
-                      {isUsingCachedStructure && (
-                        <div className="mt-3 flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
-                          <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                          <span className="text-xs text-blue-700 font-medium">
-                            💰 Cost optimized: Using your previously generated component (no API cost)
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Progress Details */}
-                      <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                          <span className="text-gray-600">Component Structure</span>
-                          <span className="text-purple-600 font-semibold">
-                            {autoGenerationProgress >= 30 ? '✓' : '...'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                          <span className="text-gray-600">Field Generation</span>
-                          <span className="text-blue-600 font-semibold">
-                            {autoGenerationProgress >= 60 ? '✓' : '...'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                          <span className="text-gray-600">Configuration</span>
-                          <span className="text-green-600 font-semibold">
-                            {autoGenerationProgress >= 80 ? '✓' : '...'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-                          <span className="text-gray-600">WordPress Integration</span>
-                          <span className="text-orange-600 font-semibold">
-                            {autoGenerationProgress >= 90 ? '✓' : '...'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-              {/* Repeater Option */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
-                      <svg
-                        className="h-4 w-4 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 text-lg">
-                        Multiple Instances
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        Enable if this component should support multiple instances
-                      </p>
-                    </div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={hasRepeater}
-                      onChange={(e) => setHasRepeater(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                  </label>
-                </div>
-              </div>
+                             {/* Repeater Option */}
+               <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                 <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-3">
+                     <div className="h-6 w-6 bg-gray-700 rounded-full flex items-center justify-center">
+                       <svg
+                         className="h-3 w-3 text-gray-300"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke="currentColor"
+                       >
+                         <path
+                           strokeLinecap="round"
+                           strokeLinejoin="round"
+                           strokeWidth={2}
+                           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                         />
+                       </svg>
+                     </div>
+                     <div>
+                       <h3 className="font-medium text-gray-100 text-sm">
+                         Multiple Instances
+                       </h3>
+                       <p className="text-xs text-gray-400">
+                         Enable if this component should support multiple instances
+                       </p>
+                     </div>
+                   </div>
+                   <label className="relative inline-flex items-center cursor-pointer">
+                     <input
+                       type="checkbox"
+                       checked={hasRepeater}
+                       onChange={(e) => setHasRepeater(e.target.checked)}
+                       className="sr-only peer"
+                     />
+                     <div className="w-9 h-5 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                   </label>
+                 </div>
+               </div>
             </div>
 
-                         {/* ChatGPT JSON Input - Only show for manual mode */}
-             {showManualSection && (
-               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                  <svg
-                    className="h-4 w-4 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-gray-900 text-lg">
-                  Paste ChatGPT Response
-                </h3>
+                                                   {/* ChatGPT JSON Input - Only show for manual mode */}
+              {showManualSection && (
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+               <div className="flex items-center gap-3 mb-3">
+                 <div className="h-6 w-6 bg-gray-700 rounded-full flex items-center justify-center">
+                   <svg
+                     className="h-3 w-3 text-gray-300"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor"
+                   >
+                     <path
+                       strokeLinecap="round"
+                       strokeLinejoin="round"
+                       strokeWidth={2}
+                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                     />
+                   </svg>
+                 </div>
+                 <h3 className="font-medium text-gray-100 text-sm">
+                   Paste ChatGPT Response
+                 </h3>
+               </div>
+               <p className="text-gray-400 text-xs mb-3">
+                 Paste the JSON response from ChatGPT here to create your component.
+               </p>
+               <textarea
+                 value={chatGPTJson}
+                 onChange={(e) => setChatGPTJson(e.target.value)}
+                 placeholder={`{
+   "component": {
+     "name": "Example Component",
+     "handle": "example_component",
+     "description": "A sample component"
+   },
+   "fields": [
+     {
+       "label": "Title",
+       "name": "title",
+       "type": "text",
+       "required": true,
+       "placeholder": "Enter title"
+     }
+   ]
+ }`}
+                 className="w-full h-32 p-3 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none font-mono text-xs"
+               />
+
+               {/* Processing Progress */}
+               {isProcessingChatGPT && (
+                 <div className="mt-3 p-3 bg-gray-700 border border-gray-600 rounded">
+                   <div className="flex items-center gap-2 mb-2">
+                     <Loader2 className="h-4 w-4 text-blue-400 animate-spin" />
+                     <span className="text-xs font-medium text-gray-300">
+                       {processingStep}
+                     </span>
+                   </div>
+                   <div className="w-full bg-gray-600 rounded-full h-1.5">
+                     <div
+                       className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                       style={{ width: `${processingProgress}%` }}
+                     ></div>
+                   </div>
+                 </div>
+               )}
+
+               {/* Action Buttons */}
+               <div className="mt-3 flex gap-2">
+                 <button
+                   onClick={validateAndParseChatGPTJson}
+                   disabled={!chatGPTJson.trim() || isProcessingChatGPT}
+                   className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+                 >
+                   <svg
+                     className="h-3 w-3"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor"
+                   >
+                     <path
+                       strokeLinecap="round"
+                       strokeLinejoin="round"
+                       strokeWidth={2}
+                       d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                     />
+                   </svg>
+                   Validate JSON
+                 </button>
+                 <button
+                   onClick={processChatGPTJson}
+                   disabled={!parsedComponent || isProcessingChatGPT}
+                   className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+                 >
+                   <svg
+                     className="h-3 w-3"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor"
+                   >
+                     <path
+                       strokeLinecap="round"
+                       strokeLinejoin="round"
+                       strokeWidth={2}
+                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                     />
+                   </svg>
+                   Create Component
+                 </button>
+               </div>
+
+               {/* Validation Status */}
+               {parsedComponent && (
+                 <div className="mt-3 p-3 bg-gray-700 border border-gray-600 rounded">
+                   <div className="flex items-center gap-2">
+                     <svg
+                       className="h-4 w-4 text-green-400"
+                       fill="none"
+                       viewBox="0 0 24 24"
+                       stroke="currentColor"
+                     >
+                       <path
+                         strokeLinecap="round"
+                         strokeLinejoin="round"
+                         strokeWidth={2}
+                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                       />
+                     </svg>
+                     <div>
+                       <p className="text-xs font-medium text-gray-300">
+                         JSON Validated Successfully!
+                       </p>
+                       <p className="text-xs text-gray-400">
+                         Component: {parsedComponent.component.name} with{" "}
+                         {parsedComponent.fields.length} fields
+                       </p>
+                     </div>
+                   </div>
+                 </div>
+                              )}
               </div>
-              <p className="text-gray-600 text-sm mb-4">
-                Paste the JSON response from ChatGPT here to create your component.
-              </p>
-              <textarea
-                value={chatGPTJson}
-                onChange={(e) => setChatGPTJson(e.target.value)}
-                placeholder={`{
-  "component": {
-    "name": "Example Component",
-    "handle": "example_component",
-    "description": "A sample component"
-  },
-  "fields": [
-    {
-      "label": "Title",
-      "name": "title",
-      "type": "text",
-      "required": true,
-      "placeholder": "Enter title"
-    }
-  ]
-}`}
-                className="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white font-mono text-sm"
-              />
-
-              {/* Processing Progress */}
-              {isProcessingChatGPT && (
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-                    <span className="text-sm font-medium text-blue-800">
-                      {processingStep}
-                    </span>
-                  </div>
-                  <div className="w-full bg-blue-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${processingProgress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="mt-4 flex gap-3">
-                <button
-                  onClick={validateAndParseChatGPTJson}
-                  disabled={!chatGPTJson.trim() || isProcessingChatGPT}
-                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  Validate JSON
-                </button>
-                <button
-                  onClick={processChatGPTJson}
-                  disabled={!parsedComponent || isProcessingChatGPT}
-                  className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                    />
-                  </svg>
-                  Create Component
-                </button>
-              </div>
-
-              {/* Validation Status */}
-              {parsedComponent && (
-                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <svg
-                      className="h-5 w-5 text-green-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <div>
-                      <p className="text-sm font-medium text-green-800">
-                        JSON Validated Successfully!
-                      </p>
-                      <p className="text-xs text-green-600">
-                        Component: {parsedComponent.component.name} with{" "}
-                        {parsedComponent.fields.length} fields
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                             )}
-             </div>
-           )}
+            )}
            </div>
          </div>
        </div>
