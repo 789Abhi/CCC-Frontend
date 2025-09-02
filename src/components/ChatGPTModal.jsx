@@ -274,13 +274,140 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
       };
     } else if (detection.type === 'default') {
       const pattern = cache.patterns[detection.pattern];
+      
+      // Format fields to match the expected structure
+      const formattedFields = pattern.fields.map(field => {
+        const formattedField = {
+          label: field.label,
+          name: field.name,
+          type: field.type,
+          required: field.required,
+          placeholder: field.placeholder || "",
+          config: {}
+        };
+        
+        // Handle select fields with options
+        if (field.type === 'select' && field.options) {
+          formattedField.config.options = field.options;
+        }
+        
+        // Handle number fields
+        if (field.type === 'number') {
+          formattedField.config = {
+            number_type: field.number_type || "normal",
+            min: field.min,
+            max: field.max,
+            step: field.step
+          };
+        }
+        
+        // Handle email fields
+        if (field.type === 'email') {
+          formattedField.config = {};
+        }
+        
+        // Handle password fields
+        if (field.type === 'password') {
+          formattedField.config = {};
+        }
+        
+        // Handle file fields
+        if (field.type === 'file') {
+          formattedField.config = {
+            allowed_types: ['image', 'video', 'document', 'audio', 'archive'],
+            max_file_size: 25,
+            return_type: 'url',
+            show_preview: true,
+            show_download: true,
+            show_delete: true
+          };
+        }
+        
+        // Handle link fields
+        if (field.type === 'link') {
+          formattedField.config = {
+            link_types: ['internal', 'external'],
+            default_type: 'internal',
+            post_types: ['post', 'page'],
+            show_target: true,
+            show_title: true
+          };
+        }
+        
+        // Handle image fields
+        if (field.type === 'image') {
+          formattedField.config = {
+            return_type: 'url'
+          };
+        }
+        
+        // Handle video fields
+        if (field.type === 'video') {
+          formattedField.config = {
+            return_type: 'url',
+            sources: ['file', 'youtube', 'vimeo', 'url'],
+            player_options: {
+              controls: true,
+              autoplay: false,
+              muted: false,
+              loop: false,
+              download: true
+            }
+          };
+        }
+        
+        // Handle wysiwyg fields
+        if (field.type === 'wysiwyg') {
+          formattedField.config = {
+            editor_settings: {
+              media_buttons: true,
+              teeny: false,
+              textarea_rows: 10
+            }
+          };
+        }
+        
+        // Handle checkbox fields
+        if (field.type === 'checkbox') {
+          formattedField.config = {
+            options: field.options || [],
+            multiple: true
+          };
+        }
+        
+        // Handle radio fields
+        if (field.type === 'radio') {
+          formattedField.config = {
+            options: field.options || [],
+            multiple: false
+          };
+        }
+        
+        // Handle range fields
+        if (field.type === 'range') {
+          formattedField.config = {
+            min_value: field.min || 0,
+            max_value: field.max || 100,
+            prepend: field.prepend || '',
+            append: field.append || ''
+          };
+        }
+        
+        // Handle oembed fields
+        if (field.type === 'oembed') {
+          formattedField.config = {};
+        }
+        
+        return formattedField;
+      });
+      
       return {
         component: {
           name: pattern.name,
           handle: pattern.handle,
           description: pattern.description
         },
-        fields: pattern.fields
+        fields: formattedFields
       };
     }
     
@@ -374,16 +501,14 @@ Please return ONLY the JSON response, no additional text or explanations.`;
         setAutoGenerationProgress(30);
         
         const cachedComponent = generateCachedComponent(detectedPattern);
-        const cachedJson = JSON.stringify(cachedComponent, null, 2);
         
         setAutoGenerationStep("Validating cached component...");
         setAutoGenerationProgress(60);
         
-        // Validate and parse the cached JSON
-        setChatGPTJson(cachedJson);
-        const isValid = validateAndParseChatGPTJson();
+        // Directly use the cached component data instead of going through validation
+        setParsedComponent(cachedComponent);
         
-        if (isValid) {
+        if (cachedComponent && cachedComponent.component && cachedComponent.fields) {
           setAutoGenerationStep("Creating component in WordPress...");
           setAutoGenerationProgress(80);
           
@@ -393,7 +518,7 @@ Please return ONLY the JSON response, no additional text or explanations.`;
           setAutoGenerationStep("Component created successfully!");
           setAutoGenerationProgress(100);
         } else {
-          throw new Error("Cached component validation failed");
+          throw new Error("Invalid cached component structure");
         }
       } else {
         // Use AI for custom components
@@ -847,6 +972,8 @@ Please return ONLY the JSON response, no additional text.`;
       showMessage("No valid component data to create", "error");
       return;
     }
+    
+
 
     setIsProcessingChatGPT(true);
     setProcessingStep("Creating component...");
