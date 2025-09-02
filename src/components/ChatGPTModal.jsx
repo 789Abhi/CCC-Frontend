@@ -46,18 +46,20 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
               { label: "Rating", name: "rating", type: "select", required: false, options: ["1", "2", "3", "4", "5"] }
             ]
           },
-          hero: {
-            name: "Hero Section",
-            handle: "hero_section",
-            description: "Hero section with title, subtitle, and call-to-action",
-            fields: [
-              { label: "Title", name: "title", type: "text", required: true },
-              { label: "Subtitle", name: "subtitle", type: "text", required: false },
-              { label: "Background Image", name: "background_image", type: "image", required: false },
-              { label: "Button Text", name: "button_text", type: "text", required: false },
-              { label: "Button Link", name: "button_link", type: "link", required: false }
-            ]
-          },
+                     hero: {
+             name: "Hero Section",
+             handle: "hero_section",
+             description: "Hero section with title, subtitle, background video, and call-to-action",
+             fields: [
+               { label: "Background Video", name: "background_video", type: "video", required: false },
+               { label: "Heading", name: "heading", type: "text", required: false },
+               { label: "Title", name: "title", type: "text", required: true },
+               { label: "Description", name: "description", type: "textarea", required: false },
+               { label: "Button Text", name: "button_text", type: "text", required: false },
+               { label: "Button Link", name: "button_link", type: "link", required: false },
+               { label: "Button Color", name: "button_color", type: "color", required: false }
+             ]
+           },
           contact: {
             name: "Contact Form",
             handle: "contact_form",
@@ -393,12 +395,21 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
           };
         }
         
-        // Handle oembed fields
-        if (field.type === 'oembed') {
-          formattedField.config = {};
-        }
-        
-        return formattedField;
+                 // Handle color fields
+         if (field.type === 'color') {
+           formattedField.config = {
+             default_value: field.default_value || '#000000',
+             enable_opacity: field.enable_opacity || false,
+             return_format: field.return_format || 'hex'
+           };
+         }
+         
+         // Handle oembed fields
+         if (field.type === 'oembed') {
+           formattedField.config = {};
+         }
+         
+         return formattedField;
       });
       
       return {
@@ -968,12 +979,13 @@ Please return ONLY the JSON response, no additional text.`;
   };
 
   const processChatGPTJson = async () => {
-    if (!parsedComponent) {
+    // Get the current parsed component from state
+    const currentParsedComponent = parsedComponent;
+    
+    if (!currentParsedComponent) {
       showMessage("No valid component data to create", "error");
       return;
     }
-    
-
 
     setIsProcessingChatGPT(true);
     setProcessingStep("Creating component...");
@@ -984,10 +996,10 @@ Please return ONLY the JSON response, no additional text.`;
       setProcessingStep("Creating component...");
       setProcessingProgress(20);
 
-      const componentFormData = new FormData();
-      componentFormData.append("action", "ccc_create_component");
-      componentFormData.append("name", parsedComponent.component.name);
-      componentFormData.append("handle", parsedComponent.component.handle);
+             const componentFormData = new FormData();
+       componentFormData.append("action", "ccc_create_component");
+       componentFormData.append("name", currentParsedComponent.component.name);
+       componentFormData.append("handle", currentParsedComponent.component.handle);
       componentFormData.append("nonce", window.cccData.nonce);
 
       const componentResponse = await axios.post(
@@ -1020,12 +1032,12 @@ Please return ONLY the JSON response, no additional text.`;
             window.cccData.ajaxUrl,
             searchFormData
           );
-          if (searchResponse.data.success && searchResponse.data.data) {
-            const foundComponent = searchResponse.data.data.find(
-              (comp) =>
-                comp.name === parsedComponent.component.name ||
-                comp.label === parsedComponent.component.name
-            );
+                     if (searchResponse.data.success && searchResponse.data.data) {
+             const foundComponent = searchResponse.data.data.find(
+               (comp) =>
+                 comp.name === currentParsedComponent.component.name ||
+                 comp.label === currentParsedComponent.component.name
+             );
             if (foundComponent) {
               componentId = foundComponent.id;
             }
@@ -1042,11 +1054,11 @@ Please return ONLY the JSON response, no additional text.`;
       setProcessingStep("Creating fields...");
       setProcessingProgress(50);
 
-      // Step 2: Create fields
-      let fieldsCreated = 0;
-      for (const fieldData of parsedComponent.fields) {
-        setProcessingStep(`Creating field: ${fieldData.label}...`);
-        setProcessingProgress(50 + (fieldsCreated / parsedComponent.fields.length) * 40);
+             // Step 2: Create fields
+       let fieldsCreated = 0;
+       for (const fieldData of currentParsedComponent.fields) {
+         setProcessingStep(`Creating field: ${fieldData.label}...`);
+         setProcessingProgress(50 + (fieldsCreated / currentParsedComponent.fields.length) * 40);
 
         try {
           const fieldFormData = new FormData();
@@ -1100,10 +1112,10 @@ Please return ONLY the JSON response, no additional text.`;
       // Wait a moment to show completion
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      showMessage(
-        `Component "${parsedComponent.component.name}" created successfully with ${fieldsCreated} fields!`,
-        "success"
-      );
+             showMessage(
+         `Component "${currentParsedComponent.component.name}" created successfully with ${fieldsCreated} fields!`,
+         "success"
+       );
       handleClose();
 
       // Notify parent component to refresh
