@@ -1273,27 +1273,27 @@ Please return ONLY the JSON response, no additional text.`;
   return (
     <>
              {/* Main ChatGPT Modal */}
-       <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
-         <div className="bg-gray-900 rounded-lg w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl border border-gray-700">
+       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+         <div className="bg-white rounded-lg w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl border-2 border-pink-500">
                       {/* Header - Fixed */}
-            <div className="p-4 border-b border-gray-700 flex-shrink-0 bg-gray-900">
+            <div className="p-4 border-b-2 border-pink-500 flex-shrink-0 bg-pink-50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 bg-gray-700 rounded-full flex items-center justify-center">
-                    <Bot className="h-5 w-5 text-gray-300" />
+                  <div className="h-8 w-8 bg-pink-500 rounded-full flex items-center justify-center">
+                    <Bot className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-100">
+                    <h2 className="text-lg font-semibold text-gray-800">
                       Create Component with AI
                     </h2>
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-gray-600">
                       AI-powered component generation
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={handleClose}
-                  className="text-gray-400 hover:text-gray-200 transition-colors p-2 rounded-lg hover:bg-gray-800"
+                  className="text-gray-600 hover:text-gray-800 transition-colors p-2 rounded-lg hover:bg-pink-100"
                 >
                   <svg
                     className="h-5 w-5"
@@ -1313,14 +1313,14 @@ Please return ONLY the JSON response, no additional text.`;
             </div>
 
            {/* Content - Scrollable */}
-           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-900">
+           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
                          {/* API Key Settings */}
-             <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+             <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-4">
                <div className="flex items-center justify-between mb-3">
                  <div className="flex items-center gap-3">
-                   <div className="h-6 w-6 bg-gray-700 rounded-full flex items-center justify-center">
+                   <div className="h-6 w-6 bg-pink-500 rounded-full flex items-center justify-center">
                      <svg
-                       className="h-3 w-3 text-gray-300"
+                       className="h-3 w-3 text-white"
                        fill="none"
                        viewBox="0 0 24 24"
                        stroke="currentColor"
@@ -1334,17 +1334,17 @@ Please return ONLY the JSON response, no additional text.`;
                      </svg>
                    </div>
                    <div>
-                     <h3 className="font-medium text-gray-100 text-sm">
+                     <h3 className="font-medium text-gray-800 text-sm">
                        OpenAI API Key
                      </h3>
-                     <p className="text-xs text-gray-400">
+                     <p className="text-xs text-gray-600">
                        Required for auto-generation
                      </p>
                    </div>
                  </div>
                  <button
                    onClick={() => setShowApiKeySettings(!showApiKeySettings)}
-                   className="text-xs text-gray-400 hover:text-gray-200 transition-colors px-2 py-1 rounded hover:bg-gray-700"
+                   className="text-xs text-pink-600 hover:text-pink-700 transition-colors px-2 py-1 rounded hover:bg-pink-100"
                  >
                    {showApiKeySettings ? "Hide" : "Configure"}
                  </button>
@@ -1353,7 +1353,7 @@ Please return ONLY the JSON response, no additional text.`;
                {/* API Key Status */}
                <div className="flex items-center gap-2 mb-3">
                  <div className={`w-2 h-2 rounded-full ${(apiKey && apiKey !== "***configured***") || process.env.REACT_APP_OPENAI_API_KEY ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                 <span className="text-xs text-gray-300">
+                 <span className="text-xs text-gray-700">
                    {(apiKey && apiKey !== "***configured***") || process.env.REACT_APP_OPENAI_API_KEY ? "API Key Configured" : "API Key Not Configured"}
                  </span>
                  {(apiKey && apiKey !== "***configured***") && (
@@ -1370,9 +1370,9 @@ Please return ONLY the JSON response, no additional text.`;
 
                {/* API Key Input */}
                {showApiKeySettings && (
-                 <div className="space-y-3 p-3 bg-gray-700 rounded border border-gray-600">
+                 <div className="space-y-3 p-3 bg-pink-100 rounded border-2 border-pink-300">
                    <div>
-                     <label className="block text-xs font-medium text-gray-300 mb-1">
+                     <label className="block text-xs font-medium text-gray-700 mb-1">
                        OpenAI API Key
                      </label>
                      <input
@@ -1380,15 +1380,15 @@ Please return ONLY the JSON response, no additional text.`;
                        value={apiKey}
                        onChange={(e) => setApiKey(e.target.value)}
                        placeholder="sk-..."
-                       className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                       className="w-full px-3 py-2 bg-white border border-pink-300 rounded text-gray-800 placeholder-gray-500 focus:ring-1 focus:ring-pink-500 focus:border-pink-500"
                      />
-                     <p className="text-xs text-gray-500 mt-1">
+                     <p className="text-xs text-gray-600 mt-1">
                        Get your API key from{" "}
                        <a
                          href="https://platform.openai.com/api-keys"
                          target="_blank"
                          rel="noopener noreferrer"
-                         className="text-blue-400 hover:text-blue-300 underline"
+                         className="text-pink-600 hover:text-pink-700 underline"
                        >
                          OpenAI Platform
                        </a>
@@ -1398,7 +1398,7 @@ Please return ONLY the JSON response, no additional text.`;
                      <button
                        onClick={saveApiKey}
                        disabled={!apiKey.trim() || isSavingApiKey}
-                       className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+                       className="flex items-center gap-1 px-3 py-1.5 bg-pink-600 text-white rounded text-xs hover:bg-pink-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                      >
                        {isSavingApiKey ? (
                          <Loader2 className="h-3 w-3 animate-spin" />
@@ -1425,7 +1425,7 @@ Please return ONLY the JSON response, no additional text.`;
                          localStorage.removeItem('ccc_openai_api_key');
                          showMessage("API key cleared", "success");
                        }}
-                       className="px-3 py-1.5 bg-gray-600 text-gray-200 rounded text-xs hover:bg-gray-500 transition-colors"
+                       className="px-3 py-1.5 bg-gray-400 text-gray-700 rounded text-xs hover:bg-gray-500 transition-colors"
                      >
                        Clear
                      </button>
@@ -1435,12 +1435,12 @@ Please return ONLY the JSON response, no additional text.`;
               </div>
              
                            {/* Cache Management */}
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+              <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-6 w-6 bg-gray-700 rounded-full flex items-center justify-center">
+                    <div className="h-6 w-6 bg-pink-500 rounded-full flex items-center justify-center">
                       <svg
-                        className="h-3 w-3 text-gray-300"
+                        className="h-3 w-3 text-white"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -1454,17 +1454,17 @@ Please return ONLY the JSON response, no additional text.`;
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-100 text-sm">
+                      <h3 className="font-medium text-gray-800 text-sm">
                         AI Component Cache
                       </h3>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-gray-600">
                         Your AI-generated components saved for reuse
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setShowCacheManager(!showCacheManager)}
-                    className="text-xs text-gray-400 hover:text-gray-200 transition-colors px-2 py-1 rounded hover:bg-gray-700"
+                    className="text-xs text-pink-600 hover:text-pink-700 transition-colors px-2 py-1 rounded hover:bg-pink-100"
                   >
                     {showCacheManager ? "Hide" : "Manage"}
                   </button>
@@ -1473,16 +1473,16 @@ Please return ONLY the JSON response, no additional text.`;
                                 {/* Cache Status */}
                  <div className="flex items-center gap-2 mb-3">
                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                   <span className="text-xs text-gray-300">
+                   <span className="text-xs text-gray-700">
                      AI Cache Active - Your generated components are saved for reuse
                    </span>
                  </div>
 
                 {/* Cache Manager */}
                 {showCacheManager && (
-                  <div className="space-y-3 p-3 bg-gray-700 rounded border border-gray-600">
+                  <div className="space-y-3 p-3 bg-pink-100 rounded border-2 border-pink-300">
                     <div>
-                      <h4 className="font-medium text-gray-100 text-xs mb-2">Your Saved Patterns</h4>
+                      <h4 className="font-medium text-gray-800 text-xs mb-2">Your Saved Patterns</h4>
                       <div className="space-y-2">
                         {(() => {
                           const cache = getComponentCache();
@@ -1490,17 +1490,17 @@ Please return ONLY the JSON response, no additional text.`;
                           
                           if (userPatterns.length === 0) {
                             return (
-                              <div className="text-xs text-gray-400 italic">
+                              <div className="text-xs text-gray-600 italic">
                                 No saved patterns yet. Create components with AI to automatically save them here!
                               </div>
                             );
                           }
                           
                           return userPatterns.map(([hash, pattern]) => (
-                            <div key={hash} className="flex items-center justify-between p-2 bg-gray-800 rounded border border-gray-600">
+                            <div key={hash} className="flex items-center justify-between p-2 bg-white rounded border border-pink-300">
                               <div className="flex-1">
-                                <div className="font-medium text-gray-100 text-xs">{pattern.component.name}</div>
-                                <div className="text-xs text-gray-400">{pattern.prompt}</div>
+                                <div className="font-medium text-gray-800 text-xs">{pattern.component.name}</div>
+                                <div className="text-xs text-gray-600">{pattern.prompt}</div>
                                 <div className="text-xs text-gray-500">
                                   {pattern.fields.length} fields • Created {new Date(pattern.created).toLocaleDateString()}
                                 </div>
@@ -1513,7 +1513,7 @@ Please return ONLY the JSON response, no additional text.`;
                                   setShowCacheManager(false);
                                   setShowCacheManager(true); // Force re-render
                                 }}
-                                className="text-red-400 hover:text-red-300 p-1"
+                                className="text-red-500 hover:text-red-600 p-1"
                               >
                                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1525,14 +1525,14 @@ Please return ONLY the JSON response, no additional text.`;
                       </div>
                     </div>
                     
-                    <div className="pt-2 border-t border-gray-600">
+                    <div className="pt-2 border-t border-pink-300">
                       <button
                         onClick={() => {
                           localStorage.removeItem('ccc_component_cache');
                           setShowCacheManager(false);
                           setShowCacheManager(true); // Force re-render
                         }}
-                        className="text-xs text-red-400 hover:text-red-300"
+                        className="text-xs text-red-500 hover:text-red-600"
                       >
                         Clear All Cached Patterns
                       </button>
@@ -1542,11 +1542,11 @@ Please return ONLY the JSON response, no additional text.`;
               </div>
              
                            {/* Context Prompt Input */}
-             <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+             <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-4">
                <div className="flex items-center gap-3 mb-3">
-                 <div className="h-6 w-6 bg-gray-700 rounded-full flex items-center justify-center">
+                 <div className="h-6 w-6 bg-pink-500 rounded-full flex items-center justify-center">
                    <svg
-                     className="h-3 w-3 text-gray-300"
+                     className="h-3 w-3 text-white"
                      fill="none"
                      viewBox="0 0 24 24"
                      stroke="currentColor"
@@ -1559,11 +1559,11 @@ Please return ONLY the JSON response, no additional text.`;
                      />
                    </svg>
                  </div>
-                 <h3 className="font-medium text-gray-100 text-sm">
+                 <h3 className="font-medium text-gray-800 text-sm">
                    Describe Your Component
                  </h3>
                </div>
-               <p className="text-gray-400 text-xs mb-3">
+               <p className="text-gray-600 text-xs mb-3">
                  Tell us what component you want to create. Be specific about the
                  fields and functionality you need.
                </p>
@@ -1571,7 +1571,7 @@ Please return ONLY the JSON response, no additional text.`;
                  value={contextPrompt}
                  onChange={(e) => setContextPrompt(e.target.value)}
                  placeholder="Example: I want to create a testimonials component with customer name, testimonial content, customer photo, company name, and rating. The component should be visually appealing and professional."
-                 className="w-full h-20 p-3 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                 className="w-full h-20 p-3 bg-gray-900 border border-gray-700 rounded text-gray-100 placeholder-gray-400 focus:ring-1 focus:ring-pink-500 focus:border-pink-500 resize-none"
                />
 
                                                            {/* Action Buttons - Enhanced with Auto Generation */}
@@ -1581,7 +1581,7 @@ Please return ONLY the JSON response, no additional text.`;
                      <button
                        onClick={generateComponentWithAI}
                        disabled={!contextPrompt.trim() || isAutoGenerating}
-                       className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors text-sm"
+                       className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded hover:bg-pink-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm"
                      >
                        {isAutoGenerating ? (
                          <Loader2 className="h-4 w-4 animate-spin" />
@@ -1597,7 +1597,7 @@ Please return ONLY the JSON response, no additional text.`;
                      <button
                        onClick={openChatGPT}
                        disabled={!contextPrompt.trim()}
-                       className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors text-sm"
+                       className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
                      >
                        <Bot className="h-4 w-4" />
                        <span className="font-medium">Generate with ChatGPT</span>
@@ -1607,7 +1607,7 @@ Please return ONLY the JSON response, no additional text.`;
                      <button
                        onClick={openChatGPTManually}
                        disabled={contextPrompt.trim()}
-                       className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors text-sm"
+                       className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
                      >
                        <svg
                          className="h-4 w-4"
@@ -1625,7 +1625,7 @@ Please return ONLY the JSON response, no additional text.`;
                        <span className="font-medium">Open ChatGPT Manually</span>
                      </button>
                    </div>
-                                    <p className="text-xs text-gray-400">
+                                    <p className="text-xs text-gray-600">
                      💡 <strong>Auto Generate:</strong> Fully automatic AI component creation. <strong>Generate with ChatGPT:</strong> Opens ChatGPT with pre-filled prompt. <strong>Manual:</strong> Opens ChatGPT with blank page.
                    </p>
                 </div>
@@ -1634,31 +1634,31 @@ Please return ONLY the JSON response, no additional text.`;
 
                                                                                            {/* Enhanced Auto Generation Progress */}
                  {isAutoGenerating && (
-                   <div className="mt-4 p-4 bg-gray-800 border border-gray-700 rounded-lg">
+                   <div className="mt-4 p-4 bg-pink-100 border-2 border-pink-300 rounded-lg">
                      <div className="flex items-center gap-3 mb-3">
-                       <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
+                       <Loader2 className="h-5 w-5 text-pink-500 animate-spin" />
                        <div className="flex-1">
-                         <p className="text-sm text-gray-300 font-medium">
+                         <p className="text-sm text-gray-700 font-medium">
                            {autoGenerationStep}
                          </p>
-                         <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
+                         <div className="w-full bg-pink-200 rounded-full h-1.5 mt-2">
                            <div
-                             className="bg-blue-500 h-1.5 rounded-full transition-all duration-500"
+                             className="bg-pink-500 h-1.5 rounded-full transition-all duration-500"
                              style={{ width: `${autoGenerationProgress}%` }}
                            ></div>
                          </div>
                        </div>
                        <div className="text-right">
-                         <div className="text-lg font-semibold text-blue-400">
+                         <div className="text-lg font-semibold text-pink-600">
                            {autoGenerationProgress}%
                          </div>
                        </div>
                      </div>
                      
                      {isUsingCachedStructure && (
-                       <div className="flex items-center gap-2 p-2 bg-gray-700 rounded border border-gray-600">
+                       <div className="flex items-center gap-2 p-2 bg-pink-200 rounded border border-pink-400">
                          <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                         <span className="text-xs text-gray-300">
+                         <span className="text-xs text-gray-700">
                            Using cached component (no API cost)
                          </span>
                        </div>
@@ -1667,12 +1667,12 @@ Please return ONLY the JSON response, no additional text.`;
                  )}
 
                              {/* Repeater Option */}
-               <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+               <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-4">
                  <div className="flex items-center justify-between">
                    <div className="flex items-center gap-3">
-                     <div className="h-6 w-6 bg-gray-700 rounded-full flex items-center justify-center">
+                     <div className="h-6 w-6 bg-pink-500 rounded-full flex items-center justify-center">
                        <svg
-                         className="h-3 w-3 text-gray-300"
+                         className="h-3 w-3 text-white"
                          fill="none"
                          viewBox="0 0 24 24"
                          stroke="currentColor"
@@ -1686,10 +1686,10 @@ Please return ONLY the JSON response, no additional text.`;
                        </svg>
                      </div>
                      <div>
-                       <h3 className="font-medium text-gray-100 text-sm">
+                       <h3 className="font-medium text-gray-800 text-sm">
                          Multiple Instances
                        </h3>
-                       <p className="text-xs text-gray-400">
+                       <p className="text-xs text-gray-600">
                          Enable if this component should support multiple instances
                        </p>
                      </div>
@@ -1701,7 +1701,7 @@ Please return ONLY the JSON response, no additional text.`;
                        onChange={(e) => setHasRepeater(e.target.checked)}
                        className="sr-only peer"
                      />
-                     <div className="w-9 h-5 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                     <div className="w-9 h-5 bg-gray-400 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-pink-600"></div>
                    </label>
                  </div>
                </div>
@@ -1709,11 +1709,11 @@ Please return ONLY the JSON response, no additional text.`;
 
                                                    {/* ChatGPT JSON Input - Only show for manual mode */}
               {showManualSection && (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-4">
                <div className="flex items-center gap-3 mb-3">
-                 <div className="h-6 w-6 bg-gray-700 rounded-full flex items-center justify-center">
+                 <div className="h-6 w-6 bg-pink-500 rounded-full flex items-center justify-center">
                    <svg
-                     className="h-3 w-3 text-gray-300"
+                     className="h-3 w-3 text-white"
                      fill="none"
                      viewBox="0 0 24 24"
                      stroke="currentColor"
@@ -1726,11 +1726,11 @@ Please return ONLY the JSON response, no additional text.`;
                      />
                    </svg>
                  </div>
-                 <h3 className="font-medium text-gray-100 text-sm">
+                 <h3 className="font-medium text-gray-800 text-sm">
                    Paste ChatGPT Response
                  </h3>
                </div>
-               <p className="text-gray-400 text-xs mb-3">
+               <p className="text-gray-600 text-xs mb-3">
                  Paste the JSON response from ChatGPT here to create your component.
                </p>
                <textarea
@@ -1752,21 +1752,21 @@ Please return ONLY the JSON response, no additional text.`;
      }
    ]
  }`}
-                 className="w-full h-32 p-3 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none font-mono text-xs"
+                 className="w-full h-32 p-3 bg-gray-900 border border-gray-700 rounded text-gray-100 placeholder-gray-400 focus:ring-1 focus:ring-pink-500 focus:border-pink-500 resize-none font-mono text-xs"
                />
 
                {/* Processing Progress */}
                {isProcessingChatGPT && (
-                 <div className="mt-3 p-3 bg-gray-700 border border-gray-600 rounded">
+                 <div className="mt-3 p-3 bg-pink-100 border border-pink-300 rounded">
                    <div className="flex items-center gap-2 mb-2">
-                     <Loader2 className="h-4 w-4 text-blue-400 animate-spin" />
-                     <span className="text-xs font-medium text-gray-300">
+                     <Loader2 className="h-4 w-4 text-pink-500 animate-spin" />
+                     <span className="text-xs font-medium text-gray-700">
                        {processingStep}
                      </span>
                    </div>
-                   <div className="w-full bg-gray-600 rounded-full h-1.5">
+                   <div className="w-full bg-pink-200 rounded-full h-1.5">
                      <div
-                       className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                       className="bg-pink-500 h-1.5 rounded-full transition-all duration-300"
                        style={{ width: `${processingProgress}%` }}
                      ></div>
                    </div>
@@ -1778,7 +1778,7 @@ Please return ONLY the JSON response, no additional text.`;
                  <button
                    onClick={validateAndParseChatGPTJson}
                    disabled={!chatGPTJson.trim() || isProcessingChatGPT}
-                   className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+                   className="flex items-center gap-1 px-3 py-1.5 bg-pink-600 text-white rounded text-xs hover:bg-pink-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                  >
                    <svg
                      className="h-3 w-3"
@@ -1798,7 +1798,7 @@ Please return ONLY the JSON response, no additional text.`;
                  <button
                    onClick={processChatGPTJson}
                    disabled={!parsedComponent || isProcessingChatGPT}
-                   className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+                   className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                  >
                    <svg
                      className="h-3 w-3"
@@ -1819,10 +1819,10 @@ Please return ONLY the JSON response, no additional text.`;
 
                {/* Validation Status */}
                {parsedComponent && (
-                 <div className="mt-3 p-3 bg-gray-700 border border-gray-600 rounded">
+                 <div className="mt-3 p-3 bg-pink-100 border border-pink-300 rounded">
                    <div className="flex items-center gap-2">
                      <svg
-                       className="h-4 w-4 text-green-400"
+                       className="h-4 w-4 text-green-500"
                        fill="none"
                        viewBox="0 0 24 24"
                        stroke="currentColor"
@@ -1835,10 +1835,10 @@ Please return ONLY the JSON response, no additional text.`;
                        />
                      </svg>
                      <div>
-                       <p className="text-xs font-medium text-gray-300">
+                       <p className="text-xs font-medium text-gray-700">
                          JSON Validated Successfully!
                        </p>
-                       <p className="text-xs text-gray-400">
+                       <p className="text-xs text-gray-600">
                          Component: {parsedComponent.component.name} with{" "}
                          {parsedComponent.fields.length} fields
                        </p>
