@@ -27,84 +27,114 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
   // API Configuration
   const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
   
-  // Persistent cache for component patterns to reduce API costs
-  const getComponentCache = () => {
-    try {
-      const cached = localStorage.getItem('ccc_component_cache');
-      return cached ? JSON.parse(cached) : {
-        // Default patterns
-        patterns: {
-          testimonial: {
-            name: "Testimonial",
-            handle: "testimonial", 
-            description: "Customer testimonial with photo and rating",
-            fields: [
-              { label: "Customer Name", name: "customer_name", type: "text", required: true },
-              { label: "Testimonial Content", name: "testimonial_content", type: "textarea", required: true },
-              { label: "Customer Photo", name: "customer_photo", type: "image", required: false },
-              { label: "Company Name", name: "company_name", type: "text", required: false },
-              { label: "Rating", name: "rating", type: "select", required: false, options: ["1", "2", "3", "4", "5"] }
-            ]
+     // Persistent cache for component patterns to reduce API costs
+   const getComponentCache = () => {
+     try {
+       const cached = localStorage.getItem('ccc_component_cache');
+       return cached ? JSON.parse(cached) : {
+                   // Basic default patterns - common component types
+          patterns: {
+            testimonial: {
+              name: "Testimonial",
+              handle: "testimonial", 
+              description: "Customer testimonial with photo and rating",
+              fields: [
+                { label: "Customer Name", name: "customer_name", type: "text", required: true },
+                { label: "Testimonial Content", name: "testimonial_content", type: "textarea", required: true },
+                { label: "Customer Photo", name: "customer_photo", type: "image", required: false },
+                { label: "Company Name", name: "company_name", type: "text", required: false },
+                { label: "Rating", name: "rating", type: "select", required: false, options: ["1", "2", "3", "4", "5"] }
+              ]
+            },
+            hero: {
+              name: "Hero Section",
+              handle: "hero_section",
+              description: "Hero section with background image, heading, and call-to-action",
+              fields: [
+                { label: "Background Image", name: "background_image", type: "image", required: true },
+                { label: "Heading", name: "heading", type: "text", required: true },
+                { label: "Subtitle", name: "subtitle", type: "text", required: false },
+                { label: "Description", name: "description", type: "textarea", required: false },
+                { label: "Button Text", name: "button_text", type: "text", required: true },
+                { label: "Button Link", name: "button_link", type: "link", required: true },
+                { label: "Button Color", name: "button_color", type: "color", required: false }
+              ]
+            },
+            contact: {
+              name: "Contact Form",
+              handle: "contact_form",
+              description: "Contact form with name, email, and message fields",
+              fields: [
+                { label: "Name", name: "name", type: "text", required: true },
+                { label: "Email", name: "email", type: "email", required: true },
+                { label: "Phone", name: "phone", type: "number", required: false },
+                { label: "Message", name: "message", type: "textarea", required: true },
+                { label: "Subject", name: "subject", type: "text", required: false }
+              ]
+            },
+            gallery: {
+              name: "Image Gallery",
+              handle: "image_gallery",
+              description: "Image gallery with title and multiple images",
+              fields: [
+                { label: "Gallery Title", name: "gallery_title", type: "text", required: true },
+                { label: "Gallery Description", name: "gallery_description", type: "textarea", required: false },
+                { label: "Images", name: "images", type: "repeater", required: true },
+                { label: "Background Color", name: "background_color", type: "color", required: false }
+              ]
+            },
+            pricing: {
+              name: "Pricing Table",
+              handle: "pricing_table",
+              description: "Pricing table with multiple pricing plans",
+              fields: [
+                { label: "Section Title", name: "section_title", type: "text", required: true },
+                { label: "Section Description", name: "section_description", type: "textarea", required: false },
+                { label: "Pricing Plans", name: "pricing_plans", type: "repeater", required: true },
+                { label: "Background Color", name: "background_color", type: "color", required: false }
+              ]
+            },
+            timeline: {
+              name: "History Timeline",
+              handle: "history_timeline",
+              description: "Timeline component with events, dates, and visual elements",
+              fields: [
+                { label: "Timeline Items", name: "timeline_items", type: "repeater", required: true },
+                { label: "Background Color", name: "background_color", type: "color", required: false },
+                { label: "Overlay", name: "overlay", type: "color", required: false }
+              ]
+            },
+            team: {
+              name: "Team Members",
+              handle: "team_members",
+              description: "Team members section with photos and details",
+              fields: [
+                { label: "Section Title", name: "section_title", type: "text", required: true },
+                { label: "Section Description", name: "section_description", type: "textarea", required: false },
+                { label: "Team Members", name: "team_members", type: "repeater", required: true },
+                { label: "Background Color", name: "background_color", type: "color", required: false }
+              ]
+            },
+            services: {
+              name: "Services Section",
+              handle: "services_section",
+              description: "Services section with icons and descriptions",
+              fields: [
+                { label: "Section Title", name: "section_title", type: "text", required: true },
+                { label: "Section Description", name: "section_description", type: "textarea", required: false },
+                { label: "Services", name: "services", type: "repeater", required: true },
+                { label: "Background Color", name: "background_color", type: "color", required: false }
+              ]
+            }
           },
-                     hero: {
-             name: "Hero Section",
-             handle: "hero_section",
-             description: "Hero section with title, subtitle, background video, and call-to-action",
-             fields: [
-               { label: "Background Video", name: "background_video", type: "video", required: false },
-               { label: "Heading", name: "heading", type: "text", required: false },
-               { label: "Title", name: "title", type: "text", required: true },
-               { label: "Description", name: "description", type: "textarea", required: false },
-               { label: "Button Text", name: "button_text", type: "text", required: false },
-               { label: "Button Link", name: "button_link", type: "link", required: false },
-               { label: "Button Color", name: "button_color", type: "color", required: false }
-             ]
-           },
-          contact: {
-            name: "Contact Form",
-            handle: "contact_form",
-            description: "Contact form with name, email, and message fields",
-            fields: [
-              { label: "Name", name: "name", type: "text", required: true },
-              { label: "Email", name: "email", type: "email", required: true },
-              { label: "Phone", name: "phone", type: "number", required: false },
-              { label: "Message", name: "message", type: "textarea", required: true },
-              { label: "Subject", name: "subject", type: "text", required: false }
-            ]
-          },
-          gallery: {
-            name: "Image Gallery",
-            handle: "image_gallery",
-            description: "Image gallery with multiple images and layout options",
-            fields: [
-              { label: "Gallery Title", name: "gallery_title", type: "text", required: false },
-              { label: "Images", name: "images", type: "image", required: true },
-              { label: "Description", name: "description", type: "textarea", required: false },
-              { label: "Layout", name: "layout", type: "select", required: false, options: ["grid", "masonry", "slider"] }
-            ]
-          },
-          pricing: {
-            name: "Pricing Table",
-            handle: "pricing_table",
-            description: "Pricing table with plans, features, and call-to-action",
-            fields: [
-              { label: "Plan Name", name: "plan_name", type: "text", required: true },
-              { label: "Price", name: "price", type: "text", required: true },
-              { label: "Features", name: "features", type: "textarea", required: true },
-              { label: "Button Text", name: "button_text", type: "text", required: false },
-              { label: "Button Link", name: "button_link", type: "link", required: false },
-              { label: "Popular", name: "popular", type: "checkbox", required: false }
-            ]
-          }
-        },
-        // User-created patterns (saved from successful AI generations)
-        userPatterns: {}
-      };
-    } catch (error) {
-      console.error("Error loading component cache:", error);
-      return { patterns: {}, userPatterns: {} };
-    }
-  };
+         // User-created patterns (saved from successful AI generations)
+         userPatterns: {}
+       };
+     } catch (error) {
+       console.error("Error loading component cache:", error);
+       return { patterns: {}, userPatterns: {} };
+     }
+   };
 
   const saveComponentCache = (cache) => {
     try {
@@ -233,37 +263,62 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
     }
   };
 
-  // Detect component patterns (both default and user-created)
-  const detectComponentPattern = (prompt) => {
-    const cache = getComponentCache();
-    const lowerPrompt = prompt.toLowerCase().trim();
-    
-    // First check user-created patterns (exact matches)
-    for (const [hash, userPattern] of Object.entries(cache.userPatterns)) {
-      if (userPattern.prompt === lowerPrompt) {
-        return { type: 'user', hash, pattern: userPattern };
+     // Detect component patterns (both default and user-created)
+   const detectComponentPattern = (prompt) => {
+     const cache = getComponentCache();
+     const lowerPrompt = prompt.toLowerCase().trim();
+     
+     // First check user-created patterns (exact matches and similar patterns)
+     for (const [hash, userPattern] of Object.entries(cache.userPatterns)) {
+       // Exact match
+       if (userPattern.prompt === lowerPrompt) {
+         return { type: 'user', hash, pattern: userPattern };
+       }
+       
+       // Similar pattern match (check if keywords match)
+       const userKeywords = userPattern.prompt.split(' ');
+       const promptKeywords = lowerPrompt.split(' ');
+       const commonKeywords = userKeywords.filter(keyword => 
+         promptKeywords.some(promptKeyword => 
+           promptKeyword.includes(keyword) || keyword.includes(promptKeyword)
+         )
+       );
+       
+       // If more than 50% of keywords match, use this pattern
+       if (commonKeywords.length >= Math.min(userKeywords.length, promptKeywords.length) * 0.5) {
+         return { type: 'user', hash, pattern: userPattern };
+       }
+     }
+     
+           // Then check basic default patterns (common ones)
+      if (lowerPrompt.includes('testimonial') || lowerPrompt.includes('review') || lowerPrompt.includes('customer feedback')) {
+        return { type: 'default', pattern: 'testimonial' };
       }
-    }
-    
-    // Then check default patterns (keyword matches)
-    if (lowerPrompt.includes('testimonial') || lowerPrompt.includes('review') || lowerPrompt.includes('customer feedback')) {
-      return { type: 'default', pattern: 'testimonial' };
-    }
-    if (lowerPrompt.includes('hero') || lowerPrompt.includes('banner') || lowerPrompt.includes('header section')) {
-      return { type: 'default', pattern: 'hero' };
-    }
-    if (lowerPrompt.includes('contact') || lowerPrompt.includes('form') || lowerPrompt.includes('email')) {
-      return { type: 'default', pattern: 'contact' };
-    }
-    if (lowerPrompt.includes('gallery') || lowerPrompt.includes('images') || lowerPrompt.includes('photos')) {
-      return { type: 'default', pattern: 'gallery' };
-    }
-    if (lowerPrompt.includes('pricing') || lowerPrompt.includes('price') || lowerPrompt.includes('plans')) {
-      return { type: 'default', pattern: 'pricing' };
-    }
-    
-    return null;
-  };
+      if (lowerPrompt.includes('hero') || lowerPrompt.includes('banner') || lowerPrompt.includes('header section')) {
+        return { type: 'default', pattern: 'hero' };
+      }
+      if (lowerPrompt.includes('contact') || lowerPrompt.includes('form') || lowerPrompt.includes('email')) {
+        return { type: 'default', pattern: 'contact' };
+      }
+      if (lowerPrompt.includes('gallery') || lowerPrompt.includes('images') || lowerPrompt.includes('photo gallery')) {
+        return { type: 'default', pattern: 'gallery' };
+      }
+      if (lowerPrompt.includes('pricing') || lowerPrompt.includes('price') || lowerPrompt.includes('plans')) {
+        return { type: 'default', pattern: 'pricing' };
+      }
+      if (lowerPrompt.includes('timeline') || lowerPrompt.includes('history') || lowerPrompt.includes('events') || lowerPrompt.includes('chronological')) {
+        return { type: 'default', pattern: 'timeline' };
+      }
+      if (lowerPrompt.includes('team') || lowerPrompt.includes('members') || lowerPrompt.includes('staff')) {
+        return { type: 'default', pattern: 'team' };
+      }
+      if (lowerPrompt.includes('services') || lowerPrompt.includes('service') || lowerPrompt.includes('offerings')) {
+        return { type: 'default', pattern: 'services' };
+      }
+     
+     // For everything else, use AI generation
+     return null;
+   };
 
   // Generate cached component structure
   const generateCachedComponent = (detection) => {
@@ -593,18 +648,18 @@ Please return ONLY the JSON response, no additional text or explanations.`;
         // Validate and parse the AI-generated JSON automatically
         setChatGPTJson(aiGeneratedJson);
         
-        // Validate the JSON
-        const isValid = validateAndParseChatGPTJson();
-        
-        if (isValid) {
-          setAutoGenerationStep("Creating component in WordPress...");
-          setAutoGenerationProgress(90);
-          
-          // Auto-create the component
-          await processChatGPTJson();
-          
-          // Save this successful generation as a user pattern for future use
-          addUserPattern(contextPrompt, parsedComponent);
+                 // Validate the JSON
+         const validationResult = validateAndParseChatGPTJson();
+         
+         if (validationResult.isValid && validationResult.data) {
+           setAutoGenerationStep("Creating component in WordPress...");
+           setAutoGenerationProgress(90);
+           
+           // Auto-create the component with the validated data
+           await processChatGPTJson(validationResult.data);
+           
+           // Save this successful generation as a user pattern for future use
+           addUserPattern(contextPrompt, validationResult.data);
           
           setAutoGenerationStep("Component created successfully!");
           setAutoGenerationProgress(100);
@@ -921,40 +976,104 @@ Please return ONLY the JSON response, no additional text.`;
             max: field.max || field.maximum,
             step: field.step || field.increment,
           };
-        } else if (normalizedField.type === "repeater" && field.children) {
-          // Handle repeater field with nested children from ChatGPT
-          const nestedFields = field.children.map((child, childIndex) => {
-            const nestedField = {
-              label:
-                child.label || child.name || `Nested Field ${childIndex + 1}`,
-              name:
-                child.name ||
-                child.label?.toLowerCase().replace(/\s+/g, "_") ||
-                `nested_field_${childIndex + 1}`,
-              type: fieldTypeMapping[child.type?.toLowerCase()] || "text",
-              required: child.required || false,
-              placeholder: child.placeholder || "",
-              config: {},
-            };
+                 } else if (normalizedField.type === "repeater") {
+           // Handle repeater field - if it has children, use them as nested fields
+           if (field.children && Array.isArray(field.children)) {
+             const nestedFields = field.children.map((child, childIndex) => {
+               const nestedField = {
+                 label:
+                   child.label || child.name || `Nested Field ${childIndex + 1}`,
+                 name:
+                   child.name ||
+                   child.label?.toLowerCase().replace(/\s+/g, "_") ||
+                   `nested_field_${childIndex + 1}`,
+                 type: fieldTypeMapping[child.type?.toLowerCase()] || "text",
+                 required: child.required || false,
+                 placeholder: child.placeholder || "",
+                 config: {},
+               };
 
-            // Handle nested number field configuration
-            if (nestedField.type === "number") {
-              nestedField.config = {
-                number_type: child.number_type || child.phone ? "phone" : "normal",
-                min: child.min || child.minimum,
-                max: child.max || child.maximum,
-                step: child.step || child.increment,
-              };
-            }
+               // Handle nested number field configuration
+               if (nestedField.type === "number") {
+                 nestedField.config = {
+                   number_type: child.number_type || child.phone ? "phone" : "normal",
+                   min: child.min || child.minimum,
+                   max: child.max || child.maximum,
+                   step: child.step || child.increment,
+                 };
+               }
 
-            return nestedField;
-          });
+               return nestedField;
+             });
 
-          // Store nested fields in the config for the repeater field
-          normalizedField.config = {
-            nested_fields: nestedFields,
-          };
-        }
+             // Store nested fields in the config for the repeater field
+             normalizedField.config = {
+               nested_fields: nestedFields,
+             };
+           } else {
+             // If no children specified, create default nested fields based on the component context
+             normalizedField.config = {
+               nested_fields: [
+                 {
+                   label: "Image",
+                   name: "image",
+                   type: "image",
+                   required: false,
+                   placeholder: "Upload an image",
+                   config: { return_type: 'url' }
+                 },
+                 {
+                   label: "Heading",
+                   name: "heading",
+                   type: "text",
+                   required: true,
+                   placeholder: "Enter heading",
+                   config: {}
+                 },
+                 {
+                   label: "Description",
+                   name: "description",
+                   type: "textarea",
+                   required: true,
+                   placeholder: "Enter description",
+                   config: {}
+                 },
+                 {
+                   label: "Year",
+                   name: "year",
+                   type: "text",
+                   required: true,
+                   placeholder: "Enter year",
+                   config: {}
+                 },
+                 {
+                   label: "Background Color",
+                   name: "background_color",
+                   type: "color",
+                   required: false,
+                   placeholder: "Select background color",
+                   config: {
+                     default_value: '#000000',
+                     enable_opacity: false,
+                     return_format: 'hex'
+                   }
+                 },
+                 {
+                   label: "Overlay",
+                   name: "overlay",
+                   type: "color",
+                   required: false,
+                   placeholder: "Select overlay color",
+                   config: {
+                     default_value: '#000000',
+                     enable_opacity: true,
+                     return_format: 'hex'
+                   }
+                 }
+               ]
+             };
+           }
+         }
 
         // Handle additional field properties
         if (field.return_format) {
@@ -964,17 +1083,18 @@ Please return ONLY the JSON response, no additional text.`;
         return normalizedField;
       });
 
-      // Store the parsed component data
-      setParsedComponent({
-        component: normalizedComponent,
-        fields: normalizedFields,
-      });
+             // Store the parsed component data
+       const parsedData = {
+         component: normalizedComponent,
+         fields: normalizedFields,
+       };
+       setParsedComponent(parsedData);
 
-      return true;
-    } catch (error) {
-      console.error("JSON validation error:", error);
-      showMessage("Please check your JSON format and try again", "error");
-      return false;
+              return { isValid: true, data: parsedData };
+     } catch (error) {
+       console.error("JSON validation error:", error);
+       showMessage("Please check your JSON format and try again", "error");
+       return { isValid: false, data: null };
     }
   };
 
@@ -1155,42 +1275,45 @@ Please return ONLY the JSON response, no additional text.`;
       {/* Main ChatGPT Modal */}
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
-          {/* Header - Fixed */}
-          <div className="p-6 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-green-50 to-blue-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
-                  <Bot className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    Create Component with AI
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    AI-powered component generation
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
-              >
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
+                     {/* Header - Fixed */}
+           <div className="p-6 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-purple-50 via-blue-50 to-green-50">
+             <div className="flex items-center justify-between">
+               <div className="flex items-center gap-4">
+                 <div className="relative">
+                   <div className="h-12 w-12 bg-gradient-to-r from-purple-500 via-blue-600 to-green-500 rounded-full flex items-center justify-center shadow-lg">
+                     <Bot className="h-7 w-7 text-white" />
+                   </div>
+                   <div className="absolute -top-1 -right-1 h-4 w-4 bg-green-400 rounded-full animate-pulse"></div>
+                 </div>
+                 <div>
+                   <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 bg-clip-text text-transparent">
+                     🚀 Create Component with AI
+                   </h2>
+                   <p className="text-sm text-gray-600 font-medium">
+                     AI-powered component generation with smart caching
+                   </p>
+                 </div>
+               </div>
+               <button
+                 onClick={handleClose}
+                 className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+               >
+                 <svg
+                   className="h-6 w-6"
+                   fill="none"
+                   viewBox="0 0 24 24"
+                   stroke="currentColor"
+                 >
+                   <path
+                     strokeLinecap="round"
+                     strokeLinejoin="round"
+                     strokeWidth={2}
+                     d="M6 18L18 6M6 6l12 12"
+                   />
+                 </svg>
+               </button>
+             </div>
+           </div>
 
           {/* Content - Scrollable */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
@@ -1354,10 +1477,10 @@ Please return ONLY the JSON response, no additional text.`;
                    </div>
                    <div>
                      <h3 className="font-semibold text-gray-900 text-lg">
-                       Component Cache
+                       AI Component Cache
                      </h3>
                      <p className="text-sm text-gray-600">
-                       Saved patterns for cost optimization
+                       Your AI-generated components saved for reuse
                      </p>
                    </div>
                  </div>
@@ -1382,13 +1505,13 @@ Please return ONLY the JSON response, no additional text.`;
                  </button>
                </div>
 
-               {/* Cache Status */}
-               <div className="flex items-center gap-3 mb-4">
-                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                 <span className="text-sm font-medium">
-                   Cache Active - Saving you money on repeated components
-                 </span>
-               </div>
+                               {/* Cache Status */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span className="text-sm font-medium">
+                    AI Cache Active - Your generated components are saved for reuse
+                  </span>
+                </div>
 
                {/* Cache Manager */}
                {showCacheManager && (
@@ -1488,53 +1611,66 @@ Please return ONLY the JSON response, no additional text.`;
 
                              {/* Action Buttons - Enhanced with Auto Generation */}
                <div className="mt-4">
-                 <div className="flex gap-3 mb-2">
-                   {/* Auto Generation Button */}
-                   <button
-                     onClick={generateComponentWithAI}
-                     disabled={!contextPrompt.trim() || isAutoGenerating}
-                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-                   >
-                     {isAutoGenerating ? (
-                       <Loader2 className="h-5 w-5 animate-spin" />
-                     ) : (
-                       <Zap className="h-5 w-5" />
-                     )}
-                     {isAutoGenerating ? "Generating..." : "Auto Generate"}
-                   </button>
-                   
-                   {/* Manual ChatGPT Button */}
-                   <button
-                     onClick={openChatGPT}
-                     disabled={!contextPrompt.trim()}
-                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-                   >
-                     <Bot className="h-5 w-5" />
-                     Generate with ChatGPT
-                   </button>
-                   
-                   {/* Manual ChatGPT Button */}
-                   <button
-                     onClick={openChatGPTManually}
-                     disabled={contextPrompt.trim()}
-                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-                   >
-                     <svg
-                       className="h-5 w-5"
-                       fill="none"
-                       viewBox="0 0 24 24"
-                       stroke="currentColor"
-                     >
-                       <path
-                         strokeLinecap="round"
-                         strokeLinejoin="round"
-                         strokeWidth={2}
-                         d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                       />
-                     </svg>
-                     Open ChatGPT Manually
-                   </button>
-                 </div>
+                                   <div className="flex gap-3 mb-2">
+                    {/* Auto Generation Button */}
+                    <button
+                      onClick={generateComponentWithAI}
+                      disabled={!contextPrompt.trim() || isAutoGenerating}
+                      className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-500 via-blue-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:via-blue-600 hover:to-purple-700 disabled:from-gray-400 disabled:via-gray-500 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
+                    >
+                      {isAutoGenerating ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : (
+                        <Zap className="h-6 w-6" />
+                      )}
+                      <div className="text-left">
+                        <div className="font-bold text-lg">
+                          {isAutoGenerating ? "Building..." : "🚀 Auto Generate"}
+                        </div>
+                        <div className="text-xs opacity-90">
+                          {isAutoGenerating ? "Creating your component..." : "Instant AI generation"}
+                        </div>
+                      </div>
+                    </button>
+                    
+                    {/* Manual ChatGPT Button */}
+                    <button
+                      onClick={openChatGPT}
+                      disabled={!contextPrompt.trim()}
+                      className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
+                    >
+                      <Bot className="h-6 w-6" />
+                      <div className="text-left">
+                        <div className="font-bold">🤖 Generate with ChatGPT</div>
+                        <div className="text-xs opacity-90">Manual copy-paste</div>
+                      </div>
+                    </button>
+                    
+                    {/* Manual ChatGPT Button */}
+                    <button
+                      onClick={openChatGPTManually}
+                      disabled={contextPrompt.trim()}
+                      className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
+                    >
+                      <svg
+                        className="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
+                      </svg>
+                      <div className="text-left">
+                        <div className="font-bold">📝 Open ChatGPT Manually</div>
+                        <div className="text-xs opacity-90">Blank page</div>
+                      </div>
+                    </button>
+                  </div>
                                    <p className="text-xs text-gray-600">
                     💡 <strong>Auto Generate:</strong> Fully automatic AI component creation - just click and your component will be ready! <strong>Generate with ChatGPT:</strong> Opens ChatGPT with pre-filled prompt for manual copy-paste. <strong>Manual:</strong> Opens ChatGPT with blank page.
                   </p>
@@ -1542,71 +1678,190 @@ Please return ONLY the JSON response, no additional text.`;
 
                
 
-                             {/* Enhanced Auto Generation Progress */}
-               {isAutoGenerating && (
-                 <div className="mt-6 p-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl shadow-lg">
-                   <div className="flex items-center gap-4 mb-4">
-                     <div className="relative">
-                       <div className="h-12 w-12 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center justify-center">
-                         <Loader2 className="h-6 w-6 text-white animate-spin" />
-                       </div>
-                       <div className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full animate-pulse"></div>
-                     </div>
-                     <div className="flex-1">
-                       <h4 className="text-lg font-semibold text-gray-900 mb-1">
-                         AI Component Generation
-                       </h4>
-                       <p className="text-sm text-gray-600">
-                         {autoGenerationStep}
-                       </p>
-                     </div>
-                     <div className="text-right">
-                       <div className="text-2xl font-bold text-purple-600">
-                         {autoGenerationProgress}%
-                       </div>
-                     </div>
-                   </div>
-                   
-                   {/* Enhanced Progress Bar */}
-                   <div className="relative">
-                     <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                       <div
-                         className="bg-gradient-to-r from-purple-500 via-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out shadow-lg"
-                         style={{ width: `${autoGenerationProgress}%` }}
-                       ></div>
-                     </div>
-                     {/* Animated dots */}
-                     <div className="flex justify-center mt-3 space-x-1">
-                       <div className={`h-2 w-2 rounded-full transition-all duration-300 ${autoGenerationProgress >= 20 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
-                       <div className={`h-2 w-2 rounded-full transition-all duration-300 ${autoGenerationProgress >= 40 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                       <div className={`h-2 w-2 rounded-full transition-all duration-300 ${autoGenerationProgress >= 60 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
-                       <div className={`h-2 w-2 rounded-full transition-all duration-300 ${autoGenerationProgress >= 80 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                       <div className={`h-2 w-2 rounded-full transition-all duration-300 ${autoGenerationProgress >= 100 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                     </div>
-                   </div>
-                   
-                                       {/* AI Status Messages */}
-                    <div className="mt-4 p-3 bg-white rounded-lg border border-purple-100">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs text-gray-600 font-medium">
+                                             {/* Enhanced Auto Generation Progress */}
+                {isAutoGenerating && (
+                  <div className="mt-6 p-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl shadow-lg">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="relative">
+                        <div className="h-16 w-16 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                          <Loader2 className="h-8 w-8 text-white animate-spin" />
+                        </div>
+                        <div className="absolute -top-2 -right-2 h-6 w-6 bg-green-500 rounded-full animate-pulse flex items-center justify-center">
+                          <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-xl font-bold text-gray-900 mb-2">
+                          🚀 AI Component Builder
+                        </h4>
+                        <p className="text-sm text-gray-600 font-medium">
+                          {autoGenerationStep}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold text-purple-600">
+                          {autoGenerationProgress}%
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">Complete</div>
+                      </div>
+                    </div>
+                    
+                    {/* Animated Building Progress */}
+                    <div className="space-y-4">
+                      {/* Progress Bar with Building Animation */}
+                      <div className="relative">
+                        <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
+                          <div
+                            className="bg-gradient-to-r from-purple-500 via-blue-500 to-purple-600 h-4 rounded-full transition-all duration-700 ease-out shadow-lg relative"
+                            style={{ width: `${autoGenerationProgress}%` }}
+                          >
+                            {/* Animated particles */}
+                            <div className="absolute inset-0 overflow-hidden">
+                              {[...Array(5)].map((_, i) => (
+                                <div
+                                  key={i}
+                                  className="absolute w-2 h-2 bg-white rounded-full animate-pulse"
+                                  style={{
+                                    left: `${Math.random() * 100}%`,
+                                    top: `${Math.random() * 100}%`,
+                                    animationDelay: `${i * 0.2}s`,
+                                    animationDuration: '1.5s'
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Building Steps Indicator */}
+                        <div className="flex justify-between mt-3 text-xs text-gray-600">
+                          <div className={`flex items-center gap-1 ${autoGenerationProgress >= 10 ? 'text-purple-600 font-semibold' : ''}`}>
+                            <div className={`w-2 h-2 rounded-full ${autoGenerationProgress >= 10 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+                            <span>Analyzing</span>
+                          </div>
+                          <div className={`flex items-center gap-1 ${autoGenerationProgress >= 30 ? 'text-purple-600 font-semibold' : ''}`}>
+                            <div className={`w-2 h-2 rounded-full ${autoGenerationProgress >= 30 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+                            <span>Planning</span>
+                          </div>
+                          <div className={`flex items-center gap-1 ${autoGenerationProgress >= 60 ? 'text-purple-600 font-semibold' : ''}`}>
+                            <div className={`w-2 h-2 rounded-full ${autoGenerationProgress >= 60 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+                            <span>Building</span>
+                          </div>
+                          <div className={`flex items-center gap-1 ${autoGenerationProgress >= 90 ? 'text-purple-600 font-semibold' : ''}`}>
+                            <div className={`w-2 h-2 rounded-full ${autoGenerationProgress >= 90 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+                            <span>Finalizing</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Animated Component Building Visualization */}
+                      <div className="bg-white rounded-lg p-4 border border-purple-100 shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                          <h5 className="font-semibold text-gray-800 text-sm">🏗️ Component Construction</h5>
+                          <div className="text-xs text-gray-500">
+                            {autoGenerationProgress >= 80 ? 'Almost Done!' : 'Building...'}
+                          </div>
+                        </div>
+                        
+                        {/* Animated Building Blocks */}
+                        <div className="flex items-end gap-2 h-16">
+                          {/* Component Base */}
+                          <div className={`flex-1 bg-gradient-to-b from-gray-200 to-gray-300 rounded-t-lg transition-all duration-500 ${autoGenerationProgress >= 20 ? 'h-8' : 'h-2'}`}>
+                            {autoGenerationProgress >= 20 && (
+                              <div className="text-center text-xs text-gray-600 pt-1">Component</div>
+                            )}
+                          </div>
+                          
+                          {/* Fields */}
+                          {[...Array(3)].map((_, i) => (
+                            <div
+                              key={i}
+                              className={`w-8 bg-gradient-to-b from-blue-200 to-blue-300 rounded-t-lg transition-all duration-500 ${
+                                autoGenerationProgress >= 40 + (i * 15) ? 'h-12' : 'h-2'
+                              }`}
+                            >
+                              {autoGenerationProgress >= 40 + (i * 15) && (
+                                <div className="text-center text-xs text-blue-600 pt-1">Field</div>
+                              )}
+                            </div>
+                          ))}
+                          
+                          {/* Configuration */}
+                          <div className={`w-6 bg-gradient-to-b from-green-200 to-green-300 rounded-t-lg transition-all duration-500 ${autoGenerationProgress >= 70 ? 'h-10' : 'h-2'}`}>
+                            {autoGenerationProgress >= 70 && (
+                              <div className="text-center text-xs text-green-600 pt-1">Config</div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Building Animation */}
+                        <div className="flex justify-center mt-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* AI Status Messages */}
+                    <div className="mt-4 p-4 bg-white rounded-lg border border-purple-100 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm text-gray-700 font-medium">
                           {isUsingCachedStructure ? 
-                            "Using optimized cached structure for faster generation and cost savings..." :
-                            "AI is analyzing your requirements and generating the perfect component structure..."
+                            "⚡ Using optimized cached structure for instant generation..." :
+                            "🧠 AI is analyzing your requirements and generating the perfect component structure..."
                           }
                         </span>
                       </div>
+                      
                       {isUsingCachedStructure && (
-                        <div className="mt-2 flex items-center gap-2">
+                        <div className="mt-3 flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
                           <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                          <span className="text-xs text-blue-600 font-medium">
-                            💰 Cost optimized: Using cached structure (saved from previous generation)
+                          <span className="text-xs text-blue-700 font-medium">
+                            💰 Cost optimized: Using your previously generated component (no API cost)
                           </span>
                         </div>
                       )}
+                      
+                      {/* Progress Details */}
+                      <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                          <span className="text-gray-600">Component Structure</span>
+                          <span className="text-purple-600 font-semibold">
+                            {autoGenerationProgress >= 30 ? '✓' : '...'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                          <span className="text-gray-600">Field Generation</span>
+                          <span className="text-blue-600 font-semibold">
+                            {autoGenerationProgress >= 60 ? '✓' : '...'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                          <span className="text-gray-600">Configuration</span>
+                          <span className="text-green-600 font-semibold">
+                            {autoGenerationProgress >= 80 ? '✓' : '...'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                          <span className="text-gray-600">WordPress Integration</span>
+                          <span className="text-orange-600 font-semibold">
+                            {autoGenerationProgress >= 90 ? '✓' : '...'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                 </div>
-               )}
+                  </div>
+                )}
 
               {/* Repeater Option */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
