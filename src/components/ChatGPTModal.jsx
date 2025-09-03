@@ -512,36 +512,19 @@ ${hasRepeater ? 'IMPORTANT: This component needs to support multiple instances (
 Please return ONLY the JSON response, no additional text or explanations.`;
   };
 
-  // Auto-generation function using proxy API system
+  // Auto-generation function using direct OpenAI API
   const generateComponentWithAI = async () => {
     if (!contextPrompt.trim()) {
       showMessage("Please describe what component you want to create", "error");
       return;
     }
 
-    // Get or generate proxy key
-    let proxyKey = localStorage.getItem('ccc_proxy_key');
-    
-    if (!proxyKey) {
-      try {
-        const formData = new FormData();
-        formData.append("action", "ccc_generate_proxy_key");
-        formData.append("nonce", window.cccData.nonce);
-
-        const response = await axios.post(window.cccData.ajaxUrl, formData);
-        
-        if (response.data.success) {
-          proxyKey = response.data.data.proxy_key;
-          localStorage.setItem('ccc_proxy_key', proxyKey);
-        } else {
-          showMessage("Failed to generate proxy key. Please contact administrator.", "error");
-          return;
-        }
-      } catch (error) {
-        console.error("Error generating proxy key:", error);
-        showMessage("Failed to generate proxy key. Please contact administrator.", "error");
-        return;
-      }
+    // Check if API key is available
+    const currentApiKey = await getCurrentApiKey();
+    if (!currentApiKey || currentApiKey === "***configured***" || currentApiKey === "***wordpress_stored***") {
+      showMessage("Please configure your OpenAI API key first", "error");
+      setShowApiKeySettings(true);
+      return;
     }
 
     setIsAutoGenerating(true);
@@ -585,27 +568,36 @@ Please return ONLY the JSON response, no additional text or explanations.`;
         // Create the prompt for AI generation
         const aiPrompt = generateAutoGenerationPrompt();
 
-                setAutoGenerationStep("Sending request to OpenAI...");
+        setAutoGenerationStep("Sending request to OpenAI...");
         setAutoGenerationProgress(40);
 
-        // Call OpenAI API through proxy
-        const proxyFormData = new FormData();
-        proxyFormData.append("action", "ccc_proxy_openai_request");
-        proxyFormData.append("proxy_key", proxyKey);
-        proxyFormData.append("prompt", aiPrompt);
-        proxyFormData.append("model", "gpt-4o-mini");
-        proxyFormData.append("nonce", window.cccData.nonce);
-
-        const response = await axios.post(window.cccData.ajaxUrl, proxyFormData);
+        // Call OpenAI API directly
+        const response = await axios.post(OPENAI_API_URL, {
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "user",
+              content: aiPrompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000
+        }, {
+          headers: {
+            'Authorization': `Bearer ${currentApiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
         setAutoGenerationStep("Processing AI response...");
         setAutoGenerationProgress(60);
 
         // Extract the JSON from the response
-        const aiResponse = response.data.data?.response;
+        const aiResponse = response.data.choices?.[0]?.message?.content;
         
         if (!aiResponse) {
-          throw new Error("No response received from AI");
+          console.error("Full response:", response.data);
+          throw new Error("No response received from AI. Please check your API key.");
         }
 
         // Try to extract JSON from the response (AI might add extra text)
@@ -622,19 +614,19 @@ Please return ONLY the JSON response, no additional text or explanations.`;
         // Validate and parse the AI-generated JSON automatically
         setChatGPTJson(aiGeneratedJson);
         
-                 // Validate the JSON
-         const validationResult = validateAndParseChatGPTJson();
-         
-         if (validationResult.isValid && validationResult.data) {
-           setAutoGenerationStep("Creating component in WordPress...");
-           setAutoGenerationProgress(90);
-           
-           // Auto-create the component with the validated data
-           await processChatGPTJson(validationResult.data);
-           
-           // Save this successful generation as a user pattern for future use
-           addUserPattern(contextPrompt, validationResult.data);
+        // Validate the JSON
+        const validationResult = validateAndParseChatGPTJson();
+        
+        if (validationResult.isValid && validationResult.data) {
+          setAutoGenerationStep("Creating component in WordPress...");
+          setAutoGenerationProgress(90);
           
+          // Auto-create the component with the validated data
+          await processChatGPTJson(validationResult.data);
+          
+          // Save this successful generation as a user pattern for future use
+          addUserPattern(contextPrompt, validationResult.data);
+         
           setAutoGenerationStep("Component created successfully!");
           setAutoGenerationProgress(100);
         } else {
