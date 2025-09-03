@@ -903,104 +903,122 @@ Please return ONLY the JSON response, no additional text.`;
             show_target: true,
             show_title: true
           };
-        } else if (normalizedField.type === "repeater") {
-          // Handle repeater field - if it has children, use them as nested fields
-          if (field.children && Array.isArray(field.children)) {
-            const nestedFields = field.children.map((child, childIndex) => {
-              const nestedField = {
-                label:
-                  child.label || child.name || `Nested Field ${childIndex + 1}`,
-                name:
-                  child.name ||
-                  child.label?.toLowerCase().replace(/\s+/g, "_") ||
-                  `nested_field_${childIndex + 1}`,
-                type: fieldTypeMapping[child.type?.toLowerCase()] || "text",
-                required: child.required || false,
-                placeholder: child.placeholder || "",
-                config: {},
-              };
+                 } else if (normalizedField.type === "repeater") {
+           // Handle repeater field - if it has children, use them as nested fields
+           if (field.children && Array.isArray(field.children)) {
+             const nestedFields = field.children.map((child, childIndex) => {
+               const nestedField = {
+                 label:
+                   child.label || child.name || `Nested Field ${childIndex + 1}`,
+                 name:
+                   child.name ||
+                   child.label?.toLowerCase().replace(/\s+/g, "_") ||
+                   `nested_field_${childIndex + 1}`,
+                 type: fieldTypeMapping[child.type?.toLowerCase()] || "text",
+                 required: child.required || false,
+                 placeholder: child.placeholder || "",
+                 config: {},
+               };
 
-              // Handle nested number field configuration
-              if (nestedField.type === "number") {
-                nestedField.config = {
-                  number_type: child.number_type || child.phone ? "phone" : "normal",
-                  min: child.min || child.minimum,
-                  max: child.max || child.maximum,
-                  step: child.step || child.increment,
-                };
-              }
+               // Handle nested field configurations
+               if (nestedField.type === "number") {
+                 nestedField.config = {
+                   number_type: child.number_type || child.phone ? "phone" : "normal",
+                   min: child.min || child.minimum,
+                   max: child.max || child.maximum,
+                   step: child.step || child.increment,
+                 };
+               } else if (nestedField.type === "image") {
+                 nestedField.config = {
+                   return_type: 'url'
+                 };
+               } else if (nestedField.type === "color") {
+                 nestedField.config = {
+                   default_value: child.default_value || '#000000',
+                   enable_opacity: child.enable_opacity || false,
+                   return_format: child.return_format || 'hex'
+                 };
+               } else if (nestedField.type === "link") {
+                 nestedField.config = {
+                   link_types: ['internal', 'external'],
+                   default_type: 'internal',
+                   post_types: ['post', 'page'],
+                   show_target: true,
+                   show_title: true
+                 };
+               }
 
-              return nestedField;
-            });
+               return nestedField;
+             });
 
-            // Store nested fields in the config for the repeater field
-            normalizedField.config = {
-              nested_fields: nestedFields,
-            };
-          } else {
-            // If no children specified, create default nested fields based on the component context
-            normalizedField.config = {
-              nested_fields: [
-                {
-                  label: "Image",
-                  name: "image",
-                  type: "image",
-                  required: false,
-                  placeholder: "Upload an image",
-                  config: { return_type: 'url' }
-                },
-                {
-                  label: "Heading",
-                  name: "heading",
-                  type: "text",
-                  required: true,
-                  placeholder: "Enter heading",
-                  config: {}
-                },
-                {
-                  label: "Description",
-                  name: "description",
-                  type: "textarea",
-                  required: true,
-                  placeholder: "Enter description",
-                  config: {}
-                },
-                {
-                  label: "Year",
-                  name: "year",
-                  type: "text",
-                  required: true,
-                  placeholder: "Enter year",
-                  config: {}
-                },
-                {
-                  label: "Background Color",
-                  name: "background_color",
-                  type: "color",
-                  required: false,
-                  placeholder: "Select background color",
-                  config: {
-                    default_value: '#000000',
-                    enable_opacity: false,
-                    return_format: 'hex'
-                  }
-                },
-                {
-                  label: "Overlay",
-                  name: "overlay",
-                  type: "color",
-                  required: false,
-                  placeholder: "Select overlay color",
-                  config: {
-                    default_value: '#000000',
-                    enable_opacity: true,
-                    return_format: 'hex'
-                  }
-                }
-              ]
-            };
-          }
-        }
+             // Store nested fields in the config for the repeater field
+             normalizedField.config = {
+               nested_fields: nestedFields,
+             };
+           } else {
+             // If no children specified, create default nested fields based on the component context
+             normalizedField.config = {
+               nested_fields: [
+                 {
+                   label: "Image",
+                   name: "image",
+                   type: "image",
+                   required: false,
+                   placeholder: "Upload an image",
+                   config: { return_type: 'url' }
+                 },
+                 {
+                   label: "Heading",
+                   name: "heading",
+                   type: "text",
+                   required: true,
+                   placeholder: "Enter heading",
+                   config: {}
+                 },
+                 {
+                   label: "Description",
+                   name: "description",
+                   type: "textarea",
+                   required: true,
+                   placeholder: "Enter description",
+                   config: {}
+                 },
+                 {
+                   label: "Year",
+                   name: "year",
+                   type: "text",
+                   required: true,
+                   placeholder: "Enter year",
+                   config: {}
+                 },
+                 {
+                   label: "Background Color",
+                   name: "background_color",
+                   type: "color",
+                   required: false,
+                   placeholder: "Select background color",
+                   config: {
+                     default_value: '#000000',
+                     enable_opacity: false,
+                     return_format: 'hex'
+                   }
+                 },
+                 {
+                   label: "Overlay",
+                   name: "overlay",
+                   type: "color",
+                   required: false,
+                   placeholder: "Select overlay color",
+                   config: {
+                     default_value: '#000000',
+                     enable_opacity: true,
+                     return_format: 'hex'
+                   }
+                 }
+               ]
+             };
+           }
+         }
 
         // Handle additional field properties
         if (field.return_format) {
@@ -1128,10 +1146,15 @@ Please return ONLY the JSON response, no additional text.`;
              fieldFormData.append("field_config", JSON.stringify(fieldData.config));
            }
 
-          // Handle repeater fields with nested fields
-          if (fieldData.type === "repeater" && fieldData.config.nested_fields) {
-            fieldFormData.append("nested_field_definitions", JSON.stringify(fieldData.config.nested_fields));
-          }
+                     // Handle repeater fields with nested fields
+           if (fieldData.type === "repeater" && fieldData.config.nested_fields) {
+             console.log("=== DEBUG: Repeater Field Nested Fields ===");
+             console.log("Field data:", fieldData);
+             console.log("Nested fields:", fieldData.config.nested_fields);
+             fieldFormData.append("nested_field_definitions", JSON.stringify(fieldData.config.nested_fields));
+             console.log("Nested field definitions appended to form data");
+             console.log("==========================================");
+           }
 
           const fieldResponse = await axios.post(
             window.cccData.ajaxUrl,
