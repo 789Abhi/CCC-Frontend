@@ -31,101 +31,8 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
      try {
        const cached = localStorage.getItem('ccc_component_cache');
        return cached ? JSON.parse(cached) : {
-                   // Basic default patterns - common component types
-          patterns: {
-            testimonial: {
-              name: "Testimonial",
-              handle: "testimonial", 
-              description: "Customer testimonial with photo and rating",
-              fields: [
-                { label: "Customer Name", name: "customer_name", type: "text", required: true },
-                { label: "Testimonial Content", name: "testimonial_content", type: "textarea", required: true },
-                { label: "Customer Photo", name: "customer_photo", type: "image", required: false },
-                { label: "Company Name", name: "company_name", type: "text", required: false },
-                { label: "Rating", name: "rating", type: "select", required: false, options: ["1", "2", "3", "4", "5"] }
-              ]
-            },
-            hero: {
-              name: "Hero Section",
-              handle: "hero_section",
-              description: "Hero section with background image, heading, and call-to-action",
-              fields: [
-                { label: "Background Image", name: "background_image", type: "image", required: true },
-                { label: "Heading", name: "heading", type: "text", required: true },
-                { label: "Subtitle", name: "subtitle", type: "text", required: false },
-                { label: "Description", name: "description", type: "textarea", required: false },
-                { label: "Button Text", name: "button_text", type: "text", required: true },
-                { label: "Button Link", name: "button_link", type: "link", required: true },
-                { label: "Button Color", name: "button_color", type: "color", required: false }
-              ]
-            },
-            contact: {
-              name: "Contact Form",
-              handle: "contact_form",
-              description: "Contact form with name, email, and message fields",
-              fields: [
-                { label: "Name", name: "name", type: "text", required: true },
-                { label: "Email", name: "email", type: "email", required: true },
-                { label: "Phone", name: "phone", type: "number", required: false },
-                { label: "Message", name: "message", type: "textarea", required: true },
-                { label: "Subject", name: "subject", type: "text", required: false }
-              ]
-            },
-            gallery: {
-              name: "Image Gallery",
-              handle: "image_gallery",
-              description: "Image gallery with title and multiple images",
-              fields: [
-                { label: "Gallery Title", name: "gallery_title", type: "text", required: true },
-                { label: "Gallery Description", name: "gallery_description", type: "textarea", required: false },
-                { label: "Images", name: "images", type: "repeater", required: true },
-                { label: "Background Color", name: "background_color", type: "color", required: false }
-              ]
-            },
-            pricing: {
-              name: "Pricing Table",
-              handle: "pricing_table",
-              description: "Pricing table with multiple pricing plans",
-              fields: [
-                { label: "Section Title", name: "section_title", type: "text", required: true },
-                { label: "Section Description", name: "section_description", type: "textarea", required: false },
-                { label: "Pricing Plans", name: "pricing_plans", type: "repeater", required: true },
-                { label: "Background Color", name: "background_color", type: "color", required: false }
-              ]
-            },
-            timeline: {
-              name: "History Timeline",
-              handle: "history_timeline",
-              description: "Timeline component with events, dates, and visual elements",
-              fields: [
-                { label: "Timeline Items", name: "timeline_items", type: "repeater", required: true },
-                { label: "Background Color", name: "background_color", type: "color", required: false },
-                { label: "Overlay", name: "overlay", type: "color", required: false }
-              ]
-            },
-            team: {
-              name: "Team Members",
-              handle: "team_members",
-              description: "Team members section with photos and details",
-              fields: [
-                { label: "Section Title", name: "section_title", type: "text", required: true },
-                { label: "Section Description", name: "section_description", type: "textarea", required: false },
-                { label: "Team Members", name: "team_members", type: "repeater", required: true },
-                { label: "Background Color", name: "background_color", type: "color", required: false }
-              ]
-            },
-            services: {
-              name: "Services Section",
-              handle: "services_section",
-              description: "Services section with icons and descriptions",
-              fields: [
-                { label: "Section Title", name: "section_title", type: "text", required: true },
-                { label: "Section Description", name: "section_description", type: "textarea", required: false },
-                { label: "Services", name: "services", type: "repeater", required: true },
-                { label: "Background Color", name: "background_color", type: "color", required: false }
-              ]
-            }
-          },
+                   // Empty patterns - no default components
+          patterns: {},
          // User-created patterns (saved from successful AI generations)
          userPatterns: {}
        };
@@ -157,8 +64,11 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
     saveComponentCache(cache);
   };
 
-  // Load API key from localStorage and WordPress options on component mount
+    // Clear any existing cache to force API usage and load API key
   React.useEffect(() => {
+    // Clear any existing component cache to force API usage
+    localStorage.removeItem('ccc_component_cache');
+    
     // First try to load from localStorage
     const savedApiKey = localStorage.getItem('ccc_openai_api_key');
     if (savedApiKey) {
@@ -185,7 +95,7 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
       
       loadApiKeyFromWordPress();
     }
-  }, []);
+      }, []);
 
   // Save API key to localStorage
   const saveApiKey = async () => {
@@ -262,62 +172,11 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
     }
   };
 
-     // Detect component patterns (both default and user-created)
-   const detectComponentPattern = (prompt) => {
-     const cache = getComponentCache();
-     const lowerPrompt = prompt.toLowerCase().trim();
-     
-     // First check user-created patterns (exact matches and similar patterns)
-     for (const [hash, userPattern] of Object.entries(cache.userPatterns)) {
-       // Exact match
-       if (userPattern.prompt === lowerPrompt) {
-         return { type: 'user', hash, pattern: userPattern };
-       }
-       
-       // Similar pattern match (check if keywords match)
-       const userKeywords = userPattern.prompt.split(' ');
-       const promptKeywords = lowerPrompt.split(' ');
-       const commonKeywords = userKeywords.filter(keyword => 
-         promptKeywords.some(promptKeyword => 
-           promptKeyword.includes(keyword) || keyword.includes(promptKeyword)
-         )
-       );
-       
-       // If more than 50% of keywords match, use this pattern
-       if (commonKeywords.length >= Math.min(userKeywords.length, promptKeywords.length) * 0.5) {
-         return { type: 'user', hash, pattern: userPattern };
-       }
-     }
-     
-           // Then check basic default patterns (common ones)
-      if (lowerPrompt.includes('testimonial') || lowerPrompt.includes('review') || lowerPrompt.includes('customer feedback')) {
-        return { type: 'default', pattern: 'testimonial' };
-      }
-      if (lowerPrompt.includes('hero') || lowerPrompt.includes('banner') || lowerPrompt.includes('header section')) {
-        return { type: 'default', pattern: 'hero' };
-      }
-      if (lowerPrompt.includes('contact') || lowerPrompt.includes('form') || lowerPrompt.includes('email')) {
-        return { type: 'default', pattern: 'contact' };
-      }
-      if (lowerPrompt.includes('gallery') || lowerPrompt.includes('images') || lowerPrompt.includes('photo gallery')) {
-        return { type: 'default', pattern: 'gallery' };
-      }
-      if (lowerPrompt.includes('pricing') || lowerPrompt.includes('price') || lowerPrompt.includes('plans')) {
-        return { type: 'default', pattern: 'pricing' };
-      }
-      if (lowerPrompt.includes('timeline') || lowerPrompt.includes('history') || lowerPrompt.includes('events') || lowerPrompt.includes('chronological')) {
-        return { type: 'default', pattern: 'timeline' };
-      }
-      if (lowerPrompt.includes('team') || lowerPrompt.includes('members') || lowerPrompt.includes('staff')) {
-        return { type: 'default', pattern: 'team' };
-      }
-      if (lowerPrompt.includes('services') || lowerPrompt.includes('service') || lowerPrompt.includes('offerings')) {
-        return { type: 'default', pattern: 'services' };
-      }
-     
-     // For everything else, use AI generation
-     return null;
-   };
+           // Detect component patterns (both default and user-created)
+    const detectComponentPattern = (prompt) => {
+      // Always return null to force API usage - no cache detection
+      return null;
+    };
 
   // Generate cached component structure
   const generateCachedComponent = (detection) => {
@@ -485,9 +344,78 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
       return "Please describe what component you want to create";
     }
 
+    // Check if this is a map-related request and provide a specific prompt
+    const lowerPrompt = contextPrompt.toLowerCase();
+    if (lowerPrompt.includes('map') || lowerPrompt.includes('location') || lowerPrompt.includes('address')) {
+      return `Create a WordPress component for a map section with contact information.
+
+Based on this description: ${contextPrompt}
+
+Please generate a JSON response with the following EXACT structure:
+{
+  "component": {
+    "name": "Map Section",
+    "handle": "map_section",
+    "description": "Map section with contact information and embedded map"
+  },
+  "fields": [
+    {
+      "label": "Heading",
+      "name": "heading",
+      "type": "text",
+      "required": true,
+      "placeholder": "Enter section heading"
+    },
+    {
+      "label": "Description",
+      "name": "description",
+      "type": "textarea",
+      "required": false,
+      "placeholder": "Enter section description"
+    },
+    {
+      "label": "Phone Number",
+      "name": "phone_number",
+      "type": "number",
+      "required": true,
+      "placeholder": "Enter phone number"
+    },
+    {
+      "label": "Email Address",
+      "name": "email_address",
+      "type": "email",
+      "required": true,
+      "placeholder": "Enter email address"
+    },
+    {
+      "label": "Address",
+      "name": "address",
+      "type": "textarea",
+      "required": true,
+      "placeholder": "Enter full address"
+    },
+    {
+      "label": "Map Embed",
+      "name": "map_embed",
+      "type": "oembed",
+      "required": true,
+      "placeholder": "Enter Google Maps embed code or URL"
+    }
+  ]
+}
+
+IMPORTANT: 
+- Return ONLY the JSON response, no additional text or explanations
+- Use the EXACT structure shown above
+- Do not include any extra fields like "export_date", "version", "components" array, etc.
+- The response should be a single component object, not an array of components
+
+Please return ONLY the JSON response, no additional text or explanations.`;
+    }
+
     return `Create a WordPress component based on this description: ${contextPrompt}
 
-Please generate a JSON response with the following structure:
+Please generate a JSON response with the following EXACT structure:
 {
   "component": {
     "name": "Component Name",
@@ -506,6 +434,12 @@ Please generate a JSON response with the following structure:
 }
 
 Available field types: text, textarea, image, video, color, select, checkbox, radio, wysiwyg, link, repeater, oembed, email, number, password, file, range
+
+IMPORTANT: 
+- Return ONLY the JSON response, no additional text or explanations
+- Use the EXACT structure shown above
+- Do not include any extra fields like "export_date", "version", "components" array, etc.
+- The response should be a single component object, not an array of components
 
 ${hasRepeater ? 'IMPORTANT: This component needs to support multiple instances (repeater field). Please include a repeater field with nested children fields.' : ''}
 
@@ -532,113 +466,96 @@ Please return ONLY the JSON response, no additional text or explanations.`;
     setAutoGenerationProgress(10);
 
     try {
-      // First, try to detect if this is a common component pattern
-      const detectedPattern = detectComponentPattern(contextPrompt);
+      // Always use AI generation - skip cache detection
+      setAutoGenerationStep("Generating component with AI...");
+      setAutoGenerationProgress(20);
       
-      if (detectedPattern) {
-        // Use cached structure for common patterns (cost optimization)
-        setAutoGenerationStep("Using optimized cached structure...");
-        setAutoGenerationProgress(30);
-        
-        const cachedComponent = generateCachedComponent(detectedPattern);
-        
-        setAutoGenerationStep("Validating cached component...");
-        setAutoGenerationProgress(60);
-        
-        // Directly use the cached component data instead of going through validation
-        setParsedComponent(cachedComponent);
-        
-        if (cachedComponent && cachedComponent.component && cachedComponent.fields) {
-          setAutoGenerationStep("Creating component in WordPress...");
-          setAutoGenerationProgress(80);
-          
-          // Auto-create the component - pass the data directly to avoid async state issues
-          await processChatGPTJson(cachedComponent);
-          
-          setAutoGenerationStep("Component created successfully!");
-          setAutoGenerationProgress(100);
-        } else {
-          throw new Error("Invalid cached component structure");
-        }
-      } else {
-        // Use AI for custom components
-        setAutoGenerationStep("Generating custom component with AI...");
-        setAutoGenerationProgress(20);
-        
-        // Create the prompt for AI generation
-        const aiPrompt = generateAutoGenerationPrompt();
+      // Create the prompt for AI generation
+      const aiPrompt = generateAutoGenerationPrompt();
 
-        setAutoGenerationStep("Sending request to OpenAI...");
-        setAutoGenerationProgress(40);
+      // Debug: Log the prompt being sent
+      console.log("=== DEBUG: Prompt being sent to OpenAI ===");
+      console.log("Model: gpt-4o-mini");
+      console.log("API Key (first 12 chars):", apiKey.substring(0, 12) + "...");
+      console.log("Prompt:", aiPrompt);
+      console.log("==========================================");
 
-        // Call OpenAI API directly
-        const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "user",
-              content: aiPrompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 2000
-        }, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
+      setAutoGenerationStep("Sending request to OpenAI...");
+      setAutoGenerationProgress(40);
+
+      // Call OpenAI API directly
+      const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "user",
+            content: aiPrompt
           }
-        });
-
-        setAutoGenerationStep("Processing AI response...");
-        setAutoGenerationProgress(60);
-
-        // Extract the JSON from the response
-        const aiResponse = response.data.choices?.[0]?.message?.content;
-        
-        if (!aiResponse) {
-          console.error("Full response:", response.data);
-          throw new Error("No response received from AI. Please check your API key.");
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      }, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
         }
+      });
 
-        setAutoGenerationStep("Parsing AI response...");
-        setAutoGenerationProgress(70);
+      // Debug: Log the full response
+      console.log("=== DEBUG: OpenAI API Response ===");
+      console.log("Status:", response.status);
+      console.log("Full Response:", JSON.stringify(response.data, null, 2));
+      console.log("==================================");
 
-        // Try to extract JSON from the response
-        let jsonData;
-        try {
-          // Look for JSON in the response
-          const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            jsonData = JSON.parse(jsonMatch[0]);
-          } else {
-            throw new Error("No valid JSON found in response");
-          }
-        } catch (parseError) {
-          console.error("Failed to parse AI response:", aiResponse);
-          throw new Error("Invalid JSON response from AI. Please try again.");
-        }
+      setAutoGenerationStep("Processing AI response...");
+      setAutoGenerationProgress(60);
 
-        setAutoGenerationStep("Validating component structure...");
-        setAutoGenerationProgress(80);
-
-        // Validate the component structure
-        if (!jsonData.component || !jsonData.fields || !Array.isArray(jsonData.fields)) {
-          throw new Error("Invalid component structure received from AI");
-        }
-
-        setParsedComponent(jsonData);
-
-        setAutoGenerationStep("Creating component in WordPress...");
-        setAutoGenerationProgress(90);
-
-        // Auto-create the component
-        await processChatGPTJson(jsonData);
-
-        setAutoGenerationStep("Component created successfully!");
-        setAutoGenerationProgress(100);
-
-        showMessage("Component generated and created successfully!", "success");
+      // Extract the JSON from the response
+      const aiResponse = response.data.choices?.[0]?.message?.content;
+      
+      if (!aiResponse) {
+        console.error("Full response:", response.data);
+        throw new Error("No response received from AI. Please check your API key.");
       }
+
+      setAutoGenerationStep("Parsing AI response...");
+      setAutoGenerationProgress(70);
+
+      // Try to extract JSON from the response
+      let jsonData;
+      try {
+        // Look for JSON in the response
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          jsonData = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error("No valid JSON found in response");
+        }
+      } catch (parseError) {
+        console.error("Failed to parse AI response:", aiResponse);
+        throw new Error("Invalid JSON response from AI. Please try again.");
+      }
+
+      setAutoGenerationStep("Validating component structure...");
+      setAutoGenerationProgress(80);
+
+      // Validate the component structure
+      if (!jsonData.component || !jsonData.fields || !Array.isArray(jsonData.fields)) {
+        throw new Error("Invalid component structure received from AI");
+      }
+
+      setParsedComponent(jsonData);
+
+      setAutoGenerationStep("Creating component in WordPress...");
+      setAutoGenerationProgress(90);
+
+      // Auto-create the component
+      await processChatGPTJson(jsonData);
+
+      setAutoGenerationStep("Component created successfully!");
+      setAutoGenerationProgress(100);
+
+      showMessage("Component generated and created successfully!", "success");
     } catch (error) {
       console.error("AI generation error:", error);
       if (error.response?.status === 401) {
