@@ -475,7 +475,7 @@ Please return ONLY the JSON response, no additional text or explanations.`;
 
       // Debug: Log the prompt being sent
       console.log("=== DEBUG: Prompt being sent to OpenAI ===");
-      console.log("Model: gpt-4o-mini");
+             console.log("Model: gpt-4.1-mini");
       console.log("API Key (first 12 chars):", apiKey.substring(0, 12) + "...");
       console.log("Prompt:", aiPrompt);
       console.log("==========================================");
@@ -485,7 +485,7 @@ Please return ONLY the JSON response, no additional text or explanations.`;
 
       // Call OpenAI API directly
       const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-        model: "gpt-4o-mini",
+                 model: "gpt-4.1-mini",
         messages: [
           {
             role: "user",
