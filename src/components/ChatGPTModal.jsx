@@ -1107,21 +1107,26 @@ Please return ONLY the JSON response, no additional text.`;
          setProcessingStep(`Creating field: ${fieldData.label}...`);
          setProcessingProgress(50 + (fieldsCreated / currentParsedComponent.fields.length) * 40);
 
-        try {
-          const fieldFormData = new FormData();
-          fieldFormData.append("action", "ccc_add_field");
-          fieldFormData.append("component_id", componentId);
-          fieldFormData.append("label", fieldData.label);
-          fieldFormData.append("name", fieldData.name);
-          fieldFormData.append("type", fieldData.type);
-          fieldFormData.append("required", fieldData.required ? "1" : "0");
-          fieldFormData.append("placeholder", fieldData.placeholder || "");
-          fieldFormData.append("nonce", window.cccData.nonce);
+                 try {
+           const fieldFormData = new FormData();
+           fieldFormData.append("action", "ccc_add_field");
+           fieldFormData.append("component_id", componentId);
+           fieldFormData.append("label", fieldData.label);
+           fieldFormData.append("name", fieldData.name);
+           fieldFormData.append("type", fieldData.type);
+           fieldFormData.append("required", fieldData.required ? "1" : "0");
+           fieldFormData.append("placeholder", fieldData.placeholder || "");
+           fieldFormData.append("nonce", window.cccData.nonce);
 
-          // Handle field configuration
-          if (Object.keys(fieldData.config).length > 0) {
-            fieldFormData.append("field_config", JSON.stringify(fieldData.config));
-          }
+           // Ensure fieldData has config property
+           if (!fieldData.config) {
+             fieldData.config = {};
+           }
+
+           // Handle field configuration
+           if (fieldData.config && Object.keys(fieldData.config).length > 0) {
+             fieldFormData.append("field_config", JSON.stringify(fieldData.config));
+           }
 
           // Handle repeater fields with nested fields
           if (fieldData.type === "repeater" && fieldData.config.nested_fields) {
