@@ -904,9 +904,14 @@ Please return ONLY the JSON response, no additional text.`;
             show_title: true
           };
                  } else if (normalizedField.type === "repeater") {
-           // Handle repeater field - if it has children, use them as nested fields
-           if (field.children && Array.isArray(field.children)) {
-             const nestedFields = field.children.map((child, childIndex) => {
+           // Handle repeater field - if it has children or fields, use them as nested fields
+           const nestedFieldArray = field.children || field.fields;
+           if (nestedFieldArray && Array.isArray(nestedFieldArray)) {
+             console.log("=== DEBUG: Processing Repeater Nested Fields ===");
+             console.log("Original field:", field);
+             console.log("Nested field array:", nestedFieldArray);
+             
+             const nestedFields = nestedFieldArray.map((child, childIndex) => {
                const nestedField = {
                  label:
                    child.label || child.name || `Nested Field ${childIndex + 1}`,
@@ -948,6 +953,7 @@ Please return ONLY the JSON response, no additional text.`;
                  };
                }
 
+               console.log(`Nested field ${childIndex + 1}:`, nestedField);
                return nestedField;
              });
 
@@ -955,6 +961,9 @@ Please return ONLY the JSON response, no additional text.`;
              normalizedField.config = {
                nested_fields: nestedFields,
              };
+             
+             console.log("Final normalized field config:", normalizedField.config);
+             console.log("==========================================");
            } else {
              // If no children specified, create default nested fields based on the component context
              normalizedField.config = {
