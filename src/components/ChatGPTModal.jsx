@@ -550,11 +550,16 @@ Please return ONLY the JSON response, no additional text or explanations.`;
 
        setParsedComponent(jsonData);
 
-      setAutoGenerationStep("Creating component in WordPress...");
-      setAutoGenerationProgress(90);
+             setAutoGenerationStep("Creating component in WordPress...");
+       setAutoGenerationProgress(90);
 
-      // Auto-create the component
-      await processChatGPTJson(jsonData);
+       // Auto-create the component - but first normalize the data
+       const normalizedData = await validateAndParseChatGPTJson(jsonData);
+       if (!normalizedData.isValid) {
+         throw new Error("Failed to normalize component data");
+       }
+       
+       await processChatGPTJson(normalizedData.data);
 
       setAutoGenerationStep("Component created successfully!");
       setAutoGenerationProgress(100);
@@ -691,15 +696,24 @@ Please return ONLY the JSON response, no additional text.`;
     window.open("https://chat.openai.com", "_blank");
   };
 
-  const validateAndParseChatGPTJson = () => {
-    if (!chatGPTJson.trim()) {
+  const validateAndParseChatGPTJson = (jsonData = null) => {
+    // Use passed jsonData or fall back to state
+    const dataToValidate = jsonData || chatGPTJson;
+    
+    if (!dataToValidate) {
       showMessage("Please paste the ChatGPT JSON response", "error");
-      return false;
+      return { isValid: false, data: null };
     }
 
     try {
       // Parse JSON to validate
-      let componentData = JSON.parse(chatGPTJson);
+      let componentData;
+      
+      if (typeof dataToValidate === 'string') {
+        componentData = JSON.parse(dataToValidate);
+      } else {
+        componentData = dataToValidate;
+      }
 
       // Handle different JSON formats
       if (!componentData.component && !componentData.component_name) {
@@ -1650,11 +1664,16 @@ Please return ONLY the JSON response, no additional text.`;
 
                {/* Action Buttons */}
                <div className="mt-3 flex gap-2">
-                 <button
-                   onClick={validateAndParseChatGPTJson}
-                   disabled={!chatGPTJson.trim() || isProcessingChatGPT}
-                   className="flex items-center gap-1 px-3 py-1.5 bg-pink-600 text-white rounded text-xs hover:bg-pink-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                 >
+                                   <button
+                    onClick={() => {
+                      const result = validateAndParseChatGPTJson();
+                      if (result.isValid) {
+                        showMessage("JSON validated successfully!", "success");
+                      }
+                    }}
+                    disabled={!chatGPTJson.trim() || isProcessingChatGPT}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-pink-600 text-white rounded text-xs hover:bg-pink-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
                    <svg
                      className="h-3 w-3"
                      fill="none"
@@ -1670,11 +1689,16 @@ Please return ONLY the JSON response, no additional text.`;
                    </svg>
                    Validate JSON
                  </button>
-                 <button
-                   onClick={processChatGPTJson}
-                   disabled={!parsedComponent || isProcessingChatGPT}
-                   className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                 >
+                                   <button
+                    onClick={() => {
+                      const result = validateAndParseChatGPTJson();
+                      if (result.isValid) {
+                        processChatGPTJson(result.data);
+                      }
+                    }}
+                    disabled={!parsedComponent || isProcessingChatGPT}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
                    <svg
                      className="h-3 w-3"
                      fill="none"
