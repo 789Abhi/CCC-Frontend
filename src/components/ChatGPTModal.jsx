@@ -520,8 +520,8 @@ Please return ONLY the JSON response, no additional text or explanations.`;
     }
 
     // Check if API key is available
-    const currentApiKey = await getCurrentApiKey();
-    if (!currentApiKey || currentApiKey === "***configured***" || currentApiKey === "***wordpress_stored***") {
+    const apiKey = localStorage.getItem('ccc_openai_api_key');
+    if (!apiKey) {
       showMessage("Please configure your OpenAI API key first", "error");
       setShowApiKeySettings(true);
       return;
@@ -572,7 +572,7 @@ Please return ONLY the JSON response, no additional text or explanations.`;
         setAutoGenerationProgress(40);
 
         // Call OpenAI API directly
-        const response = await axios.post(OPENAI_API_URL, {
+        const response = await axios.post('https://api.openai.com/v1/chat/completions', {
           model: "gpt-4o-mini",
           messages: [
             {
@@ -584,7 +584,7 @@ Please return ONLY the JSON response, no additional text or explanations.`;
           max_tokens: 2000
         }, {
           headers: {
-            'Authorization': `Bearer ${currentApiKey}`,
+            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json'
           }
         });
@@ -600,40 +600,45 @@ Please return ONLY the JSON response, no additional text or explanations.`;
           throw new Error("No response received from AI. Please check your API key.");
         }
 
-        // Try to extract JSON from the response (AI might add extra text)
-        let jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          throw new Error("Invalid JSON response from AI");
+        setAutoGenerationStep("Parsing AI response...");
+        setAutoGenerationProgress(70);
+
+        // Try to extract JSON from the response
+        let jsonData;
+        try {
+          // Look for JSON in the response
+          const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            jsonData = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error("No valid JSON found in response");
+          }
+        } catch (parseError) {
+          console.error("Failed to parse AI response:", aiResponse);
+          throw new Error("Invalid JSON response from AI. Please try again.");
         }
 
-        const aiGeneratedJson = jsonMatch[0];
-        
-        setAutoGenerationStep("Validating generated component...");
+        setAutoGenerationStep("Validating component structure...");
         setAutoGenerationProgress(80);
-        
-        // Validate and parse the AI-generated JSON automatically
-        setChatGPTJson(aiGeneratedJson);
-        
-        // Validate the JSON
-        const validationResult = validateAndParseChatGPTJson();
-        
-        if (validationResult.isValid && validationResult.data) {
-          setAutoGenerationStep("Creating component in WordPress...");
-          setAutoGenerationProgress(90);
-          
-          // Auto-create the component with the validated data
-          await processChatGPTJson(validationResult.data);
-          
-          // Save this successful generation as a user pattern for future use
-          addUserPattern(contextPrompt, validationResult.data);
-         
-          setAutoGenerationStep("Component created successfully!");
-          setAutoGenerationProgress(100);
-        } else {
-          throw new Error("Generated component validation failed");
-        }
-      }
 
+        // Validate the component structure
+        if (!jsonData.component || !jsonData.fields || !Array.isArray(jsonData.fields)) {
+          throw new Error("Invalid component structure received from AI");
+        }
+
+        setParsedComponent(jsonData);
+
+        setAutoGenerationStep("Creating component in WordPress...");
+        setAutoGenerationProgress(90);
+
+        // Auto-create the component
+        await processChatGPTJson(jsonData);
+
+        setAutoGenerationStep("Component created successfully!");
+        setAutoGenerationProgress(100);
+
+        showMessage("Component generated and created successfully!", "success");
+      }
     } catch (error) {
       console.error("AI generation error:", error);
       if (error.response?.status === 401) {
@@ -1310,10 +1315,10 @@ Please return ONLY the JSON response, no additional text.`;
                     </div>
                     <div>
                       <h3 className="font-medium text-gray-800 text-sm">
-                        Secure AI Access
+                        OpenAI API Key
                       </h3>
                       <p className="text-xs text-gray-600">
-                        Proxy key for AI generation
+                        Configure your OpenAI API key for AI generation
                       </p>
                     </div>
                   </div>
@@ -1321,93 +1326,84 @@ Please return ONLY the JSON response, no additional text.`;
                     onClick={() => setShowApiKeySettings(!showApiKeySettings)}
                     className="text-xs text-pink-600 hover:text-pink-700 transition-colors px-2 py-1 rounded hover:bg-pink-100"
                   >
-                    {showApiKeySettings ? "Hide" : "Manage"}
+                    {showApiKeySettings ? "Hide" : "Configure"}
                   </button>
                 </div>
 
                 {/* Proxy Key Status */}
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span className="text-xs text-gray-700">
-                    Secure proxy system active
-                  </span>
-                  {localStorage.getItem('ccc_proxy_key') && (
-                    <span className="text-xs text-gray-500">
-                      (Proxy key: {localStorage.getItem('ccc_proxy_key').substring(0, 12)}...)
-                    </span>
+                  {localStorage.getItem('ccc_openai_api_key') ? (
+                    <>
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <span className="text-xs text-gray-700">
+                        API key configured
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        (Key: {localStorage.getItem('ccc_openai_api_key').substring(0, 12)}...)
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                      <span className="text-xs text-gray-700">
+                        No API key configured
+                      </span>
+                    </>
                   )}
                 </div>
 
-                {/* Proxy Key Management */}
+                {/* API Key Management */}
                 {showApiKeySettings && (
                   <div className="space-y-3 p-3 bg-pink-100 rounded border-2 border-pink-300">
                     <div>
                       <p className="text-xs text-gray-700 mb-2">
-                        <strong>How it works:</strong> Your requests are securely proxied through our server. 
-                        The real API key is never exposed to your browser.
+                        <strong>Enter your OpenAI API key:</strong> This key will be stored locally in your browser and used for AI generation.
                       </p>
-                      {localStorage.getItem('ccc_proxy_key') ? (
-                        <div className="p-2 bg-white rounded border border-pink-300">
-                          <p className="text-xs text-gray-600 mb-1">Current Proxy Key:</p>
-                          <p className="text-xs font-mono text-gray-800">
-                            {localStorage.getItem('ccc_proxy_key')}
-                          </p>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-gray-600">
-                          No proxy key generated yet. One will be created automatically when you first use AI generation.
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={async () => {
-                          try {
-                            const formData = new FormData();
-                            formData.append("action", "ccc_generate_proxy_key");
-                            formData.append("nonce", window.cccData.nonce);
-
-                            const response = await axios.post(window.cccData.ajaxUrl, formData);
-                            
-                            if (response.data.success) {
-                              const newProxyKey = response.data.data.proxy_key;
-                              localStorage.setItem('ccc_proxy_key', newProxyKey);
-                              showMessage("New proxy key generated!", "success");
-                              setShowApiKeySettings(false);
-                              setShowApiKeySettings(true); // Force re-render
-                            }
-                          } catch (error) {
-                            showMessage("Failed to generate new proxy key", "error");
+                      <input
+                        type="password"
+                        placeholder="sk-..."
+                        value={localStorage.getItem('ccc_openai_api_key') || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value) {
+                            localStorage.setItem('ccc_openai_api_key', value);
+                          } else {
+                            localStorage.removeItem('ccc_openai_api_key');
                           }
-                        }}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-pink-600 text-white rounded text-xs hover:bg-pink-700 transition-colors"
-                      >
-                        <svg
-                          className="h-3 w-3"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                          />
-                        </svg>
-                        Generate New Key
-                      </button>
-                      <button
-                        onClick={() => {
-                          localStorage.removeItem('ccc_proxy_key');
-                          showMessage("Proxy key cleared", "success");
                           setShowApiKeySettings(false);
                           setShowApiKeySettings(true); // Force re-render
                         }}
-                        className="px-3 py-1.5 bg-gray-400 text-gray-700 rounded text-xs hover:bg-gray-500 transition-colors"
-                      >
-                        Clear Key
-                      </button>
+                        className="w-full p-2 text-sm border border-pink-300 rounded focus:ring-1 focus:ring-pink-500 focus:border-pink-500"
+                      />
+                      <p className="text-xs text-gray-600 mt-1">
+                        Your API key is stored locally and never sent to our servers.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                                              <button
+                          onClick={() => {
+                            localStorage.removeItem('ccc_openai_api_key');
+                            setShowApiKeySettings(false);
+                            setShowApiKeySettings(true); // Force re-render
+                            showMessage("API key removed", "success");
+                          }}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
+                        >
+                          <svg
+                            className="h-3 w-3"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                          Remove Key
+                        </button>
                     </div>
                   </div>
                                )}
