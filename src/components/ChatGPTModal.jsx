@@ -554,7 +554,6 @@ Please return ONLY the JSON response, no additional text or explanations.`;
       
       if (detectedPattern) {
         // Use cached structure for common patterns (cost optimization)
-        setIsUsingCachedStructure(true);
         setAutoGenerationStep("Using optimized cached structure...");
         setAutoGenerationProgress(30);
         
@@ -566,21 +565,20 @@ Please return ONLY the JSON response, no additional text or explanations.`;
         // Directly use the cached component data instead of going through validation
         setParsedComponent(cachedComponent);
         
-                 if (cachedComponent && cachedComponent.component && cachedComponent.fields) {
-           setAutoGenerationStep("Creating component in WordPress...");
-           setAutoGenerationProgress(80);
-           
-           // Auto-create the component - pass the data directly to avoid async state issues
-           await processChatGPTJson(cachedComponent);
-           
-           setAutoGenerationStep("Component created successfully!");
-           setAutoGenerationProgress(100);
-         } else {
+        if (cachedComponent && cachedComponent.component && cachedComponent.fields) {
+          setAutoGenerationStep("Creating component in WordPress...");
+          setAutoGenerationProgress(80);
+          
+          // Auto-create the component - pass the data directly to avoid async state issues
+          await processChatGPTJson(cachedComponent);
+          
+          setAutoGenerationStep("Component created successfully!");
+          setAutoGenerationProgress(100);
+        } else {
           throw new Error("Invalid cached component structure");
         }
       } else {
         // Use AI for custom components
-        setIsUsingCachedStructure(false);
         setAutoGenerationStep("Generating custom component with AI...");
         setAutoGenerationProgress(20);
         
@@ -646,7 +644,17 @@ Please return ONLY the JSON response, no additional text or explanations.`;
 
     } catch (error) {
       console.error("AI generation error:", error);
-      showMessage(`AI generation failed: ${error.message}`, "error");
+      if (error.response?.status === 401) {
+        showMessage("Invalid API key. Please check your OpenAI API key.", "error");
+      } else if (error.response?.status === 429) {
+        showMessage("Rate limit exceeded. Please try again later.", "error");
+      } else if (error.response?.status === 402) {
+        showMessage("Insufficient API credits. Please add credits to your OpenAI account.", "error");
+      } else if (error.message.includes("No response received from AI")) {
+        showMessage("AI service temporarily unavailable. Please try again later.", "error");
+      } else {
+        showMessage(`AI generation failed: ${error.message}`, "error");
+      }
     } finally {
       setIsAutoGenerating(false);
       setAutoGenerationStep("");
@@ -1240,7 +1248,6 @@ Please return ONLY the JSON response, no additional text.`;
     setAutoGenerationStep("");
     setAutoGenerationProgress(0);
     setShowManualSection(false);
-    setIsUsingCachedStructure(false);
     onClose();
   };
 
@@ -1528,14 +1535,7 @@ Please return ONLY the JSON response, no additional text.`;
                        </div>
                      </div>
                      
-                     {isUsingCachedStructure && (
-                       <div className="flex items-center gap-2 p-2 bg-pink-200 rounded border border-pink-400">
-                         <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                         <span className="text-xs text-gray-700">
-                           Using cached component (no API cost)
-                         </span>
-                       </div>
-                     )}
+                     {/* Cache usage indicator removed */}
                    </div>
                  )}
 
