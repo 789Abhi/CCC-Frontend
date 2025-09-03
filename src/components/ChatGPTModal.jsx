@@ -539,12 +539,16 @@ Please return ONLY the JSON response, no additional text or explanations.`;
       setAutoGenerationStep("Validating component structure...");
       setAutoGenerationProgress(80);
 
-      // Validate the component structure
-      if (!jsonData.component || !jsonData.fields || !Array.isArray(jsonData.fields)) {
-        throw new Error("Invalid component structure received from AI");
-      }
+             // Validate the component structure
+       if (!jsonData.component || !jsonData.fields || !Array.isArray(jsonData.fields)) {
+         throw new Error("Invalid component structure received from AI");
+       }
 
-      setParsedComponent(jsonData);
+       console.log("=== DEBUG: AI Response Before Normalization ===");
+       console.log("Raw AI response:", jsonData);
+       console.log("==========================================");
+
+       setParsedComponent(jsonData);
 
       setAutoGenerationStep("Creating component in WordPress...");
       setAutoGenerationProgress(90);
@@ -965,6 +969,10 @@ Please return ONLY the JSON response, no additional text.`;
              console.log("Final normalized field config:", normalizedField.config);
              console.log("==========================================");
            } else {
+             console.log("=== DEBUG: No Nested Fields Found ===");
+             console.log("Original field:", field);
+             console.log("No children or fields array found");
+             console.log("==========================================");
              // If no children specified, create default nested fields based on the component context
              normalizedField.config = {
                nested_fields: [
@@ -1037,14 +1045,20 @@ Please return ONLY the JSON response, no additional text.`;
         return normalizedField;
       });
 
-             // Store the parsed component data
+                    // Store the parsed component data
        const parsedData = {
          component: normalizedComponent,
          fields: normalizedFields,
        };
        setParsedComponent(parsedData);
 
-              return { isValid: true, data: parsedData };
+       console.log("=== DEBUG: Validation Complete ===");
+       console.log("Normalized component:", normalizedComponent);
+       console.log("Normalized fields:", normalizedFields);
+       console.log("Final parsed data:", parsedData);
+       console.log("==========================================");
+
+       return { isValid: true, data: parsedData };
      } catch (error) {
        console.error("JSON validation error:", error);
        showMessage("Please check your JSON format and try again", "error");
@@ -1055,6 +1069,11 @@ Please return ONLY the JSON response, no additional text.`;
   const processChatGPTJson = async (componentData = null) => {
     // Use passed componentData or fall back to state
     const currentParsedComponent = componentData || parsedComponent;
+    
+    console.log("=== DEBUG: processChatGPTJson Called ===");
+    console.log("Component data passed:", componentData);
+    console.log("Current parsed component:", currentParsedComponent);
+    console.log("==========================================");
     
     if (!currentParsedComponent) {
       showMessage("No valid component data to create", "error");
@@ -1131,6 +1150,12 @@ Please return ONLY the JSON response, no additional text.`;
              // Step 2: Create fields
        let fieldsCreated = 0;
        for (const fieldData of currentParsedComponent.fields) {
+         console.log("=== DEBUG: Processing Field ===");
+         console.log("Field data:", fieldData);
+         console.log("Field type:", fieldData.type);
+         console.log("Field config:", fieldData.config);
+         console.log("==========================================");
+         
          setProcessingStep(`Creating field: ${fieldData.label}...`);
          setProcessingProgress(50 + (fieldsCreated / currentParsedComponent.fields.length) * 40);
 
@@ -1162,6 +1187,12 @@ Please return ONLY the JSON response, no additional text.`;
              console.log("Nested fields:", fieldData.config.nested_fields);
              fieldFormData.append("nested_field_definitions", JSON.stringify(fieldData.config.nested_fields));
              console.log("Nested field definitions appended to form data");
+             console.log("==========================================");
+           } else if (fieldData.type === "repeater") {
+             console.log("=== DEBUG: Repeater Field Missing Nested Fields ===");
+             console.log("Field data:", fieldData);
+             console.log("Field config:", fieldData.config);
+             console.log("Nested fields property:", fieldData.config.nested_fields);
              console.log("==========================================");
            }
 
