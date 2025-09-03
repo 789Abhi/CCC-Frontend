@@ -554,10 +554,14 @@ Please return ONLY the JSON response, no additional text or explanations.`;
        setAutoGenerationProgress(90);
 
        // Auto-create the component - but first normalize the data
-       const normalizedData = await validateAndParseChatGPTJson(jsonData);
+       const normalizedData = validateAndParseChatGPTJson(jsonData);
        if (!normalizedData.isValid) {
          throw new Error("Failed to normalize component data");
        }
+       
+       console.log("=== DEBUG: Normalized Data Before Processing ===");
+       console.log("Normalized data:", normalizedData.data);
+       console.log("==========================================");
        
        await processChatGPTJson(normalizedData.data);
 
@@ -1195,7 +1199,7 @@ Please return ONLY the JSON response, no additional text.`;
            }
 
                      // Handle repeater fields with nested fields
-           if (fieldData.type === "repeater" && fieldData.config.nested_fields) {
+           if (fieldData.type === "repeater" && fieldData.config && fieldData.config.nested_fields) {
              console.log("=== DEBUG: Repeater Field Nested Fields ===");
              console.log("Field data:", fieldData);
              console.log("Nested fields:", fieldData.config.nested_fields);
@@ -1206,7 +1210,7 @@ Please return ONLY the JSON response, no additional text.`;
              console.log("=== DEBUG: Repeater Field Missing Nested Fields ===");
              console.log("Field data:", fieldData);
              console.log("Field config:", fieldData.config);
-             console.log("Nested fields property:", fieldData.config.nested_fields);
+             console.log("Nested fields property:", fieldData.config?.nested_fields);
              console.log("==========================================");
            }
 
