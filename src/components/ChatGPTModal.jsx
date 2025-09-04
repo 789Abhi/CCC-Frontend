@@ -127,6 +127,62 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
     }
   };
 
+  // Progress bar animation functions
+  const startProgressAnimation = (targetProgress, duration = 2000) => {
+    setIsProgressAnimating(true);
+    const startProgress = autoGenerationProgress;
+    const progressIncrement = (targetProgress - startProgress) / (duration / 50); // Update every 50ms
+    let currentProgress = startProgress;
+    
+    const interval = setInterval(() => {
+      currentProgress += progressIncrement;
+      if (currentProgress >= targetProgress) {
+        setAutoGenerationProgress(targetProgress);
+        clearInterval(interval);
+        setIsProgressAnimating(false);
+      } else {
+        setAutoGenerationProgress(currentProgress);
+      }
+    }, 50);
+    
+    setProgressInterval(interval);
+  };
+
+  const stopProgressAnimation = () => {
+    if (progressInterval) {
+      clearInterval(progressInterval);
+      setProgressInterval(null);
+    }
+    setIsProgressAnimating(false);
+  };
+
+  const resetProgress = () => {
+    stopProgressAnimation();
+    setAutoGenerationProgress(0);
+    setAutoGenerationStep("");
+  };
+
+  // Simple animated progress function
+  const animateProgress = (from, to, duration = 1000) => {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const currentValue = from + (to - from) * progress;
+        
+        setAutoGenerationProgress(currentValue);
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          resolve();
+        }
+      };
+      animate();
+    });
+  };
+
   // Get the current API key (from localStorage, WordPress options, or environment)
   const getCurrentApiKey = async () => {
     // First check localStorage
@@ -769,86 +825,93 @@ Please return ONLY the JSON response, no additional text.`;
         "range",
         "oembed",
       ];
-      const fieldTypeMapping = {
-        // Number fields
-        number: "number",
-        phone: "number",
-        phone_number: "number",
-        telephone: "number",
-        tel: "number",
-        
-        // Email fields
-        email: "email",
-        e_mail: "email",
-        
-        // Password fields
-        password: "password",
-        pass: "password",
-        
-        // URL/Link fields
-        url: "link",
-        link: "link",
-        Link: "link",
-        website: "link",
-        web: "link",
-        
-        // File fields
-        file: "file",
-        upload: "file",
-        attachment: "file",
-        
-        // Image fields
-        image: "image",
-        img: "image",
-        photo: "image",
-        picture: "image",
-        
-        // Video fields
-        video: "video",
-        movie: "video",
-        
-        // Color fields
-        color: "color",
-        colour: "color",
-        
-        // Select fields
-        select: "select",
-        dropdown: "select",
-        choice: "select",
-        
-        // Checkbox fields
-        checkbox: "checkbox",
-        check: "checkbox",
-        
-        // Radio fields
-        radio: "radio",
-        radio_button: "radio",
-        
-        // WYSIWYG fields
-        wysiwyg: "wysiwyg",
-        editor: "wysiwyg",
-        rich_text: "wysiwyg",
-        
-        // Repeater fields
-        repeater: "repeater",
-        repeat: "repeater",
-        repeatable: "repeater",
-        
-        // Range fields
-        range: "range",
-        slider: "range",
-        
-        // oEmbed fields
-        oembed: "oembed",
-        o_embed: "oembed",
-        embed: "oembed",
-        embedded: "oembed",
-        
-        // Text fields (fallback)
-        text: "text",
-        string: "text",
-        input: "text",
-      };
+             const fieldTypeMapping = {
+         // Number fields
+         number: "number",
+         phone: "number",
+         phone_number: "number",
+         telephone: "number",
+         tel: "number",
+         
+         // Email fields
+         email: "email",
+         e_mail: "email",
+         
+         // Password fields
+         password: "password",
+         pass: "password",
+         
+         // URL/Link fields
+         url: "link",
+         link: "link",
+         Link: "link",
+         website: "link",
+         web: "link",
+         
+         // File fields
+         file: "file",
+         upload: "file",
+         attachment: "file",
+         
+         // Image fields
+         image: "image",
+         img: "image",
+         photo: "image",
+         picture: "image",
+         
+         // Video fields
+         video: "video",
+         movie: "video",
+         
+         // Color fields
+         color: "color",
+         colour: "color",
+         
+         // Select fields
+         select: "select",
+         dropdown: "select",
+         choice: "select",
+         
+         // Checkbox fields
+         checkbox: "checkbox",
+         check: "checkbox",
+         
+         // Radio fields
+         radio: "radio",
+         radio_button: "radio",
+         
+         // WYSIWYG fields
+         wysiwyg: "wysiwyg",
+         editor: "wysiwyg",
+         rich_text: "wysiwyg",
+         content: "wysiwyg",
+         page_content: "wysiwyg",
+         body: "wysiwyg",
+         main_content: "wysiwyg",
+         article_content: "wysiwyg",
+         post_content: "wysiwyg",
+         text_content: "wysiwyg",
+         
+         // Repeater fields
+         repeater: "repeater",
+         repeat: "repeater",
+         repeatable: "repeater",
+         
+         // Range fields
+         range: "range",
+         slider: "range",
+         
+         // oEmbed fields
+         oembed: "oembed",
+         o_embed: "oembed",
+         embed: "oembed",
+         embedded: "oembed",
+         
+         // Text fields (fallback)
+         text: "text",
+         string: "text",
+         input: "text",
+       };
 
       const normalizedFields = componentData.fields.map((field, index) => {
         // Ensure required properties exist
@@ -864,13 +927,38 @@ Please return ONLY the JSON response, no additional text.`;
           config: field.config || {}, // Ensure config always exists
         };
 
-        // Map field type to valid type
-        const originalType = normalizedField.type.toLowerCase();
-        if (fieldTypeMapping[originalType]) {
-          normalizedField.type = fieldTypeMapping[originalType];
-        } else if (!validFieldTypes.includes(originalType)) {
-          normalizedField.type = "text"; // Default fallback
-        }
+                 // Map field type to valid type
+         const originalType = normalizedField.type.toLowerCase();
+         if (fieldTypeMapping[originalType]) {
+           normalizedField.type = fieldTypeMapping[originalType];
+         } else if (!validFieldTypes.includes(originalType)) {
+           normalizedField.type = "text"; // Default fallback
+         }
+
+         // Intelligent field type detection based on field name and context
+         const fieldName = normalizedField.name.toLowerCase();
+         const fieldLabel = normalizedField.label.toLowerCase();
+         
+         // Map description fields to textarea
+         if (fieldName.includes('description') || fieldLabel.includes('description')) {
+           normalizedField.type = "textarea";
+         }
+         
+         // Map content fields to WYSIWYG editor
+         if (fieldName.includes('content') || fieldLabel.includes('content') ||
+             fieldName.includes('body') || fieldLabel.includes('body') ||
+             fieldName.includes('article') || fieldLabel.includes('article') ||
+             fieldName.includes('post') || fieldLabel.includes('post') ||
+             fieldName.includes('main') || fieldLabel.includes('main')) {
+           normalizedField.type = "wysiwyg";
+         }
+         
+         // Map long text fields to textarea (if placeholder suggests long content)
+         if (normalizedField.placeholder && normalizedField.placeholder.length > 50) {
+           if (normalizedField.type === "text") {
+             normalizedField.type = "textarea";
+           }
+         }
 
         // Handle special field configurations
         if (normalizedField.type === "select" && field.options) {
@@ -947,6 +1035,31 @@ Please return ONLY the JSON response, no additional text.`;
                  config: {},
                };
 
+               // Intelligent field type detection for nested fields
+               const nestedFieldName = nestedField.name.toLowerCase();
+               const nestedFieldLabel = nestedField.label.toLowerCase();
+               
+               // Map description fields to textarea
+               if (nestedFieldName.includes('description') || nestedFieldLabel.includes('description')) {
+                 nestedField.type = "textarea";
+               }
+               
+               // Map content fields to WYSIWYG editor
+               if (nestedFieldName.includes('content') || nestedFieldLabel.includes('content') ||
+                   nestedFieldName.includes('body') || nestedFieldLabel.includes('body') ||
+                   nestedFieldName.includes('article') || nestedFieldLabel.includes('article') ||
+                   nestedFieldName.includes('post') || nestedFieldLabel.includes('post') ||
+                   nestedFieldName.includes('main') || nestedFieldLabel.includes('main')) {
+                 nestedField.type = "wysiwyg";
+               }
+               
+               // Map long text fields to textarea (if placeholder suggests long content)
+               if (nestedField.placeholder && nestedField.placeholder.length > 50) {
+                 if (nestedField.type === "text") {
+                   nestedField.type = "textarea";
+                 }
+               }
+
                // Handle nested field configurations
                if (nestedField.type === "number") {
                  nestedField.config = {
@@ -972,6 +1085,16 @@ Please return ONLY the JSON response, no additional text.`;
                    post_types: ['post', 'page'],
                    show_target: true,
                    show_title: true
+                 };
+               } else if (nestedField.type === "wysiwyg") {
+                 nestedField.config = {
+                   editor_settings: {
+                     media_buttons: true,
+                     teeny: false,
+                     textarea_rows: 10,
+                     toolbar: 'full',
+                     plugins: 'wordcount,wpemoji,wplink,wptextpattern,wpautoresize'
+                   }
                  };
                }
 
@@ -1541,16 +1664,29 @@ Please return ONLY the JSON response, no additional text.`;
                          <p className="text-sm text-gray-700 font-medium">
                            {autoGenerationStep}
                          </p>
-                         <div className="w-full bg-pink-200 rounded-full h-1.5 mt-2">
+                         <div className="w-full bg-pink-200 rounded-full h-2 mt-2 overflow-hidden">
                            <div
-                             className="bg-pink-500 h-1.5 rounded-full transition-all duration-500"
-                             style={{ width: `${autoGenerationProgress}%` }}
-                           ></div>
+                             className="bg-gradient-to-r from-pink-500 to-pink-600 h-2 rounded-full transition-all duration-700 ease-out relative"
+                             style={{ 
+                               width: `${autoGenerationProgress}%`,
+                               boxShadow: autoGenerationProgress > 0 ? '0 0 10px rgba(236, 72, 153, 0.3)' : 'none'
+                             }}
+                           >
+                             {/* Animated shimmer effect */}
+                             {autoGenerationProgress > 0 && autoGenerationProgress < 100 && (
+                               <div 
+                                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"
+                                 style={{
+                                   animation: 'shimmer 2s infinite'
+                                 }}
+                               />
+                             )}
+                           </div>
                          </div>
                        </div>
                        <div className="text-right">
-                         <div className="text-lg font-semibold text-pink-600">
-                           {autoGenerationProgress}%
+                         <div className="text-lg font-semibold text-pink-600 animate-pulse">
+                           {Math.round(autoGenerationProgress)}%
                          </div>
                        </div>
                      </div>
