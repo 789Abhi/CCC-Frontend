@@ -29,7 +29,7 @@ import FilterIcon from "/Filter.svg"
 import dragDropIcon from "/drag-drop-icon.svg"
 import deleteIcon from "/delete.svg"
 import editIcon from "/Edit.svg"
-import { LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users, Palette, GripVertical, GitBranch, Download, Upload } from "lucide-react"
+import { LayoutGrid, FileText, ImageIcon, Repeat, Settings, Users, Palette, GripVertical, GitBranch, Download, Upload, Copy } from "lucide-react"
 import ChatGPTModal from "./ChatGPTModal"
 import ComponentEditNameModal from "./ComponentEditModal"
 import FieldVisualTreeModal from "./FieldVisualTreeModal"
@@ -254,6 +254,12 @@ const ComponentList = () => {
 
   // ChatGPT modal state
   const [showChatGPTModal, setShowChatGPTModal] = useState(false)
+  
+  // Duplicate modal state
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false)
+  const [componentToDuplicate, setComponentToDuplicate] = useState(null)
+  
+  // Design ChatGPT modal state
   
   // Design ChatGPT modal state
   const [showDesignModal, setShowDesignModal] = useState(false)
@@ -723,6 +729,11 @@ const ComponentList = () => {
       console.error("Error deleting component:", error)
       toast.error("Error connecting to server. Please try again.")
     }
+  }
+
+  const handleDuplicateComponent = (component) => {
+    setComponentToDuplicate(component)
+    setShowDuplicateModal(true)
   }
   
   const handleDeleteField = async (fieldId) => {
@@ -2101,6 +2112,13 @@ const ComponentList = () => {
                             <GitBranch className="w-[25px] h-[25px]" />
                           </div>
                           <div
+                            className="w-[25px] h-[25px] cursor-pointer text-orange-600 hover:text-orange-800 transition-colors duration-200"
+                            title="Duplicate Component"
+                            onClick={() => handleDuplicateComponent(comp)}
+                          >
+                            <Copy className="w-[25px] h-[25px]" />
+                          </div>
+                          <div
                             className="w-[25px] h-[25px] cursor-pointer text-purple-600 hover:text-purple-800 transition-colors duration-200"
                             title="Design with ChatGPT"
                             onClick={() => openDesignModal(comp)}
@@ -2616,6 +2634,21 @@ const ComponentList = () => {
         isOpen={showChatGPTModal}
         onClose={handleChatGPTModalClose}
         onComponentCreated={handleChatGPTComponentCreated}
+      />
+
+      {/* Duplicate Modal */}
+      <ChatGPTModal
+        isOpen={showDuplicateModal}
+        onClose={() => {
+          setShowDuplicateModal(false)
+          setComponentToDuplicate(null)
+        }}
+        onComponentCreated={() => {
+          setShowDuplicateModal(false)
+          setComponentToDuplicate(null)
+          fetchComponents()
+        }}
+        duplicateComponent={componentToDuplicate}
       />
 
              {/* Design ChatGPT Modal */}

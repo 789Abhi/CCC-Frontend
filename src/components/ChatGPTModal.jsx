@@ -1694,6 +1694,7 @@ Please return ONLY the JSON response, no additional text.`;
                      {/* Cache usage indicator removed */}
                    </div>
                  )}
+               </div>
 
                              {/* Repeater Option */}
                <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-4">
@@ -1884,12 +1885,11 @@ Please return ONLY the JSON response, no additional text.`;
                      </div>
                    </div>
                  </div>
-                              )}
+                  )}
               </div>
             )}
            </div>
          </div>
-       </div>
      </>
    );
  };
