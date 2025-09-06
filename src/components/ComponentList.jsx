@@ -255,8 +255,7 @@ const ComponentList = () => {
   // ChatGPT modal state
   const [showChatGPTModal, setShowChatGPTModal] = useState(false)
   
-  // Duplicate modal state
-  const [showDuplicateModal, setShowDuplicateModal] = useState(false)
+  // Duplicate functionality state
   const [componentToDuplicate, setComponentToDuplicate] = useState(null)
   
   // Design ChatGPT modal state
@@ -650,12 +649,46 @@ const ComponentList = () => {
       console.log("Component creation response:", response.data)
 
       if (response.data.success) {
-        toast.success(response.data.message || "Component created successfully.")
+        // Get the component ID
+        let componentId = null;
+        if (response.data.data && response.data.data.id) {
+          componentId = response.data.data.id;
+        } else if (response.data.id) {
+          componentId = response.data.id;
+        } else if (response.data.component_id) {
+          componentId = response.data.component_id;
+        }
+
+        // If this is a duplicate operation, copy the fields
+        if (componentToDuplicate && componentId && componentToDuplicate.fields && componentToDuplicate.fields.length > 0) {
+          try {
+            const fieldsFormData = new FormData();
+            fieldsFormData.append("action", "ccc_update_component_fields");
+            fieldsFormData.append("component_id", componentId);
+            fieldsFormData.append("fields", JSON.stringify(componentToDuplicate.fields));
+            fieldsFormData.append("nonce", window.cccData.nonce);
+
+            const fieldsResponse = await axios.post(window.cccData.ajaxUrl, fieldsFormData);
+
+            if (fieldsResponse.data.success) {
+              toast.success("Component duplicated successfully with all fields!")
+            } else {
+              toast.success("Component created successfully, but failed to copy some fields.")
+            }
+          } catch (error) {
+            console.error("Error copying fields:", error);
+            toast.success("Component created successfully, but failed to copy fields.")
+          }
+        } else {
+          toast.success(response.data.message || "Component created successfully.")
+        }
+
         fetchComponents()
         fetchPosts(postType)
         setShowNewComponentDialog(false)
         setComponentName("")
         setHandle("")
+        setComponentToDuplicate(null) // Clear the duplicate reference
       } else {
         // Handle error response
         console.log("Error response received:", response.data)
@@ -732,8 +765,14 @@ const ComponentList = () => {
   }
 
   const handleDuplicateComponent = (component) => {
+    // Pre-fill the component name with "Duplicate" suffix
+    const duplicateName = `${component.name} Duplicate`
+    const duplicateHandle = generateHandle(duplicateName)
+    
+    setComponentName(duplicateName)
+    setHandle(duplicateHandle)
     setComponentToDuplicate(component)
-    setShowDuplicateModal(true)
+    setShowNewComponentDialog(true)
   }
   
   const handleDeleteField = async (fieldId) => {
@@ -2636,20 +2675,6 @@ const ComponentList = () => {
         onComponentCreated={handleChatGPTComponentCreated}
       />
 
-      {/* Duplicate Modal */}
-      <ChatGPTModal
-        isOpen={showDuplicateModal}
-        onClose={() => {
-          setShowDuplicateModal(false)
-          setComponentToDuplicate(null)
-        }}
-        onComponentCreated={() => {
-          setShowDuplicateModal(false)
-          setComponentToDuplicate(null)
-          fetchComponents()
-        }}
-        duplicateComponent={componentToDuplicate}
-      />
 
              {/* Design ChatGPT Modal */}
        <DesignChatGPTModal
