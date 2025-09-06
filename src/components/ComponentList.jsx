@@ -37,8 +37,6 @@ import DesignChatGPTModal from "./DesignChatGPTModal"
 
 // Sortable Field Component - moved outside main component to fix re-rendering issues
 const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText }) => {
-  console.log('SortableField rendered with:', { field, component, onEdit, onDelete, onCopy })
-  
   try {
     const {
       attributes,
@@ -56,21 +54,18 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
     }
 
     const handleEditClick = (e) => {
-      console.log('Edit clicked for field:', field)
       if (e && e.preventDefault) e.preventDefault()
       if (e && e.stopPropagation) e.stopPropagation()
       onEdit(component, field)
     }
 
     const handleDeleteClick = (e) => {
-      console.log('Delete clicked for field:', field)
       if (e && e.preventDefault) e.preventDefault()
       if (e && e.stopPropagation) e.stopPropagation()
       onDelete(field.id)
     }
 
     const handleCopyClick = (e) => {
-      console.log('Copy clicked for field:', field)
       if (e && e.preventDefault) e.preventDefault()
       if (e && e.stopPropagation) e.stopPropagation()
       onCopy(field.name)
@@ -177,7 +172,6 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
             <button
               type="button"
               onClick={(e) => {
-                console.log('Edit clicked (fallback) for field:', field)
                 if (e && e.preventDefault) e.preventDefault()
                 if (e && e.stopPropagation) e.stopPropagation()
                 onEdit(component, field)
@@ -194,7 +188,6 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
             <button
               type="button"
               onClick={(e) => {
-                console.log('Delete clicked (fallback) for field:', field)
                 if (e && e.preventDefault) e.preventDefault()
                 if (e && e.stopPropagation) e.stopPropagation()
                 onDelete(field.id)
@@ -311,8 +304,6 @@ const ComponentList = () => {
   }
 
   const showMessage = (msg, type) => {
-    console.log(`Showing message: ${msg} (type: ${type})`)
-    
     try {
       if (type === 'success') {
         toast.success(msg)
@@ -333,8 +324,6 @@ const ComponentList = () => {
   }
 
   const handleCopy = (text, fieldId, componentId) => {
-    console.log("Attempting to copy text:", text, "for field:", fieldId, "in component:", componentId)
-
     const copyFallback = (textToCopy) => {
       const textArea = document.createElement("textarea")
       textArea.value = textToCopy
@@ -343,7 +332,6 @@ const ComponentList = () => {
 
       try {
         document.execCommand("copy")
-        console.log("Copy successful using fallback")
         return true
       } catch (err) {
         console.error("Fallback copy failed:", err)
@@ -357,7 +345,6 @@ const ComponentList = () => {
       navigator.clipboard
         .writeText(text)
         .then(() => {
-          console.log("Text copied to clipboard:", text)
           setCopiedText({ text, fieldId, componentId })
           setTimeout(() => setCopiedText(null), 2000)
         })
@@ -372,7 +359,6 @@ const ComponentList = () => {
           }
         })
     } else {
-      console.warn("Clipboard API not supported, using fallback")
       const success = copyFallback(text)
       if (success) {
         setCopiedText({ text, fieldId, componentId })
@@ -500,8 +486,6 @@ const ComponentList = () => {
       }
       
       console.log('CCC: Fetching posts for post type:', type)
-      console.log('CCC: AJAX URL:', window.cccData.ajaxUrl)
-      console.log('CCC: Nonce:', window.cccData.nonce)
       setPostsLoading(true)
       setError("") // Clear any previous errors
       
@@ -509,20 +493,9 @@ const ComponentList = () => {
       formData.append("action", "ccc_get_posts_with_components")
       formData.append("post_type", type)
       formData.append("nonce", window.cccData.nonce)
-      console.log('CCC: FormData contents:')
-      for (let [key, value] of formData.entries()) {
-        console.log('  ', key, ':', value)
-      }
       let response
       try {
         response = await axios.post(window.cccData.ajaxUrl, formData)
-        console.log('CCC: fetchPosts response:', response.data);
-        console.log('CCC: Response status:', response.status);
-        console.log('CCC: Response headers:', response.headers);
-        console.log('CCC: Response structure - success:', response.data.success);
-        console.log('CCC: Response structure - data:', response.data.data);
-        console.log('CCC: Response structure - posts array:', response.data.data?.posts);
-        console.log('CCC: Full response object:', response);
       } catch (ajaxError) {
         console.error('CCC: AJAX request failed:', ajaxError)
         console.error('CCC: AJAX error response:', ajaxError.response)
@@ -538,13 +511,10 @@ const ComponentList = () => {
         // Check different possible locations for posts data
         if (Array.isArray(response.data.data?.posts)) {
           posts = response.data.data.posts
-          console.log('CCC: Found posts in response.data.data.posts');
         } else if (Array.isArray(response.data.posts)) {
           posts = response.data.posts
-          console.log('CCC: Found posts in response.data.posts');
         } else if (Array.isArray(response.data.data)) {
           posts = response.data.data
-          console.log('CCC: Found posts in response.data.data (array)');
         }
         
         if (posts !== null) {
@@ -571,25 +541,12 @@ const ComponentList = () => {
             if (type === "post") setSelectAllPosts(false)
           }
           
-          console.log('CCC: Fetched posts:', posts)
-          console.log('CCC: Initially selected posts (main interface only):', initiallySelected)
-          
-          // DEBUG: Log detailed information for each post
-          posts.forEach(post => {
-            console.log(`CCC DEBUG Post ${post.id} (${post.title}):`, {
-              has_components: post.has_components,
-              assigned_via_main_interface: post.assigned_via_main_interface,
-              will_be_selected: post.assigned_via_main_interface,
-              component_count: post.assigned_components ? post.assigned_components.length : 0
-            });
-          });
         } else {
           // No posts found in expected locations
           setPosts([])
           setSelectedPosts([])
           setSelectAllPages(false)
           setSelectAllPosts(false)
-          console.log('CCC: No posts found in response, setting empty array');
         }
       } else {
         // Response indicates failure
@@ -637,17 +594,9 @@ const ComponentList = () => {
     formData.append("handle", handle || generateHandle(componentName))
     formData.append("nonce", window.cccData.nonce)
 
-    console.log("Creating component:", {
-      name: componentName,
-      handle: handle || generateHandle(componentName),
-      action: "ccc_create_component"
-    })
-
     try {
       const response = await axios.post(window.cccData.ajaxUrl, formData)
       
-      console.log("Component creation response:", response.data)
-
       if (response.data.success) {
         // Get the component ID
         let componentId = null;
@@ -660,38 +609,41 @@ const ComponentList = () => {
         }
 
         // If this is a duplicate operation, copy the fields
-        if (componentToDuplicate && componentId && componentToDuplicate.fields && componentToDuplicate.fields.length > 0) {
-          try {
-            console.log("=== DEBUG: Copying Fields ===");
-            console.log("Component to duplicate:", componentToDuplicate);
-            console.log("Fields to copy:", componentToDuplicate.fields);
-            console.log("New component ID:", componentId);
-            
-            const fieldsFormData = new FormData();
-            fieldsFormData.append("action", "ccc_update_component_fields");
-            fieldsFormData.append("component_id", componentId);
-            fieldsFormData.append("fields", JSON.stringify(componentToDuplicate.fields));
-            fieldsFormData.append("nonce", window.cccData.nonce);
+        if (componentToDuplicate && componentId) {
+          // Handle different field structures from the backend
+          let fieldsToCopy = null;
+          
+          if (componentToDuplicate.fields && Array.isArray(componentToDuplicate.fields)) {
+            // Direct array structure
+            fieldsToCopy = componentToDuplicate.fields;
+          } else if (componentToDuplicate.fields && componentToDuplicate.fields.fields && Array.isArray(componentToDuplicate.fields.fields)) {
+            // Nested structure (fields.fields)
+            fieldsToCopy = componentToDuplicate.fields.fields;
+          }
+          
+          if (fieldsToCopy && fieldsToCopy.length > 0) {
+            try {
+              const fieldsFormData = new FormData();
+              fieldsFormData.append("action", "ccc_update_component_fields");
+              fieldsFormData.append("component_id", componentId);
+              fieldsFormData.append("fields", JSON.stringify(fieldsToCopy));
+              fieldsFormData.append("nonce", window.cccData.nonce);
 
-            const fieldsResponse = await axios.post(window.cccData.ajaxUrl, fieldsFormData);
-            
-            console.log("Fields copy response:", fieldsResponse.data);
-
-            if (fieldsResponse.data.success) {
-              toast.success(`Component duplicated successfully with ${componentToDuplicate.fields.length} fields!`)
-            } else {
-              console.error("Failed to copy fields:", fieldsResponse.data);
+              const fieldsResponse = await axios.post(window.cccData.ajaxUrl, fieldsFormData);
+              
+              if (fieldsResponse.data.success) {
+                toast.success(`Component duplicated successfully with ${fieldsToCopy.length} fields!`)
+              } else {
+                console.error("Failed to copy fields:", fieldsResponse.data);
+                toast.error("Component created but failed to copy fields. Please add fields manually.")
+              }
+            } catch (error) {
+              console.error("Error copying fields:", error);
               toast.error("Component created but failed to copy fields. Please add fields manually.")
             }
-          } catch (error) {
-            console.error("Error copying fields:", error);
-            toast.error("Component created but failed to copy fields. Please add fields manually.")
+          } else {
+            toast.success("Component duplicated successfully, but no fields were found to copy.")
           }
-        } else if (componentToDuplicate) {
-          console.log("=== DEBUG: No Fields to Copy ===");
-          console.log("Component to duplicate:", componentToDuplicate);
-          console.log("Fields:", componentToDuplicate.fields);
-          toast.success("Component duplicated successfully, but no fields were found to copy.")
         } else {
           toast.success(response.data.message || "Component created successfully.")
         }
@@ -704,8 +656,6 @@ const ComponentList = () => {
         setComponentToDuplicate(null) // Clear the duplicate reference
       } else {
         // Handle error response
-        console.log("Error response received:", response.data)
-        
         let errorMessage = "Failed to create component."
         
         // Try different possible error message locations
@@ -908,7 +858,6 @@ const ComponentList = () => {
         });
       }
       
-      console.log('CCC: Assignments payload:', assignments)
       const formData = new FormData()
       formData.append("action", "ccc_save_component_assignments")
       formData.append("nonce", window.cccData.nonce)
@@ -916,7 +865,6 @@ const ComponentList = () => {
       formData.append("assignment_type", postType === "post" ? "post_types" : "individual_posts")
       
       const response = await axios.post(window.cccData.ajaxUrl, formData)
-      console.log('CCC: Save assignments response:', response.data)
       if (response.data.success) {
         toast.success(response.data.message || "Assignments saved successfully.")
         
@@ -940,7 +888,6 @@ const ComponentList = () => {
   }
 
   const handlePostSelectionChange = (postId, isChecked) => {
-    console.log('CCC: handlePostSelectionChange', { postId, isChecked, selectedPosts });
     setSelectedPosts((prev) => {
       if (isChecked) {
         return [...prev, postId]
@@ -969,7 +916,6 @@ const ComponentList = () => {
   }
 
   const handlePostTypeSelectionChange = (postTypeValue, isChecked) => {
-    console.log('CCC: handlePostTypeSelectionChange', { postTypeValue, isChecked, selectedPostTypes })
     setSelectedPostTypes((prev) => {
       const newSelected = isChecked 
         ? [...prev, postTypeValue]
@@ -1004,7 +950,6 @@ const ComponentList = () => {
         formData.append("action", "ccc_test")
         formData.append("nonce", window.cccData.nonce)
         const response = await axios.post(window.cccData.ajaxUrl, formData)
-        console.log('CCC: Test AJAX response:', response.data)
       } catch (err) {
         console.error('CCC: Test AJAX failed:', err)
       }
@@ -1273,7 +1218,6 @@ const ComponentList = () => {
       formData.append("nonce", window.cccData.nonce)
 
       const response = await axios.post(window.cccData.ajaxUrl, formData)
-      console.log(`Component creation response for "${parsedData.name}":`, response.data)
 
       if (response.data.success) {
         // Try different possible locations for the component ID
@@ -1287,7 +1231,6 @@ const ComponentList = () => {
           newComponentId = response.data.component_id
         } else {
           // Fallback: try to get the component ID by querying for the component we just created
-          console.log(`No ID in response, trying to find component by name: "${parsedData.name}"`)
           try {
             const searchFormData = new FormData()
             searchFormData.append("action", "ccc_get_components")
@@ -1300,7 +1243,6 @@ const ComponentList = () => {
               )
               if (foundComponent) {
                 newComponentId = foundComponent.id
-                console.log(`Found component "${parsedData.name}" with ID: ${newComponentId}`)
               }
             }
           } catch (searchError) {
@@ -1313,8 +1255,6 @@ const ComponentList = () => {
           }
         }
         
-        console.log(`Component "${parsedData.name}" created with ID: ${newComponentId}`)
-
         // If there are fields, create them
         if (parsedData.fields && parsedData.fields.length > 0) {
           for (const field of parsedData.fields) {
@@ -1339,7 +1279,6 @@ const ComponentList = () => {
               
               // Check for fieldOptions array format
               if (field.fieldOptions && Array.isArray(field.fieldOptions)) {
-                console.log(`Creating ${field.type} field "${field.name}" with ${field.fieldOptions.length} options from fieldOptions`)
                 field.fieldOptions.forEach((option) => {
                   if (option.label && option.value) {
                     optionsObject[option.value] = option.label
@@ -1349,7 +1288,6 @@ const ComponentList = () => {
               }
               // Check for config.options object format
               else if (field.config && field.config.options && typeof field.config.options === 'object') {
-                console.log(`Creating ${field.type} field "${field.name}" with options from config.options`)
                 optionsObject = field.config.options
                 hasOptions = true
               }
@@ -1386,18 +1324,9 @@ const ComponentList = () => {
                 fieldFormData.append("max_sets", field.maxSets)
               }
               if (field.children && Array.isArray(field.children)) {
-                console.log(`Creating repeater field "${field.name}" with ${field.children.length} nested fields`)
-                console.log(`Nested children data:`, field.children)
-                
                 // Try both field names - the backend might expect 'sub_fields' instead of 'children'
                 fieldFormData.append("children", JSON.stringify(field.children))
                 fieldFormData.append("sub_fields", JSON.stringify(field.children))
-                
-                // Log the form data being sent
-                console.log(`Form data for repeater field "${field.name}":`)
-                for (let [key, value] of fieldFormData.entries()) {
-                  console.log(`  ${key}:`, value)
-                }
               }
             }
 
@@ -1479,9 +1408,6 @@ const ComponentList = () => {
           formData.append("nonce", window.cccData.nonce)
 
           const response = await axios.post(window.cccData.ajaxUrl, formData)
-          console.log(`Component creation response for "${componentData.name}":`, response.data)
-          console.log(`Component creation response.data:`, response.data.data)
-          console.log(`Component creation response.data keys:`, Object.keys(response.data.data || {}))
 
           if (response.data.success) {
             // Try different possible locations for the component ID
@@ -1495,7 +1421,6 @@ const ComponentList = () => {
               newComponentId = response.data.component_id
             } else {
               // Fallback: try to get the component ID by querying for the component we just created
-              console.log(`No ID in response, trying to find component by name: "${componentData.name}"`)
               try {
                 const searchFormData = new FormData()
                 searchFormData.append("action", "ccc_get_components")
@@ -1508,7 +1433,6 @@ const ComponentList = () => {
                   )
                   if (foundComponent) {
                     newComponentId = foundComponent.id
-                    console.log(`Found component "${componentData.name}" with ID: ${newComponentId}`)
                   }
                 }
               } catch (searchError) {
@@ -1521,11 +1445,8 @@ const ComponentList = () => {
               }
             }
             
-            console.log(`Component "${componentData.name}" created with ID: ${newComponentId}`)
-
             // If there are fields, create them
             if (componentData.fields && componentData.fields.length > 0) {
-              console.log(`Creating ${componentData.fields.length} fields for component "${componentData.name}"`)
               
               for (const field of componentData.fields) {
                 try {
@@ -1550,7 +1471,6 @@ const ComponentList = () => {
                     
                     // Check for fieldOptions array format
                     if (field.fieldOptions && Array.isArray(field.fieldOptions)) {
-                      console.log(`Creating ${field.type} field "${field.name}" with ${field.fieldOptions.length} options from fieldOptions`)
                       field.fieldOptions.forEach((option) => {
                         if (option.label && option.value) {
                           optionsObject[option.value] = option.label
@@ -1560,7 +1480,6 @@ const ComponentList = () => {
                     }
                     // Check for config.options object format
                     else if (field.config && field.config.options && typeof field.config.options === 'object') {
-                      console.log(`Creating ${field.type} field "${field.name}" with options from config.options`)
                       optionsObject = field.config.options
                       hasOptions = true
                     }
@@ -1597,18 +1516,9 @@ const ComponentList = () => {
                       fieldFormData.append("max_sets", field.maxSets)
                     }
                     if (field.children && Array.isArray(field.children)) {
-                      console.log(`Creating repeater field "${field.name}" with ${field.children.length} nested fields`)
-                      console.log(`Nested children data:`, field.children)
-                      
                       // Try both field names - the backend might expect 'sub_fields' instead of 'children'
                       fieldFormData.append("children", JSON.stringify(field.children))
                       fieldFormData.append("sub_fields", JSON.stringify(field.children))
-                      
-                      // Log the form data being sent
-                      console.log(`Form data for repeater field "${field.name}":`)
-                      for (let [key, value] of fieldFormData.entries()) {
-                        console.log(`  ${key}:`, value)
-                      }
                     }
                   }
 
@@ -1616,7 +1526,6 @@ const ComponentList = () => {
                   
                   if (fieldResponse.data.success) {
                     fieldSuccessCount++
-                    console.log(`Field "${field.name}" created successfully`)
                   } else {
                     fieldErrorCount++
                     console.error(`Failed to create field "${field.name}":`, fieldResponse.data.message)
@@ -1725,7 +1634,6 @@ const ComponentList = () => {
             
             // Check for fieldOptions array format
             if (field.fieldOptions && Array.isArray(field.fieldOptions)) {
-              console.log(`Creating ${field.type} field "${field.name}" with ${field.fieldOptions.length} options from fieldOptions`)
               field.fieldOptions.forEach((option) => {
                 if (option.label && option.value) {
                   optionsObject[option.value] = option.label
@@ -1735,7 +1643,6 @@ const ComponentList = () => {
             }
             // Check for config.options object format
             else if (field.config && field.config.options && typeof field.config.options === 'object') {
-              console.log(`Creating ${field.type} field "${field.name}" with options from config.options`)
               optionsObject = field.config.options
               hasOptions = true
             }
@@ -2439,10 +2346,9 @@ const ComponentList = () => {
                        <input
                          type="checkbox"
                          checked={selectAllPostTypes}
-                         onChange={(e) => {
-                           console.log('CCC: All Post Types checkbox changed:', e.target.checked)
-                           handleSelectAllPostTypesChange(e.target.checked)
-                         }}
+                        onChange={(e) => {
+                          handleSelectAllPostTypesChange(e.target.checked)
+                        }}
                          className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                        />
                        <span className="font-semibold text-gray-800">All Post Types</span>
@@ -2459,16 +2365,8 @@ const ComponentList = () => {
                        </div>
                      ) : (
                        <>
-                         {console.log('CCC: Rendering post types:', postTypes)}
-                         {console.log('CCC: Current selectedPostTypes:', selectedPostTypes)}
-                         {console.log('CCC: Current selectAllPostTypes:', selectAllPostTypes)}
                          {postTypes.map((postTypeItem) => {
-                           console.log('CCC: Rendering post type item:', postTypeItem)
-                           console.log('CCC: Post type item keys:', Object.keys(postTypeItem))
-                           console.log('CCC: Post type item value:', postTypeItem.value)
-                           console.log('CCC: Post type item label:', postTypeItem.label)
                            const isSelected = selectedPostTypes.includes(postTypeItem.value)
-                           console.log(`CCC: Post type ${postTypeItem.value} is selected:`, isSelected)
                            return (
                              <label
                                key={postTypeItem.value}
@@ -2479,7 +2377,6 @@ const ComponentList = () => {
                                    type="checkbox"
                                    checked={isSelected}
                                    onChange={(e) => {
-                                     console.log('CCC: Checkbox changed for:', postTypeItem.value, 'checked:', e.target.checked)
                                      handlePostTypeSelectionChange(postTypeItem.value, e.target.checked)
                                    }}
                                    className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
@@ -2660,8 +2557,6 @@ const ComponentList = () => {
           }}
           onFieldUpdate={async (path, updatedField) => {
             try {
-              console.log('CCC ComponentList: Updating field at path:', path, 'with data:', updatedField)
-              
               // Update the field in the component
               const updateFieldInComponent = (fields, path, updatedField) => {
                 const [index, ...rest] = path
