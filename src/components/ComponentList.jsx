@@ -662,6 +662,11 @@ const ComponentList = () => {
         // If this is a duplicate operation, copy the fields
         if (componentToDuplicate && componentId && componentToDuplicate.fields && componentToDuplicate.fields.length > 0) {
           try {
+            console.log("=== DEBUG: Copying Fields ===");
+            console.log("Component to duplicate:", componentToDuplicate);
+            console.log("Fields to copy:", componentToDuplicate.fields);
+            console.log("New component ID:", componentId);
+            
             const fieldsFormData = new FormData();
             fieldsFormData.append("action", "ccc_update_component_fields");
             fieldsFormData.append("component_id", componentId);
@@ -669,16 +674,24 @@ const ComponentList = () => {
             fieldsFormData.append("nonce", window.cccData.nonce);
 
             const fieldsResponse = await axios.post(window.cccData.ajaxUrl, fieldsFormData);
+            
+            console.log("Fields copy response:", fieldsResponse.data);
 
             if (fieldsResponse.data.success) {
-              toast.success("Component duplicated successfully with all fields!")
+              toast.success(`Component duplicated successfully with ${componentToDuplicate.fields.length} fields!`)
             } else {
-              toast.success("Component created successfully, but failed to copy some fields.")
+              console.error("Failed to copy fields:", fieldsResponse.data);
+              toast.error("Component created but failed to copy fields. Please add fields manually.")
             }
           } catch (error) {
             console.error("Error copying fields:", error);
-            toast.success("Component created successfully, but failed to copy fields.")
+            toast.error("Component created but failed to copy fields. Please add fields manually.")
           }
+        } else if (componentToDuplicate) {
+          console.log("=== DEBUG: No Fields to Copy ===");
+          console.log("Component to duplicate:", componentToDuplicate);
+          console.log("Fields:", componentToDuplicate.fields);
+          toast.success("Component duplicated successfully, but no fields were found to copy.")
         } else {
           toast.success(response.data.message || "Component created successfully.")
         }
@@ -764,15 +777,56 @@ const ComponentList = () => {
     }
   }
 
-  const handleDuplicateComponent = (component) => {
-    // Pre-fill the component name with "Duplicate" suffix
-    const duplicateName = `${component.name} Duplicate`
-    const duplicateHandle = generateHandle(duplicateName)
-    
-    setComponentName(duplicateName)
-    setHandle(duplicateHandle)
-    setComponentToDuplicate(component)
-    setShowNewComponentDialog(true)
+  const handleDuplicateComponent = async (component) => {
+    try {
+      // First, fetch the full component data with fields
+      const formData = new FormData()
+      formData.append("action", "ccc_get_component_fields")
+      formData.append("component_id", component.id)
+      formData.append("nonce", window.cccData.nonce)
+
+      const response = await axios.post(window.cccData.ajaxUrl, formData)
+      
+      if (response.data.success && response.data.data) {
+        // Use the component with full field data
+        const componentWithFields = {
+          ...component,
+          fields: response.data.data
+        }
+        
+        // Pre-fill the component name with "Duplicate" suffix
+        const duplicateName = `${component.name} Duplicate`
+        const duplicateHandle = generateHandle(duplicateName)
+        
+        setComponentName(duplicateName)
+        setHandle(duplicateHandle)
+        setComponentToDuplicate(componentWithFields)
+        setShowNewComponentDialog(true)
+      } else {
+        // Fallback to original component if field fetch fails
+        const duplicateName = `${component.name} Duplicate`
+        const duplicateHandle = generateHandle(duplicateName)
+        
+        setComponentName(duplicateName)
+        setHandle(duplicateHandle)
+        setComponentToDuplicate(component)
+        setShowNewComponentDialog(true)
+        
+        toast.error("Could not load component fields. Duplicating without fields.")
+      }
+    } catch (error) {
+      console.error("Error fetching component fields:", error)
+      // Fallback to original component
+      const duplicateName = `${component.name} Duplicate`
+      const duplicateHandle = generateHandle(duplicateName)
+      
+      setComponentName(duplicateName)
+      setHandle(duplicateHandle)
+      setComponentToDuplicate(component)
+      setShowNewComponentDialog(true)
+      
+      toast.error("Could not load component fields. Duplicating without fields.")
+    }
   }
   
   const handleDeleteField = async (fieldId) => {
