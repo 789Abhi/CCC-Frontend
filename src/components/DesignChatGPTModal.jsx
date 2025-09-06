@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { Bot, Code, Copy, Check } from 'lucide-react'
 import axios from 'axios'
 
-const DesignChatGPTModal = ({ isOpen, onClose, component }) => {
+const DesignChatGPTModal = React.memo(({ isOpen, onClose, component }) => {
   const [generatedDesign, setGeneratedDesign] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -611,6 +611,6 @@ Include complete HTML/CSS code with field names: ${component.fields.map(f => f.n
        )}
      </div>
    )
- }
+ })
 
 export default DesignChatGPTModal 

@@ -4,7 +4,7 @@ import MetaboxApp from './metabox/MetaboxApp'
 import ErrorBoundary from './ErrorBoundary'
 import { Toaster } from 'react-hot-toast'
 
-function App() {
+const App = React.memo(() => {
   // Check if we're in a metabox context
   const isMetabox = document.getElementById('ccc-metabox-root');
 
@@ -120,6 +120,6 @@ function App() {
       />
     </>
   )
-}
+})
 
 export default App

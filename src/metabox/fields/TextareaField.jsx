@@ -1,6 +1,12 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 
-function TextareaField({ label, value, onChange, placeholder, required, error, fieldId }) {
+const TextareaField = React.memo(({ label, value, onChange, placeholder, required, error, fieldId }) => {
+  const handleChange = useCallback((e) => {
+    if (onChange) {
+      onChange(e.target.value);
+    }
+  }, [onChange]);
+
   return (
     <div className="mb-4 ccc-field" data-field-id={fieldId}>
       {label && (
@@ -15,7 +21,7 @@ function TextareaField({ label, value, onChange, placeholder, required, error, f
         }`}
         placeholder={placeholder}
         value={value || ''}
-        onChange={e => onChange && onChange(e.target.value)}
+        onChange={handleChange}
         required={required}
         aria-invalid={error ? 'true' : undefined}
         rows={5}
@@ -23,6 +29,6 @@ function TextareaField({ label, value, onChange, placeholder, required, error, f
       {error && <div className="text-xs text-red-500 mt-1">This field is required.</div>}
     </div>
   );
-}
+});
 
 export default TextareaField; 

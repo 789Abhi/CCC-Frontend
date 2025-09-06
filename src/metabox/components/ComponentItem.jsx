@@ -22,7 +22,7 @@ import RepeaterField from '../fields/RepeaterField';
 import UserField from '../fields/UserField';
 import ToggleField from '../fields/ToggleField';
 
-const ToggleSwitch = ({ checked, onChange, disabled = false }) => {
+const ToggleSwitch = React.memo(({ checked, onChange, disabled = false }) => {
   return (
     <button
       type="button"
@@ -42,9 +42,9 @@ const ToggleSwitch = ({ checked, onChange, disabled = false }) => {
       />
     </button>
   );
-}
+})
 
-const DotMenu = ({ onDelete }) => {
+const DotMenu = React.memo(({ onDelete }) => {
   const [open, setOpen] = useState(false);
   const menuRef = useRef();
   useEffect(() => {
@@ -81,7 +81,7 @@ const DotMenu = ({ onDelete }) => {
       )}
     </div>
   );
-}
+})
 
 const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalComponents, onRemove, onToggleHide, onFieldChange, onValidationChange, fieldValues, listeners, attributes, setNodeRef, style, isExpanded, onToggleExpand, availableComponents, postId }) => {
   const [fields, setFields] = useState([]);

@@ -1,6 +1,8 @@
 "use client"
 
-function PostTypes() {
+import React from "react"
+
+const PostTypes = React.memo(() => {
   return (
     <section className="space-y-6">
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
@@ -29,6 +31,6 @@ function PostTypes() {
       </div>
     </section>
   )
-}
+})
 
 export default PostTypes

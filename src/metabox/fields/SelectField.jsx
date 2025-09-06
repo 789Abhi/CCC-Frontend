@@ -1,21 +1,21 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 
-function SelectField({ label, value, onChange, options = [], multiple = false, required = false, error, fieldId }) {
+const SelectField = React.memo(({ label, value, onChange, options = [], multiple = false, required = false, error, fieldId }) => {
   // Validate and normalize props
   const safeOptions = Array.isArray(options) ? options : [];
   const safeValue = value !== undefined && value !== null ? value : (multiple ? [] : '');
   
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     if (multiple) {
       // Handled by checkbox logic below
       return;
     } else {
       onChange(e.target.value);
     }
-  };
+  }, [multiple, onChange]);
 
   // For multiple, handle checkbox toggling
-  const handleCheckboxChange = (optionValue) => {
+  const handleCheckboxChange = useCallback((optionValue) => {
     let newValue = Array.isArray(safeValue) ? [...safeValue] : [];
     if (newValue.includes(optionValue)) {
       newValue = newValue.filter(v => v !== optionValue);
@@ -25,7 +25,7 @@ function SelectField({ label, value, onChange, options = [], multiple = false, r
     // Always ensure unique values
     newValue = Array.from(new Set(newValue));
     onChange(newValue);
-  };
+  }, [safeValue, onChange]);
 
   // Ensure options have the required structure
   const normalizedOptions = safeOptions.map(opt => {
@@ -81,6 +81,6 @@ function SelectField({ label, value, onChange, options = [], multiple = false, r
       {error && <div className="text-xs text-red-500 mt-1">This field is required.</div>}
     </div>
   );
-}
+});
 
 export default SelectField; 

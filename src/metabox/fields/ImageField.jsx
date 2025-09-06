@@ -1,10 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
 
-function ImageField({ label, value, onChange, required, error, fieldId }) {
+const ImageField = React.memo(({ label, value, onChange, required, error, fieldId }) => {
   const inputRef = useRef();
 
   // Open WP Media Library
-  const openMediaLibrary = (e) => {
+  const openMediaLibrary = useCallback((e) => {
     e.preventDefault();
     
     // Close any existing media frames to prevent conflicts
@@ -40,10 +40,10 @@ function ImageField({ label, value, onChange, required, error, fieldId }) {
       // fallback: open file input
       inputRef.current && inputRef.current.click();
     }
-  };
+  }, [onChange]);
 
   // Fallback for direct file upload (not recommended, but for completeness)
-  const handleFileChange = (e) => {
+  const handleFileChange = useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
       // You may want to upload the file via AJAX here and get the URL
@@ -54,7 +54,7 @@ function ImageField({ label, value, onChange, required, error, fieldId }) {
       };
       reader.readAsDataURL(file);
     }
-  };
+  }, [onChange]);
 
   return (
     <div className="mb-4 ccc-field" data-field-id={fieldId}>
@@ -94,6 +94,6 @@ function ImageField({ label, value, onChange, required, error, fieldId }) {
       {error && <div className="text-xs text-red-500 mt-1">This field is required.</div>}
     </div>
   );
-}
+});
 
 export default ImageField; 

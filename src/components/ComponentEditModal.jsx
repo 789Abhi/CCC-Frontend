@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-const ComponentEditNameModal = ({ isOpen, component, onClose, onSave }) => {
+const ComponentEditNameModal = React.memo(({ isOpen, component, onClose, onSave }) => {
   const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
   const [message, setMessage] = useState("");
@@ -23,12 +23,12 @@ const ComponentEditNameModal = ({ isOpen, component, onClose, onSave }) => {
     }
   }, [isOpen, component]);
 
-  const generateHandle = (name) => {
+  const generateHandle = useCallback((name) => {
     return name
       .toLowerCase()
       .replace(/\s+/g, "_")
       .replace(/[^a-z0-9_]+/g, "");
-  };
+  }, []);
 
   const showMessage = (msg, type) => {
     setMessage(msg);
@@ -281,6 +281,6 @@ const ComponentEditNameModal = ({ isOpen, component, onClose, onSave }) => {
       )}
     </>
   );
-};
+});
 
 export default ComponentEditNameModal;

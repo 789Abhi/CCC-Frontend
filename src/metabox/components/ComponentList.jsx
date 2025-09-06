@@ -6,7 +6,7 @@ import logo from "/drag-drop-icon.svg";
 import Textfield from '../fields/Textfield';
 import ComponentItem from './ComponentItem';
 
-const ToggleSwitch = ({ checked, onChange }) => {
+const ToggleSwitch = React.memo(({ checked, onChange }) => {
   return (
     <button
       type="button"
@@ -19,9 +19,9 @@ const ToggleSwitch = ({ checked, onChange }) => {
       />
     </button>
   );
-}
+})
 
-function DotMenu({ onDelete }) {
+const DotMenu = React.memo(({ onDelete }) => {
   const [open, setOpen] = useState(false);
   const menuRef = useRef();
   React.useEffect(() => {
@@ -58,7 +58,7 @@ function DotMenu({ onDelete }) {
       )}
     </div>
   );
-}
+})
 
 const SortableComponentItem = React.memo((props) => {
   const { component, ...rest } = props;

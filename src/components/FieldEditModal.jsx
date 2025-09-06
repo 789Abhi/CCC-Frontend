@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import axios from "axios"
 import { Plus, X, GripVertical, Edit, Eye } from "lucide-react"
 import {
@@ -24,7 +24,7 @@ import { CSS } from '@dnd-kit/utilities'
 
 import ConditionalLogicTab from "./ConditionalLogicTab"
 
-function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false, parentFieldType = null, siblingFields = null }) {
+const FieldEditModal = React.memo(({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false, parentFieldType = null, siblingFields = null }) => {
 
   const [label, setLabel] = useState("")
   const [name, setName] = useState("")
@@ -2903,6 +2903,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       )}
     </div>
   )
-}
+})
 
 export default FieldEditModal

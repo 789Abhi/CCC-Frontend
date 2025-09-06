@@ -1,4 +1,6 @@
-function Taxonomies() {
+import React from "react"
+
+const Taxonomies = React.memo(() => {
   return (
     <section className="space-y-6">
       <div className="bg-white rounded-custom p-6 shadow-sm border border-gray-200">
@@ -27,6 +29,6 @@ function Taxonomies() {
       </div>
     </section>
   )
-}
+})
 
 export default Taxonomies

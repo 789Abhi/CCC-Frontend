@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo, useCallback } from "react"
 import axios from "axios"
 import toast from "react-hot-toast"
 import {
@@ -35,8 +35,26 @@ import ComponentEditNameModal from "./ComponentEditModal"
 import FieldVisualTreeModal from "./FieldVisualTreeModal"
 import DesignChatGPTModal from "./DesignChatGPTModal"
 
-// Sortable Field Component - moved outside main component to fix re-rendering issues
-const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText }) => {
+// Sortable Field Component - optimized with React.memo
+const SortableField = React.memo(({ field, component, onEdit, onDelete, onCopy, copiedText }) => {
+  const handleEditClick = useCallback((e) => {
+    if (e && e.preventDefault) e.preventDefault()
+    if (e && e.stopPropagation) e.stopPropagation()
+    onEdit(component, field)
+  }, [onEdit, component, field])
+
+  const handleDeleteClick = useCallback((e) => {
+    if (e && e.preventDefault) e.preventDefault()
+    if (e && e.stopPropagation) e.stopPropagation()
+    onDelete(field.id)
+  }, [onDelete, field.id])
+
+  const handleCopyClick = useCallback((e) => {
+    if (e && e.preventDefault) e.preventDefault()
+    if (e && e.stopPropagation) e.stopPropagation()
+    onCopy(field.name)
+  }, [onCopy, field.name])
+
   try {
     const {
       attributes,
@@ -47,29 +65,11 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
       isDragging,
     } = useSortable({ id: field.id.toString() })
 
-    const style = {
+    const style = useMemo(() => ({
       transform: CSS.Transform.toString(transform),
       transition,
       opacity: isDragging ? 0.5 : 1,
-    }
-
-    const handleEditClick = (e) => {
-      if (e && e.preventDefault) e.preventDefault()
-      if (e && e.stopPropagation) e.stopPropagation()
-      onEdit(component, field)
-    }
-
-    const handleDeleteClick = (e) => {
-      if (e && e.preventDefault) e.preventDefault()
-      if (e && e.stopPropagation) e.stopPropagation()
-      onDelete(field.id)
-    }
-
-    const handleCopyClick = (e) => {
-      if (e && e.preventDefault) e.preventDefault()
-      if (e && e.stopPropagation) e.stopPropagation()
-      onCopy(field.name)
-    }
+    }), [transform, transition, isDragging])
 
     return (
       <div
@@ -171,11 +171,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
             </span>
             <button
               type="button"
-              onClick={(e) => {
-                if (e && e.preventDefault) e.preventDefault()
-                if (e && e.stopPropagation) e.stopPropagation()
-                onEdit(component, field)
-              }}
+              onClick={handleEditClick}
               className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0"
               title="Edit Field"
             >
@@ -187,11 +183,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
             </button>
             <button
               type="button"
-              onClick={(e) => {
-                if (e && e.preventDefault) e.preventDefault()
-                if (e && e.stopPropagation) e.stopPropagation()
-                onDelete(field.id)
-              }}
+              onClick={handleDeleteClick}
               className="h-[18px] w-[18px] cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0"
               title="Delete Field"
             >
@@ -206,7 +198,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
       </div>
     )
   }
-}
+})
 
 const ComponentList = () => {
   const [showNewComponentDialog, setShowNewComponentDialog] = useState(false)
@@ -296,14 +288,14 @@ const ComponentList = () => {
     }
   }, [])
 
-  const generateHandle = (name) => {
+  const generateHandle = useCallback((name) => {
     return name
       .toLowerCase()
       .replace(/\s+/g, "_")
       .replace(/[^a-z0-9_]+/g, "")
-  }
+  }, [])
 
-  const showMessage = (msg, type) => {
+  const showMessage = useCallback((msg, type) => {
     try {
       if (type === 'success') {
         toast.success(msg)
@@ -321,9 +313,9 @@ const ComponentList = () => {
         alert(msg)
       }
     }
-  }
+  }, [])
 
-  const handleCopy = (text, fieldId, componentId) => {
+  const handleCopy = useCallback((text, fieldId, componentId) => {
     const copyFallback = (textToCopy) => {
       const textArea = document.createElement("textarea")
       textArea.value = textToCopy
@@ -367,9 +359,9 @@ const ComponentList = () => {
         toast.error("Failed to copy text.")
       }
     }
-  }
+  }, [])
 
-  const fetchComponents = async () => {
+  const fetchComponents = useCallback(async () => {
     setLoading(true)
     try {
       const formData = new FormData()
@@ -395,7 +387,7 @@ const ComponentList = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Add this function before fetchPostTypes
   const checkPostTypeAssignments = async (postTypes) => {
@@ -476,7 +468,7 @@ const ComponentList = () => {
     }
   };
 
-  const fetchPosts = async (type) => {
+  const fetchPosts = useCallback(async (type) => {
     try {
       // Validate post type
       if (!type || typeof type !== 'string') {
@@ -485,7 +477,6 @@ const ComponentList = () => {
         return
       }
       
-      console.log('CCC: Fetching posts for post type:', type)
       setPostsLoading(true)
       setError("") // Clear any previous errors
       
@@ -580,7 +571,7 @@ const ComponentList = () => {
     } finally {
       setPostsLoading(false)
     }
-  }
+  }, [])
 
   const handleSubmitNewComponent = async () => {
     if (!componentName) {
@@ -887,7 +878,7 @@ const ComponentList = () => {
     }
   }
 
-  const handlePostSelectionChange = (postId, isChecked) => {
+  const handlePostSelectionChange = useCallback((postId, isChecked) => {
     setSelectedPosts((prev) => {
       if (isChecked) {
         return [...prev, postId]
@@ -895,27 +886,27 @@ const ComponentList = () => {
         return prev.filter((id) => id !== postId)
       }
     })
-  }
+  }, [])
 
-  const handleSelectAllPagesChange = (isChecked) => {
+  const handleSelectAllPagesChange = useCallback((isChecked) => {
     setSelectAllPages(isChecked)
     if (isChecked) {
       setSelectedPosts(posts.map((p) => p.id))
     } else {
       setSelectedPosts([])
     }
-  }
+  }, [posts])
 
-  const handleSelectAllPostsChange = (isChecked) => {
+  const handleSelectAllPostsChange = useCallback((isChecked) => {
     setSelectAllPosts(isChecked)
     if (isChecked) {
       setSelectedPosts(posts.map((p) => p.id))
     } else {
       setSelectedPosts([])
     }
-  }
+  }, [posts])
 
-  const handlePostTypeSelectionChange = (postTypeValue, isChecked) => {
+  const handlePostTypeSelectionChange = useCallback((postTypeValue, isChecked) => {
     setSelectedPostTypes((prev) => {
       const newSelected = isChecked 
         ? [...prev, postTypeValue]
@@ -929,16 +920,16 @@ const ComponentList = () => {
       
       return newSelected;
     })
-  }
+  }, [])
 
-  const handleSelectAllPostTypesChange = (isChecked) => {
+  const handleSelectAllPostTypesChange = useCallback((isChecked) => {
     setSelectAllPostTypes(isChecked)
     if (isChecked) {
       setSelectedPostTypes(postTypes.map((pt) => pt.value))
     } else {
       setSelectedPostTypes([])
     }
-  }
+  }, [postTypes])
 
   useEffect(() => {
     fetchComponents()
@@ -1729,7 +1720,7 @@ const ComponentList = () => {
 
   // Remove all revision-related state, functions, and UI. Only keep component management, assignment, and field editing logic.
 
-  const getFieldIcon = (type) => {
+  const getFieldIcon = useCallback((type) => {
     switch (type) {
       case "text":
         return <FileText className="w-4 h-4 text-blue-500" />
@@ -1744,9 +1735,9 @@ const ComponentList = () => {
       default:
         return <FileText className="w-4 h-4 text-gray-500" />
     }
-  }
+  }, [])
 
-  const sensors = useSensors(
+  const sensors = useMemo(() => useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
@@ -1755,7 +1746,7 @@ const ComponentList = () => {
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
-  )
+  ), [])
 
   const handleDragEnd = async (event, componentId) => {
     const { active, over } = event
@@ -1798,25 +1789,35 @@ const ComponentList = () => {
     }
   }
 
-  const filteredComponents = components.filter((comp) => {
-    const searchLower = searchTerm.toLowerCase()
-    const matchesComponentName =
-      comp.name.toLowerCase().includes(searchLower) || comp.handle_name.toLowerCase().includes(searchLower)
+  const filteredComponents = useMemo(() => {
+    return components.filter((comp) => {
+      const searchLower = searchTerm.toLowerCase()
+      const matchesComponentName =
+        comp.name.toLowerCase().includes(searchLower) || comp.handle_name.toLowerCase().includes(searchLower)
 
-    const matchesFieldName =
-      comp.fields &&
-      comp.fields.some(
-        (field) => field.label.toLowerCase().includes(searchLower) || field.name.toLowerCase().includes(searchLower),
-      )
+      const matchesFieldName =
+        comp.fields &&
+        comp.fields.some(
+          (field) => field.label.toLowerCase().includes(searchLower) || field.name.toLowerCase().includes(searchLower),
+        )
 
-    const matchesSearch = matchesComponentName || matchesFieldName
+      const matchesSearch = matchesComponentName || matchesFieldName
 
-    if (filterType === "all") return matchesSearch
-    if (filterType === "with-fields") return matchesSearch && comp.fields && comp.fields.length > 0
-    if (filterType === "no-fields") return matchesSearch && (!comp.fields || comp.fields.length === 0)
+      if (filterType === "all") return matchesSearch
+      if (filterType === "with-fields") return matchesSearch && comp.fields && comp.fields.length > 0
+      if (filterType === "no-fields") return matchesSearch && (!comp.fields || comp.fields.length === 0)
 
-    return matchesSearch
-  })
+      return matchesSearch
+    })
+  }, [components, searchTerm, filterType])
+
+  const statistics = useMemo(() => {
+    return {
+      totalComponents: components.length,
+      totalFields: components.reduce((total, comp) => total + (comp.fields?.length || 0), 0),
+      activeComponents: components.filter((comp) => comp.fields && comp.fields.length > 0).length
+    }
+  }, [components])
 
   if (loading) {
     return (
@@ -2417,18 +2418,18 @@ const ComponentList = () => {
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             <div>
-              <div className="text-3xl font-bold text-purple-600">{components.length}</div>
+              <div className="text-3xl font-bold text-purple-600">{statistics.totalComponents}</div>
               <div className="text-gray-600">Total Components</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-pink-600">
-                {components.reduce((total, comp) => total + (comp.fields?.length || 0), 0)}
+                {statistics.totalFields}
               </div>
               <div className="text-gray-600">Total Fields</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-indigo-600">
-                {components.filter((comp) => comp.fields && comp.fields.length > 0).length}
+                {statistics.activeComponents}
               </div>
               <div className="text-gray-600">Active Components</div>
             </div>

@@ -4,7 +4,7 @@ import ComponentSelector from './components/ComponentSelector';
 import toast from 'react-hot-toast';
 import { AlertTriangle } from 'lucide-react';
 
-function MetaboxApp() {
+const MetaboxApp = React.memo(() => {
   // Component function - no logging needed
   const [components, setComponents] = useState([]); // { ...component, isHidden, isPendingDelete }
   const [isLoading, setIsLoading] = useState(true);
@@ -545,6 +545,6 @@ function MetaboxApp() {
       />
     </div>
   );
-}
+});
 
 export default MetaboxApp;

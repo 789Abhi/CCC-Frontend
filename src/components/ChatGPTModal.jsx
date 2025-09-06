@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Bot, Zap, Loader2 } from "lucide-react";
 import axios from "axios";
 
-const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
+const ChatGPTModal = React.memo(({ isOpen, onClose, onComponentCreated }) => {
   const [chatGPTJson, setChatGPTJson] = useState("");
   const [isProcessingChatGPT, setIsProcessingChatGPT] = useState(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
@@ -1892,6 +1892,6 @@ Please return ONLY the JSON response, no additional text.`;
          </div>
      </>
    );
- };
+ });
 
 export default ChatGPTModal;

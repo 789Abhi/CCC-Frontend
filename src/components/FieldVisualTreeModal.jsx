@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { X, Edit, GitBranch, GitCommit, ArrowRight } from "lucide-react"
 import FieldEditModal from "./FieldEditModal"
 import axios from "axios"
 
-function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldUpdateSuccess, component }) {
+const FieldVisualTreeModal = React.memo(({ isOpen, fields, onClose, onFieldUpdate, onFieldUpdateSuccess, component }) => {
   const [processedFields, setProcessedFields] = useState([])
   const [showFieldEditModal, setShowFieldEditModal] = useState(false)
   const [editingField, setEditingField] = useState(null)
@@ -575,6 +575,6 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
       )}
     </div>
   )
-}
+})
 
 export default FieldVisualTreeModal 

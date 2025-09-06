@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import PostTypes from "./PostTypes"
 import ComponentList from "./ComponentList"
 import Taxonomies from "./Taxonomies"
 import logo from "/CCC-Logo.svg"
 
-function Header() {
+const Header = React.memo(() => {
   // Get current page from WordPress
   const getCurrentPage = () => {
     console.log('CCC: Checking for cccData:', typeof cccData, cccData);
@@ -136,6 +136,6 @@ function Header() {
       <main className="rounded-custom py-3">{renderActiveComponent()}</main>
     </div>
   )
-}
+})
 
 export default Header
