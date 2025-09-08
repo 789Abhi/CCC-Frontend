@@ -630,7 +630,7 @@ const ComponentList = () => {
               for (const field of fieldsToCopy) {
                 try {
                   const fieldFormData = new FormData();
-                  fieldFormData.append("action", "ccc_create_field");
+                  fieldFormData.append("action", "ccc_add_field");
                   fieldFormData.append("component_id", componentId);
                   fieldFormData.append("label", field.label || '');
                   fieldFormData.append("name", field.name || '');
@@ -645,7 +645,8 @@ const ComponentList = () => {
                     
                     // Handle repeater fields with nested fields
                     if (field.type === 'repeater' && config.nested_fields) {
-                      fieldFormData.append("children", JSON.stringify(config.nested_fields));
+                      fieldFormData.append("nested_field_definitions", JSON.stringify(config.nested_fields));
+                      fieldFormData.append("max_sets", config.max_sets || 0);
                     } else {
                       fieldFormData.append("field_config", JSON.stringify(config));
                     }
