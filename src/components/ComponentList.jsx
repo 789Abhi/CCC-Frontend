@@ -583,6 +583,9 @@ const ComponentList = () => {
   }
 
   const handleSubmitNewComponent = async () => {
+    console.log('🔄 DUPLICATE: handleSubmitNewComponent called');
+    console.log('🔄 DUPLICATE: componentToDuplicate state:', componentToDuplicate);
+    
     if (!componentName) {
       toast.error("Please enter a component name")
       return
@@ -607,6 +610,9 @@ const ComponentList = () => {
         } else if (response.data.component_id) {
           componentId = response.data.component_id;
         }
+        
+        console.log('🔄 DUPLICATE: Component created successfully with ID:', componentId);
+        console.log('🔄 DUPLICATE: Response data:', response.data);
 
         // If this is a duplicate operation, copy the fields
         if (componentToDuplicate && componentId) {
@@ -783,6 +789,7 @@ const ComponentList = () => {
   }
 
   const handleDuplicateComponent = async (component) => {
+    console.log('🔄 DUPLICATE: handleDuplicateComponent called with:', component);
     try {
       // First, fetch the full component data with fields
       const formData = new FormData()
