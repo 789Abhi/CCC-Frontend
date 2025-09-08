@@ -623,19 +623,52 @@ const ComponentList = () => {
           
           if (fieldsToCopy && fieldsToCopy.length > 0) {
             try {
-              const fieldsFormData = new FormData();
-              fieldsFormData.append("action", "ccc_update_component_fields");
-              fieldsFormData.append("component_id", componentId);
-              fieldsFormData.append("fields", JSON.stringify(fieldsToCopy));
-              fieldsFormData.append("nonce", window.cccData.nonce);
-
-              const fieldsResponse = await axios.post(window.cccData.ajaxUrl, fieldsFormData);
+              // Create each field individually using the createFieldCallback
+              let successCount = 0;
+              let errorCount = 0;
               
-              if (fieldsResponse.data.success) {
-                toast.success(`Component duplicated successfully with ${fieldsToCopy.length} fields!`)
+              for (const field of fieldsToCopy) {
+                try {
+                  const fieldFormData = new FormData();
+                  fieldFormData.append("action", "ccc_create_field");
+                  fieldFormData.append("component_id", componentId);
+                  fieldFormData.append("label", field.label || '');
+                  fieldFormData.append("name", field.name || '');
+                  fieldFormData.append("type", field.type || 'text');
+                  fieldFormData.append("required", field.required ? '1' : '0');
+                  fieldFormData.append("placeholder", field.placeholder || '');
+                  fieldFormData.append("nonce", window.cccData.nonce);
+
+                  // Handle field configuration
+                  if (field.config) {
+                    const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+                    
+                    // Handle repeater fields with nested fields
+                    if (field.type === 'repeater' && config.nested_fields) {
+                      fieldFormData.append("children", JSON.stringify(config.nested_fields));
+                    } else {
+                      fieldFormData.append("field_config", JSON.stringify(config));
+                    }
+                  }
+
+                  const fieldResponse = await axios.post(window.cccData.ajaxUrl, fieldFormData);
+                  
+                  if (fieldResponse.data.success) {
+                    successCount++;
+                  } else {
+                    console.error("Failed to create field:", field.name, fieldResponse.data);
+                    errorCount++;
+                  }
+                } catch (fieldError) {
+                  console.error("Error creating field:", field.name, fieldError);
+                  errorCount++;
+                }
+              }
+              
+              if (successCount > 0) {
+                toast.success(`Component duplicated successfully with ${successCount} fields!${errorCount > 0 ? ` (${errorCount} fields failed to copy)` : ''}`)
               } else {
-                console.error("Failed to copy fields:", fieldsResponse.data);
-                toast.error("Component created but failed to copy fields. Please add fields manually.")
+                toast.error("Component created but failed to copy any fields. Please add fields manually.")
               }
             } catch (error) {
               console.error("Error copying fields:", error);
