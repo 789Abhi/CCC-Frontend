@@ -617,6 +617,7 @@ const ComponentList = () => {
         console.log('🔄 DUPLICATE: Response data.data.id:', response.data.data?.id);
         console.log('🔄 DUPLICATE: Response data.id:', response.data.id);
         console.log('🔄 DUPLICATE: Response data.component_id:', response.data.component_id);
+        console.log('🔄 DUPLICATE: Full response object:', response);
 
         // If this is a duplicate operation, copy the fields
         if (componentToDuplicate && componentId) {
