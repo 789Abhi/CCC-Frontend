@@ -610,16 +610,24 @@ const ComponentList = () => {
 
         // If this is a duplicate operation, copy the fields
         if (componentToDuplicate && componentId) {
+          console.log('🔄 DUPLICATE: Starting field copying process');
+          console.log('🔄 DUPLICATE: Component ID:', componentId);
+          console.log('🔄 DUPLICATE: Component to duplicate:', componentToDuplicate);
+          
           // Handle different field structures from the backend
           let fieldsToCopy = null;
           
           if (componentToDuplicate.fields && Array.isArray(componentToDuplicate.fields)) {
             // Direct array structure
             fieldsToCopy = componentToDuplicate.fields;
+            console.log('🔄 DUPLICATE: Using direct array structure, fields count:', fieldsToCopy.length);
           } else if (componentToDuplicate.fields && componentToDuplicate.fields.fields && Array.isArray(componentToDuplicate.fields.fields)) {
             // Nested structure (fields.fields)
             fieldsToCopy = componentToDuplicate.fields.fields;
+            console.log('🔄 DUPLICATE: Using nested structure, fields count:', fieldsToCopy.length);
           }
+          
+          console.log('🔄 DUPLICATE: Fields to copy:', fieldsToCopy);
           
           if (fieldsToCopy && fieldsToCopy.length > 0) {
             try {
@@ -627,8 +635,12 @@ const ComponentList = () => {
               let successCount = 0;
               let errorCount = 0;
               
+              console.log(`🔄 DUPLICATE: Starting to copy ${fieldsToCopy.length} fields`);
+              
               for (const field of fieldsToCopy) {
                 try {
+                  console.log('🔄 DUPLICATE: Processing field:', field);
+                  
                   const fieldFormData = new FormData();
                   fieldFormData.append("action", "ccc_add_field");
                   fieldFormData.append("component_id", componentId);
@@ -642,29 +654,37 @@ const ComponentList = () => {
                   // Handle field configuration
                   if (field.config) {
                     const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+                    console.log('🔄 DUPLICATE: Field config:', config);
                     
                     // Handle repeater fields with nested fields
                     if (field.type === 'repeater' && config.nested_fields) {
                       fieldFormData.append("nested_field_definitions", JSON.stringify(config.nested_fields));
                       fieldFormData.append("max_sets", config.max_sets || 0);
+                      console.log('🔄 DUPLICATE: Added repeater config');
                     } else {
                       fieldFormData.append("field_config", JSON.stringify(config));
+                      console.log('🔄 DUPLICATE: Added field config');
                     }
                   }
 
+                  console.log('🔄 DUPLICATE: Sending field creation request for:', field.name);
                   const fieldResponse = await axios.post(window.cccData.ajaxUrl, fieldFormData);
+                  console.log('🔄 DUPLICATE: Field response:', fieldResponse.data);
                   
                   if (fieldResponse.data.success) {
                     successCount++;
+                    console.log(`✅ DUPLICATE: Successfully created field: ${field.name}`);
                   } else {
-                    console.error("Failed to create field:", field.name, fieldResponse.data);
+                    console.error("❌ DUPLICATE: Failed to create field:", field.name, fieldResponse.data);
                     errorCount++;
                   }
                 } catch (fieldError) {
-                  console.error("Error creating field:", field.name, fieldError);
+                  console.error("❌ DUPLICATE: Error creating field:", field.name, fieldError);
                   errorCount++;
                 }
               }
+              
+              console.log(`🔄 DUPLICATE: Field copying completed. Success: ${successCount}, Errors: ${errorCount}`);
               
               if (successCount > 0) {
                 toast.success(`Component duplicated successfully with ${successCount} fields!${errorCount > 0 ? ` (${errorCount} fields failed to copy)` : ''}`)
@@ -672,10 +692,11 @@ const ComponentList = () => {
                 toast.error("Component created but failed to copy any fields. Please add fields manually.")
               }
             } catch (error) {
-              console.error("Error copying fields:", error);
+              console.error("❌ DUPLICATE: Error copying fields:", error);
               toast.error("Component created but failed to copy fields. Please add fields manually.")
             }
           } else {
+            console.log('🔄 DUPLICATE: No fields found to copy');
             toast.success("Component duplicated successfully, but no fields were found to copy.")
           }
         } else {
