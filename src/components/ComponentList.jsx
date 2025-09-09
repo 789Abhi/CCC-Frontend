@@ -603,7 +603,11 @@ const ComponentList = () => {
       if (response.data.success) {
         // Get the component ID
         let componentId = null;
-        if (response.data.data && response.data.data.id) {
+        if (response.data.data && response.data.data.data && response.data.data.data.id) {
+          // New nested structure: response.data.data.data.id
+          componentId = response.data.data.data.id;
+        } else if (response.data.data && response.data.data.id) {
+          // Direct structure: response.data.data.id
           componentId = response.data.data.id;
         } else if (response.data.id) {
           componentId = response.data.id;
@@ -615,6 +619,8 @@ const ComponentList = () => {
         console.log('🔄 DUPLICATE: Response data:', response.data);
         console.log('🔄 DUPLICATE: Response data.data:', response.data.data);
         console.log('🔄 DUPLICATE: Response data.data.id:', response.data.data?.id);
+        console.log('🔄 DUPLICATE: Response data.data.data:', response.data.data?.data);
+        console.log('🔄 DUPLICATE: Response data.data.data.id:', response.data.data?.data?.id);
         console.log('🔄 DUPLICATE: Response data.id:', response.data.id);
         console.log('🔄 DUPLICATE: Response data.component_id:', response.data.component_id);
         console.log('🔄 DUPLICATE: Full response object:', response);
