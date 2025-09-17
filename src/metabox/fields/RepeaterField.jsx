@@ -16,6 +16,7 @@ import OembedField from './OembedField';
 import LinkField from './LinkField';
 import EmailField from './EmailField';
 import NumberField from './NumberField';
+import PasswordField from './PasswordField';
 import RangeField from './RangeField';
 import RelationshipField from './RelationshipField';
 import useConditionalLogic from '../hooks/useConditionalLogic';
@@ -417,6 +418,20 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
             onChange={handleChange}
             isSubmitting={false}
             fieldConfig={field.config || {}}
+            fieldId={`${field.name}_${itemIndex}`}
+          />
+        );
+
+      case 'password':
+        return (
+          <PasswordField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            fieldName={field.name}
+            fieldConfig={field.config || {}}
+            fieldValue={fieldValue}
+            fieldRequired={isRequired}
+            onChange={handleChange}
             fieldId={`${field.name}_${itemIndex}`}
           />
         );

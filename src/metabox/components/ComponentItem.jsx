@@ -16,6 +16,7 @@ import ColorField from '../fields/ColorField';
 import LinkField from '../fields/LinkField';
 import EmailField from '../fields/EmailField';
 import NumberField from '../fields/NumberField';
+import PasswordField from '../fields/PasswordField';
 import RangeField from '../fields/RangeField';
 import FileField from '../fields/FileField';
 import RepeaterField from '../fields/RepeaterField';
@@ -303,6 +304,34 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                   };
                   return (
                     <EmailField
+                      key={field.id}
+                      label={field.label}
+                      fieldName={field.name}
+                      fieldConfig={{
+                        ...field.config,
+                        field_id: field.id,
+                        post_id: postId,
+                        instance_id: component.instance_id
+                      }}
+                      fieldValue={value}
+                      fieldRequired={isRequired}
+                      onChange={handleChange}
+                      fieldId={field.id}
+                    />
+                  );
+                }
+                if (field.type === 'password') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  const value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                  const placeholder = field.placeholder || '';
+                  const handleChange = val => {
+                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                  };
+                  return (
+                    <PasswordField
                       key={field.id}
                       label={field.label}
                       fieldName={field.name}
