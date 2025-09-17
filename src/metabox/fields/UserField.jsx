@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { ChevronDown, X, Search, User } from 'lucide-react';
 
 const UserField = ({ 
   label, 
-  value, 
-  onChange, 
-  multiple = false, 
-  required = false, 
-  error = null, 
-  roleFilter = [], 
-  returnType = 'id',
+  fieldName,
+  fieldConfig,
+  fieldValue,
+  fieldRequired,
+  onChange,
   fieldId
 }) => {
+  // Extract configuration
+  const multiple = fieldConfig?.multiple || false;
+  const roleFilter = fieldConfig?.role_filter || [];
+  const returnType = fieldConfig?.return_type || 'id';
+  const required = fieldRequired || false;
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -21,22 +25,22 @@ const UserField = ({
   const [localValue, setLocalValue] = useState(() => {
     if (multiple) {
       // For multiple selection, ensure we always have a clean array of integers
-      if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
+      if (typeof fieldValue === 'string' && fieldValue.startsWith('[') && fieldValue.endsWith(']')) {
         try {
-          const parsed = JSON.parse(value);
+          const parsed = JSON.parse(fieldValue);
           return Array.isArray(parsed) ? parsed.map(Number) : [];
         } catch (e) {
           return [];
         }
       }
-      if (Array.isArray(value)) {
-        return value.map(Number);
+      if (Array.isArray(fieldValue)) {
+        return fieldValue.map(Number);
       }
       return [];
     }
     // For single selection, ensure we have a single integer or empty string
-    if (value && Number.isInteger(Number(value))) {
-      return Number(value);
+    if (fieldValue && Number.isInteger(Number(fieldValue))) {
+      return Number(fieldValue);
     }
     return '';
   });
@@ -45,30 +49,30 @@ const UserField = ({
   useEffect(() => {
     if (multiple) {
       let newValue;
-      if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
+      if (typeof fieldValue === 'string' && fieldValue.startsWith('[') && fieldValue.endsWith(']')) {
         try {
-          const parsed = JSON.parse(value);
+          const parsed = JSON.parse(fieldValue);
           newValue = Array.isArray(parsed) ? parsed.map(Number) : [];
         } catch (e) {
           newValue = [];
         }
-      } else if (Array.isArray(value)) {
-        newValue = value.map(Number);
-      } else if (value && value !== '') {
-        newValue = [Number(value)];
+      } else if (Array.isArray(fieldValue)) {
+        newValue = fieldValue.map(Number);
+      } else if (fieldValue && fieldValue !== '') {
+        newValue = [Number(fieldValue)];
       } else {
         newValue = [];
       }
       
       setLocalValue(newValue);
     } else {
-      if (value && Number.isInteger(Number(value))) {
-        setLocalValue(Number(value));
+      if (fieldValue && Number.isInteger(Number(fieldValue))) {
+        setLocalValue(Number(fieldValue));
       } else {
         setLocalValue('');
       }
     }
-  }, [value, multiple]);
+  }, [fieldValue, multiple]);
 
   // Load users from WordPress
   const loadUsers = useCallback(async () => {
@@ -173,11 +177,60 @@ const UserField = ({
     return localValue.some(v => Number(v) === idNum);
   };
 
-  // Filter users based on search term
-  const filteredUsers = users.filter(user => 
-    user.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.user_email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Group users by role and filter based on search term
+  const getGroupedUsers = () => {
+    const filtered = users.filter(user => 
+      user.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.user_email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Group users by their primary role
+    const grouped = {};
+    filtered.forEach(user => {
+      const role = user.roles && user.roles[0] ? user.roles[0] : 'subscriber';
+      const roleLabel = getRoleLabel(role);
+      
+      if (!grouped[roleLabel]) {
+        grouped[roleLabel] = [];
+      }
+      grouped[roleLabel].push(user);
+    });
+
+    // Sort groups by role hierarchy and users within groups alphabetically
+    const roleOrder = ['Administrator', 'Editor', 'Author', 'Contributor', 'Subscriber'];
+    const sortedGroups = {};
+    
+    roleOrder.forEach(role => {
+      if (grouped[role]) {
+        sortedGroups[role] = grouped[role].sort((a, b) => 
+          a.display_name.localeCompare(b.display_name)
+        );
+      }
+    });
+
+    // Add any remaining roles not in the standard hierarchy
+    Object.keys(grouped).forEach(role => {
+      if (!roleOrder.includes(role)) {
+        sortedGroups[role] = grouped[role].sort((a, b) => 
+          a.display_name.localeCompare(b.display_name)
+        );
+      }
+    });
+
+    return sortedGroups;
+  };
+
+  // Helper function to get role display label
+  const getRoleLabel = (role) => {
+    const roleLabels = {
+      'administrator': 'Administrator',
+      'editor': 'Editor', 
+      'author': 'Author',
+      'contributor': 'Contributor',
+      'subscriber': 'Subscriber'
+    };
+    return roleLabels[role] || role.charAt(0).toUpperCase() + role.slice(1);
+  };
 
   // Get display text for dropdown button
   const getDropdownText = () => {
@@ -186,95 +239,183 @@ const UserField = ({
         return 'Select users...';
       }
       if (localValue.length === 1) {
-        return '1 user selected';
+        const selectedUser = users.find(u => Number(u.ID) === localValue[0]);
+        return selectedUser ? selectedUser.display_name : '1 user selected';
       }
       return `${localValue.length} users selected`;
+    } else {
+      if (localValue) {
+        const selectedUser = users.find(u => Number(u.ID) === localValue);
+        return selectedUser ? selectedUser.display_name : 'Select user...';
+      }
+      return 'Select user...';
     }
-    return 'Select user...';
+  };
+
+  // Get selected users for display
+  const getSelectedUsers = () => {
+    if (!multiple) return [];
+    return localValue.map(userId => {
+      const user = users.find(u => Number(u.ID) === userId);
+      return user;
+    }).filter(Boolean);
   };
 
   if (isLoading) {
-    return <div className="mb-4">Loading users...</div>;
+    return (
+      <div className="w-full ccc-field" data-field-id={fieldId}>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label || 'User'}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+        <div className="flex items-center justify-center py-8 text-gray-500">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mr-2"></div>
+          Loading users...
+        </div>
+      </div>
+    );
   }
 
+  const groupedUsers = getGroupedUsers();
+  const selectedUsers = getSelectedUsers();
+
   return (
-    <div className="mb-4 ccc-field" data-field-id={fieldId}>
+    <div className="w-full ccc-field" data-field-id={fieldId}>
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label}
+        {label || 'User'}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       
-      {multiple ? (
-        <div className="relative" ref={dropdownRef}>
-          {/* Dropdown Button */}
-          <button
-            type="button"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            {getDropdownText()}
-          </button>
+      {/* Selected users display for multiple selection */}
+      {multiple && selectedUsers.length > 0 && (
+        <div className="mb-3">
+          <div className="flex flex-wrap gap-2">
+            {selectedUsers.map(user => (
+              <div key={user.ID} className="inline-flex items-center bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
+                <User size={14} className="mr-1" />
+                <span>{user.display_name}</span>
+                <button
+                  type="button"
+                  onClick={() => handleCheckboxChange(user.ID, false)}
+                  className="ml-2 text-blue-600 hover:text-blue-800 focus:outline-none"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-          {/* Dropdown Content */}
-          {isDropdownOpen && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-              {/* Search Input */}
-              <div className="p-2 border-b border-gray-200">
+      <div className="relative" ref={dropdownRef}>
+        {/* Dropdown Button */}
+        <button
+          type="button"
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors duration-200 flex items-center justify-between"
+        >
+          <span className="text-gray-700">{getDropdownText()}</span>
+          <ChevronDown 
+            size={20} 
+            className={`text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
+          />
+        </button>
+
+        {/* Dropdown Content */}
+        {isDropdownOpen && (
+          <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-80 overflow-hidden">
+            {/* Search Input */}
+            <div className="p-3 border-b border-gray-100 bg-gray-50">
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search users..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-
-              {/* User List */}
-              <div className="py-1">
-                {filteredUsers.length === 0 ? (
-                  <div className="px-3 py-2 text-sm text-gray-500">No users found</div>
-                ) : (
-                  filteredUsers.map(user => (
-                    <label
-                      key={user.ID}
-                      className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isUserSelected(user.ID)}
-                        onChange={(e) => handleCheckboxChange(user.ID, e.target.checked)}
-                        className="mr-2 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm">
-                        {user.display_name} ({user.user_email})
-                      </span>
-                    </label>
-                  ))
-                )}
-              </div>
             </div>
-          )}
+
+            {/* User List - Grouped by Role */}
+            <div className="overflow-y-auto max-h-64">
+              {Object.keys(groupedUsers).length === 0 ? (
+                <div className="px-4 py-6 text-center text-gray-500">
+                  <User size={24} className="mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No users found</p>
+                </div>
+              ) : (
+                Object.entries(groupedUsers).map(([role, roleUsers]) => (
+                  <div key={role} className="border-b border-gray-100 last:border-b-0">
+                    {/* Role Header */}
+                    <div className="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-600 uppercase tracking-wide border-b border-gray-100">
+                      {role}
+                    </div>
+                    
+                    {/* Users in Role */}
+                    <div className="py-1">
+                      {roleUsers.map(user => (
+                        <label
+                          key={user.ID}
+                          className="flex items-center px-4 py-2 hover:bg-blue-50 cursor-pointer transition-colors duration-150"
+                        >
+                          {multiple ? (
+                            <input
+                              type="checkbox"
+                              checked={isUserSelected(user.ID)}
+                              onChange={(e) => handleCheckboxChange(user.ID, e.target.checked)}
+                              className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                          ) : (
+                            <input
+                              type="radio"
+                              name={`user-${fieldId}`}
+                              checked={localValue === Number(user.ID)}
+                              onChange={() => {
+                                setLocalValue(Number(user.ID));
+                                onChange(Number(user.ID));
+                                setIsDropdownOpen(false);
+                              }}
+                              className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                          )}
+                          <div className="flex items-center min-w-0 flex-1">
+                            <User size={16} className="text-gray-400 mr-2 flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                {user.display_name}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate">
+                                {user.user_email}
+                              </div>
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Validation Messages */}
+      {required && !localValue && (!multiple || localValue.length === 0) && (
+        <div className="mt-2">
+          <div className="flex items-center gap-2 text-red-600 text-sm">
+            <span>User selection is required</span>
+          </div>
         </div>
-      ) : (
-        <select
-          value={localValue || ''}
-          onChange={(e) => {
-            const newValue = e.target.value ? Number(e.target.value) : '';
-            setLocalValue(newValue);
-            onChange(newValue);
-          }}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="">Select a user...</option>
-          {users.map(user => (
-            <option key={user.ID} value={user.ID}>
-              {user.display_name} ({user.user_email})
-            </option>
-          ))}
-        </select>
       )}
 
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {fieldConfig?.description && (
+        <div className="mt-2 text-xs text-gray-600">
+          <p>{fieldConfig.description}</p>
+        </div>
+      )}
     </div>
   );
 };

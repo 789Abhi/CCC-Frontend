@@ -348,6 +348,33 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                     />
                   );
                 }
+                if (field.type === 'user') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  const value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || ''));
+                  const handleChange = val => {
+                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                  };
+                  return (
+                    <UserField
+                      key={field.id}
+                      label={field.label}
+                      fieldName={field.name}
+                      fieldConfig={{
+                        ...field.config,
+                        field_id: field.id,
+                        post_id: postId,
+                        instance_id: component.instance_id
+                      }}
+                      fieldValue={value}
+                      fieldRequired={isRequired}
+                      onChange={handleChange}
+                      fieldId={field.id}
+                    />
+                  );
+                }
                 if (field.type === 'number') {
                   const isRequired = field.required || false;
                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};

@@ -436,6 +436,20 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
           />
         );
 
+      case 'user':
+        return (
+          <UserField
+            key={`${field.name}_${itemIndex}`}
+            label={field.label}
+            fieldName={field.name}
+            fieldConfig={field.config || {}}
+            fieldValue={fieldValue}
+            fieldRequired={isRequired}
+            onChange={handleChange}
+            fieldId={`${field.name}_${itemIndex}`}
+          />
+        );
+
       case 'number':
         return (
           <NumberField
