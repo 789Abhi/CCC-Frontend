@@ -1,38 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, X, Plus, Trash2, Filter, FileText, Calendar, Tag } from 'lucide-react';
 
-// Global test function for debugging
-window.testRelationshipAJAX = async () => {
-  console.log('Testing Relationship AJAX...');
-  console.log('window.cccData:', window.cccData);
-  console.log('window.getNonce:', window.getNonce);
-  
-  if (!window.cccData || !window.cccData.ajaxUrl) {
-    console.error('cccData not available');
-    return;
-  }
-  
-  try {
-    const formData = new FormData();
-    formData.append('action', 'ccc_get_relationship_posts');
-    formData.append('nonce', window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''));
-    formData.append('post_types', 'post,page');
-    formData.append('post_status', 'publish');
-    formData.append('search', '');
-    formData.append('per_page', '10');
-
-    const response = await fetch(window.cccData.ajaxUrl, {
-      method: 'POST',
-      body: formData
-    });
-
-    console.log('Response status:', response.status);
-    const data = await response.json();
-    console.log('Response data:', data);
-  } catch (err) {
-    console.error('Test failed:', err);
-  }
-};
 
 const RelationshipField = ({ 
   label, 
@@ -57,6 +25,7 @@ const RelationshipField = ({
   const [availablePosts, setAvailablePosts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedPostType, setSelectedPostType] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedTaxonomies, setSelectedTaxonomies] = useState({});
@@ -64,6 +33,7 @@ const RelationshipField = ({
   const [error, setError] = useState('');
 
   const dropdownRef = useRef(null);
+  const isFetchingRef = useRef(false);
 
   // Initialize local value from fieldValue prop
   useEffect(() => {
@@ -81,20 +51,34 @@ const RelationshipField = ({
     }
   }, [fieldValue]);
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Fetch available posts
-  const fetchPosts = useCallback(async (filters = {}) => {
+  const fetchPosts = async () => {
+    // Prevent multiple simultaneous requests
+    if (isFetchingRef.current) {
+      console.log('RelationshipField: Request already in progress, skipping');
+      return;
+    }
+
+    isFetchingRef.current = true;
     setIsLoading(true);
     setError('');
 
-    // Debug logging
     console.log('RelationshipField: Starting fetchPosts');
-    console.log('RelationshipField: window.cccData available:', !!window.cccData);
-    console.log('RelationshipField: window.cccData:', window.cccData);
     
     if (!window.cccData || !window.cccData.ajaxUrl) {
       console.error('RelationshipField: cccData not available');
       setError('AJAX configuration not available');
       setIsLoading(false);
+      isFetchingRef.current = false;
       return;
     }
 
@@ -104,34 +88,19 @@ const RelationshipField = ({
       formData.append('nonce', window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''));
       formData.append('post_types', post_types.join(','));
       formData.append('post_status', post_status.join(','));
-      formData.append('search', searchTerm || '');
+      formData.append('search', debouncedSearchTerm || '');
       formData.append('post_type_filter', selectedPostType || '');
       formData.append('status_filter', selectedStatus || '');
       formData.append('taxonomy_filters', JSON.stringify(selectedTaxonomies));
       formData.append('exclude', localValue.join(','));
       formData.append('per_page', '50');
 
-      console.log('RelationshipField: Making AJAX request to:', window.cccData?.ajaxUrl || window.ajaxurl);
-      console.log('RelationshipField: Request data:', {
-        action: 'ccc_get_relationship_posts',
-        nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''),
-        post_types: post_types.join(','),
-        post_status: post_status.join(','),
-        search: searchTerm || ''
-      });
-
       const response = await fetch(window.cccData?.ajaxUrl || window.ajaxurl, {
         method: 'POST',
         body: formData
       });
 
-      console.log('RelationshipField: Response status:', response.status);
-      console.log('RelationshipField: Response ok:', response.ok);
-
       const data = await response.json();
-      console.log('RelationshipField: Raw response:', data);
-      console.log('RelationshipField: Response success:', data.success);
-      console.log('RelationshipField: Response data:', data.data);
 
       if (data.success) {
         setAvailablePosts(data.data || []);
@@ -144,8 +113,9 @@ const RelationshipField = ({
       setAvailablePosts([]);
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false;
     }
-  }, [post_types, post_status, searchTerm, selectedPostType, selectedStatus, selectedTaxonomies, localValue]);
+  };
 
   // Load posts on mount and when filters change
   useEffect(() => {
@@ -156,7 +126,7 @@ const RelationshipField = ({
       console.warn('RelationshipField: Cannot fetch posts - missing AJAX configuration');
       setError('AJAX configuration not available');
     }
-  }, [fetchPosts]);
+  }, [debouncedSearchTerm, selectedPostType, selectedStatus, selectedTaxonomies, localValue, post_types, post_status]);
 
   // Handle adding a post
   const handleAddPost = (post) => {
