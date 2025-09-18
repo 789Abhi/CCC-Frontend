@@ -498,11 +498,12 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
         return (
           <RelationshipField
             key={`${field.name}_${itemIndex}`}
-            field={field}
-            value={fieldValue}
-            onChange={handleChange}
-            isSubmitting={false}
+            label={field.label}
+            fieldName={field.name}
             fieldConfig={field.config || {}}
+            fieldValue={fieldValue}
+            fieldRequired={isRequired}
+            onChange={handleChange}
             fieldId={`${field.name}_${itemIndex}`}
           />
         );

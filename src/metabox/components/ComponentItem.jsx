@@ -693,15 +693,17 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                    return (
                      <RelationshipField
                        key={field.id}
-                       field={field}
-                       value={value}
-                       onChange={handleChange}
-                       isSubmitting={false}
+                       label={field.label}
+                       fieldName={field.name}
                        fieldConfig={{
+                         ...field.config,
                          field_id: field.id,
                          post_id: postId,
                          instance_id: component.instance_id
                        }}
+                       fieldValue={value}
+                       fieldRequired={isRequired}
+                       onChange={handleChange}
                        fieldId={field.id}
                      />
                    );

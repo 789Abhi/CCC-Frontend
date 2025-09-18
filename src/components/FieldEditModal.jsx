@@ -200,6 +200,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         "email",
         "password",
         "user",
+        "relationship",
         "number",
         "range",
         "file",

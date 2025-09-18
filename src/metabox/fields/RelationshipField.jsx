@@ -1,550 +1,784 @@
-import React, { useState, useEffect, useRef, memo, useCallback, useMemo } from 'react';
-import { Search, X, ChevronDown, ChevronUp, ArrowRight, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Search, ChevronDown, X, Plus, Trash2, Filter, FileText, Calendar, Tag } from 'lucide-react';
 
-const RelationshipField = memo(({ field, value, onChange, isSubmitting, fieldId }) => {
-  const [selectedPosts, setSelectedPosts] = useState([]);
-  const [availablePosts, setAvailablePosts] = useState([]);
-  const [availablePostTypes, setAvailablePostTypes] = useState([]);
-  const [availableTaxonomies, setAvailableTaxonomies] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [postTypeFilter, setPostTypeFilter] = useState('');
-  const [taxonomyFilter, setTaxonomyFilter] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const searchTimeoutRef = useRef(null);
-  const selectedPostsRef = useRef([]);
-
-  // Keep ref in sync with state
-  useEffect(() => {
-    selectedPostsRef.current = selectedPosts;
-  }, [selectedPosts]);
-
-  // Parse field config - memoized to prevent recreation
-  const config = useMemo(() => {
-    return field.config ? (typeof field.config === 'string' ? JSON.parse(field.config) : field.config) : {};
-  }, [field.config]);
-
+const RelationshipField = ({ 
+  label, 
+  fieldName, 
+  fieldConfig = {}, 
+  fieldValue = '', 
+  fieldRequired = false, 
+  onChange 
+}) => {
   const {
-    filter_post_types = Array.isArray(config.filter_post_types) ? config.filter_post_types : [],
-    filter_post_status = Array.isArray(config.filter_post_status) ? config.filter_post_status : [],
-    filter_taxonomy = config.filter_taxonomy || '',
-    filters = Array.isArray(config.filters) ? config.filters : ['search', 'post_type'],
-    max_posts = parseInt(config.max_posts) || 0,
-    return_format = config.return_format || 'object'
-  } = config;
+    post_types = [],
+    post_status = [],
+    taxonomy_filters = [],
+    filters = ['search'],
+    min_posts = 0,
+    max_posts = 0,
+    return_format = 'object',
+    multiple = true
+  } = fieldConfig;
 
-  // Memoize the fetch functions to prevent recreation
-  const fetchAvailablePostTypes = useCallback(async () => {
-    try {
-      console.log('RelationshipField: fetchAvailablePostTypes called');
-      
-      if (typeof cccData === 'undefined') {
-        console.error('RelationshipField: cccData is not defined for fetchAvailablePostTypes');
-        setAvailablePostTypes([]);
-        return;
-      }
+  const [localValue, setLocalValue] = useState([]);
+  const [availablePosts, setAvailablePosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPostType, setSelectedPostType] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedTaxonomies, setSelectedTaxonomies] = useState({});
+  const [showFilters, setShowFilters] = useState(false);
+  const [error, setError] = useState('');
 
-      console.log('RelationshipField: Making AJAX call to fetch post types');
-      const response = await fetch(window.getAjaxUrl ? window.getAjaxUrl() : (window.cccData?.ajaxUrl || '/wp-admin/admin-ajax.php'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          action: 'ccc_get_available_post_types',
-          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || '')
-        })
-      });
-      
-      const data = await response.json();
-      console.log('RelationshipField: Post types data received:', data);
-      
-      let postTypesArray = null;
-      if (data.success && data.data) {
-        if (Array.isArray(data.data)) {
-          postTypesArray = data.data;
-        } else if (data.data.data && Array.isArray(data.data.data)) {
-          postTypesArray = data.data.data;
-        }
-      }
+  const dropdownRef = useRef(null);
 
-      if (postTypesArray && Array.isArray(postTypesArray)) {
-        let filteredPostTypes = postTypesArray.filter(postType => postType.value !== 'attachment');
-        
-        if (Array.isArray(filter_post_types) && filter_post_types.length > 0) {
-          filteredPostTypes = filteredPostTypes.filter(postType => filter_post_types.includes(postType.value));
-        }
-        
-        setAvailablePostTypes(filteredPostTypes);
-      } else {
-        setAvailablePostTypes([]);
+  // Initialize local value from fieldValue prop
+  useEffect(() => {
+    if (fieldValue) {
+      try {
+        const parsed = typeof fieldValue === 'string' 
+          ? (fieldValue.startsWith('[') ? JSON.parse(fieldValue) : fieldValue.split(',').map(Number))
+          : fieldValue;
+        setLocalValue(Array.isArray(parsed) ? parsed : [parsed]);
+      } catch (e) {
+        setLocalValue([]);
       }
-    } catch (error) {
-      console.error('Error fetching available post types:', error);
-      setAvailablePostTypes([]);
+    } else {
+      setLocalValue([]);
     }
-  }, [filter_post_types]);
+  }, [fieldValue]);
 
-  const fetchAvailableTaxonomies = useCallback(async () => {
-    try {
-      if (typeof cccData === 'undefined') {
-        setAvailableTaxonomies([]);
-        return;
-      }
-
-      const response = await fetch(window.getAjaxUrl ? window.getAjaxUrl() : (window.cccData?.ajaxUrl || '/wp-admin/admin-ajax.php'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          action: 'ccc_get_available_taxonomies',
-          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || '')
-        })
-      });
-      
-      const data = await response.json();
-      let taxonomiesArray = null;
-      if (data.success && data.data) {
-        if (Array.isArray(data.data)) {
-          taxonomiesArray = data.data;
-        } else if (data.data.data && Array.isArray(data.data.data)) {
-          taxonomiesArray = data.data.data;
-        }
-      }
-
-      if (taxonomiesArray) {
-        setAvailableTaxonomies(taxonomiesArray);
-      } else {
-        setAvailableTaxonomies([]);
-      }
-    } catch (error) {
-      setAvailableTaxonomies([]);
-    }
-  }, []);
-
-  const fetchTaxonomiesForPostType = useCallback(async (postType) => {
-    try {
-      if (typeof cccData === 'undefined') {
-        return;
-      }
-
-      const response = await fetch(window.getAjaxUrl ? window.getAjaxUrl() : (window.cccData?.ajaxUrl || '/wp-admin/admin-ajax.php'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          action: 'ccc_get_taxonomies_for_post_type',
-          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''),
-          post_type: postType
-        })
-      });
-      
-      const data = await response.json();
-      let taxonomiesArray = null;
-      if (data.success && data.data) {
-        if (Array.isArray(data.data)) {
-          taxonomiesArray = data.data;
-        } else if (data.data.data && Array.isArray(data.data.data)) {
-          taxonomiesArray = data.data.data;
-        }
-      }
-
-      if (taxonomiesArray) {
-        setAvailableTaxonomies(taxonomiesArray);
-      }
-    } catch (error) {
-      // Silently handle error
-    }
-  }, []);
-
-  const fetchPostDetails = useCallback(async (postIds) => {
-    try {
-      if (typeof cccData === 'undefined') {
-        return;
-      }
-
-      const response = await fetch(cccData.ajaxUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          action: 'ccc_get_posts_by_ids',
-          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''),
-          post_ids: postIds.join(',')
-        })
-      });
-      
-      const data = await response.json();
-      let postsArray = null;
-      if (data.success && data.data) {
-        if (Array.isArray(data.data)) {
-          postsArray = data.data;
-        } else if (data.data.data && Array.isArray(data.data.data)) {
-          postsArray = data.data.data;
-        }
-      }
-
-      if (postsArray) {
-        setSelectedPosts(postsArray);
-      }
-    } catch (error) {
-      console.error('Error fetching post details:', error);
-    }
-  }, []);
-
-  const loadAvailablePosts = useCallback(async () => {
-    // Prevent multiple simultaneous calls
-    if (isLoading) {
-      console.log('RelationshipField: Already loading, skipping duplicate call');
-      return;
-    }
-    
+  // Fetch available posts
+  const fetchPosts = useCallback(async (filters = {}) => {
     setIsLoading(true);
+    setError('');
+
     try {
-      if (typeof cccData === 'undefined') {
-        setAvailablePosts([]);
-        return;
-      }
-
-      const response = await fetch(cccData.ajaxUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          action: 'ccc_search_posts',
-          nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''),
-          search: searchTerm || '',
-          post_type: postTypeFilter || '',
-          taxonomy: taxonomyFilter || '',
-          filter_post_types: Array.isArray(filter_post_types) && filter_post_types.length > 0 ? filter_post_types.join(',') : '',
-          filter_post_status: Array.isArray(filter_post_status) ? filter_post_status.join(',') : '',
-          filter_taxonomy: filter_taxonomy || ''
-        })
+      const params = new URLSearchParams({
+        action: 'ccc_get_relationship_posts',
+        nonce: window.ccc_nonce || '',
+        post_types: post_types.join(','),
+        post_status: post_status.join(','),
+        search: searchTerm || '',
+        post_type_filter: selectedPostType || '',
+        status_filter: selectedStatus || '',
+        taxonomy_filters: JSON.stringify(selectedTaxonomies),
+        exclude: localValue.join(','),
+        per_page: 50
       });
-      
-      const data = await response.json();
-      let postsArray = null;
-      if (data.success && data.data) {
-        if (Array.isArray(data.data)) {
-          postsArray = data.data;
-        } else if (data.data.data && Array.isArray(data.data.data)) {
-          postsArray = data.data.data;
-        }
-      }
 
-      if (postsArray) {
-        // Use ref to get current selectedPosts to avoid dependency issues
-        const currentSelectedPosts = selectedPostsRef.current;
-        const filteredPosts = postsArray.filter(post => 
-          !Array.isArray(currentSelectedPosts) || !currentSelectedPosts.some(selected => selected.id === post.id)
-        );
-        setAvailablePosts(filteredPosts);
+      const response = await fetch(window.ajaxurl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setAvailablePosts(data.data || []);
       } else {
+        setError(data.data || 'Failed to fetch posts');
         setAvailablePosts([]);
       }
-    } catch (error) {
-      console.error('Error loading available posts:', error);
+    } catch (err) {
+      setError('Network error occurred');
       setAvailablePosts([]);
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm, postTypeFilter, taxonomyFilter, filter_post_types, filter_post_status, filter_taxonomy, isLoading]); // Add isLoading to prevent multiple calls
+  }, [post_types, post_status, searchTerm, selectedPostType, selectedStatus, selectedTaxonomies, localValue]);
 
-  const addPost = useCallback((post) => {
-    const currentSelectedPosts = selectedPostsRef.current;
-    if (Array.isArray(currentSelectedPosts) && currentSelectedPosts.some(p => p.id === post.id)) {
+  // Load posts on mount and when filters change
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  // Handle adding a post
+  const handleAddPost = (post) => {
+    const newValue = [...localValue, post.ID];
+    
+    // Check max posts limit
+    if (max_posts > 0 && newValue.length > max_posts) {
+      setError(`Maximum ${max_posts} posts allowed`);
       return;
     }
-    
-    if (max_posts > 0 && Array.isArray(currentSelectedPosts) && currentSelectedPosts.length >= max_posts) {
-      return;
-    }
-    
-    setSelectedPosts(prev => Array.isArray(prev) ? [...prev, post] : [post]);
-    setAvailablePosts(prev => Array.isArray(prev) ? prev.filter(p => p.id !== post.id) : []);
-  }, [max_posts]); // Remove selectedPosts dependency
 
-  const removePost = useCallback((postId) => {
-    const currentSelectedPosts = selectedPostsRef.current;
-    const removedPost = Array.isArray(currentSelectedPosts) ? currentSelectedPosts.find(post => post.id === postId) : null;
-    setSelectedPosts(prev => Array.isArray(prev) ? prev.filter(post => post.id !== postId) : []);
-    
-    if (removedPost) {
-      setAvailablePosts(prev => Array.isArray(prev) ? [...prev, removedPost] : []);
-    }
-  }, []); // Remove selectedPosts dependency
+    setLocalValue(newValue);
+    onChange(newValue);
+    setError('');
+  };
 
-  const getPostTypeLabel = useCallback((postType) => {
-    const postTypes = {
-      post: 'Post',
-      page: 'Page',
-    };
-    return postTypes[postType] || postType;
-  }, []);
+  // Handle removing a post
+  const handleRemovePost = (postId) => {
+    const newValue = localValue.filter(id => id !== postId);
+    setLocalValue(newValue);
+    onChange(newValue);
+    setError('');
+  };
 
-  const getStatusLabel = useCallback((status) => {
-    const statuses = {
-      publish: 'Published',
-      draft: 'Draft',
-      pending: 'Pending',
-      private: 'Private'
-    };
-    return statuses[status] || status;
-  }, []);
-
-  // Load available posts on component mount - only once
-  useEffect(() => {
-    console.log('RelationshipField: Component mounted, calling fetchAvailablePostTypes');
-    fetchAvailablePostTypes();
-    fetchAvailableTaxonomies();
-    loadAvailablePosts();
-  }, []); // Empty dependency array - only run once
-
-  // Load available posts when filters change - debounced
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      // Only load if we're not already loading
-      if (!isLoading) {
-        loadAvailablePosts();
+  // Get selected posts for display
+  const getSelectedPosts = () => {
+    return localValue.map(postId => {
+      // Try to find in available posts first
+      let post = availablePosts.find(p => p.ID === postId);
+      if (!post) {
+        // If not found in available posts, create a basic object
+        post = { ID: postId, post_title: `Post #${postId}`, post_type: 'unknown' };
       }
-    }, 500); // Increased debounce time
+      return post;
+    }).filter(Boolean);
+  };
 
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm, postTypeFilter, taxonomyFilter, isLoading]); // Add isLoading to prevent calls while loading
-
-  // Update taxonomies when post type changes
-  useEffect(() => {
-    if (postTypeFilter) {
-      fetchTaxonomiesForPostType(postTypeFilter);
-    } else {
-      fetchAvailableTaxonomies();
-    }
-    setTaxonomyFilter('');
-  }, [postTypeFilter]); // Remove fetchTaxonomiesForPostType and fetchAvailableTaxonomies from deps
-
-  // Initialize selected posts from value - only when value changes
-  useEffect(() => {
-    if (value && typeof value === 'string' && value.trim()) {
-      const postIds = value.split(',').filter(id => id.trim());
-      if (postIds.length > 0) {
-        fetchPostDetails(postIds);
+  // Get grouped posts by post type
+  const getGroupedPosts = () => {
+    const grouped = {};
+    
+    availablePosts.forEach(post => {
+      const postType = post.post_type || 'unknown';
+      if (!grouped[postType]) {
+        grouped[postType] = [];
       }
-    }
-  }, [value]); // Remove fetchPostDetails from deps
+      grouped[postType].push(post);
+    });
 
-  // Update parent when selected posts change - debounced to prevent loops
-  useEffect(() => {
-    if (onChange) {
-      const timeoutId = setTimeout(() => {
-        const postIds = Array.isArray(selectedPosts) ? selectedPosts.map(post => post.id) : [];
-        const valueToSend = return_format === 'id' ? postIds : postIds.join(',');
-        
-        // Only call onChange if the value has actually changed and is not empty
-        if (valueToSend !== value && valueToSend !== '') {
-          console.log('RelationshipField: Calling onChange with new value:', valueToSend);
-          onChange(valueToSend);
-        }
-      }, 200); // Increased debounce time
+    // Sort post types and posts within each group
+    const sortedGroups = {};
+    Object.keys(grouped).sort().forEach(postType => {
+      sortedGroups[postType] = grouped[postType].sort((a, b) => 
+        a.post_title.localeCompare(b.post_title)
+      );
+    });
 
-      return () => clearTimeout(timeoutId);
-    }
-  }, [selectedPosts, onChange, return_format, value]);
+    return sortedGroups;
+  };
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
+  // Get post type label
+  const getPostTypeLabel = (postType) => {
+    const labels = {
+      'post': 'Posts',
+      'page': 'Pages',
+      'attachment': 'Media'
     };
-  }, []);
+    return labels[postType] || postType.charAt(0).toUpperCase() + postType.slice(1);
+  };
 
-  // Memoize the render to prevent unnecessary re-renders
-  const renderContent = useMemo(() => {
-    // Only log when there are significant changes to reduce noise
-    if (availablePosts.length > 0 || selectedPosts.length > 0) {
-      console.log('RelationshipField: Rendering with state:', {
-        availablePosts: availablePosts.length,
-        availablePostTypes: availablePostTypes.length,
-        availableTaxonomies: availableTaxonomies.length,
-        selectedPosts: selectedPosts.length,
-        isLoading,
-        searchTerm,
-        postTypeFilter,
-        taxonomyFilter
-      });
+  // Handle filter changes
+  const handleFilterChange = (filterType, value) => {
+    switch (filterType) {
+      case 'post_type':
+        setSelectedPostType(value);
+        break;
+      case 'status':
+        setSelectedStatus(value);
+        break;
+      case 'taxonomy':
+        setSelectedTaxonomies(value);
+        break;
     }
+  };
 
-    return (
-      <div className="mb-4 ccc-field" data-field-id={fieldId}>
-        <div className="mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            {field.label}
-            {field.required && <span className="text-red-500 ml-1">*</span>}
-          </label>
+  // Get available post types for filter
+  const getAvailablePostTypes = () => {
+    const types = [...new Set(availablePosts.map(p => p.post_type))];
+    return types.map(type => ({
+      value: type,
+      label: getPostTypeLabel(type)
+    }));
+  };
+
+  // Get available statuses for filter
+  const getAvailableStatuses = () => {
+    const statuses = [...new Set(availablePosts.map(p => p.post_status))];
+    return statuses.map(status => ({
+      value: status,
+      label: status.charAt(0).toUpperCase() + status.slice(1)
+    }));
+  };
+
+  const selectedPosts = getSelectedPosts();
+  const groupedPosts = getGroupedPosts();
+
+  return (
+    <div className="ccc-relationship-field">
+      {label && (
+        <label className="ccc-field-label">
+          {label}
+          {fieldRequired && <span className="ccc-required">*</span>}
+        </label>
+      )}
+
+      {/* Selected Posts */}
+      <div className="ccc-selected-posts">
+        <div className="ccc-selected-header">
+          <h4>Selected Posts ({selectedPosts.length})</h4>
+          {min_posts > 0 && (
+            <span className="ccc-min-posts">
+              Minimum: {min_posts}
+            </span>
+          )}
+          {max_posts > 0 && (
+            <span className="ccc-max-posts">
+              Maximum: {max_posts}
+            </span>
+          )}
         </div>
-        
-        <div className="border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-gray-100 shadow-lg hover:border-blue-300 hover:shadow-xl transition-all duration-300">
-          {/* Search and Filters */}
-          <div className="flex flex-wrap gap-4 mb-6 p-4 bg-white/80 backdrop-blur-sm rounded-lg border border-white/20">
+
+        {selectedPosts.length === 0 ? (
+          <div className="ccc-no-selection">
+            <FileText className="ccc-icon" />
+            <p>No posts selected</p>
+          </div>
+        ) : (
+          <div className="ccc-selected-list">
+            {selectedPosts.map((post) => (
+              <div key={post.ID} className="ccc-selected-item">
+                <div className="ccc-post-info">
+                  {post.featured_image && (
+                    <img 
+                      src={post.featured_image} 
+                      alt={post.post_title}
+                      className="ccc-post-thumbnail"
+                    />
+                  )}
+                  <div className="ccc-post-details">
+                    <h5 className="ccc-post-title">{post.post_title}</h5>
+                    <div className="ccc-post-meta">
+                      <span className="ccc-post-type">
+                        {getPostTypeLabel(post.post_type)}
+                      </span>
+                      <span className="ccc-post-status">
+                        {post.post_status}
+                      </span>
+                      <span className="ccc-post-date">
+                        {new Date(post.post_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemovePost(post.ID)}
+                  className="ccc-remove-btn"
+                  title="Remove post"
+                >
+                  <X className="ccc-icon" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Available Posts */}
+      <div className="ccc-available-posts">
+        <div className="ccc-available-header">
+          <h4>Available Posts</h4>
+          <button
+            type="button"
+            onClick={() => setShowFilters(!showFilters)}
+            className={`ccc-filter-toggle ${showFilters ? 'active' : ''}`}
+          >
+            <Filter className="ccc-icon" />
+            Filters
+          </button>
+        </div>
+
+        {/* Filters */}
+        {showFilters && filters.length > 0 && (
+          <div className="ccc-filters">
             {filters.includes('search') && (
-              <div className="relative flex-1 min-w-[250px]">
-                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 z-10" />
+              <div className="ccc-filter-group">
+                <Search className="ccc-icon" />
                 <input
                   type="text"
+                  placeholder="Search posts..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search posts..."
-                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-3 focus:ring-blue-100 focus:border-blue-500 hover:-translate-y-0.5 transition-all duration-300"
-                  disabled={isSubmitting}
+                  className="ccc-search-input"
                 />
               </div>
             )}
-            
+
             {filters.includes('post_type') && (
-              <div className="relative min-w-[160px]">
+              <div className="ccc-filter-group">
+                <FileText className="ccc-icon" />
                 <select
-                  value={postTypeFilter}
-                  onChange={(e) => setPostTypeFilter(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-3 focus:ring-blue-100 focus:border-blue-500 hover:-translate-y-0.5 transition-all duration-300"
-                  disabled={isSubmitting}
+                  value={selectedPostType}
+                  onChange={(e) => handleFilterChange('post_type', e.target.value)}
+                  className="ccc-filter-select"
                 >
-                  <option value="">All post types</option>
-                  {Array.isArray(availablePostTypes) && availablePostTypes.length > 0 ? (
-                    availablePostTypes.map((postType) => (
-                      <option key={postType.value} value={postType.value}>
-                        {postType.label}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="" disabled>Loading post types...</option>
-                  )}
+                  <option value="">All Post Types</option>
+                  {getAvailablePostTypes().map(type => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
                 </select>
-                {isLoading && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-blue-600 font-medium animate-pulse">
-                    Loading...
-                  </div>
-                )}
               </div>
             )}
-            
-            {filters.includes('taxonomy') && (
-              <select
-                value={taxonomyFilter}
-                onChange={(e) => setTaxonomyFilter(e.target.value)}
-                className="min-w-[160px] px-4 py-3 border-2 border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-3 focus:ring-blue-100 focus:border-blue-500 hover:-translate-y-0.5 transition-all duration-300"
-                disabled={isSubmitting}
-              >
-                <option value="">All taxonomies</option>
-                {Array.isArray(availableTaxonomies) && availableTaxonomies.map((taxonomy) => (
-                  <option key={taxonomy.value} value={taxonomy.value}>
-                    {taxonomy.label}
-                  </option>
-                ))}
-              </select>
+
+            {filters.includes('taxonomy') && taxonomy_filters.length > 0 && (
+              <div className="ccc-filter-group">
+                <Tag className="ccc-icon" />
+                <select
+                  className="ccc-filter-select"
+                  onChange={(e) => {
+                    const taxonomy = e.target.value;
+                    if (taxonomy) {
+                      // Handle taxonomy filtering
+                      setSelectedTaxonomies(prev => ({
+                        ...prev,
+                        [taxonomy]: []
+                      }));
+                    }
+                  }}
+                >
+                  <option value="">All Taxonomies</option>
+                  {taxonomy_filters.map(filter => (
+                    <option key={filter.taxonomy} value={filter.taxonomy}>
+                      {filter.taxonomy}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
           </div>
+        )}
 
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[350px]">
-            {/* Available Posts Column */}
-            <div className="border-2 border-gray-200 rounded-xl bg-white shadow-lg hover:border-emerald-300 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 overflow-hidden">
-              <h4 className="m-0 px-5 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-semibold">
-                Available Posts ({Array.isArray(availablePosts) ? availablePosts.length : 0})
-              </h4>
-              <div className="flex-1 max-h-[280px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                {isLoading ? (
-                  <div className="p-8 text-center text-gray-500 italic bg-gradient-to-br from-blue-50 to-cyan-50 m-4 rounded-lg border-2 border-dashed border-blue-200 animate-pulse">
-                    Loading posts...
+        {/* Posts List */}
+        <div className="ccc-posts-container">
+          {isLoading ? (
+            <div className="ccc-loading">
+              <div className="ccc-spinner"></div>
+              <p>Loading posts...</p>
+            </div>
+          ) : error ? (
+            <div className="ccc-error">
+              <p>{error}</p>
+            </div>
+          ) : availablePosts.length === 0 ? (
+            <div className="ccc-no-posts">
+              <FileText className="ccc-icon" />
+              <p>No posts found</p>
+            </div>
+          ) : (
+            <div className="ccc-posts-list">
+              {Object.entries(groupedPosts).map(([postType, posts]) => (
+                <div key={postType} className="ccc-post-group">
+                  <div className="ccc-group-header">
+                    <h5>{getPostTypeLabel(postType)} ({posts.length})</h5>
                   </div>
-                ) : !Array.isArray(availablePosts) || availablePosts.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500 italic bg-gradient-to-br from-gray-50 to-gray-100 m-4 rounded-lg border-2 border-dashed border-gray-300">
-                    No posts available
-                  </div>
-                ) : (
-                  availablePosts.map(post => {
-                    const isSelected = Array.isArray(selectedPosts) && selectedPosts.some(selected => selected.id === post.id);
-                    return (
-                      <div
-                        key={post.id}
-                        className={`flex items-center justify-between p-4 border-b border-gray-100 transition-all duration-300 cursor-pointer relative ${
-                          isSelected 
-                            ? 'opacity-50 bg-gray-100 cursor-default' 
-                            : 'hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 hover:translate-x-1'
-                        } last:border-b-0`}
-                        onClick={() => !isSelected && addPost(post)}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-gray-800 mb-2 leading-tight truncate">
-                            {post.title}
-                          </div>
-                          <div className="flex gap-3 text-xs text-gray-500 items-center">
-                            <span className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 px-3 py-1 rounded-full font-medium capitalize">
-                              {getPostTypeLabel(post.type)}
-                            </span>
-                            <span className="italic">({getStatusLabel(post.status)})</span>
+                  <div className="ccc-group-posts">
+                    {posts.map((post) => (
+                      <div key={post.ID} className="ccc-post-item">
+                        <div className="ccc-post-content">
+                          {post.featured_image && (
+                            <img 
+                              src={post.featured_image} 
+                              alt={post.post_title}
+                              className="ccc-post-thumbnail"
+                            />
+                          )}
+                          <div className="ccc-post-details">
+                            <h6 className="ccc-post-title">{post.post_title}</h6>
+                            <div className="ccc-post-meta">
+                              <span className="ccc-post-status">
+                                {post.post_status}
+                              </span>
+                              <span className="ccc-post-date">
+                                {new Date(post.post_date).toLocaleDateString()}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        {isSelected ? (
-                          <div className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                            ✓ Added
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            className="p-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 hover:-translate-y-0.5 hover:shadow-lg shadow-emerald-500/30 transition-all duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addPost(post);
-                            }}
-                            disabled={max_posts > 0 && Array.isArray(selectedPosts) && selectedPosts.length >= max_posts}
-                          >
-                            <ArrowRight size={14} />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleAddPost(post)}
+                          className="ccc-add-btn"
+                          disabled={max_posts > 0 && localValue.length >= max_posts}
+                          title="Add post"
+                        >
+                          <Plus className="ccc-icon" />
+                        </button>
                       </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* Selected Posts Column */}
-            <div className="border-2 border-gray-200 rounded-xl bg-white shadow-lg hover:border-red-300 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 overflow-hidden">
-              <h4 className="m-0 px-5 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-semibold">
-                Selected Posts ({Array.isArray(selectedPosts) ? selectedPosts.length : 0}{max_posts > 0 ? `/${max_posts}` : ''})
-              </h4>
-              <div className="flex-1 max-h-[280px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                {!Array.isArray(selectedPosts) || selectedPosts.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500 italic bg-gradient-to-br from-gray-50 to-gray-100 m-4 rounded-lg border-2 border-dashed border-gray-300">
-                    No posts selected
+                    ))}
                   </div>
-                ) : (
-                  selectedPosts.map(post => (
-                    <div 
-                      key={post.id} 
-                      className="flex items-center justify-between p-4 border-b border-gray-100 transition-all duration-300 bg-white hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:-translate-x-1 last:border-b-0"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-gray-800 leading-tight truncate">
-                          {post.title}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="p-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 hover:-translate-y-0.5 hover:shadow-lg shadow-red-500/30 transition-all duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-                        onClick={() => removePost(post.id)}
-                        disabled={isSubmitting}
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
       </div>
-    );
-  }, [availablePosts, availablePostTypes, availableTaxonomies, selectedPosts, isLoading, searchTerm, postTypeFilter, taxonomyFilter, filters, field.label, field.required, isSubmitting, max_posts, addPost, removePost, getPostTypeLabel, getStatusLabel]);
 
-  return renderContent;
-});
+      {/* Error Display */}
+      {error && (
+        <div className="ccc-error-message">
+          <p>{error}</p>
+        </div>
+      )}
 
-RelationshipField.displayName = 'RelationshipField';
+      {/* Validation Messages */}
+      {fieldRequired && localValue.length === 0 && (
+        <div className="ccc-validation-error">
+          <p>This field is required.</p>
+        </div>
+      )}
 
-export default RelationshipField; 
+      {min_posts > 0 && localValue.length < min_posts && (
+        <div className="ccc-validation-error">
+          <p>Please select at least {min_posts} post(s).</p>
+        </div>
+      )}
+
+      <style jsx>{`
+        .ccc-relationship-field {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          max-width: 100%;
+        }
+
+        .ccc-field-label {
+          font-weight: 600;
+          color: #1f2937;
+          margin-bottom: 8px;
+          display: block;
+        }
+
+        .ccc-required {
+          color: #ef4444;
+          margin-left: 4px;
+        }
+
+        .ccc-selected-posts,
+        .ccc-available-posts {
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          background: #ffffff;
+        }
+
+        .ccc-selected-header,
+        .ccc-available-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px;
+          border-bottom: 1px solid #e5e7eb;
+          background: #f9fafb;
+          border-radius: 8px 8px 0 0;
+        }
+
+        .ccc-selected-header h4,
+        .ccc-available-header h4 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: #1f2937;
+        }
+
+        .ccc-min-posts,
+        .ccc-max-posts {
+          font-size: 12px;
+          color: #6b7280;
+          background: #f3f4f6;
+          padding: 4px 8px;
+          border-radius: 4px;
+        }
+
+        .ccc-filter-toggle {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 12px;
+          background: #ffffff;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.2s;
+        }
+
+        .ccc-filter-toggle:hover {
+          background: #f3f4f6;
+        }
+
+        .ccc-filter-toggle.active {
+          background: #3b82f6;
+          color: white;
+          border-color: #3b82f6;
+        }
+
+        .ccc-no-selection,
+        .ccc-no-posts {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 20px;
+          color: #6b7280;
+        }
+
+        .ccc-no-selection .ccc-icon,
+        .ccc-no-posts .ccc-icon {
+          width: 48px;
+          height: 48px;
+          margin-bottom: 12px;
+          opacity: 0.5;
+        }
+
+        .ccc-filters {
+          padding: 16px;
+          border-bottom: 1px solid #e5e7eb;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          background: #f9fafb;
+        }
+
+        .ccc-filter-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 200px;
+        }
+
+        .ccc-search-input,
+        .ccc-filter-select {
+          flex: 1;
+          padding: 8px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 14px;
+          background: white;
+        }
+
+        .ccc-search-input:focus,
+        .ccc-filter-select:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .ccc-selected-list {
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          max-height: 300px;
+          overflow-y: auto;
+        }
+
+        .ccc-selected-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          background: #f9fafb;
+        }
+
+        .ccc-post-info {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex: 1;
+        }
+
+        .ccc-post-thumbnail {
+          width: 40px;
+          height: 40px;
+          object-fit: cover;
+          border-radius: 4px;
+          background: #f3f4f6;
+        }
+
+        .ccc-post-details {
+          flex: 1;
+        }
+
+        .ccc-post-title {
+          margin: 0 0 4px 0;
+          font-size: 14px;
+          font-weight: 600;
+          color: #1f2937;
+        }
+
+        .ccc-post-meta {
+          display: flex;
+          gap: 12px;
+          font-size: 12px;
+          color: #6b7280;
+        }
+
+        .ccc-remove-btn {
+          padding: 6px;
+          background: #ef4444;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+        }
+
+        .ccc-remove-btn:hover {
+          background: #dc2626;
+        }
+
+        .ccc-remove-btn .ccc-icon {
+          width: 16px;
+          height: 16px;
+        }
+
+        .ccc-posts-container {
+          padding: 16px;
+          max-height: 400px;
+          overflow-y: auto;
+        }
+
+        .ccc-loading {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 20px;
+          color: #6b7280;
+        }
+
+        .ccc-spinner {
+          width: 32px;
+          height: 32px;
+          border: 3px solid #e5e7eb;
+          border-top: 3px solid #3b82f6;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .ccc-error {
+          padding: 16px;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          border-radius: 6px;
+          color: #dc2626;
+        }
+
+        .ccc-posts-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .ccc-post-group {
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          overflow: hidden;
+        }
+
+        .ccc-group-header {
+          padding: 12px 16px;
+          background: #f3f4f6;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .ccc-group-header h5 {
+          margin: 0;
+          font-size: 14px;
+          font-weight: 600;
+          color: #374151;
+        }
+
+        .ccc-group-posts {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .ccc-post-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 16px;
+          border-bottom: 1px solid #f3f4f6;
+        }
+
+        .ccc-post-item:last-child {
+          border-bottom: none;
+        }
+
+        .ccc-post-content {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex: 1;
+        }
+
+        .ccc-post-item .ccc-post-title {
+          font-size: 13px;
+          margin-bottom: 2px;
+        }
+
+        .ccc-add-btn {
+          padding: 6px;
+          background: #10b981;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+        }
+
+        .ccc-add-btn:hover:not(:disabled) {
+          background: #059669;
+        }
+
+        .ccc-add-btn:disabled {
+          background: #9ca3af;
+          cursor: not-allowed;
+        }
+
+        .ccc-add-btn .ccc-icon {
+          width: 16px;
+          height: 16px;
+        }
+
+        .ccc-icon {
+          width: 20px;
+          height: 20px;
+          color: #6b7280;
+        }
+
+        .ccc-error-message,
+        .ccc-validation-error {
+          padding: 12px;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          border-radius: 6px;
+          color: #dc2626;
+          font-size: 14px;
+        }
+
+        .ccc-validation-error {
+          background: #fffbeb;
+          border-color: #fed7aa;
+          color: #d97706;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default RelationshipField;
