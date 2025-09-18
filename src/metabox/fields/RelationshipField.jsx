@@ -25,7 +25,6 @@ const RelationshipField = ({
   const [availablePosts, setAvailablePosts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedPostType, setSelectedPostType] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedTaxonomies, setSelectedTaxonomies] = useState({});
@@ -51,16 +50,7 @@ const RelationshipField = ({
     }
   }, [fieldValue]);
 
-  // Debounce search term
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  // Fetch available posts
+  // Fetch available posts - only called manually
   const fetchPosts = async () => {
     // Prevent multiple simultaneous requests
     if (isFetchingRef.current) {
@@ -88,7 +78,7 @@ const RelationshipField = ({
       formData.append('nonce', window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''));
       formData.append('post_types', post_types.join(','));
       formData.append('post_status', post_status.join(','));
-      formData.append('search', debouncedSearchTerm || '');
+      formData.append('search', searchTerm || '');
       formData.append('post_type_filter', selectedPostType || '');
       formData.append('status_filter', selectedStatus || '');
       formData.append('taxonomy_filters', JSON.stringify(selectedTaxonomies));
@@ -117,16 +107,40 @@ const RelationshipField = ({
     }
   };
 
-  // Load posts on mount and when filters change
+  // Load posts only once on mount
   useEffect(() => {
-    // Only fetch posts if we have the necessary configuration
+    // Only fetch posts once on mount if we have the necessary configuration
     if (window.cccData && window.cccData.ajaxUrl && (window.getNonce || window.cccData?.nonce)) {
       fetchPosts();
     } else {
       console.warn('RelationshipField: Cannot fetch posts - missing AJAX configuration');
       setError('AJAX configuration not available');
     }
-  }, [debouncedSearchTerm, selectedPostType, selectedStatus, selectedTaxonomies, localValue, post_types, post_status]);
+  }, []); // Empty dependency array - only run once on mount
+
+  // Manual trigger functions for filter changes
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    // Debounce the search
+    setTimeout(() => {
+      fetchPosts();
+    }, 300);
+  };
+
+  const handlePostTypeChange = (value) => {
+    setSelectedPostType(value);
+    fetchPosts();
+  };
+
+  const handleStatusChange = (value) => {
+    setSelectedStatus(value);
+    fetchPosts();
+  };
+
+  const handleTaxonomyChange = (value) => {
+    setSelectedTaxonomies(value);
+    fetchPosts();
+  };
 
   // Handle adding a post
   const handleAddPost = (post) => {
@@ -197,20 +211,6 @@ const RelationshipField = ({
     return labels[postType] || postType.charAt(0).toUpperCase() + postType.slice(1);
   };
 
-  // Handle filter changes
-  const handleFilterChange = (filterType, value) => {
-    switch (filterType) {
-      case 'post_type':
-        setSelectedPostType(value);
-        break;
-      case 'status':
-        setSelectedStatus(value);
-        break;
-      case 'taxonomy':
-        setSelectedTaxonomies(value);
-        break;
-    }
-  };
 
   // Get available post types for filter
   const getAvailablePostTypes = () => {
@@ -308,14 +308,24 @@ const RelationshipField = ({
       <div className="ccc-available-posts">
         <div className="ccc-available-header">
           <h4>Available Posts</h4>
-          <button
-            type="button"
-            onClick={() => setShowFilters(!showFilters)}
-            className={`ccc-filter-toggle ${showFilters ? 'active' : ''}`}
-          >
-            <Filter className="ccc-icon" />
-            Filters
-          </button>
+          <div className="ccc-header-actions">
+            <button
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`ccc-filter-toggle ${showFilters ? 'active' : ''}`}
+            >
+              <Filter className="ccc-icon" />
+              Filters
+            </button>
+            <button
+              type="button"
+              onClick={fetchPosts}
+              className="ccc-refresh-btn"
+              title="Refresh posts"
+            >
+              <Search className="ccc-icon" />
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -328,7 +338,7 @@ const RelationshipField = ({
                   type="text"
                   placeholder="Search posts..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="ccc-search-input"
                 />
               </div>
@@ -339,7 +349,7 @@ const RelationshipField = ({
                 <FileText className="ccc-icon" />
                 <select
                   value={selectedPostType}
-                  onChange={(e) => handleFilterChange('post_type', e.target.value)}
+                  onChange={(e) => handlePostTypeChange(e.target.value)}
                   className="ccc-filter-select"
                 >
                   <option value="">All Post Types</option>
@@ -503,6 +513,11 @@ const RelationshipField = ({
           border-radius: 8px 8px 0 0;
         }
 
+        .ccc-header-actions {
+          display: flex;
+          gap: 8px;
+        }
+
         .ccc-selected-header h4,
         .ccc-available-header h4 {
           margin: 0;
@@ -541,6 +556,23 @@ const RelationshipField = ({
           background: #3b82f6;
           color: white;
           border-color: #3b82f6;
+        }
+
+        .ccc-refresh-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 12px;
+          background: #ffffff;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.2s;
+        }
+
+        .ccc-refresh-btn:hover {
+          background: #f3f4f6;
         }
 
         .ccc-no-selection,
