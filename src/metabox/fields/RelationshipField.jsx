@@ -118,13 +118,31 @@ const RelationshipField = ({
     }
   }, []); // Empty dependency array - only run once on mount
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Debounce timer ref
+  const searchTimeoutRef = useRef(null);
+
   // Manual trigger functions for filter changes
   const handleSearchChange = (value) => {
     setSearchTerm(value);
-    // Debounce the search
-    setTimeout(() => {
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Set new timeout for debounced search
+    searchTimeoutRef.current = setTimeout(() => {
       fetchPosts();
-    }, 300);
+    }, 500); // 500ms debounce for better UX
   };
 
   const handlePostTypeChange = (value) => {
@@ -242,216 +260,224 @@ const RelationshipField = ({
         </label>
       )}
 
-      {/* Selected Posts */}
-      <div className="ccc-selected-posts">
-        <div className="ccc-selected-header">
-          <h4>Selected Posts ({selectedPosts.length})</h4>
-          {min_posts > 0 && (
-            <span className="ccc-min-posts">
-              Minimum: {min_posts}
-            </span>
-          )}
-          {max_posts > 0 && (
-            <span className="ccc-max-posts">
-              Maximum: {max_posts}
-            </span>
-          )}
+      {/* Two Column Layout */}
+      <div className="ccc-relationship-columns">
+        {/* Left Column - Selected Posts */}
+        <div className="ccc-column ccc-selected-column">
+          <div className="ccc-selected-posts">
+            <div className="ccc-selected-header">
+              <h4>Selected Posts ({selectedPosts.length})</h4>
+              {min_posts > 0 && (
+                <span className="ccc-min-posts">
+                  Min: {min_posts}
+                </span>
+              )}
+              {max_posts > 0 && (
+                <span className="ccc-max-posts">
+                  Max: {max_posts}
+                </span>
+              )}
+            </div>
+
+            {selectedPosts.length === 0 ? (
+              <div className="ccc-no-selection">
+                <FileText className="ccc-icon" />
+                <p>No posts selected</p>
+                <small>Select posts from the right panel</small>
+              </div>
+            ) : (
+              <div className="ccc-selected-list">
+                {selectedPosts.map((post) => (
+                  <div key={post.ID} className="ccc-selected-item">
+                    <div className="ccc-post-info">
+                      {post.featured_image && (
+                        <img 
+                          src={post.featured_image} 
+                          alt={post.post_title}
+                          className="ccc-post-thumbnail"
+                        />
+                      )}
+                      <div className="ccc-post-details">
+                        <h5 className="ccc-post-title">{post.post_title}</h5>
+                        <div className="ccc-post-meta">
+                          <span className="ccc-post-type">
+                            {getPostTypeLabel(post.post_type)}
+                          </span>
+                          <span className="ccc-post-status">
+                            {post.post_status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePost(post.ID)}
+                      className="ccc-remove-btn"
+                      title="Remove post"
+                    >
+                      <X className="ccc-icon" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {selectedPosts.length === 0 ? (
-          <div className="ccc-no-selection">
-            <FileText className="ccc-icon" />
-            <p>No posts selected</p>
-          </div>
-        ) : (
-          <div className="ccc-selected-list">
-            {selectedPosts.map((post) => (
-              <div key={post.ID} className="ccc-selected-item">
-                <div className="ccc-post-info">
-                  {post.featured_image && (
-                    <img 
-                      src={post.featured_image} 
-                      alt={post.post_title}
-                      className="ccc-post-thumbnail"
-                    />
-                  )}
-                  <div className="ccc-post-details">
-                    <h5 className="ccc-post-title">{post.post_title}</h5>
-                    <div className="ccc-post-meta">
-                      <span className="ccc-post-type">
-                        {getPostTypeLabel(post.post_type)}
-                      </span>
-                      <span className="ccc-post-status">
-                        {post.post_status}
-                      </span>
-                      <span className="ccc-post-date">
-                        {new Date(post.post_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+        {/* Right Column - Available Posts */}
+        <div className="ccc-column ccc-available-column">
+          <div className="ccc-available-posts">
+            <div className="ccc-available-header">
+              <h4>Available Posts</h4>
+              <div className="ccc-header-actions">
                 <button
                   type="button"
-                  onClick={() => handleRemovePost(post.ID)}
-                  className="ccc-remove-btn"
-                  title="Remove post"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`ccc-filter-toggle ${showFilters ? 'active' : ''}`}
                 >
-                  <X className="ccc-icon" />
+                  <Filter className="ccc-icon" />
+                  Filters
+                </button>
+                <button
+                  type="button"
+                  onClick={fetchPosts}
+                  className="ccc-refresh-btn"
+                  title="Refresh posts"
+                >
+                  <Search className="ccc-icon" />
                 </button>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Available Posts */}
-      <div className="ccc-available-posts">
-        <div className="ccc-available-header">
-          <h4>Available Posts</h4>
-          <div className="ccc-header-actions">
-            <button
-              type="button"
-              onClick={() => setShowFilters(!showFilters)}
-              className={`ccc-filter-toggle ${showFilters ? 'active' : ''}`}
-            >
-              <Filter className="ccc-icon" />
-              Filters
-            </button>
-            <button
-              type="button"
-              onClick={fetchPosts}
-              className="ccc-refresh-btn"
-              title="Refresh posts"
-            >
-              <Search className="ccc-icon" />
-            </button>
-          </div>
-        </div>
-
-        {/* Filters */}
-        {showFilters && filters.length > 0 && (
-          <div className="ccc-filters">
-            {filters.includes('search') && (
-              <div className="ccc-filter-group">
-                <Search className="ccc-icon" />
-                <input
-                  type="text"
-                  placeholder="Search posts..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className="ccc-search-input"
-                />
-              </div>
-            )}
-
-            {filters.includes('post_type') && (
-              <div className="ccc-filter-group">
-                <FileText className="ccc-icon" />
-                <select
-                  value={selectedPostType}
-                  onChange={(e) => handlePostTypeChange(e.target.value)}
-                  className="ccc-filter-select"
-                >
-                  <option value="">All Post Types</option>
-                  {getAvailablePostTypes().map(type => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {filters.includes('taxonomy') && taxonomy_filters.length > 0 && (
-              <div className="ccc-filter-group">
-                <Tag className="ccc-icon" />
-                <select
-                  className="ccc-filter-select"
-                  onChange={(e) => {
-                    const taxonomy = e.target.value;
-                    if (taxonomy) {
-                      // Handle taxonomy filtering
-                      setSelectedTaxonomies(prev => ({
-                        ...prev,
-                        [taxonomy]: []
-                      }));
-                    }
-                  }}
-                >
-                  <option value="">All Taxonomies</option>
-                  {taxonomy_filters.map(filter => (
-                    <option key={filter.taxonomy} value={filter.taxonomy}>
-                      {filter.taxonomy}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Posts List */}
-        <div className="ccc-posts-container">
-          {isLoading ? (
-            <div className="ccc-loading">
-              <div className="ccc-spinner"></div>
-              <p>Loading posts...</p>
             </div>
-          ) : error ? (
-            <div className="ccc-error">
-              <p>{error}</p>
-            </div>
-          ) : availablePosts.length === 0 ? (
-            <div className="ccc-no-posts">
-              <FileText className="ccc-icon" />
-              <p>No posts found</p>
-            </div>
-          ) : (
-            <div className="ccc-posts-list">
-              {Object.entries(groupedPosts).map(([postType, posts]) => (
-                <div key={postType} className="ccc-post-group">
-                  <div className="ccc-group-header">
-                    <h5>{getPostTypeLabel(postType)} ({posts.length})</h5>
+
+            {/* Filters */}
+            {showFilters && filters.length > 0 && (
+              <div className="ccc-filters">
+                {filters.includes('search') && (
+                  <div className="ccc-filter-group">
+                    <Search className="ccc-icon" />
+                    <input
+                      type="text"
+                      placeholder="Search posts..."
+                      value={searchTerm}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="ccc-search-input"
+                    />
                   </div>
-                  <div className="ccc-group-posts">
-                    {posts.map((post) => (
-                      <div key={post.ID} className="ccc-post-item">
-                        <div className="ccc-post-content">
-                          {post.featured_image && (
-                            <img 
-                              src={post.featured_image} 
-                              alt={post.post_title}
-                              className="ccc-post-thumbnail"
-                            />
-                          )}
-                          <div className="ccc-post-details">
-                            <h6 className="ccc-post-title">{post.post_title}</h6>
-                            <div className="ccc-post-meta">
-                              <span className="ccc-post-status">
-                                {post.post_status}
-                              </span>
-                              <span className="ccc-post-date">
-                                {new Date(post.post_date).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleAddPost(post)}
-                          className="ccc-add-btn"
-                          disabled={max_posts > 0 && localValue.length >= max_posts}
-                          title="Add post"
-                        >
-                          <Plus className="ccc-icon" />
-                        </button>
-                      </div>
-                    ))}
+                )}
+
+                {filters.includes('post_type') && (
+                  <div className="ccc-filter-group">
+                    <FileText className="ccc-icon" />
+                    <select
+                      value={selectedPostType}
+                      onChange={(e) => handlePostTypeChange(e.target.value)}
+                      className="ccc-filter-select"
+                    >
+                      <option value="">All Post Types</option>
+                      {getAvailablePostTypes().map(type => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                )}
+
+                {filters.includes('taxonomy') && taxonomy_filters.length > 0 && (
+                  <div className="ccc-filter-group">
+                    <Tag className="ccc-icon" />
+                    <select
+                      className="ccc-filter-select"
+                      onChange={(e) => {
+                        const taxonomy = e.target.value;
+                        if (taxonomy) {
+                          handleTaxonomyChange({ [taxonomy]: [] });
+                        }
+                      }}
+                    >
+                      <option value="">All Taxonomies</option>
+                      {taxonomy_filters.map(filter => (
+                        <option key={filter.taxonomy} value={filter.taxonomy}>
+                          {filter.taxonomy}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Posts List */}
+            <div className="ccc-posts-container">
+              {isLoading ? (
+                <div className="ccc-loading">
+                  <div className="ccc-spinner"></div>
+                  <p>Loading posts...</p>
                 </div>
-              ))}
+              ) : error ? (
+                <div className="ccc-error">
+                  <p>{error}</p>
+                  <button onClick={fetchPosts} className="ccc-retry-btn">
+                    Retry
+                  </button>
+                </div>
+              ) : availablePosts.length === 0 ? (
+                <div className="ccc-no-posts">
+                  <FileText className="ccc-icon" />
+                  <p>No posts found</p>
+                  <small>Try adjusting your filters or search terms</small>
+                  <button onClick={fetchPosts} className="ccc-retry-btn">
+                    Refresh
+                  </button>
+                </div>
+              ) : (
+                <div className="ccc-posts-list">
+                  {Object.entries(groupedPosts).map(([postType, posts]) => (
+                    <div key={postType} className="ccc-post-group">
+                      <div className="ccc-group-header">
+                        <h5>{getPostTypeLabel(postType)} ({posts.length})</h5>
+                      </div>
+                      <div className="ccc-group-posts">
+                        {posts.map((post) => (
+                          <div key={post.ID} className="ccc-post-item">
+                            <div className="ccc-post-content">
+                              {post.featured_image && (
+                                <img 
+                                  src={post.featured_image} 
+                                  alt={post.post_title}
+                                  className="ccc-post-thumbnail"
+                                />
+                              )}
+                              <div className="ccc-post-details">
+                                <h6 className="ccc-post-title">{post.post_title}</h6>
+                                <div className="ccc-post-meta">
+                                  <span className="ccc-post-status">
+                                    {post.post_status}
+                                  </span>
+                                  <span className="ccc-post-date">
+                                    {new Date(post.post_date).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleAddPost(post)}
+                              className="ccc-add-btn"
+                              disabled={max_posts > 0 && localValue.length >= max_posts}
+                              title={max_posts > 0 && localValue.length >= max_posts ? `Maximum ${max_posts} posts allowed` : "Add post"}
+                            >
+                              <Plus className="ccc-icon" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -479,7 +505,7 @@ const RelationshipField = ({
         .ccc-relationship-field {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 16px;
           max-width: 100%;
         }
 
@@ -488,6 +514,7 @@ const RelationshipField = ({
           color: #1f2937;
           margin-bottom: 8px;
           display: block;
+          font-size: 14px;
         }
 
         .ccc-required {
@@ -495,14 +522,54 @@ const RelationshipField = ({
           margin-left: 4px;
         }
 
-        .ccc-selected-posts,
-        .ccc-available-posts {
-          border: 1px solid #d1d5db;
-          border-radius: 8px;
-          background: #ffffff;
+        /* Two Column Layout */
+        .ccc-relationship-columns {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          min-height: 500px;
         }
 
-        .ccc-selected-header,
+        .ccc-column {
+          display: flex;
+          flex-direction: column;
+          min-height: 500px;
+        }
+
+        .ccc-selected-column {
+          background: #f8fafc;
+          border-radius: 8px;
+          padding: 16px;
+        }
+
+        .ccc-available-column {
+          background: #ffffff;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+
+        .ccc-selected-posts {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .ccc-available-posts {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .ccc-selected-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid #e5e7eb;
+        }
+
         .ccc-available-header {
           display: flex;
           justify-content: space-between;
@@ -510,7 +577,6 @@ const RelationshipField = ({
           padding: 16px;
           border-bottom: 1px solid #e5e7eb;
           background: #f9fafb;
-          border-radius: 8px 8px 0 0;
         }
 
         .ccc-header-actions {
@@ -575,6 +641,22 @@ const RelationshipField = ({
           background: #f3f4f6;
         }
 
+        .ccc-retry-btn {
+          margin-top: 12px;
+          padding: 8px 16px;
+          background: #3b82f6;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: background 0.2s;
+        }
+
+        .ccc-retry-btn:hover {
+          background: #2563eb;
+        }
+
         .ccc-no-selection,
         .ccc-no-posts {
           display: flex;
@@ -583,6 +665,8 @@ const RelationshipField = ({
           justify-content: center;
           padding: 40px 20px;
           color: #6b7280;
+          text-align: center;
+          flex: 1;
         }
 
         .ccc-no-selection .ccc-icon,
@@ -591,6 +675,13 @@ const RelationshipField = ({
           height: 48px;
           margin-bottom: 12px;
           opacity: 0.5;
+        }
+
+        .ccc-no-selection small,
+        .ccc-no-posts small {
+          margin-top: 8px;
+          font-size: 12px;
+          color: #9ca3af;
         }
 
         .ccc-filters {
@@ -839,6 +930,37 @@ const RelationshipField = ({
           background: #fffbeb;
           border-color: #fed7aa;
           color: #d97706;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+          .ccc-relationship-columns {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          
+          .ccc-column {
+            min-height: 300px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .ccc-relationship-columns {
+            gap: 12px;
+          }
+          
+          .ccc-selected-column {
+            padding: 12px;
+          }
+          
+          .ccc-filters {
+            flex-direction: column;
+            gap: 12px;
+          }
+          
+          .ccc-filter-group {
+            min-width: auto;
+          }
         }
       `}</style>
     </div>
