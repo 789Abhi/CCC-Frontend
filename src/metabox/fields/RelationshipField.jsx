@@ -146,15 +146,15 @@ const RelationshipField = ({
         const posts = data.data || [];
         setAvailablePosts(posts);
         
-        // Update all available post types when fetching all posts (no specific filter)
-        if (!postType && !status && Object.keys(taxonomies).length === 0) {
+        // Only update cache and post types when fetching all posts (no specific filter)
+        if (!postType && !status && Object.keys(taxonomies).length === 0 && !searchTerm) {
           const postTypes = [...new Set(posts.map(p => p.post_type))].filter(type => type !== 'attachment');
           setAllAvailablePostTypes(postTypes);
           setAllPostsCache(posts); // Cache all posts for selected items
           console.log('RelationshipField: Updated all available post types:', postTypes);
           console.log('RelationshipField: Cached all posts for selected items:', posts.length, 'posts');
         } else {
-          console.log('RelationshipField: Not caching posts due to filters - postType:', postType, 'status:', status, 'taxonomies:', Object.keys(taxonomies).length);
+          console.log('RelationshipField: Not updating cache due to filters - postType:', postType, 'status:', status, 'taxonomies:', Object.keys(taxonomies).length, 'searchTerm:', searchTerm);
         }
       } else {
         setError(data.data || 'Failed to fetch posts');
@@ -330,6 +330,8 @@ const RelationshipField = ({
         console.log(`RelationshipField: Post ${postId} not found in availablePosts, checking cache:`, post ? 'Found' : 'Not found');
         if (post) {
           console.log('RelationshipField: Found post in cache:', post.post_title);
+        } else {
+          console.log('RelationshipField: Cache contains post IDs:', allPostsCache.map(p => p.ID));
         }
       }
       if (!post) {
