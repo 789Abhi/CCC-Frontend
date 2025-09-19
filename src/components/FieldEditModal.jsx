@@ -120,6 +120,27 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   const [availablePostTypes, setAvailablePostTypes] = useState([]);
   const [availableTaxonomies, setAvailableTaxonomies] = useState([]);
 
+  // Dropdown visibility states for relationship field
+  const [showPostTypesDropdown, setShowPostTypesDropdown] = useState(false);
+  const [showPostStatusDropdown, setShowPostStatusDropdown] = useState(false);
+  const [showTaxonomyDropdown, setShowTaxonomyDropdown] = useState(false);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.dropdown-container')) {
+        setShowPostTypesDropdown(false);
+        setShowPostStatusDropdown(false);
+        setShowTaxonomyDropdown(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
   const isEditing = !!field
 
   // Add the missing generateHandle function
@@ -1979,23 +2000,55 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
                 {/* Filter by Post Type */}
                 <div className="space-y-2">
-                  <label htmlFor="postTypesFilter" className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700">
                     Filter by Post Type
                   </label>
-                  <input
-                    id="postTypesFilter"
-                    type="text"
-                    value={relationshipConfig.post_types?.join(', ') || ''}
-                    onChange={(e) => {
-                      const types = e.target.value.split(',').map(type => type.trim()).filter(type => type);
-                      setRelationshipConfig({
-                        ...relationshipConfig,
-                        post_types: types
-                      });
-                    }}
-                    placeholder="All post types"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="relative dropdown-container">
+                    <div 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md cursor-pointer bg-white flex items-center justify-between"
+                      onClick={() => setShowPostTypesDropdown(!showPostTypesDropdown)}
+                    >
+                      <span className={relationshipConfig.post_types?.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                        {relationshipConfig.post_types?.length > 0 
+                          ? `${relationshipConfig.post_types.length} post type(s) selected`
+                          : 'All post types'
+                        }
+                      </span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${showPostTypesDropdown ? 'rotate-180' : ''}`} />
+                    </div>
+                    {showPostTypesDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {[
+                          { value: 'post', label: 'Posts' },
+                          { value: 'page', label: 'Pages' },
+                          { value: 'product', label: 'Products' },
+                          { value: 'event', label: 'Events' }
+                        ].map((postType) => (
+                          <label key={postType.value} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={relationshipConfig.post_types?.includes(postType.value) || false}
+                              onChange={(e) => {
+                                const currentTypes = relationshipConfig.post_types || [];
+                                let newTypes;
+                                if (e.target.checked) {
+                                  newTypes = [...currentTypes, postType.value];
+                                } else {
+                                  newTypes = currentTypes.filter(type => type !== postType.value);
+                                }
+                                setRelationshipConfig({
+                                  ...relationshipConfig,
+                                  post_types: newTypes
+                                });
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                            />
+                            <span className="text-sm text-gray-700">{postType.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500">
                     Filters the selectable results by post type. When left empty, all post types are shown. Results are grouped by post type, so selected post types may be positioned in a specific order.
                   </p>
@@ -2004,23 +2057,57 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
                 {/* Filter by Post Status */}
                 <div className="space-y-2">
-                  <label htmlFor="postStatusFilter" className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700">
                     Filter by Post Status
                   </label>
-                  <input
-                    id="postStatusFilter"
-                    type="text"
-                    value={relationshipConfig.post_status?.join(', ') || ''}
-                    onChange={(e) => {
-                      const statuses = e.target.value.split(',').map(status => status.trim()).filter(status => status);
-                      setRelationshipConfig({
-                        ...relationshipConfig,
-                        post_status: statuses
-                      });
-                    }}
-                    placeholder="Any post status"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="relative dropdown-container">
+                    <div 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md cursor-pointer bg-white flex items-center justify-between"
+                      onClick={() => setShowPostStatusDropdown(!showPostStatusDropdown)}
+                    >
+                      <span className={relationshipConfig.post_status?.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                        {relationshipConfig.post_status?.length > 0 
+                          ? `${relationshipConfig.post_status.length} status(es) selected`
+                          : 'Any post status'
+                        }
+                      </span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${showPostStatusDropdown ? 'rotate-180' : ''}`} />
+                    </div>
+                    {showPostStatusDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {[
+                          { value: 'publish', label: 'Published' },
+                          { value: 'draft', label: 'Draft' },
+                          { value: 'pending', label: 'Pending' },
+                          { value: 'private', label: 'Private' },
+                          { value: 'future', label: 'Scheduled' },
+                          { value: 'trash', label: 'Trash' }
+                        ].map((status) => (
+                          <label key={status.value} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={relationshipConfig.post_status?.includes(status.value) || false}
+                              onChange={(e) => {
+                                const currentStatuses = relationshipConfig.post_status || [];
+                                let newStatuses;
+                                if (e.target.checked) {
+                                  newStatuses = [...currentStatuses, status.value];
+                                } else {
+                                  newStatuses = currentStatuses.filter(s => s !== status.value);
+                                }
+                                setRelationshipConfig({
+                                  ...relationshipConfig,
+                                  post_status: newStatuses
+                                });
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                            />
+                            <span className="text-sm text-gray-700">{status.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500">
                     Filters the selectable results by status, i.e, Published, Draft, etc. Shows posts of every status if left empty.
                   </p>
@@ -2028,24 +2115,57 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
                 {/* Filter by Taxonomy */}
                 <div className="space-y-2">
-                  <label htmlFor="taxonomyFilter" className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700">
                     Filter by Taxonomy
                   </label>
-                  <input
-                    id="taxonomyFilter"
-                    type="text"
-                    value={relationshipConfig.taxonomy_filters?.map(t => t.taxonomy).join(', ') || ''}
-                    onChange={(e) => {
-                      const taxonomies = e.target.value.split(',').map(t => t.trim()).filter(t => t);
-                      const taxonomyFilters = taxonomies.map(taxonomy => ({ taxonomy, terms: [] }));
-                      setRelationshipConfig({
-                        ...relationshipConfig,
-                        taxonomy_filters: taxonomyFilters
-                      });
-                    }}
-                    placeholder="All taxonomies"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="relative dropdown-container">
+                    <div 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md cursor-pointer bg-white flex items-center justify-between"
+                      onClick={() => setShowTaxonomyDropdown(!showTaxonomyDropdown)}
+                    >
+                      <span className={relationshipConfig.taxonomy_filters?.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                        {relationshipConfig.taxonomy_filters?.length > 0 
+                          ? `${relationshipConfig.taxonomy_filters.length} taxonomy(ies) selected`
+                          : 'All taxonomies'
+                        }
+                      </span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${showTaxonomyDropdown ? 'rotate-180' : ''}`} />
+                    </div>
+                    {showTaxonomyDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {[
+                          { value: 'category', label: 'Categories' },
+                          { value: 'post_tag', label: 'Tags' },
+                          { value: 'product_cat', label: 'Product Categories' },
+                          { value: 'product_tag', label: 'Product Tags' },
+                          { value: 'event_category', label: 'Event Categories' },
+                          { value: 'event_tag', label: 'Event Tags' }
+                        ].map((taxonomy) => (
+                          <label key={taxonomy.value} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={relationshipConfig.taxonomy_filters?.some(t => t.taxonomy === taxonomy.value) || false}
+                              onChange={(e) => {
+                                const currentFilters = relationshipConfig.taxonomy_filters || [];
+                                let newFilters;
+                                if (e.target.checked) {
+                                  newFilters = [...currentFilters, { taxonomy: taxonomy.value, terms: [] }];
+                                } else {
+                                  newFilters = currentFilters.filter(f => f.taxonomy !== taxonomy.value);
+                                }
+                                setRelationshipConfig({
+                                  ...relationshipConfig,
+                                  taxonomy_filters: newFilters
+                                });
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                            />
+                            <span className="text-sm text-gray-700">{taxonomy.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500">
                     Filters the selectable results via one or more taxonomy terms.
                   </p>
