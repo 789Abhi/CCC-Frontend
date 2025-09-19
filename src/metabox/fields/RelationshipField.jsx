@@ -11,9 +11,9 @@ const RelationshipField = ({
   onChange 
 }) => {
   const {
-    post_types = [],
-    post_status = [],
-    taxonomy_filters = [],
+    filter_post_types = [],
+    filter_post_status = [],
+    filter_taxonomy = '',
     filters = ['search'],
     min_posts = 0,
     max_posts = 0,
@@ -79,14 +79,14 @@ const RelationshipField = ({
       formData.append('nonce', window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''));
       
       // Add filters from fieldConfig
-      if (post_types.length > 0) {
-        formData.append('post_types', JSON.stringify(post_types));
+      if (filter_post_types.length > 0) {
+        formData.append('post_types', JSON.stringify(filter_post_types));
       }
-      if (post_status.length > 0) {
-        formData.append('post_status', JSON.stringify(post_status));
+      if (filter_post_status.length > 0) {
+        formData.append('post_status', JSON.stringify(filter_post_status));
       }
-      if (taxonomy_filters.length > 0) {
-        formData.append('taxonomy_filters', JSON.stringify(taxonomy_filters));
+      if (filter_taxonomy) {
+        formData.append('taxonomy_filters', JSON.stringify([{ taxonomy: filter_taxonomy, terms: [] }]));
       }
       
       // Add current filter values
@@ -137,8 +137,9 @@ const RelationshipField = ({
     // Only fetch posts once on mount if we have the necessary configuration
     if (window.cccData && window.cccData.ajaxUrl && (window.getNonce || window.cccData?.nonce)) {
       fetchPosts();
-      // Fetch initial taxonomies (all taxonomies since no post type is selected initially)
-      fetchTaxonomiesForPostType('all');
+      // Fetch initial taxonomies based on configured post types
+      const postTypesToUse = filter_post_types.length > 0 ? filter_post_types.join(',') : 'all';
+      fetchTaxonomiesForPostType(postTypesToUse);
     } else {
       console.warn('RelationshipField: Cannot fetch posts - missing AJAX configuration');
       setError('AJAX configuration not available');
@@ -166,8 +167,9 @@ const RelationshipField = ({
 
   const handlePostTypeChange = (value) => {
     setSelectedPostType(value);
-    // Fetch taxonomies for the selected post type
-    fetchTaxonomiesForPostType(value);
+    // Fetch taxonomies for the selected post type (but respect configured post types)
+    const postTypesToUse = filter_post_types.length > 0 ? filter_post_types.join(',') : value;
+    fetchTaxonomiesForPostType(postTypesToUse);
     // Clear selected taxonomies when post type changes
     setSelectedTaxonomies({});
     fetchPosts();
@@ -194,7 +196,10 @@ const RelationshipField = ({
       const formData = new FormData();
       formData.append('action', 'ccc_get_taxonomies_for_post_type');
       formData.append('nonce', window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''));
-      formData.append('post_type', postType || 'all');
+      
+      // Use configured post types if available, otherwise use the passed postType
+      const postTypesToUse = filter_post_types.length > 0 ? filter_post_types.join(',') : (postType || 'all');
+      formData.append('post_type', postTypesToUse);
       
       const response = await fetch(window.cccData?.ajaxUrl || window.ajaxurl, {
         method: 'POST',
@@ -297,6 +302,15 @@ const RelationshipField = ({
 
   // Get available post types for filter
   const getAvailablePostTypes = () => {
+    // If post types are configured, only show those types
+    if (filter_post_types.length > 0) {
+      return filter_post_types.map(type => ({
+        value: type,
+        label: getPostTypeLabel(type)
+      }));
+    }
+    
+    // Otherwise, show all available post types from the fetched posts
     const types = [...new Set(availablePosts.map(p => p.post_type))];
     return types.map(type => ({
       value: type,
@@ -306,6 +320,15 @@ const RelationshipField = ({
 
   // Get available statuses for filter
   const getAvailableStatuses = () => {
+    // If post statuses are configured, only show those statuses
+    if (filter_post_status.length > 0) {
+      return filter_post_status.map(status => ({
+        value: status,
+        label: status.charAt(0).toUpperCase() + status.slice(1)
+      }));
+    }
+    
+    // Otherwise, show all available statuses from the fetched posts
     const statuses = [...new Set(availablePosts.map(p => p.post_status))];
     return statuses.map(status => ({
       value: status,
@@ -384,6 +407,24 @@ const RelationshipField = ({
                       {getAvailablePostTypes().map(type => (
                         <option key={type.value} value={type.value}>
                           {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {filters.includes('status') && (
+                  <div className="ccc-filter-group">
+                    <Calendar className="ccc-icon" />
+                    <select
+                      value={selectedStatus}
+                      onChange={(e) => handleStatusChange(e.target.value)}
+                      className="ccc-filter-select"
+                    >
+                      <option value="">All Statuses</option>
+                      {getAvailableStatuses().map(status => (
+                        <option key={status.value} value={status.value}>
+                          {status.label}
                         </option>
                       ))}
                     </select>
