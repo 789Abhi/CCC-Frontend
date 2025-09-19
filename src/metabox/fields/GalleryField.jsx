@@ -28,6 +28,18 @@ const GalleryField = ({
   useEffect(() => {
     if (Array.isArray(value)) {
       setLocalValue(value);
+    } else if (typeof value === 'string' && value) {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          setLocalValue(parsed);
+        }
+      } catch (e) {
+        console.error('GalleryField: Failed to parse value:', e);
+        setLocalValue([]);
+      }
+    } else {
+      setLocalValue([]);
     }
   }, [value]);
 
@@ -212,13 +224,23 @@ const GalleryField = ({
                       <div className="ccc-gallery-item-overlay">
                         <button
                           type="button"
-                          onClick={() => handleRemoveImage(typeof image === 'object' ? image.id : image)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveImage(typeof image === 'object' ? image.id : image);
+                          }}
                           className="ccc-gallery-remove-btn"
                           title="Remove from gallery"
                         >
                           <Trash2 className="ccc-icon" />
                         </button>
                       </div>
+                    </div>
+                  )}
+                  
+                  {!show_preview && (
+                    <div className="ccc-gallery-no-preview">
+                      <ImageIcon className="ccc-icon" />
+                      <span>Preview disabled</span>
                     </div>
                   )}
                   
@@ -418,6 +440,25 @@ const galleryFieldStyles = `
     width: 100%;
     height: 100px;
     overflow: hidden;
+  }
+  
+  .ccc-gallery-no-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100px;
+    background-color: #f3f4f6;
+    color: #6b7280;
+    font-size: 12px;
+  }
+  
+  .ccc-gallery-no-preview .ccc-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 4px;
+    color: #9ca3af;
   }
   
   .ccc-gallery-thumbnail {
