@@ -2018,12 +2018,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     </div>
                     {showPostTypesDropdown && (
                       <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                        {[
-                          { value: 'post', label: 'Posts' },
-                          { value: 'page', label: 'Pages' },
-                          { value: 'product', label: 'Products' },
-                          { value: 'event', label: 'Events' }
-                        ].map((postType) => (
+                        {availablePostTypes.length > 0 ? (
+                          availablePostTypes.map((postType) => (
                           <label key={postType.value} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
                             <input
                               type="checkbox"
@@ -2045,7 +2041,10 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                             />
                             <span className="text-sm text-gray-700">{postType.label}</span>
                           </label>
-                        ))}
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-gray-500">Loading post types...</div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2133,14 +2132,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     </div>
                     {showTaxonomyDropdown && (
                       <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                        {[
-                          { value: 'category', label: 'Categories' },
-                          { value: 'post_tag', label: 'Tags' },
-                          { value: 'product_cat', label: 'Product Categories' },
-                          { value: 'product_tag', label: 'Product Tags' },
-                          { value: 'event_category', label: 'Event Categories' },
-                          { value: 'event_tag', label: 'Event Tags' }
-                        ].map((taxonomy) => (
+                        {availableTaxonomies.length > 0 ? (
+                          availableTaxonomies.map((taxonomy) => (
                           <label key={taxonomy.value} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
                             <input
                               type="checkbox"
@@ -2162,7 +2155,10 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                             />
                             <span className="text-sm text-gray-700">{taxonomy.label}</span>
                           </label>
-                        ))}
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-gray-500">Loading taxonomies...</div>
+                        )}
                       </div>
                     )}
                   </div>
