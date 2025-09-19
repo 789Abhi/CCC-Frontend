@@ -2091,70 +2091,116 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   </p>
                 </div>
 
-                {/* Post Types Filter */}
+                {/* Filter by Post Type */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Post Types Filter
+                  <label htmlFor="postTypesFilter" className="block text-sm font-medium text-gray-700">
+                    Filter by Post Type
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {['post', 'page', 'attachment'].map((postType) => (
-                      <label key={postType} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={relationshipConfig.post_types?.includes(postType) || false}
-                          onChange={(e) => {
-                            const currentTypes = relationshipConfig.post_types || [];
-                            let newTypes;
-                            if (e.target.checked) {
-                              newTypes = [...currentTypes, postType];
-                            } else {
-                              newTypes = currentTypes.filter(type => type !== postType);
-                            }
-                            setRelationshipConfig({
-                              ...relationshipConfig,
-                              post_types: newTypes
-                            });
-                          }}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700 capitalize">{postType}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-500">Limit post selection to specific post types (leave empty for all types)</p>
+                  <input
+                    id="postTypesFilter"
+                    type="text"
+                    value={relationshipConfig.post_types?.join(', ') || ''}
+                    onChange={(e) => {
+                      const types = e.target.value.split(',').map(type => type.trim()).filter(type => type);
+                      setRelationshipConfig({
+                        ...relationshipConfig,
+                        post_types: types
+                      });
+                    }}
+                    placeholder="All post types"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Filters the selectable results by post type. When left empty, all post types are shown. Results are grouped by post type, so selected post types may be positioned in a specific order.
+                  </p>
                 </div>
 
-                {/* Post Status Filter */}
+                {/* Filter by Post Status */}
+                <div className="space-y-2">
+                  <label htmlFor="postStatusFilter" className="block text-sm font-medium text-gray-700">
+                    Filter by Post Status
+                  </label>
+                  <input
+                    id="postStatusFilter"
+                    type="text"
+                    value={relationshipConfig.post_status?.join(', ') || ''}
+                    onChange={(e) => {
+                      const statuses = e.target.value.split(',').map(status => status.trim()).filter(status => status);
+                      setRelationshipConfig({
+                        ...relationshipConfig,
+                        post_status: statuses
+                      });
+                    }}
+                    placeholder="Any post status"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Filters the selectable results by status, i.e, Published, Draft, etc. Shows posts of every status if left empty.
+                  </p>
+                </div>
+
+                {/* Filter by Taxonomy */}
+                <div className="space-y-2">
+                  <label htmlFor="taxonomyFilter" className="block text-sm font-medium text-gray-700">
+                    Filter by Taxonomy
+                  </label>
+                  <input
+                    id="taxonomyFilter"
+                    type="text"
+                    value={relationshipConfig.taxonomy_filters?.map(t => t.taxonomy).join(', ') || ''}
+                    onChange={(e) => {
+                      const taxonomies = e.target.value.split(',').map(t => t.trim()).filter(t => t);
+                      const taxonomyFilters = taxonomies.map(taxonomy => ({ taxonomy, terms: [] }));
+                      setRelationshipConfig({
+                        ...relationshipConfig,
+                        taxonomy_filters: taxonomyFilters
+                      });
+                    }}
+                    placeholder="All taxonomies"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Filters the selectable results via one or more taxonomy terms.
+                  </p>
+                </div>
+
+                {/* Filters */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Post Status Filter
+                    Filters
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {['publish', 'draft', 'pending', 'private'].map((status) => (
-                      <label key={status} className="flex items-center space-x-2">
+                  <div className="space-y-2">
+                    {[
+                      { key: 'search', label: 'Search' },
+                      { key: 'post_type', label: 'Post Type' },
+                      { key: 'taxonomy', label: 'Taxonomy' }
+                    ].map((filter) => (
+                      <label key={filter.key} className="flex items-center space-x-2">
                         <input
                           type="checkbox"
-                          checked={relationshipConfig.post_status?.includes(status) || false}
+                          checked={relationshipConfig.filters?.includes(filter.key) || false}
                           onChange={(e) => {
-                            const currentStatuses = relationshipConfig.post_status || [];
-                            let newStatuses;
+                            const currentFilters = relationshipConfig.filters || [];
+                            let newFilters;
                             if (e.target.checked) {
-                              newStatuses = [...currentStatuses, status];
+                              newFilters = [...currentFilters, filter.key];
                             } else {
-                              newStatuses = currentStatuses.filter(s => s !== status);
+                              newFilters = currentFilters.filter(f => f !== filter.key);
                             }
                             setRelationshipConfig({
                               ...relationshipConfig,
-                              post_status: newStatuses
+                              filters: newFilters
                             });
                           }}
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-gray-700 capitalize">{status}</span>
+                        <span className="text-sm text-gray-700">{filter.label}</span>
                       </label>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-500">Limit post selection to specific post statuses (leave empty for all statuses)</p>
+                  <p className="text-xs text-gray-500">
+                    Specifies which filters are displayed in the component. Select from "Search", "Post Type", and/or "Taxonomy".
+                  </p>
                 </div>
 
                 {/* Max Posts */}

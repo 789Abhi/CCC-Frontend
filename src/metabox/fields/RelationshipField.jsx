@@ -24,6 +24,11 @@ const RelationshipField = ({
   const [localValue, setLocalValue] = useState([]);
   const [availablePosts, setAvailablePosts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPostType, setSelectedPostType] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedTaxonomies, setSelectedTaxonomies] = useState({});
+  const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState('');
 
   const dropdownRef = useRef(null);
@@ -83,6 +88,20 @@ const RelationshipField = ({
         formData.append('taxonomy_filters', JSON.stringify(taxonomy_filters));
       }
       
+      // Add current filter values
+      if (searchTerm) {
+        formData.append('search', searchTerm);
+      }
+      if (selectedPostType) {
+        formData.append('post_type_filter', selectedPostType);
+      }
+      if (selectedStatus) {
+        formData.append('status_filter', selectedStatus);
+      }
+      if (Object.keys(selectedTaxonomies).length > 0) {
+        formData.append('taxonomy_filters', JSON.stringify(selectedTaxonomies));
+      }
+      
       // Exclude already selected posts to prevent duplicate selection
       if (localValue.length > 0) {
         formData.append('exclude', JSON.stringify(localValue));
@@ -134,6 +153,36 @@ const RelationshipField = ({
 
   // Debounce timer ref
   const searchTimeoutRef = useRef(null);
+
+  // Manual trigger functions for filter changes
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Set new timeout for debounced search
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchPosts();
+    }, 500); // 500ms debounce for better UX
+  };
+
+  const handlePostTypeChange = (value) => {
+    setSelectedPostType(value);
+    fetchPosts();
+  };
+
+  const handleStatusChange = (value) => {
+    setSelectedStatus(value);
+    fetchPosts();
+  };
+
+  const handleTaxonomyChange = (value) => {
+    setSelectedTaxonomies(value);
+    fetchPosts();
+  };
 
   // Handle adding a post
   const handleAddPost = (post) => {
@@ -214,6 +263,24 @@ const RelationshipField = ({
     return labels[postType] || postType.charAt(0).toUpperCase() + postType.slice(1);
   };
 
+  // Get available post types for filter
+  const getAvailablePostTypes = () => {
+    const types = [...new Set(availablePosts.map(p => p.post_type))];
+    return types.map(type => ({
+      value: type,
+      label: getPostTypeLabel(type)
+    }));
+  };
+
+  // Get available statuses for filter
+  const getAvailableStatuses = () => {
+    const statuses = [...new Set(availablePosts.map(p => p.post_status))];
+    return statuses.map(status => ({
+      value: status,
+      label: status.charAt(0).toUpperCase() + status.slice(1)
+    }));
+  };
+
 
 
   const selectedPosts = getSelectedPosts();
@@ -236,6 +303,16 @@ const RelationshipField = ({
             <div className="ccc-available-header">
               <h4>Available Posts</h4>
               <div className="ccc-header-actions">
+                {filters.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`ccc-filter-toggle ${showFilters ? 'active' : ''}`}
+                  >
+                    <Filter className="ccc-icon" />
+                    Filters
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={fetchPosts}
@@ -246,6 +323,64 @@ const RelationshipField = ({
                 </button>
               </div>
             </div>
+
+            {/* Filters */}
+            {showFilters && filters.length > 0 && (
+              <div className="ccc-filters">
+                {filters.includes('search') && (
+                  <div className="ccc-filter-group">
+                    <Search className="ccc-icon" />
+                    <input
+                      type="text"
+                      placeholder="Search posts..."
+                      value={searchTerm}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="ccc-search-input"
+                    />
+                  </div>
+                )}
+
+                {filters.includes('post_type') && (
+                  <div className="ccc-filter-group">
+                    <FileText className="ccc-icon" />
+                    <select
+                      value={selectedPostType}
+                      onChange={(e) => handlePostTypeChange(e.target.value)}
+                      className="ccc-filter-select"
+                    >
+                      <option value="">All Post Types</option>
+                      {getAvailablePostTypes().map(type => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {filters.includes('taxonomy') && taxonomy_filters.length > 0 && (
+                  <div className="ccc-filter-group">
+                    <Tag className="ccc-icon" />
+                    <select
+                      className="ccc-filter-select"
+                      onChange={(e) => {
+                        const taxonomy = e.target.value;
+                        if (taxonomy) {
+                          handleTaxonomyChange({ [taxonomy]: [] });
+                        }
+                      }}
+                    >
+                      <option value="">All Taxonomies</option>
+                      {taxonomy_filters.map(filter => (
+                        <option key={filter.taxonomy} value={filter.taxonomy}>
+                          {filter.taxonomy}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Posts List */}
             <div className="ccc-posts-container">
@@ -541,6 +676,62 @@ const RelationshipField = ({
 
         .ccc-refresh-btn:hover {
           background: #f3f4f6;
+        }
+
+        .ccc-filter-toggle {
+          padding: 8px 12px;
+          background: #ffffff;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.2s;
+        }
+
+        .ccc-filter-toggle:hover {
+          background: #f3f4f6;
+        }
+
+        .ccc-filter-toggle.active {
+          background: #3b82f6;
+          color: white;
+          border-color: #3b82f6;
+        }
+
+        .ccc-filters {
+          padding: 16px;
+          border-bottom: 1px solid #e5e7eb;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          background: #f9fafb;
+        }
+
+        .ccc-filter-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 200px;
+        }
+
+        .ccc-search-input {
+          flex: 1;
+          padding: 8px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 14px;
+        }
+
+        .ccc-filter-select {
+          flex: 1;
+          padding: 8px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 14px;
+          background: white;
         }
 
         .ccc-retry-btn {
