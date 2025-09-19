@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronDown, X, Plus, Trash2, Filter, FileText, Calendar, Tag } from 'lucide-react';
+import { Search, ChevronDown, X, Plus, Trash2, Filter, FileText, Calendar, Tag, RefreshCw } from 'lucide-react';
 
 
 const RelationshipField = ({ 
@@ -29,7 +29,7 @@ const RelationshipField = ({
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedTaxonomies, setSelectedTaxonomies] = useState({});
   const [availableTaxonomies, setAvailableTaxonomies] = useState([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [error, setError] = useState('');
 
   const dropdownRef = useRef(null);
@@ -78,29 +78,34 @@ const RelationshipField = ({
       formData.append('action', 'ccc_get_relationship_posts');
       formData.append('nonce', window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''));
       
-      // Add filters from fieldConfig
-      if (filter_post_types.length > 0) {
+      // Add filters from fieldConfig (only if not overridden by current filters)
+      if (selectedPostType) {
+        // If a specific post type is selected in the filter, use only that
+        formData.append('post_types', JSON.stringify([selectedPostType]));
+      } else if (filter_post_types.length > 0) {
+        // Otherwise use configured post types
         formData.append('post_types', JSON.stringify(filter_post_types));
       }
-      if (filter_post_status.length > 0) {
+      
+      if (selectedStatus) {
+        // If a specific status is selected in the filter, use only that
+        formData.append('post_status', JSON.stringify([selectedStatus]));
+      } else if (filter_post_status.length > 0) {
+        // Otherwise use configured post statuses
         formData.append('post_status', JSON.stringify(filter_post_status));
       }
-      if (filter_taxonomy) {
+      
+      if (Object.keys(selectedTaxonomies).length > 0) {
+        // If specific taxonomies are selected in the filter, use those
+        formData.append('taxonomy_filters', JSON.stringify(selectedTaxonomies));
+      } else if (filter_taxonomy) {
+        // Otherwise use configured taxonomy
         formData.append('taxonomy_filters', JSON.stringify([{ taxonomy: filter_taxonomy, terms: [] }]));
       }
       
-      // Add current filter values
+      // Add search term
       if (searchTerm) {
         formData.append('search', searchTerm);
-      }
-      if (selectedPostType) {
-        formData.append('post_type_filter', selectedPostType);
-      }
-      if (selectedStatus) {
-        formData.append('status_filter', selectedStatus);
-      }
-      if (Object.keys(selectedTaxonomies).length > 0) {
-        formData.append('taxonomy_filters', JSON.stringify(selectedTaxonomies));
       }
       
       // Exclude already selected posts to prevent duplicate selection
@@ -221,27 +226,43 @@ const RelationshipField = ({
     }
   };
 
-  // Handle adding a post
-  const handleAddPost = (post) => {
-    const newValue = [...localValue, post.ID];
+  // Handle toggling a post (add if not selected, remove if selected)
+  const handleTogglePost = (post) => {
+    const isSelected = localValue.includes(post.ID);
     
-    // Check max posts limit
-    if (max_posts > 0 && newValue.length > max_posts) {
-      setError(`Maximum ${max_posts} posts allowed`);
-      return;
-    }
+    if (isSelected) {
+      // Remove the post
+      const newValue = localValue.filter(id => id !== post.ID);
+      setLocalValue(newValue);
+      onChange(newValue);
+      setError('');
+      
+      // Refresh available posts to show the removed post again
+      setTimeout(() => {
+        fetchPosts();
+      }, 100);
+    } else {
+      // Add the post
+      const newValue = [...localValue, post.ID];
+      
+      // Check max posts limit
+      if (max_posts > 0 && newValue.length > max_posts) {
+        setError(`Maximum ${max_posts} posts allowed`);
+        return;
+      }
 
-    setLocalValue(newValue);
-    onChange(newValue);
-    setError('');
-    
-    // Refresh available posts to remove the selected one
-    setTimeout(() => {
-      fetchPosts();
-    }, 100);
+      setLocalValue(newValue);
+      onChange(newValue);
+      setError('');
+      
+      // Refresh available posts to remove the selected one
+      setTimeout(() => {
+        fetchPosts();
+      }, 100);
+    }
   };
 
-  // Handle removing a post
+  // Handle removing a post (for the remove button)
   const handleRemovePost = (postId) => {
     const newValue = localValue.filter(id => id !== postId);
     setLocalValue(newValue);
@@ -302,15 +323,7 @@ const RelationshipField = ({
 
   // Get available post types for filter
   const getAvailablePostTypes = () => {
-    // If post types are configured, only show those types
-    if (filter_post_types.length > 0) {
-      return filter_post_types.map(type => ({
-        value: type,
-        label: getPostTypeLabel(type)
-      }));
-    }
-    
-    // Otherwise, show all available post types from the fetched posts
+    // Always show all available post types from the fetched posts for filtering
     const types = [...new Set(availablePosts.map(p => p.post_type))];
     return types.map(type => ({
       value: type,
@@ -320,15 +333,7 @@ const RelationshipField = ({
 
   // Get available statuses for filter
   const getAvailableStatuses = () => {
-    // If post statuses are configured, only show those statuses
-    if (filter_post_status.length > 0) {
-      return filter_post_status.map(status => ({
-        value: status,
-        label: status.charAt(0).toUpperCase() + status.slice(1)
-      }));
-    }
-    
-    // Otherwise, show all available statuses from the fetched posts
+    // Always show all available statuses from the fetched posts for filtering
     const statuses = [...new Set(availablePosts.map(p => p.post_status))];
     return statuses.map(status => ({
       value: status,
@@ -358,14 +363,24 @@ const RelationshipField = ({
             <div className="ccc-available-header">
               <h4>Available Posts</h4>
               <div className="ccc-header-actions">
+                {filters.includes('search') && (
+                  <button
+                    type="button"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`ccc-search-toggle ${showFilters ? 'active' : ''}`}
+                    title="Toggle search"
+                  >
+                    <Search className="ccc-icon" />
+                  </button>
+                )}
                 {filters.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setShowFilters(!showFilters)}
                     className={`ccc-filter-toggle ${showFilters ? 'active' : ''}`}
+                    title="Toggle filters"
                   >
                     <Filter className="ccc-icon" />
-                    Filters
                   </button>
                 )}
                 <button
@@ -374,7 +389,7 @@ const RelationshipField = ({
                   className="ccc-refresh-btn"
                   title="Refresh posts"
                 >
-                  <Search className="ccc-icon" />
+                  <RefreshCw className="ccc-icon" />
                 </button>
               </div>
             </div>
@@ -489,7 +504,13 @@ const RelationshipField = ({
                       </div>
                       <div className="ccc-group-posts">
                         {posts.map((post) => (
-                          <div key={post.ID} className="ccc-post-item">
+                          <div 
+                            key={post.ID} 
+                            className="ccc-post-item"
+                            onClick={() => handleTogglePost(post)}
+                            style={{ cursor: 'pointer' }}
+                            title="Click to select post"
+                          >
                             <div className="ccc-post-content">
                               {post.featured_image && (
                                 <img 
@@ -512,10 +533,13 @@ const RelationshipField = ({
                             </div>
                             <button
                               type="button"
-                              onClick={() => handleAddPost(post)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTogglePost(post);
+                              }}
                               className="ccc-add-btn"
                               disabled={max_posts > 0 && localValue.length >= max_posts}
-                              title={max_posts > 0 && localValue.length >= max_posts ? `Maximum ${max_posts} posts allowed` : "Add post"}
+                              title={max_posts > 0 && localValue.length >= max_posts ? `Maximum ${max_posts} posts allowed` : "Click to select post"}
                             >
                               <Plus className="ccc-icon" />
                             </button>
@@ -556,7 +580,13 @@ const RelationshipField = ({
             ) : (
               <div className="ccc-selected-list">
                 {selectedPosts.map((post) => (
-                  <div key={post.ID} className="ccc-selected-item">
+                  <div 
+                    key={post.ID} 
+                    className="ccc-selected-item"
+                    onClick={() => handleTogglePost(post)}
+                    style={{ cursor: 'pointer' }}
+                    title="Click to deselect post"
+                  >
                     <div className="ccc-post-info">
                       {post.featured_image && (
                         <img 
@@ -579,9 +609,12 @@ const RelationshipField = ({
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleRemovePost(post.ID)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTogglePost(post);
+                      }}
                       className="ccc-remove-btn"
-                      title="Remove post"
+                      title="Click to deselect post"
                     >
                       <X className="ccc-icon" />
                     </button>
