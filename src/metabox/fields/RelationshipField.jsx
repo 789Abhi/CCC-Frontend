@@ -53,7 +53,7 @@ const RelationshipField = ({
   }, [fieldValue]);
 
   // Fetch available posts - only called manually
-  const fetchPosts = async () => {
+  const fetchPosts = async (postType = selectedPostType, status = selectedStatus, taxonomies = selectedTaxonomies) => {
     // Prevent multiple simultaneous requests
     if (isFetchingRef.current) {
       console.log('RelationshipField: Request already in progress, skipping');
@@ -65,10 +65,13 @@ const RelationshipField = ({
     setError('');
 
       console.log('RelationshipField: Starting fetchPosts');
-      console.log('RelationshipField: selectedPostType:', selectedPostType);
+      console.log('RelationshipField: Using postType param:', postType);
+      console.log('RelationshipField: Using status param:', status);
+      console.log('RelationshipField: Using taxonomies param:', taxonomies);
+      console.log('RelationshipField: selectedPostType state:', selectedPostType);
       console.log('RelationshipField: filter_post_types:', filter_post_types);
-      console.log('RelationshipField: selectedStatus:', selectedStatus);
-      console.log('RelationshipField: selectedTaxonomies:', selectedTaxonomies);
+      console.log('RelationshipField: selectedStatus state:', selectedStatus);
+      console.log('RelationshipField: selectedTaxonomies state:', selectedTaxonomies);
     
     if (!window.cccData || !window.cccData.ajaxUrl) {
       console.error('RelationshipField: cccData not available');
@@ -87,25 +90,25 @@ const RelationshipField = ({
       };
       
       // Add filters from fieldConfig (only if not overridden by current filters)
-      if (selectedPostType) {
+      if (postType) {
         // If a specific post type is selected in the filter, use only that
-        requestData.post_types = JSON.stringify([selectedPostType]);
+        requestData.post_types = JSON.stringify([postType]);
       } else if (filter_post_types.length > 0) {
         // Otherwise use configured post types
         requestData.post_types = JSON.stringify(filter_post_types);
       }
       
-      if (selectedStatus) {
+      if (status) {
         // If a specific status is selected in the filter, use only that
-        requestData.post_status = JSON.stringify([selectedStatus]);
+        requestData.post_status = JSON.stringify([status]);
       } else if (filter_post_status.length > 0) {
         // Otherwise use configured post statuses
         requestData.post_status = JSON.stringify(filter_post_status);
       }
       
-      if (Object.keys(selectedTaxonomies).length > 0) {
+      if (Object.keys(taxonomies).length > 0) {
         // If specific taxonomies are selected in the filter, use those
-        requestData.taxonomy_filters = JSON.stringify(selectedTaxonomies);
+        requestData.taxonomy_filters = JSON.stringify(taxonomies);
       } else if (filter_taxonomy) {
         // Otherwise use configured taxonomy
         requestData.taxonomy_filters = JSON.stringify([{ taxonomy: filter_taxonomy, terms: [] }]);
@@ -193,27 +196,25 @@ const RelationshipField = ({
     fetchTaxonomiesForPostType(value);
     // Clear selected taxonomies when post type changes
     setSelectedTaxonomies({});
-    // Use setTimeout to ensure state is updated before fetching
-    setTimeout(() => {
-      console.log('RelationshipField: About to fetchPosts with selectedPostType:', value);
-      fetchPosts();
-    }, 10);
+    // Fetch posts immediately with the new value
+    console.log('RelationshipField: About to fetchPosts with selectedPostType:', value);
+    fetchPosts(value, selectedStatus, {});
   };
 
   const handleStatusChange = (value) => {
+    console.log('RelationshipField: handleStatusChange called with:', value);
     setSelectedStatus(value);
-    // Use setTimeout to ensure state is updated before fetching
-    setTimeout(() => {
-      fetchPosts();
-    }, 10);
+    // Fetch posts immediately with the new value
+    console.log('RelationshipField: About to fetchPosts with selectedStatus:', value);
+    fetchPosts(selectedPostType, value, selectedTaxonomies);
   };
 
   const handleTaxonomyChange = (value) => {
+    console.log('RelationshipField: handleTaxonomyChange called with:', value);
     setSelectedTaxonomies(value);
-    // Use setTimeout to ensure state is updated before fetching
-    setTimeout(() => {
-      fetchPosts();
-    }, 10);
+    // Fetch posts immediately with the new value
+    console.log('RelationshipField: About to fetchPosts with selectedTaxonomies:', value);
+    fetchPosts(selectedPostType, selectedStatus, value);
   };
 
   // Fetch taxonomies for the selected post type
