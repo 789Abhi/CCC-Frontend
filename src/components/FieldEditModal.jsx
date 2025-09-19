@@ -805,6 +805,10 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   const fetchAvailableTaxonomies = async (postType = 'all') => {
     try {
       console.log('FieldEditModal: Fetching available taxonomies for post type:', postType);
+      
+      // Set empty array immediately to show "No taxonomies available" if none exist
+      setAvailableTaxonomies([]);
+      
       const response = await fetch(window.cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -2170,7 +2174,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                           </label>
                           ))
                         ) : (
-                          <div className="px-3 py-2 text-sm text-gray-500">Loading taxonomies...</div>
+                          <div className="px-3 py-2 text-sm text-gray-500">No taxonomies available</div>
                         )}
                       </div>
                     )}

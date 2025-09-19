@@ -160,16 +160,8 @@ const RelationshipField = ({
   // Manual trigger functions for filter changes
   const handleSearchChange = (value) => {
     setSearchTerm(value);
-    
-    // Clear existing timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    // Set new timeout for debounced search
-    searchTimeoutRef.current = setTimeout(() => {
-      fetchPosts();
-    }, 500); // 500ms debounce for better UX
+    // Immediate search without delay
+    fetchPosts();
   };
 
   const handlePostTypeChange = (value) => {
@@ -195,6 +187,9 @@ const RelationshipField = ({
   const fetchTaxonomiesForPostType = async (postType) => {
     try {
       console.log('RelationshipField: Fetching taxonomies for post type:', postType);
+      
+      // Set empty array immediately to show "No taxonomies available" if none exist
+      setAvailableTaxonomies([]);
       
       const formData = new FormData();
       formData.append('action', 'ccc_get_taxonomies_for_post_type');
