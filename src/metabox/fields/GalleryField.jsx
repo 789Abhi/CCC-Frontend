@@ -37,12 +37,13 @@ const GalleryField = ({
   // Initialize local value with enhanced image objects
   useEffect(() => {
     if (Array.isArray(value)) {
-      // Ensure each image has toggle state and unique key for drag and drop
+      // Value from database should only contain enabled images
+      // But we need to maintain the full state locally for UI purposes
       const enhancedValue = value.map((item, index) => {
         if (typeof item === 'object') {
           return {
             ...item,
-            enabled: item.enabled !== undefined ? item.enabled : true,
+            enabled: true, // Images from DB are always enabled
             dragKey: item.dragKey || `${item.id}_${Date.now()}_${index}`
           };
         } else {
@@ -62,7 +63,7 @@ const GalleryField = ({
             if (typeof item === 'object') {
               return {
                 ...item,
-                enabled: item.enabled !== undefined ? item.enabled : true,
+                enabled: true, // Images from DB are always enabled
                 dragKey: item.dragKey || `${item.id}_${Date.now()}_${index}`
               };
             } else {
@@ -88,7 +89,9 @@ const GalleryField = ({
   const handleRemoveImage = (dragKey) => {
     const newValue = localValue.filter(item => item.dragKey !== dragKey);
     setLocalValue(newValue);
-    onChange(newValue);
+    // Only send enabled images to parent component
+    const enabledImages = newValue.filter(item => item.enabled);
+    onChange(enabledImages);
     setError('');
   };
 
@@ -98,7 +101,9 @@ const GalleryField = ({
       item.dragKey === dragKey ? { ...item, enabled: !item.enabled } : item
     );
     setLocalValue(newValue);
-    onChange(newValue);
+    // Only send enabled images to parent component
+    const enabledImages = newValue.filter(item => item.enabled);
+    onChange(enabledImages);
   };
 
   // Handle drag and drop reordering
@@ -128,7 +133,9 @@ const GalleryField = ({
     newValue.splice(targetIndex, 0, draggedItem);
     
     setLocalValue(newValue);
-    onChange(newValue);
+    // Only send enabled images to parent component
+    const enabledImages = newValue.filter(item => item.enabled);
+    onChange(enabledImages);
   };
 
   // Get only enabled images for fetching/display purposes
@@ -175,7 +182,9 @@ const GalleryField = ({
 
       const newValue = [...localValue, ...newImages];
       setLocalValue(newValue);
-      onChange(newValue);
+      // Only send enabled images to parent component
+      const enabledImages = newValue.filter(item => item.enabled);
+      onChange(enabledImages);
       setError('');
     });
 
@@ -226,7 +235,9 @@ const GalleryField = ({
       }));
       
       setLocalValue(enhancedMedia);
-      onChange(selectedMedia);
+      // Only send enabled images to parent component
+      const enabledImages = enhancedMedia.filter(item => item.enabled);
+      onChange(enabledImages);
       setError('');
     });
 
@@ -414,16 +425,11 @@ const GalleryField = ({
         </div>
       )}
 
-      {/* Hidden inputs for form submission */}
+      {/* Hidden input for form submission - only enabled images */}
       <input
         type="hidden"
         name={field?.name || 'gallery'}
         value={JSON.stringify(getEnabledImages())}
-      />
-      <input
-        type="hidden"
-        name={`${field?.name || 'gallery'}_all`}
-        value={JSON.stringify(getAllImages())}
       />
     </div>
   );
