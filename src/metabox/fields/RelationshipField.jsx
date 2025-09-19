@@ -67,6 +67,8 @@ const RelationshipField = ({
       console.log('RelationshipField: Starting fetchPosts');
       console.log('RelationshipField: selectedPostType:', selectedPostType);
       console.log('RelationshipField: filter_post_types:', filter_post_types);
+      console.log('RelationshipField: selectedStatus:', selectedStatus);
+      console.log('RelationshipField: selectedTaxonomies:', selectedTaxonomies);
     
     if (!window.cccData || !window.cccData.ajaxUrl) {
       console.error('RelationshipField: cccData not available');
@@ -185,6 +187,7 @@ const RelationshipField = ({
   };
 
   const handlePostTypeChange = (value) => {
+    console.log('RelationshipField: handlePostTypeChange called with:', value);
     setSelectedPostType(value);
     // Fetch taxonomies for the selected post type
     fetchTaxonomiesForPostType(value);
@@ -192,6 +195,7 @@ const RelationshipField = ({
     setSelectedTaxonomies({});
     // Use setTimeout to ensure state is updated before fetching
     setTimeout(() => {
+      console.log('RelationshipField: About to fetchPosts with selectedPostType:', value);
       fetchPosts();
     }, 10);
   };
@@ -344,9 +348,17 @@ const RelationshipField = ({
 
   // Get available post types for filter
   const getAvailablePostTypes = () => {
-    // Always show all available post types from the fetched posts for filtering
-    const types = [...new Set(availablePosts.map(p => p.post_type))];
-    return types.map(type => ({
+    // Show all possible post types, not just the ones in current results
+    const allPostTypes = ['post', 'page'];
+    
+    // Add custom post types from availablePosts if they exist
+    const customTypes = [...new Set(availablePosts.map(p => p.post_type))].filter(type => 
+      !allPostTypes.includes(type) && type !== 'attachment'
+    );
+    
+    const allTypes = [...allPostTypes, ...customTypes];
+    
+    return allTypes.map(type => ({
       value: type,
       label: getPostTypeLabel(type)
     }));
