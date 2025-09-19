@@ -152,6 +152,9 @@ const RelationshipField = ({
           setAllAvailablePostTypes(postTypes);
           setAllPostsCache(posts); // Cache all posts for selected items
           console.log('RelationshipField: Updated all available post types:', postTypes);
+          console.log('RelationshipField: Cached all posts for selected items:', posts.length, 'posts');
+        } else {
+          console.log('RelationshipField: Not caching posts due to filters - postType:', postType, 'status:', status, 'taxonomies:', Object.keys(taxonomies).length);
         }
       } else {
         setError(data.data || 'Failed to fetch posts');
@@ -314,15 +317,24 @@ const RelationshipField = ({
 
   // Get selected posts for display
   const getSelectedPosts = () => {
+    console.log('RelationshipField: getSelectedPosts called with localValue:', localValue);
+    console.log('RelationshipField: allPostsCache has', allPostsCache.length, 'posts');
+    console.log('RelationshipField: availablePosts has', availablePosts.length, 'posts');
+    
     return localValue.map(postId => {
       // First try to find in available posts (current filtered results)
       let post = availablePosts.find(p => p.ID === postId);
       if (!post) {
         // If not found in filtered results, try the cache of all posts
         post = allPostsCache.find(p => p.ID === postId);
+        console.log(`RelationshipField: Post ${postId} not found in availablePosts, checking cache:`, post ? 'Found' : 'Not found');
+        if (post) {
+          console.log('RelationshipField: Found post in cache:', post.post_title);
+        }
       }
       if (!post) {
         // If still not found, create a basic object as fallback
+        console.log(`RelationshipField: Post ${postId} not found anywhere, creating fallback`);
         post = { ID: postId, post_title: `Post #${postId}`, post_type: 'unknown' };
       }
       return post;
