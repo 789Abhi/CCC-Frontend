@@ -77,51 +77,55 @@ const RelationshipField = ({
     }
 
     try {
-      const formData = new FormData();
-      formData.append('action', 'ccc_get_relationship_posts');
-      formData.append('nonce', window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''));
+      // Build the request data
+      const requestData = {
+        action: 'ccc_get_relationship_posts',
+        nonce: window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''),
+        per_page: '50'
+      };
       
       // Add filters from fieldConfig (only if not overridden by current filters)
       if (selectedPostType) {
         // If a specific post type is selected in the filter, use only that
-        formData.append('post_types', JSON.stringify([selectedPostType]));
+        requestData.post_types = JSON.stringify([selectedPostType]);
       } else if (filter_post_types.length > 0) {
         // Otherwise use configured post types
-        formData.append('post_types', JSON.stringify(filter_post_types));
+        requestData.post_types = JSON.stringify(filter_post_types);
       }
       
       if (selectedStatus) {
         // If a specific status is selected in the filter, use only that
-        formData.append('post_status', JSON.stringify([selectedStatus]));
+        requestData.post_status = JSON.stringify([selectedStatus]);
       } else if (filter_post_status.length > 0) {
         // Otherwise use configured post statuses
-        formData.append('post_status', JSON.stringify(filter_post_status));
+        requestData.post_status = JSON.stringify(filter_post_status);
       }
       
       if (Object.keys(selectedTaxonomies).length > 0) {
         // If specific taxonomies are selected in the filter, use those
-        formData.append('taxonomy_filters', JSON.stringify(selectedTaxonomies));
+        requestData.taxonomy_filters = JSON.stringify(selectedTaxonomies);
       } else if (filter_taxonomy) {
         // Otherwise use configured taxonomy
-        formData.append('taxonomy_filters', JSON.stringify([{ taxonomy: filter_taxonomy, terms: [] }]));
+        requestData.taxonomy_filters = JSON.stringify([{ taxonomy: filter_taxonomy, terms: [] }]);
       }
       
       // Add search term
       if (searchTerm) {
-        formData.append('search', searchTerm);
+        requestData.search = searchTerm;
       }
       
       // Exclude already selected posts to prevent duplicate selection
       if (localValue.length > 0) {
-        formData.append('exclude', JSON.stringify(localValue));
+        requestData.exclude = JSON.stringify(localValue);
       }
-      
-      formData.append('per_page', '50');
 
       // Debug: Log what we're sending
-      console.log('RelationshipField: Sending FormData:');
-      for (let [key, value] of formData.entries()) {
-        console.log(`  ${key}:`, value);
+      console.log('RelationshipField: Sending request data:', requestData);
+
+      // Convert to FormData for sending
+      const formData = new FormData();
+      for (const [key, value] of Object.entries(requestData)) {
+        formData.append(key, value);
       }
 
       const response = await fetch(window.cccData?.ajaxUrl || window.ajaxurl, {
