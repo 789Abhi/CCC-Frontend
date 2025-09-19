@@ -19,6 +19,7 @@ import NumberField from './NumberField';
 import PasswordField from './PasswordField';
 import RangeField from './RangeField';
 import RelationshipField from './RelationshipField';
+import GalleryField from './GalleryField';
 import useConditionalLogic from '../hooks/useConditionalLogic';
 
 // Sortable Repeater Item Component
@@ -504,6 +505,32 @@ const SortableRepeaterItem = ({ item, index, nestedFields, onUpdateItem, onRemov
             fieldValue={fieldValue}
             fieldRequired={isRequired}
             onChange={handleChange}
+            fieldId={`${field.name}_${itemIndex}`}
+          />
+        );
+
+      case 'gallery':
+        // Parse gallery value if it's a JSON string
+        let galleryValue = fieldValue;
+        if (typeof galleryValue === 'string' && galleryValue) {
+          try {
+            const parsed = JSON.parse(galleryValue);
+            galleryValue = Array.isArray(parsed) ? parsed : [];
+          } catch (e) {
+            galleryValue = [];
+          }
+        } else if (!Array.isArray(galleryValue)) {
+          galleryValue = [];
+        }
+        
+        return (
+          <GalleryField
+            key={`${field.name}_${itemIndex}`}
+            field={field}
+            value={galleryValue}
+            onChange={handleChange}
+            fieldConfig={field.config || {}}
+            isRequired={isRequired}
             fieldId={`${field.name}_${itemIndex}`}
           />
         );

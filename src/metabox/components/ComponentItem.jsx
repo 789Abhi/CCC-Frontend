@@ -8,6 +8,7 @@ import ImageField from '../fields/ImageField';
 import VideoField from '../fields/VideoField';
 import OembedField from '../fields/OembedField';
 import RelationshipField from '../fields/RelationshipField';
+import GalleryField from '../fields/GalleryField';
 import WysiwygField from '../fields/WysiwygField';
 import SelectField from '../fields/SelectField';
 import CheckboxField from '../fields/CheckboxField';
@@ -704,6 +705,45 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                        fieldValue={value}
                        fieldRequired={isRequired}
                        onChange={handleChange}
+                       fieldId={field.id}
+                     />
+                   );
+                 }
+                 if (field.type === 'gallery') {
+                   const isRequired = field.required || false;
+                   const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                   let value = instanceFieldValues[field.id] !== undefined
+                     ? instanceFieldValues[field.id]
+                     : (field.value !== undefined && field.value !== null ? field.value : (field.default_value || []));
+                   
+                   // Parse gallery value if it's a JSON string
+                   if (typeof value === 'string' && value) {
+                     try {
+                       const parsed = JSON.parse(value);
+                       value = Array.isArray(parsed) ? parsed : [];
+                     } catch (e) {
+                       value = [];
+                     }
+                   } else if (!Array.isArray(value)) {
+                     value = [];
+                   }
+                   
+                   const handleChange = val => {
+                     if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                   };
+                   return (
+                     <GalleryField
+                       key={field.id}
+                       field={field}
+                       value={value}
+                       onChange={handleChange}
+                       fieldConfig={{
+                         ...field.config,
+                         field_id: field.id,
+                         post_id: postId,
+                         instance_id: component.instance_id
+                       }}
+                       isRequired={isRequired}
                        fieldId={field.id}
                      />
                    );

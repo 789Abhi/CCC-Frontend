@@ -71,6 +71,15 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     return_format: 'object'
   });
 
+  // Gallery field configuration state
+  const [galleryConfig, setGalleryConfig] = useState({
+    max_images: 0,
+    min_images: 0,
+    allowed_types: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+    show_preview: true,
+    preview_size: 'medium'
+  });
+
   // Link field configuration state
   const [linkConfig, setLinkConfig] = useState({
     link_types: ['internal', 'external'],
@@ -222,6 +231,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         "password",
         "user",
         "relationship",
+        "gallery",
         "number",
         "range",
         "file",
@@ -611,6 +621,17 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               }));
             }
             
+            if (field.type === 'gallery') {
+              setGalleryConfig(prev => ({
+                ...prev,
+                max_images: config.max_images || 0,
+                min_images: config.min_images || 0,
+                allowed_types: config.allowed_types || ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+                show_preview: config.show_preview !== undefined ? config.show_preview : true,
+                preview_size: config.preview_size || 'medium'
+              }));
+            }
+            
             if (field.type === 'link' && config.link_types) {
               setLinkConfig(prev => ({
                 ...prev,
@@ -676,6 +697,13 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           filters: ['search', 'post_type'],
           max_posts: 0,
           return_format: 'object'
+        });
+        setGalleryConfig({
+          max_images: 0,
+          min_images: 0,
+          allowed_types: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+          show_preview: true,
+          preview_size: 'medium'
         });
         // Don't set fieldConfig here - let the type-specific useEffect handle it
         setLinkConfig({
@@ -1227,6 +1255,18 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             max_posts: relationshipConfig.max_posts || 0,
             return_format: relationshipConfig.return_format || 'object',
             // Include conditional logic for relationship fields
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
+          }
+        } else if (type === "gallery") {
+          fieldData.config = {
+            max_images: galleryConfig.max_images || 0,
+            min_images: galleryConfig.min_images || 0,
+            allowed_types: galleryConfig.allowed_types || ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+            show_preview: galleryConfig.show_preview !== undefined ? galleryConfig.show_preview : true,
+            preview_size: galleryConfig.preview_size || 'medium',
+            // Include conditional logic for gallery fields
             field_condition: conditionalLogicConfig?.field_condition || 'always_show',
             conditional_logic: conditionalLogicConfig?.conditional_logic || [],
             logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
@@ -2783,6 +2823,119 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   <p className="text-xs text-gray-500">
                     Control which UI elements are displayed for uploaded files
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Gallery Field Settings */}
+            {type === "gallery" && (
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">Gallery Field Settings</h4>
+
+                {/* Maximum Images */}
+                <div className="space-y-2">
+                  <label htmlFor="maxImages" className="block text-sm font-medium text-gray-700">
+                    Maximum Images
+                  </label>
+                  <input
+                    id="maxImages"
+                    type="number"
+                    min="0"
+                    value={galleryConfig.max_images}
+                    onChange={(e) => setGalleryConfig(prev => ({ ...prev, max_images: parseInt(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="0 for unlimited"
+                  />
+                  <p className="text-xs text-gray-500">Maximum number of images allowed in the gallery. Set to 0 for unlimited.</p>
+                </div>
+
+                {/* Minimum Images */}
+                <div className="space-y-2">
+                  <label htmlFor="minImages" className="block text-sm font-medium text-gray-700">
+                    Minimum Images
+                  </label>
+                  <input
+                    id="minImages"
+                    type="number"
+                    min="0"
+                    value={galleryConfig.min_images}
+                    onChange={(e) => setGalleryConfig(prev => ({ ...prev, min_images: parseInt(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="0 for no minimum"
+                  />
+                  <p className="text-xs text-gray-500">Minimum number of images required in the gallery.</p>
+                </div>
+
+                {/* Allowed Image Types */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Allowed Image Types
+                  </label>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'image/jpeg', label: 'JPEG' },
+                      { value: 'image/png', label: 'PNG' },
+                      { value: 'image/gif', label: 'GIF' },
+                      { value: 'image/webp', label: 'WebP' },
+                      { value: 'image/svg+xml', label: 'SVG' }
+                    ].map((type) => (
+                      <label key={type.value} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={galleryConfig.allowed_types.includes(type.value)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setGalleryConfig(prev => ({
+                                ...prev,
+                                allowed_types: [...prev.allowed_types, type.value]
+                              }));
+                            } else {
+                              setGalleryConfig(prev => ({
+                                ...prev,
+                                allowed_types: prev.allowed_types.filter(t => t !== type.value)
+                              }));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{type.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">Select which image types are allowed in the gallery.</p>
+                </div>
+
+                {/* Show Preview */}
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={galleryConfig.show_preview}
+                      onChange={(e) => setGalleryConfig(prev => ({ ...prev, show_preview: e.target.checked }))}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Show Preview</span>
+                  </label>
+                  <p className="text-xs text-gray-500">Display image previews in the gallery.</p>
+                </div>
+
+                {/* Preview Size */}
+                <div className="space-y-2">
+                  <label htmlFor="previewSize" className="block text-sm font-medium text-gray-700">
+                    Preview Size
+                  </label>
+                  <select
+                    id="previewSize"
+                    value={galleryConfig.preview_size}
+                    onChange={(e) => setGalleryConfig(prev => ({ ...prev, preview_size: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="thumbnail">Thumbnail</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                    <option value="full">Full Size</option>
+                  </select>
+                  <p className="text-xs text-gray-500">Size of the preview images in the gallery.</p>
                 </div>
               </div>
             )}
