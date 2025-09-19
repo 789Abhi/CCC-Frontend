@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, Image as ImageIcon, Upload, Trash2, Edit3 } from 'lucide-react';
+import { Plus, X, Image as ImageIcon, Upload, Trash2, Edit3, GripVertical, Eye, EyeOff } from 'lucide-react';
 
 const GalleryField = ({ 
   field, 
@@ -34,15 +34,46 @@ const GalleryField = ({
     console.log('GalleryField: preview_size:', preview_size);
   }, [fieldConfig, max_images, min_images, allowed_types, show_preview, preview_size]);
 
-  // Initialize local value
+  // Initialize local value with enhanced image objects
   useEffect(() => {
     if (Array.isArray(value)) {
-      setLocalValue(value);
+      // Ensure each image has toggle state and unique key for drag and drop
+      const enhancedValue = value.map((item, index) => {
+        if (typeof item === 'object') {
+          return {
+            ...item,
+            enabled: item.enabled !== undefined ? item.enabled : true,
+            dragKey: item.dragKey || `${item.id}_${Date.now()}_${index}`
+          };
+        } else {
+          return {
+            id: item,
+            enabled: true,
+            dragKey: `${item}_${Date.now()}_${index}`
+          };
+        }
+      });
+      setLocalValue(enhancedValue);
     } else if (typeof value === 'string' && value) {
       try {
         const parsed = JSON.parse(value);
         if (Array.isArray(parsed)) {
-          setLocalValue(parsed);
+          const enhancedValue = parsed.map((item, index) => {
+            if (typeof item === 'object') {
+              return {
+                ...item,
+                enabled: item.enabled !== undefined ? item.enabled : true,
+                dragKey: item.dragKey || `${item.id}_${Date.now()}_${index}`
+              };
+            } else {
+              return {
+                id: item,
+                enabled: true,
+                dragKey: `${item}_${Date.now()}_${index}`
+              };
+            }
+          });
+          setLocalValue(enhancedValue);
         }
       } catch (e) {
         console.error('GalleryField: Failed to parse value:', e);
@@ -54,13 +85,60 @@ const GalleryField = ({
   }, [value]);
 
   // Handle removing image from gallery
-  const handleRemoveImage = (imageId) => {
-    const newValue = localValue.filter(item => 
-      (typeof item === 'object' ? item.id : item) !== imageId
-    );
+  const handleRemoveImage = (dragKey) => {
+    const newValue = localValue.filter(item => item.dragKey !== dragKey);
     setLocalValue(newValue);
     onChange(newValue);
     setError('');
+  };
+
+  // Handle toggle image visibility
+  const handleToggleImage = (dragKey) => {
+    const newValue = localValue.map(item => 
+      item.dragKey === dragKey ? { ...item, enabled: !item.enabled } : item
+    );
+    setLocalValue(newValue);
+    onChange(newValue);
+  };
+
+  // Handle drag and drop reordering
+  const handleDragStart = (e, dragKey) => {
+    e.dataTransfer.setData('text/plain', dragKey);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetDragKey) => {
+    e.preventDefault();
+    const draggedKey = e.dataTransfer.getData('text/plain');
+    
+    if (draggedKey === targetDragKey) return;
+    
+    const draggedIndex = localValue.findIndex(item => item.dragKey === draggedKey);
+    const targetIndex = localValue.findIndex(item => item.dragKey === targetDragKey);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+    
+    const newValue = [...localValue];
+    const [draggedItem] = newValue.splice(draggedIndex, 1);
+    newValue.splice(targetIndex, 0, draggedItem);
+    
+    setLocalValue(newValue);
+    onChange(newValue);
+  };
+
+  // Get only enabled images for fetching/display purposes
+  const getEnabledImages = () => {
+    return localValue.filter(image => image.enabled);
+  };
+
+  // Get all images (including disabled ones)
+  const getAllImages = () => {
+    return localValue;
   };
 
   // Open WordPress media library
@@ -82,17 +160,18 @@ const GalleryField = ({
       const selection = frame.state().get('selection');
       const selectedMedia = selection.map(item => item.toJSON());
       
-      // Add new images to gallery
-      const newImages = selectedMedia.filter(media => 
-        !localValue.some(existing => 
-          (typeof existing === 'object' ? existing.id : existing) === media.id
-        )
-      );
+      // Add new images to gallery (allow duplicates)
+      const newImages = selectedMedia.map(media => ({
+        ...media,
+        enabled: true,
+        dragKey: `${media.id}_${Date.now()}_${Math.random()}`
+      }));
 
-      if (max_images > 0 && localValue.length + newImages.length > max_images) {
-        setError(`Maximum ${max_images} images allowed. Can only add ${max_images - localValue.length} more.`);
-        return;
-      }
+      // Note: Removed duplicate check and max_images limit to allow unlimited duplicates
+      // if (max_images > 0 && localValue.length + newImages.length > max_images) {
+      //   setError(`Maximum ${max_images} images allowed. Can only add ${max_images - localValue.length} more.`);
+      //   return;
+      // }
 
       const newValue = [...localValue, ...newImages];
       setLocalValue(newValue);
@@ -134,12 +213,19 @@ const GalleryField = ({
       const selection = frame.state().get('selection');
       const selectedMedia = selection.map(item => item.toJSON());
       
-      if (max_images > 0 && selectedMedia.length > max_images) {
-        setError(`Maximum ${max_images} images allowed.`);
-        return;
-      }
+      // Note: Removed max_images limit to allow unlimited images
+      // if (max_images > 0 && selectedMedia.length > max_images) {
+      //   setError(`Maximum ${max_images} images allowed.`);
+      //   return;
+      // }
 
-      setLocalValue(selectedMedia);
+      const enhancedMedia = selectedMedia.map((media, index) => ({
+        ...media,
+        enabled: true,
+        dragKey: media.dragKey || `${media.id}_${Date.now()}_${index}`
+      }));
+      
+      setLocalValue(enhancedMedia);
       onChange(selectedMedia);
       setError('');
     });
@@ -197,8 +283,13 @@ const GalleryField = ({
       {localValue.length > 0 && (
         <div className="ccc-gallery-info">
           <span className="ccc-gallery-count">
-            {localValue.length} image{localValue.length !== 1 ? 's' : ''} selected
+            {getEnabledImages().length} of {localValue.length} image{localValue.length !== 1 ? 's' : ''} enabled
           </span>
+          {getEnabledImages().length !== localValue.length && (
+            <span className="ccc-gallery-disabled-count">
+              ({localValue.length - getEnabledImages().length} hidden)
+            </span>
+          )}
           {(min_images > 0 || max_images > 0) && (
             <span className="ccc-gallery-limits">
               {min_images > 0 && `Min: ${min_images}`}
@@ -222,8 +313,34 @@ const GalleryField = ({
         <div className="ccc-gallery-preview">
           <div className="ccc-gallery-grid">
             {localValue.map((image, index) => (
-              <div key={typeof image === 'object' ? image.id : image} className="ccc-gallery-item">
+              <div 
+                key={image.dragKey} 
+                className={`ccc-gallery-item ${!image.enabled ? 'ccc-gallery-item-disabled' : ''}`}
+                draggable={true}
+                onDragStart={(e) => handleDragStart(e, image.dragKey)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, image.dragKey)}
+              >
                 <div className="ccc-gallery-item-content">
+                  {/* Drag Handle */}
+                  <div className="ccc-gallery-drag-handle">
+                    <GripVertical className="ccc-icon" />
+                  </div>
+                  
+                  {/* Toggle Switch */}
+                  <div className="ccc-gallery-toggle-container">
+                    <label className="ccc-toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={image.enabled}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleToggleImage(image.dragKey);
+                        }}
+                      />
+                      <span className="ccc-toggle-slider"></span>
+                    </label>
+                  </div>
                   {show_preview && image.url && (
                     <div className="ccc-gallery-thumbnail-container">
                       <img
@@ -236,7 +353,7 @@ const GalleryField = ({
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleRemoveImage(typeof image === 'object' ? image.id : image);
+                            handleRemoveImage(image.dragKey);
                           }}
                           className="ccc-gallery-remove-btn"
                           title="Remove from gallery"
@@ -263,6 +380,11 @@ const GalleryField = ({
                         {image.filesizeHumanReadable}
                       </span>
                     )}
+                    <div className="ccc-gallery-item-status">
+                      <span className={`ccc-status-indicator ${image.enabled ? 'ccc-status-enabled' : 'ccc-status-disabled'}`}>
+                        {image.enabled ? 'Visible' : 'Hidden'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -292,11 +414,16 @@ const GalleryField = ({
         </div>
       )}
 
-      {/* Hidden input for form submission */}
+      {/* Hidden inputs for form submission */}
       <input
         type="hidden"
         name={field?.name || 'gallery'}
-        value={JSON.stringify(localValue)}
+        value={JSON.stringify(getEnabledImages())}
+      />
+      <input
+        type="hidden"
+        name={`${field?.name || 'gallery'}_all`}
+        value={JSON.stringify(getAllImages())}
       />
     </div>
   );
@@ -394,6 +521,12 @@ const galleryFieldStyles = `
     font-weight: 500;
   }
   
+  .ccc-gallery-disabled-count {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-left: 4px;
+  }
+  
   .ccc-gallery-limits {
     font-size: 12px;
     color: #9ca3af;
@@ -434,6 +567,8 @@ const galleryFieldStyles = `
     overflow: hidden;
     background-color: white;
     transition: all 0.2s ease;
+    cursor: move;
+    position: relative;
   }
   
   .ccc-gallery-item:hover {
@@ -441,8 +576,105 @@ const galleryFieldStyles = `
     border-color: #d1d5db;
   }
   
+  .ccc-gallery-item-disabled {
+    opacity: 0.6;
+    border-color: #f3f4f6;
+  }
+  
+  .ccc-gallery-item-disabled:hover {
+    box-shadow: none;
+    border-color: #f3f4f6;
+  }
+  
   .ccc-gallery-item-content {
     position: relative;
+  }
+  
+  .ccc-gallery-drag-handle {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 4px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+  }
+  
+  .ccc-gallery-item:hover .ccc-gallery-drag-handle {
+    opacity: 1;
+  }
+  
+  .ccc-gallery-drag-handle .ccc-icon {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .ccc-gallery-toggle-container {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+  }
+  
+  .ccc-gallery-item:hover .ccc-gallery-toggle-container {
+    opacity: 1;
+  }
+  
+  .ccc-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 32px;
+    height: 18px;
+    cursor: pointer;
+  }
+  
+  .ccc-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .ccc-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 18px;
+    border: 1px solid #ff69b4;
+  }
+  
+  .ccc-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 1px;
+    bottom: 1px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+  
+  .ccc-toggle-switch input:checked + .ccc-toggle-slider {
+    background-color: #22c55e;
+  }
+  
+  .ccc-toggle-switch input:checked + .ccc-toggle-slider:before {
+    transform: translateX(14px);
+  }
+  
+  .ccc-toggle-switch:hover .ccc-toggle-slider {
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
   }
   
   .ccc-gallery-thumbnail-container {
@@ -524,6 +756,7 @@ const galleryFieldStyles = `
     height: 16px;
   }
   
+  
   .ccc-gallery-item-info {
     padding: 8px;
   }
@@ -542,6 +775,29 @@ const galleryFieldStyles = `
   .ccc-gallery-item-size {
     display: block;
     font-size: 11px;
+    color: #6b7280;
+  }
+  
+  .ccc-gallery-item-status {
+    margin-top: 4px;
+  }
+  
+  .ccc-status-indicator {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  
+  .ccc-status-enabled {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+  
+  .ccc-status-disabled {
+    background-color: #f3f4f6;
     color: #6b7280;
   }
   
