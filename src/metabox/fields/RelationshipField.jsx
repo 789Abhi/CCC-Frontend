@@ -190,17 +190,26 @@ const RelationshipField = ({
     fetchTaxonomiesForPostType(value);
     // Clear selected taxonomies when post type changes
     setSelectedTaxonomies({});
-    fetchPosts();
+    // Use setTimeout to ensure state is updated before fetching
+    setTimeout(() => {
+      fetchPosts();
+    }, 10);
   };
 
   const handleStatusChange = (value) => {
     setSelectedStatus(value);
-    fetchPosts();
+    // Use setTimeout to ensure state is updated before fetching
+    setTimeout(() => {
+      fetchPosts();
+    }, 10);
   };
 
   const handleTaxonomyChange = (value) => {
     setSelectedTaxonomies(value);
-    fetchPosts();
+    // Use setTimeout to ensure state is updated before fetching
+    setTimeout(() => {
+      fetchPosts();
+    }, 10);
   };
 
   // Fetch taxonomies for the selected post type
@@ -395,14 +404,6 @@ const RelationshipField = ({
                     <Filter className="ccc-icon" />
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={fetchPosts}
-                  className="ccc-refresh-btn"
-                  title="Refresh posts"
-                >
-                  <RefreshCw className="ccc-icon" />
-                </button>
               </div>
             </div>
 
