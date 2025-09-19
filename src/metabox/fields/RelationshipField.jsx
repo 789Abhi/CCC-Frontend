@@ -64,7 +64,9 @@ const RelationshipField = ({
     setIsLoading(true);
     setError('');
 
-    console.log('RelationshipField: Starting fetchPosts');
+      console.log('RelationshipField: Starting fetchPosts');
+      console.log('RelationshipField: selectedPostType:', selectedPostType);
+      console.log('RelationshipField: filter_post_types:', filter_post_types);
     
     if (!window.cccData || !window.cccData.ajaxUrl) {
       console.error('RelationshipField: cccData not available');
@@ -82,18 +84,18 @@ const RelationshipField = ({
       // Add filters from fieldConfig (only if not overridden by current filters)
       if (selectedPostType) {
         // If a specific post type is selected in the filter, use only that
-        formData.append('post_types', selectedPostType);
+        formData.append('post_types', JSON.stringify([selectedPostType]));
       } else if (filter_post_types.length > 0) {
         // Otherwise use configured post types
-        formData.append('post_types', filter_post_types.join(','));
+        formData.append('post_types', JSON.stringify(filter_post_types));
       }
       
       if (selectedStatus) {
         // If a specific status is selected in the filter, use only that
-        formData.append('post_status', selectedStatus);
+        formData.append('post_status', JSON.stringify([selectedStatus]));
       } else if (filter_post_status.length > 0) {
         // Otherwise use configured post statuses
-        formData.append('post_status', filter_post_status.join(','));
+        formData.append('post_status', JSON.stringify(filter_post_status));
       }
       
       if (Object.keys(selectedTaxonomies).length > 0) {
@@ -115,6 +117,12 @@ const RelationshipField = ({
       }
       
       formData.append('per_page', '50');
+
+      // Debug: Log what we're sending
+      console.log('RelationshipField: Sending FormData:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, value);
+      }
 
       const response = await fetch(window.cccData?.ajaxUrl || window.ajaxurl, {
         method: 'POST',
