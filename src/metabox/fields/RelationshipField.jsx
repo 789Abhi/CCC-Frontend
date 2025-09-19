@@ -23,6 +23,7 @@ const RelationshipField = ({
 
   const [localValue, setLocalValue] = useState([]);
   const [availablePosts, setAvailablePosts] = useState([]);
+  const [allAvailablePostTypes, setAllAvailablePostTypes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPostType, setSelectedPostType] = useState('');
@@ -141,7 +142,15 @@ const RelationshipField = ({
       const data = await response.json();
 
       if (data.success) {
-        setAvailablePosts(data.data || []);
+        const posts = data.data || [];
+        setAvailablePosts(posts);
+        
+        // Update all available post types when fetching all posts (no specific filter)
+        if (!postType && !status && Object.keys(taxonomies).length === 0) {
+          const postTypes = [...new Set(posts.map(p => p.post_type))].filter(type => type !== 'attachment');
+          setAllAvailablePostTypes(postTypes);
+          console.log('RelationshipField: Updated all available post types:', postTypes);
+        }
       } else {
         setError(data.data || 'Failed to fetch posts');
         setAvailablePosts([]);
@@ -349,17 +358,11 @@ const RelationshipField = ({
 
   // Get available post types for filter
   const getAvailablePostTypes = () => {
-    // Show all possible post types, not just the ones in current results
-    const allPostTypes = ['post', 'page'];
+    // Use the stored list of all available post types, fallback to current results
+    const postTypesToUse = allAvailablePostTypes.length > 0 ? allAvailablePostTypes : 
+      [...new Set(availablePosts.map(p => p.post_type))].filter(type => type !== 'attachment');
     
-    // Add custom post types from availablePosts if they exist
-    const customTypes = [...new Set(availablePosts.map(p => p.post_type))].filter(type => 
-      !allPostTypes.includes(type) && type !== 'attachment'
-    );
-    
-    const allTypes = [...allPostTypes, ...customTypes];
-    
-    return allTypes.map(type => ({
+    return postTypesToUse.map(type => ({
       value: type,
       label: getPostTypeLabel(type)
     }));
@@ -529,14 +532,21 @@ const RelationshipField = ({
                         <h5>{getPostTypeLabel(postType)} ({posts.length})</h5>
                       </div>
                       <div className="ccc-group-posts">
-                        {posts.map((post) => (
-                          <div 
-                            key={post.ID} 
-                            className="ccc-post-item"
-                            onClick={() => handleTogglePost(post)}
-                            style={{ cursor: 'pointer' }}
-                            title="Click to select post"
-                          >
+                        {posts.map((post) => {
+                          const isSelected = localValue.some(selected => 
+                            (typeof selected === 'object' ? selected.ID : selected) === post.ID
+                          );
+                          return (
+                            <div 
+                              key={post.ID} 
+                              className={`ccc-post-item ${isSelected ? 'ccc-post-item-selected' : ''}`}
+                              onClick={isSelected ? undefined : () => handleTogglePost(post)}
+                              style={{ 
+                                cursor: isSelected ? 'not-allowed' : 'pointer',
+                                opacity: isSelected ? 0.5 : 1
+                              }}
+                              title={isSelected ? "Post already selected" : "Click to select post"}
+                            >
                             <div className="ccc-post-content">
                               {post.featured_image && (
                                 <img 
@@ -561,16 +571,23 @@ const RelationshipField = ({
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleTogglePost(post);
+                                if (!isSelected) {
+                                  handleTogglePost(post);
+                                }
                               }}
                               className="ccc-add-btn"
-                              disabled={max_posts > 0 && localValue.length >= max_posts}
-                              title={max_posts > 0 && localValue.length >= max_posts ? `Maximum ${max_posts} posts allowed` : "Click to select post"}
+                              disabled={isSelected || (max_posts > 0 && localValue.length >= max_posts)}
+                              title={
+                                isSelected ? "Post already selected" :
+                                max_posts > 0 && localValue.length >= max_posts ? `Maximum ${max_posts} posts allowed` : 
+                                "Click to select post"
+                              }
                             >
                               <Plus className="ccc-icon" />
                             </button>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -1096,6 +1113,19 @@ const RelationshipField = ({
 
         .ccc-post-item:last-child {
           border-bottom: none;
+        }
+
+        .ccc-post-item-selected {
+          background-color: #f3f4f6;
+          color: #9ca3af;
+        }
+
+        .ccc-post-item-selected .ccc-post-title {
+          color: #9ca3af;
+        }
+
+        .ccc-post-item-selected .ccc-post-meta {
+          color: #9ca3af;
         }
 
         .ccc-post-content {
