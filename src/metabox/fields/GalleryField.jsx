@@ -552,6 +552,9 @@ const galleryFieldStyles = `
   
   .ccc-gallery-empty-icon {
     margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .ccc-gallery-empty-icon .ccc-icon {
