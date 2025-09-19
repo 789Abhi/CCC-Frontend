@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, Image as ImageIcon, Search, Filter, RefreshCw, Eye, Trash2 } from 'lucide-react';
+import { Plus, X, Image as ImageIcon, Upload, Trash2, Edit3 } from 'lucide-react';
 
 const GalleryField = ({ 
   field, 
@@ -11,14 +11,8 @@ const GalleryField = ({
   className = ''
 }) => {
   const [localValue, setLocalValue] = useState([]);
-  const [availableImages, setAvailableImages] = useState([]);
-  const [selectedImages, setSelectedImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMimeType, setSelectedMimeType] = useState('');
-  const [showSearchInput, setShowSearchInput] = useState(false);
   const [mediaFrame, setMediaFrame] = useState(null);
 
   // Configuration from field
@@ -30,94 +24,12 @@ const GalleryField = ({
     preview_size = 'medium'
   } = fieldConfig;
 
-  const searchTimeoutRef = useRef(null);
-
   // Initialize local value
   useEffect(() => {
     if (Array.isArray(value)) {
       setLocalValue(value);
-      setSelectedImages(value);
     }
   }, [value]);
-
-  // Fetch available images from WordPress media library
-  const fetchImages = async (search = '', mimeType = '') => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const formData = new FormData();
-      formData.append('action', 'ccc_get_gallery_media');
-      formData.append('nonce', window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''));
-      formData.append('search', search);
-      formData.append('mime_type', mimeType);
-      formData.append('per_page', '50');
-      formData.append('allowed_types', JSON.stringify(allowed_types));
-
-      const response = await fetch(window.cccData?.ajaxUrl || window.ajaxurl, {
-        method: 'POST',
-        body: formData
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        const images = data.data || [];
-        setAvailableImages(images);
-        console.log('GalleryField: Fetched images:', images.length);
-      } else {
-        setError(data.data || 'Failed to fetch images');
-        setAvailableImages([]);
-      }
-    } catch (err) {
-      setError('Network error occurred');
-      setAvailableImages([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle search with debounce
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      fetchImages(value, selectedMimeType);
-    }, 300);
-  };
-
-  // Handle mime type filter change
-  const handleMimeTypeChange = (value) => {
-    setSelectedMimeType(value);
-    fetchImages(searchTerm, value);
-  };
-
-  // Handle adding image to gallery
-  const handleAddImage = (image) => {
-    const isAlreadySelected = localValue.some(selected => 
-      (typeof selected === 'object' ? selected.id : selected) === image.id
-    );
-
-    if (isAlreadySelected) {
-      return;
-    }
-
-    if (max_images > 0 && localValue.length >= max_images) {
-      setError(`Maximum ${max_images} images allowed`);
-      return;
-    }
-
-    const newValue = [...localValue, image];
-    setLocalValue(newValue);
-    setSelectedImages(newValue);
-    onChange(newValue);
-    setError('');
-  };
 
   // Handle removing image from gallery
   const handleRemoveImage = (imageId) => {
@@ -125,19 +37,8 @@ const GalleryField = ({
       (typeof item === 'object' ? item.id : item) !== imageId
     );
     setLocalValue(newValue);
-    setSelectedImages(newValue);
     onChange(newValue);
     setError('');
-  };
-
-  // Handle reordering images (drag and drop)
-  const handleReorderImages = (fromIndex, toIndex) => {
-    const newValue = [...localValue];
-    const [movedItem] = newValue.splice(fromIndex, 1);
-    newValue.splice(toIndex, 0, movedItem);
-    setLocalValue(newValue);
-    setSelectedImages(newValue);
-    onChange(newValue);
   };
 
   // Open WordPress media library
@@ -173,7 +74,6 @@ const GalleryField = ({
 
       const newValue = [...localValue, ...newImages];
       setLocalValue(newValue);
-      setSelectedImages(newValue);
       onChange(newValue);
       setError('');
     });
@@ -182,26 +82,53 @@ const GalleryField = ({
     setMediaFrame(frame);
   };
 
-  // Get available mime types for filter
-  const getAvailableMimeTypes = () => {
-    const types = [...new Set(availableImages.map(img => img.mime_type))];
-    return types.map(type => ({
-      value: type,
-      label: type.split('/')[1].toUpperCase()
-    }));
-  };
+  // Open media library to edit existing gallery
+  const editGallery = () => {
+    if (typeof wp === 'undefined' || !wp.media) {
+      setError('WordPress media library not available');
+      return;
+    }
 
-  // Initialize on mount
-  useEffect(() => {
-    fetchImages();
-  }, []);
+    const frame = wp.media({
+      title: 'Edit Gallery',
+      multiple: true,
+      library: {
+        type: allowed_types
+      },
+      frame: 'select'
+    });
+
+    // Pre-select current images
+    frame.on('open', () => {
+      const selection = frame.state().get('selection');
+      localValue.forEach(image => {
+        const attachment = wp.media.attachment(image.id);
+        attachment.fetch();
+        selection.add(attachment);
+      });
+    });
+
+    frame.on('select', () => {
+      const selection = frame.state().get('selection');
+      const selectedMedia = selection.map(item => item.toJSON());
+      
+      if (max_images > 0 && selectedMedia.length > max_images) {
+        setError(`Maximum ${max_images} images allowed.`);
+        return;
+      }
+
+      setLocalValue(selectedMedia);
+      onChange(selectedMedia);
+      setError('');
+    });
+
+    frame.open();
+    setMediaFrame(frame);
+  };
 
   // Cleanup
   useEffect(() => {
     return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
       if (mediaFrame) {
         mediaFrame.close();
       }
@@ -210,6 +137,7 @@ const GalleryField = ({
 
   return (
     <div className={`ccc-field ccc-gallery-field ${className}`}>
+      {/* Field Header */}
       <div className="ccc-gallery-header">
         <div className="ccc-gallery-title">
           <ImageIcon className="ccc-icon" />
@@ -218,62 +146,51 @@ const GalleryField = ({
         </div>
         
         <div className="ccc-gallery-actions">
+          {localValue.length > 0 && (
+            <button
+              type="button"
+              onClick={editGallery}
+              className="ccc-btn ccc-btn-secondary ccc-btn-sm"
+              title="Edit gallery"
+            >
+              <Edit3 className="ccc-icon" />
+              Edit
+            </button>
+          )}
+          
           <button
             type="button"
             onClick={openMediaLibrary}
             className="ccc-btn ccc-btn-primary ccc-btn-sm"
             disabled={max_images > 0 && localValue.length >= max_images}
+            title={max_images > 0 && localValue.length >= max_images ? `Maximum ${max_images} images allowed` : "Add images to gallery"}
           >
             <Plus className="ccc-icon" />
-            Add Images
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => setShowFilters(!showFilters)}
-            className="ccc-btn ccc-btn-secondary ccc-btn-sm"
-          >
-            <Filter className="ccc-icon" />
+            {localValue.length > 0 ? 'Add More' : 'Add Images'}
           </button>
         </div>
       </div>
 
-      {/* Filters */}
-      {showFilters && (
-        <div className="ccc-gallery-filters">
-          <div className="ccc-search-container">
-            <div className="ccc-search-input-wrapper">
-              <Search className="ccc-search-icon" />
-              <input
-                type="text"
-                placeholder="Search images..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="ccc-search-input"
-              />
-            </div>
-          </div>
-          
-          <div className="ccc-filter-dropdown">
-            <select
-              value={selectedMimeType}
-              onChange={(e) => handleMimeTypeChange(e.target.value)}
-              className="ccc-filter-select"
-            >
-              <option value="">All Types</option>
-              {getAvailableMimeTypes().map(type => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
+      {/* Gallery Info */}
+      {localValue.length > 0 && (
+        <div className="ccc-gallery-info">
+          <span className="ccc-gallery-count">
+            {localValue.length} image{localValue.length !== 1 ? 's' : ''} selected
+          </span>
+          {(min_images > 0 || max_images > 0) && (
+            <span className="ccc-gallery-limits">
+              {min_images > 0 && `Min: ${min_images}`}
+              {min_images > 0 && max_images > 0 && ' • '}
+              {max_images > 0 && `Max: ${max_images}`}
+            </span>
+          )}
         </div>
       )}
 
       {/* Error Message */}
       {error && (
         <div className="ccc-error-message">
+          <X className="ccc-icon" />
           {error}
         </div>
       )}
@@ -281,49 +198,39 @@ const GalleryField = ({
       {/* Gallery Preview */}
       {localValue.length > 0 && (
         <div className="ccc-gallery-preview">
-          <div className="ccc-gallery-header-info">
-            <span className="ccc-gallery-count">
-              {localValue.length} image{localValue.length !== 1 ? 's' : ''} selected
-            </span>
-            {min_images > 0 && (
-              <span className="ccc-gallery-requirement">
-                (Minimum: {min_images}, Maximum: {max_images || 'Unlimited'})
-              </span>
-            )}
-          </div>
-          
           <div className="ccc-gallery-grid">
             {localValue.map((image, index) => (
               <div key={typeof image === 'object' ? image.id : image} className="ccc-gallery-item">
                 <div className="ccc-gallery-item-content">
                   {show_preview && image.url && (
-                    <img
-                      src={image.url}
-                      alt={image.alt || 'Gallery image'}
-                      className="ccc-gallery-thumbnail"
-                    />
+                    <div className="ccc-gallery-thumbnail-container">
+                      <img
+                        src={image.url}
+                        alt={image.alt || 'Gallery image'}
+                        className="ccc-gallery-thumbnail"
+                      />
+                      <div className="ccc-gallery-item-overlay">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(typeof image === 'object' ? image.id : image)}
+                          className="ccc-gallery-remove-btn"
+                          title="Remove from gallery"
+                        >
+                          <Trash2 className="ccc-icon" />
+                        </button>
+                      </div>
+                    </div>
                   )}
                   
-                  <div className="ccc-gallery-item-overlay">
-                    <div className="ccc-gallery-item-info">
-                      <span className="ccc-gallery-item-title">
-                        {image.title || image.filename || `Image ${index + 1}`}
-                      </span>
+                  <div className="ccc-gallery-item-info">
+                    <span className="ccc-gallery-item-title" title={image.title || image.filename}>
+                      {image.title || image.filename || `Image ${index + 1}`}
+                    </span>
+                    {image.filesizeHumanReadable && (
                       <span className="ccc-gallery-item-size">
-                        {image.filesizeHumanReadable || 'Unknown size'}
+                        {image.filesizeHumanReadable}
                       </span>
-                    </div>
-                    
-                    <div className="ccc-gallery-item-actions">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(typeof image === 'object' ? image.id : image)}
-                        className="ccc-gallery-remove-btn"
-                        title="Remove from gallery"
-                      >
-                        <X className="ccc-icon" />
-                      </button>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -332,93 +239,24 @@ const GalleryField = ({
         </div>
       )}
 
-      {/* Available Images (for reference) */}
-      {availableImages.length > 0 && (
-        <div className="ccc-gallery-available">
-          <div className="ccc-gallery-section-title">
-            Available Images ({availableImages.length})
-          </div>
-          
-          {isLoading ? (
-            <div className="ccc-loading">Loading images...</div>
-          ) : (
-            <div className="ccc-gallery-grid">
-              {availableImages.map((image) => {
-                const isSelected = localValue.some(selected => 
-                  (typeof selected === 'object' ? selected.id : selected) === image.id
-                );
-                
-                return (
-                  <div 
-                    key={image.id} 
-                    className={`ccc-gallery-item ${isSelected ? 'ccc-gallery-item-selected' : ''}`}
-                    onClick={isSelected ? undefined : () => handleAddImage(image)}
-                    style={{ 
-                      cursor: isSelected ? 'not-allowed' : 'pointer',
-                      opacity: isSelected ? 0.5 : 1
-                    }}
-                    title={isSelected ? "Image already in gallery" : "Click to add to gallery"}
-                  >
-                    <div className="ccc-gallery-item-content">
-                      <img
-                        src={image.url}
-                        alt={image.alt || 'Available image'}
-                        className="ccc-gallery-thumbnail"
-                      />
-                      
-                      <div className="ccc-gallery-item-overlay">
-                        <div className="ccc-gallery-item-info">
-                          <span className="ccc-gallery-item-title">
-                            {image.title || image.filename}
-                          </span>
-                          <span className="ccc-gallery-item-size">
-                            {image.filesizeHumanReadable}
-                          </span>
-                        </div>
-                        
-                        <div className="ccc-gallery-item-actions">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (!isSelected) {
-                                handleAddImage(image);
-                              }
-                            }}
-                            className="ccc-gallery-add-btn"
-                            disabled={isSelected || (max_images > 0 && localValue.length >= max_images)}
-                            title={
-                              isSelected ? "Image already in gallery" :
-                              max_images > 0 && localValue.length >= max_images ? `Maximum ${max_images} images allowed` : 
-                              "Click to add to gallery"
-                            }
-                          >
-                            <Plus className="ccc-icon" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Empty State */}
-      {localValue.length === 0 && !isLoading && (
+      {localValue.length === 0 && (
         <div className="ccc-gallery-empty">
-          <ImageIcon className="ccc-empty-icon" />
-          <p>No images selected</p>
-          <button
-            type="button"
-            onClick={openMediaLibrary}
-            className="ccc-btn ccc-btn-primary"
-          >
-            <Plus className="ccc-icon" />
-            Add Images
-          </button>
+          <div className="ccc-gallery-empty-content">
+            <div className="ccc-gallery-empty-icon">
+              <ImageIcon className="ccc-icon" />
+            </div>
+            <h4>No images selected</h4>
+            <p>Click "Add Images" to select images from your media library</p>
+            <button
+              type="button"
+              onClick={openMediaLibrary}
+              className="ccc-btn ccc-btn-primary"
+            >
+              <Plus className="ccc-icon" />
+              Add Images
+            </button>
+          </div>
         </div>
       )}
 
@@ -433,3 +271,282 @@ const GalleryField = ({
 };
 
 export default GalleryField;
+
+// CSS Styles for Gallery Field
+const galleryFieldStyles = `
+  .ccc-gallery-field {
+    margin-bottom: 20px;
+  }
+  
+  .ccc-gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .ccc-gallery-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #374151;
+  }
+  
+  .ccc-gallery-title .ccc-icon {
+    width: 18px;
+    height: 18px;
+    color: #6b7280;
+  }
+  
+  .ccc-gallery-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .ccc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .ccc-btn-primary {
+    background-color: #3b82f6;
+    color: white;
+  }
+  
+  .ccc-btn-primary:hover:not(:disabled) {
+    background-color: #2563eb;
+  }
+  
+  .ccc-btn-secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+  }
+  
+  .ccc-btn-secondary:hover:not(:disabled) {
+    background-color: #e5e7eb;
+  }
+  
+  .ccc-btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  .ccc-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .ccc-gallery-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: #6b7280;
+  }
+  
+  .ccc-gallery-count {
+    font-weight: 500;
+  }
+  
+  .ccc-gallery-limits {
+    font-size: 12px;
+    color: #9ca3af;
+  }
+  
+  .ccc-error-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    color: #dc2626;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  
+  .ccc-error-message .ccc-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+  
+  .ccc-gallery-preview {
+    margin-bottom: 16px;
+  }
+  
+  .ccc-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+  
+  .ccc-gallery-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: white;
+    transition: all 0.2s ease;
+  }
+  
+  .ccc-gallery-item:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border-color: #d1d5db;
+  }
+  
+  .ccc-gallery-item-content {
+    position: relative;
+  }
+  
+  .ccc-gallery-thumbnail-container {
+    position: relative;
+    width: 100%;
+    height: 100px;
+    overflow: hidden;
+  }
+  
+  .ccc-gallery-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s ease;
+  }
+  
+  .ccc-gallery-item:hover .ccc-gallery-thumbnail {
+    transform: scale(1.05);
+  }
+  
+  .ccc-gallery-item-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .ccc-gallery-item:hover .ccc-gallery-item-overlay {
+    opacity: 1;
+  }
+  
+  .ccc-gallery-remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background-color: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .ccc-gallery-remove-btn:hover {
+    background-color: #b91c1c;
+    transform: scale(1.1);
+  }
+  
+  .ccc-gallery-remove-btn .ccc-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .ccc-gallery-item-info {
+    padding: 8px;
+  }
+  
+  .ccc-gallery-item-title {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+  
+  .ccc-gallery-item-size {
+    display: block;
+    font-size: 11px;
+    color: #6b7280;
+  }
+  
+  .ccc-gallery-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    background-color: #f9fafb;
+    text-align: center;
+  }
+  
+  .ccc-gallery-empty-content {
+    max-width: 300px;
+  }
+  
+  .ccc-gallery-empty-icon {
+    margin-bottom: 16px;
+  }
+  
+  .ccc-gallery-empty-icon .ccc-icon {
+    width: 48px;
+    height: 48px;
+    color: #9ca3af;
+  }
+  
+  .ccc-gallery-empty h4 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #374151;
+  }
+  
+  .ccc-gallery-empty p {
+    margin: 0 0 16px 0;
+    color: #6b7280;
+    line-height: 1.5;
+  }
+  
+  .ccc-required {
+    color: #dc2626;
+    margin-left: 4px;
+  }
+  
+  .ccc-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+`;
+
+// Inject styles into the document
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = galleryFieldStyles;
+  document.head.appendChild(styleSheet);
+}
