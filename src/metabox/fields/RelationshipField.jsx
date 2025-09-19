@@ -28,6 +28,7 @@ const RelationshipField = ({
   const [selectedPostType, setSelectedPostType] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedTaxonomies, setSelectedTaxonomies] = useState({});
+  const [availableTaxonomies, setAvailableTaxonomies] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState('');
 
@@ -131,11 +132,13 @@ const RelationshipField = ({
     }
   };
 
-  // Load posts only once on mount
+  // Load posts and taxonomies only once on mount
   useEffect(() => {
     // Only fetch posts once on mount if we have the necessary configuration
     if (window.cccData && window.cccData.ajaxUrl && (window.getNonce || window.cccData?.nonce)) {
       fetchPosts();
+      // Fetch initial taxonomies (all taxonomies since no post type is selected initially)
+      fetchTaxonomiesForPostType('all');
     } else {
       console.warn('RelationshipField: Cannot fetch posts - missing AJAX configuration');
       setError('AJAX configuration not available');
@@ -171,6 +174,10 @@ const RelationshipField = ({
 
   const handlePostTypeChange = (value) => {
     setSelectedPostType(value);
+    // Fetch taxonomies for the selected post type
+    fetchTaxonomiesForPostType(value);
+    // Clear selected taxonomies when post type changes
+    setSelectedTaxonomies({});
     fetchPosts();
   };
 
@@ -182,6 +189,36 @@ const RelationshipField = ({
   const handleTaxonomyChange = (value) => {
     setSelectedTaxonomies(value);
     fetchPosts();
+  };
+
+  // Fetch taxonomies for the selected post type
+  const fetchTaxonomiesForPostType = async (postType) => {
+    try {
+      console.log('RelationshipField: Fetching taxonomies for post type:', postType);
+      
+      const formData = new FormData();
+      formData.append('action', 'ccc_get_taxonomies_for_post_type');
+      formData.append('nonce', window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''));
+      formData.append('post_type', postType || 'all');
+      
+      const response = await fetch(window.cccData?.ajaxUrl || window.ajaxurl, {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setAvailableTaxonomies(data.data || []);
+        console.log('RelationshipField: Available taxonomies:', data.data);
+      } else {
+        console.error('RelationshipField: Failed to fetch taxonomies:', data.data);
+        setAvailableTaxonomies([]);
+      }
+    } catch (error) {
+      console.error('RelationshipField: Error fetching taxonomies:', error);
+      setAvailableTaxonomies([]);
+    }
   };
 
   // Handle adding a post
@@ -358,7 +395,7 @@ const RelationshipField = ({
                   </div>
                 )}
 
-                {filters.includes('taxonomy') && taxonomy_filters.length > 0 && (
+                {filters.includes('taxonomy') && availableTaxonomies.length > 0 && (
                   <div className="ccc-filter-group">
                     <Tag className="ccc-icon" />
                     <select
@@ -367,13 +404,15 @@ const RelationshipField = ({
                         const taxonomy = e.target.value;
                         if (taxonomy) {
                           handleTaxonomyChange({ [taxonomy]: [] });
+                        } else {
+                          handleTaxonomyChange({});
                         }
                       }}
                     >
                       <option value="">All Taxonomies</option>
-                      {taxonomy_filters.map(filter => (
-                        <option key={filter.taxonomy} value={filter.taxonomy}>
-                          {filter.taxonomy}
+                      {availableTaxonomies.map(taxonomy => (
+                        <option key={taxonomy.value} value={taxonomy.value}>
+                          {taxonomy.label}
                         </option>
                       ))}
                     </select>

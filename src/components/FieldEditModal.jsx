@@ -754,7 +754,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   useEffect(() => {
     if (isOpen && type === 'relationship') {
       fetchAvailablePostTypes();
-      fetchAvailableTaxonomies();
+      fetchAvailableTaxonomies('all'); // Fetch all taxonomies initially
     }
   }, [isOpen, type]);
 
@@ -802,15 +802,16 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     }
   };
 
-  const fetchAvailableTaxonomies = async () => {
+  const fetchAvailableTaxonomies = async (postType = 'all') => {
     try {
-      console.log('FieldEditModal: Fetching available taxonomies');
+      console.log('FieldEditModal: Fetching available taxonomies for post type:', postType);
       const response = await fetch(window.cccData.ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-          action: 'ccc_get_available_taxonomies',
-          nonce: window.cccData.nonce
+          action: 'ccc_get_taxonomies_for_post_type',
+          nonce: window.cccData.nonce,
+          post_type: postType
         })
       });
       
@@ -2036,6 +2037,18 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                                   ...relationshipConfig,
                                   post_types: newTypes
                                 });
+                                
+                                // Update taxonomies based on selected post types
+                                if (newTypes.length === 0) {
+                                  // If no post types selected, show all taxonomies
+                                  fetchAvailableTaxonomies('all');
+                                } else if (newTypes.length === 1) {
+                                  // If one post type selected, show taxonomies for that post type
+                                  fetchAvailableTaxonomies(newTypes[0]);
+                                } else {
+                                  // If multiple post types selected, show all taxonomies
+                                  fetchAvailableTaxonomies('all');
+                                }
                               }}
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
                             />
