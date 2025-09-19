@@ -101,7 +101,7 @@ const GalleryField = ({
       item.dragKey === dragKey ? { ...item, enabled: !item.enabled } : item
     );
     setLocalValue(newValue);
-    // Only send enabled images to parent component
+    // Keep all images in the UI, but only send enabled images to parent component
     const enabledImages = newValue.filter(item => item.enabled);
     onChange(enabledImages);
   };
@@ -255,24 +255,24 @@ const GalleryField = ({
   }, [mediaFrame]);
 
   return (
-    <div className={`ccc-field ccc-gallery-field ${className}`}>
+    <div className={`mb-5 ${className}`}>
       {/* Field Header */}
-      <div className="ccc-gallery-header">
-        <div className="ccc-gallery-title">
-          <ImageIcon className="ccc-icon" />
+      <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
+        <div className="flex items-center gap-2 font-semibold text-gray-700">
+          <ImageIcon className="w-4 h-4 text-gray-500" />
           <span>{field?.label || 'Gallery'}</span>
-          {isRequired && <span className="ccc-required">*</span>}
+          {isRequired && <span className="text-red-600 ml-1">*</span>}
         </div>
         
-        <div className="ccc-gallery-actions">
+        <div className="flex gap-2">
           {localValue.length > 0 && (
             <button
               type="button"
               onClick={editGallery}
-              className="ccc-btn ccc-btn-secondary ccc-btn-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
               title="Edit gallery"
             >
-              <Edit3 className="ccc-icon" />
+              <Edit3 className="w-4 h-4" />
               Edit
             </button>
           )}
@@ -280,11 +280,11 @@ const GalleryField = ({
           <button
             type="button"
             onClick={openMediaLibrary}
-            className="ccc-btn ccc-btn-primary ccc-btn-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             disabled={max_images > 0 && localValue.length >= max_images}
             title={max_images > 0 && localValue.length >= max_images ? `Maximum ${max_images} images allowed` : "Add images to gallery"}
           >
-            <Plus className="ccc-icon" />
+            <Plus className="w-4 h-4" />
             {localValue.length > 0 ? 'Add More' : 'Add Images'}
           </button>
         </div>
@@ -292,17 +292,19 @@ const GalleryField = ({
 
       {/* Gallery Info */}
       {localValue.length > 0 && (
-        <div className="ccc-gallery-info">
-          <span className="ccc-gallery-count">
-            {getEnabledImages().length} of {localValue.length} image{localValue.length !== 1 ? 's' : ''} enabled
-          </span>
-          {getEnabledImages().length !== localValue.length && (
-            <span className="ccc-gallery-disabled-count">
-              ({localValue.length - getEnabledImages().length} hidden)
+        <div className="flex justify-between items-center mb-3 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">
+              {getEnabledImages().length} of {localValue.length} image{localValue.length !== 1 ? 's' : ''} enabled
             </span>
-          )}
+            {getEnabledImages().length !== localValue.length && (
+              <span className="text-xs text-gray-400">
+                ({localValue.length - getEnabledImages().length} hidden)
+              </span>
+            )}
+          </div>
           {(min_images > 0 || max_images > 0) && (
-            <span className="ccc-gallery-limits">
+            <span className="text-xs text-gray-400">
               {min_images > 0 && `Min: ${min_images}`}
               {min_images > 0 && max_images > 0 && ' • '}
               {max_images > 0 && `Max: ${max_images}`}
@@ -313,34 +315,34 @@ const GalleryField = ({
 
       {/* Error Message */}
       {error && (
-        <div className="ccc-error-message">
-          <X className="ccc-icon" />
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm mb-3">
+          <X className="w-4 h-4 flex-shrink-0" />
           {error}
         </div>
       )}
 
       {/* Gallery Preview */}
       {localValue.length > 0 && (
-        <div className="ccc-gallery-preview">
-          <div className="ccc-gallery-grid">
+        <div className="mb-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3">
             {localValue.map((image, index) => (
               <div 
                 key={image.dragKey} 
-                className={`ccc-gallery-item ${!image.enabled ? 'ccc-gallery-item-disabled' : ''}`}
+                className={`relative border border-gray-200 rounded-lg overflow-hidden bg-white transition-all duration-200 cursor-move hover:shadow-md hover:border-gray-300 ${!image.enabled ? 'opacity-60 border-gray-100 hover:shadow-none hover:border-gray-100' : ''}`}
                 draggable={true}
                 onDragStart={(e) => handleDragStart(e, image.dragKey)}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, image.dragKey)}
               >
-                <div className="ccc-gallery-item-content">
+                <div className="relative">
                   {/* Drag Handle */}
-                  <div className="ccc-gallery-drag-handle">
-                    <GripVertical className="ccc-icon" />
+                  <div className="absolute top-1 left-1 bg-black bg-opacity-70 text-white p-1 rounded opacity-0 hover:opacity-100 transition-opacity duration-200 z-10">
+                    <GripVertical className="w-3 h-3" />
                   </div>
                   
-                  {/* Toggle Switch */}
-                  <div className="ccc-gallery-toggle-container">
-                    <label className="ccc-toggle-switch">
+                  {/* Toggle Switch and Delete Button */}
+                  <div className="absolute top-1 right-1 flex gap-2 items-center opacity-0 hover:opacity-100 transition-opacity duration-200 z-10">
+                    <label className="relative inline-block w-8 h-4.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={image.enabled}
@@ -348,51 +350,52 @@ const GalleryField = ({
                           e.stopPropagation();
                           handleToggleImage(image.dragKey);
                         }}
+                        className="opacity-0 w-0 h-0"
                       />
-                      <span className="ccc-toggle-slider"></span>
+                      <span className={`absolute cursor-pointer top-0 left-0 right-0 bottom-0 transition-all duration-300 rounded-full border border-pink-400 ${image.enabled ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                      <span className={`absolute content-[''] h-3.5 w-3.5 bottom-0.5 bg-white transition-all duration-300 rounded-full shadow-sm ${image.enabled ? 'left-3.5' : 'left-0.5'}`}></span>
                     </label>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveImage(image.dragKey);
+                      }}
+                      className="flex items-center justify-center w-6 h-6 bg-red-600 bg-opacity-90 text-white border-none rounded-full cursor-pointer transition-all duration-200 p-0 hover:bg-opacity-95 hover:scale-110"
+                      title="Remove from gallery"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
                   {show_preview && image.url && (
-                    <div className="ccc-gallery-thumbnail-container">
+                    <div className="relative w-full h-24 overflow-hidden">
                       <img
                         src={image.url}
                         alt={image.alt || 'Gallery image'}
-                        className="ccc-gallery-thumbnail"
+                        className="w-full h-full object-cover transition-transform duration-200 hover:scale-105"
                       />
-                      <div className="ccc-gallery-item-overlay">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveImage(image.dragKey);
-                          }}
-                          className="ccc-gallery-remove-btn"
-                          title="Remove from gallery"
-                        >
-                          <Trash2 className="ccc-icon" />
-                        </button>
-                      </div>
+                      <div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none"></div>
                     </div>
                   )}
                   
                   {!show_preview && (
-                    <div className="ccc-gallery-no-preview">
-                      <ImageIcon className="ccc-icon" />
+                    <div className="flex flex-col items-center justify-center w-full h-24 bg-gray-100 text-gray-500 text-xs">
+                      <ImageIcon className="w-6 h-6 mb-1 text-gray-400" />
                       <span>Preview disabled</span>
                     </div>
                   )}
                   
-                  <div className="ccc-gallery-item-info">
-                    <span className="ccc-gallery-item-title" title={image.title || image.filename}>
+                  <div className="p-2">
+                    <span className="block text-xs font-medium text-gray-700 whitespace-nowrap overflow-hidden text-ellipsis mb-1" title={image.title || image.filename}>
                       {image.title || image.filename || `Image ${index + 1}`}
                     </span>
                     {image.filesizeHumanReadable && (
-                      <span className="ccc-gallery-item-size">
+                      <span className="block text-xs text-gray-500">
                         {image.filesizeHumanReadable}
                       </span>
                     )}
-                    <div className="ccc-gallery-item-status">
-                      <span className={`ccc-status-indicator ${image.enabled ? 'ccc-status-enabled' : 'ccc-status-disabled'}`}>
+                    <div className="mt-1">
+                      <span className={`inline-block px-1.5 py-0.5 rounded-full text-xs font-medium uppercase ${image.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
                         {image.enabled ? 'Visible' : 'Hidden'}
                       </span>
                     </div>
@@ -406,19 +409,19 @@ const GalleryField = ({
 
       {/* Empty State */}
       {localValue.length === 0 && (
-        <div className="ccc-gallery-empty">
-          <div className="ccc-gallery-empty-content">
-            <div className="ccc-gallery-empty-icon">
-              <ImageIcon className="ccc-icon" />
+        <div className="flex items-center justify-center min-h-[200px] border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 text-center">
+          <div className="max-w-xs">
+            <div className="flex items-center justify-center mb-4">
+              <ImageIcon className="w-12 h-12 text-gray-400" />
             </div>
-            <h4>No images selected</h4>
-            <p>Click "Add Images" to select images from your media library</p>
+            <h4 className="text-lg font-semibold text-gray-700 mb-2">No images selected</h4>
+            <p className="text-gray-600 mb-4">Click "Add Images" to select images from your media library</p>
             <button
               type="button"
               onClick={openMediaLibrary}
-              className="ccc-btn ccc-btn-primary"
+              className="inline-flex items-center gap-2 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
             >
-              <Plus className="ccc-icon" />
+              <Plus className="w-4 h-4" />
               Add Images
             </button>
           </div>
@@ -436,433 +439,3 @@ const GalleryField = ({
 };
 
 export default GalleryField;
-
-// CSS Styles for Gallery Field
-const galleryFieldStyles = `
-  .ccc-gallery-field {
-    margin-bottom: 20px;
-  }
-  
-  .ccc-gallery-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e5e7eb;
-  }
-  
-  .ccc-gallery-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 600;
-    color: #374151;
-  }
-  
-  .ccc-gallery-title .ccc-icon {
-    width: 18px;
-    height: 18px;
-    color: #6b7280;
-  }
-  
-  .ccc-gallery-actions {
-    display: flex;
-    gap: 8px;
-  }
-  
-  .ccc-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .ccc-btn-primary {
-    background-color: #3b82f6;
-    color: white;
-  }
-  
-  .ccc-btn-primary:hover:not(:disabled) {
-    background-color: #2563eb;
-  }
-  
-  .ccc-btn-secondary {
-    background-color: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
-  }
-  
-  .ccc-btn-secondary:hover:not(:disabled) {
-    background-color: #e5e7eb;
-  }
-  
-  .ccc-btn-sm {
-    padding: 6px 12px;
-    font-size: 13px;
-  }
-  
-  .ccc-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .ccc-gallery-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    font-size: 14px;
-    color: #6b7280;
-  }
-  
-  .ccc-gallery-count {
-    font-weight: 500;
-  }
-  
-  .ccc-gallery-disabled-count {
-    font-size: 12px;
-    color: #9ca3af;
-    margin-left: 4px;
-  }
-  
-  .ccc-gallery-limits {
-    font-size: 12px;
-    color: #9ca3af;
-  }
-  
-  .ccc-error-message {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px;
-    background-color: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 6px;
-    color: #dc2626;
-    font-size: 14px;
-    margin-bottom: 12px;
-  }
-  
-  .ccc-error-message .ccc-icon {
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-  }
-  
-  .ccc-gallery-preview {
-    margin-bottom: 16px;
-  }
-  
-  .ccc-gallery-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 12px;
-  }
-  
-  .ccc-gallery-item {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    overflow: hidden;
-    background-color: white;
-    transition: all 0.2s ease;
-    cursor: move;
-    position: relative;
-  }
-  
-  .ccc-gallery-item:hover {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    border-color: #d1d5db;
-  }
-  
-  .ccc-gallery-item-disabled {
-    opacity: 0.6;
-    border-color: #f3f4f6;
-  }
-  
-  .ccc-gallery-item-disabled:hover {
-    box-shadow: none;
-    border-color: #f3f4f6;
-  }
-  
-  .ccc-gallery-item-content {
-    position: relative;
-  }
-  
-  .ccc-gallery-drag-handle {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 4px;
-    border-radius: 4px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    z-index: 10;
-  }
-  
-  .ccc-gallery-item:hover .ccc-gallery-drag-handle {
-    opacity: 1;
-  }
-  
-  .ccc-gallery-drag-handle .ccc-icon {
-    width: 12px;
-    height: 12px;
-  }
-  
-  .ccc-gallery-toggle-container {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    z-index: 10;
-  }
-  
-  .ccc-gallery-item:hover .ccc-gallery-toggle-container {
-    opacity: 1;
-  }
-  
-  .ccc-toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 32px;
-    height: 18px;
-    cursor: pointer;
-  }
-  
-  .ccc-toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-  
-  .ccc-toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: 0.3s;
-    border-radius: 18px;
-    border: 1px solid #ff69b4;
-  }
-  
-  .ccc-toggle-slider:before {
-    position: absolute;
-    content: "";
-    height: 14px;
-    width: 14px;
-    left: 1px;
-    bottom: 1px;
-    background-color: white;
-    transition: 0.3s;
-    border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  }
-  
-  .ccc-toggle-switch input:checked + .ccc-toggle-slider {
-    background-color: #22c55e;
-  }
-  
-  .ccc-toggle-switch input:checked + .ccc-toggle-slider:before {
-    transform: translateX(14px);
-  }
-  
-  .ccc-toggle-switch:hover .ccc-toggle-slider {
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .ccc-gallery-thumbnail-container {
-    position: relative;
-    width: 100%;
-    height: 100px;
-    overflow: hidden;
-  }
-  
-  .ccc-gallery-no-preview {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100px;
-    background-color: #f3f4f6;
-    color: #6b7280;
-    font-size: 12px;
-  }
-  
-  .ccc-gallery-no-preview .ccc-icon {
-    width: 24px;
-    height: 24px;
-    margin-bottom: 4px;
-    color: #9ca3af;
-  }
-  
-  .ccc-gallery-thumbnail {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.2s ease;
-  }
-  
-  .ccc-gallery-item:hover .ccc-gallery-thumbnail {
-    transform: scale(1.05);
-  }
-  
-  .ccc-gallery-item-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-  
-  .ccc-gallery-item:hover .ccc-gallery-item-overlay {
-    opacity: 1;
-  }
-  
-  .ccc-gallery-remove-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    background-color: #dc2626;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .ccc-gallery-remove-btn:hover {
-    background-color: #b91c1c;
-    transform: scale(1.1);
-  }
-  
-  .ccc-gallery-remove-btn .ccc-icon {
-    width: 16px;
-    height: 16px;
-  }
-  
-  
-  .ccc-gallery-item-info {
-    padding: 8px;
-  }
-  
-  .ccc-gallery-item-title {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    color: #374151;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 4px;
-  }
-  
-  .ccc-gallery-item-size {
-    display: block;
-    font-size: 11px;
-    color: #6b7280;
-  }
-  
-  .ccc-gallery-item-status {
-    margin-top: 4px;
-  }
-  
-  .ccc-status-indicator {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 12px;
-    font-size: 10px;
-    font-weight: 500;
-    text-transform: uppercase;
-  }
-  
-  .ccc-status-enabled {
-    background-color: #d1fae5;
-    color: #065f46;
-  }
-  
-  .ccc-status-disabled {
-    background-color: #f3f4f6;
-    color: #6b7280;
-  }
-  
-  .ccc-gallery-empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 200px;
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
-    background-color: #f9fafb;
-    text-align: center;
-  }
-  
-  .ccc-gallery-empty-content {
-    max-width: 300px;
-  }
-  
-  .ccc-gallery-empty-icon {
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .ccc-gallery-empty-icon .ccc-icon {
-    width: 48px;
-    height: 48px;
-    color: #9ca3af;
-  }
-  
-  .ccc-gallery-empty h4 {
-    margin: 0 0 8px 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #374151;
-  }
-  
-  .ccc-gallery-empty p {
-    margin: 0 0 16px 0;
-    color: #6b7280;
-    line-height: 1.5;
-  }
-  
-  .ccc-required {
-    color: #dc2626;
-    margin-left: 4px;
-  }
-  
-  .ccc-icon {
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-  }
-`;
-
-// Inject styles into the document
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style');
-  styleSheet.textContent = galleryFieldStyles;
-  document.head.appendChild(styleSheet);
-}
