@@ -37,13 +37,12 @@ const GalleryField = ({
   // Initialize local value with enhanced image objects
   useEffect(() => {
     if (Array.isArray(value)) {
-      // Value from database should only contain enabled images
-      // But we need to maintain the full state locally for UI purposes
+      // Value can contain both enabled and disabled images from parent component
       const enhancedValue = value.map((item, index) => {
         if (typeof item === 'object') {
           return {
             ...item,
-            enabled: true, // Images from DB are always enabled
+            enabled: item.enabled !== undefined ? item.enabled : true, // Preserve existing enabled state
             dragKey: item.dragKey || `${item.id}_${Date.now()}_${index}`
           };
         } else {
@@ -63,7 +62,7 @@ const GalleryField = ({
             if (typeof item === 'object') {
               return {
                 ...item,
-                enabled: true, // Images from DB are always enabled
+                enabled: item.enabled !== undefined ? item.enabled : true, // Preserve existing enabled state
                 dragKey: item.dragKey || `${item.id}_${Date.now()}_${index}`
               };
             } else {
@@ -89,9 +88,8 @@ const GalleryField = ({
   const handleRemoveImage = (dragKey) => {
     const newValue = localValue.filter(item => item.dragKey !== dragKey);
     setLocalValue(newValue);
-    // Only send enabled images to parent component
-    const enabledImages = newValue.filter(item => item.enabled);
-    onChange(enabledImages);
+    // Send all remaining images to parent component (including disabled ones)
+    onChange(newValue);
     setError('');
   };
 
@@ -101,9 +99,8 @@ const GalleryField = ({
       item.dragKey === dragKey ? { ...item, enabled: !item.enabled } : item
     );
     setLocalValue(newValue);
-    // Keep all images in the UI, but only send enabled images to parent component
-    const enabledImages = newValue.filter(item => item.enabled);
-    onChange(enabledImages);
+    // Send all images to parent component (including disabled ones)
+    onChange(newValue);
   };
 
   // Handle drag and drop reordering
@@ -133,9 +130,8 @@ const GalleryField = ({
     newValue.splice(targetIndex, 0, draggedItem);
     
     setLocalValue(newValue);
-    // Only send enabled images to parent component
-    const enabledImages = newValue.filter(item => item.enabled);
-    onChange(enabledImages);
+    // Send all images to parent component (including disabled ones)
+    onChange(newValue);
   };
 
   // Get only enabled images for fetching/display purposes
@@ -182,9 +178,8 @@ const GalleryField = ({
 
       const newValue = [...localValue, ...newImages];
       setLocalValue(newValue);
-      // Only send enabled images to parent component
-      const enabledImages = newValue.filter(item => item.enabled);
-      onChange(enabledImages);
+      // Send all images to parent component (including disabled ones)
+      onChange(newValue);
       setError('');
     });
 
@@ -235,9 +230,8 @@ const GalleryField = ({
       }));
       
       setLocalValue(enhancedMedia);
-      // Only send enabled images to parent component
-      const enabledImages = enhancedMedia.filter(item => item.enabled);
-      onChange(enabledImages);
+      // Send all images to parent component (including disabled ones)
+      onChange(enhancedMedia);
       setError('');
     });
 
