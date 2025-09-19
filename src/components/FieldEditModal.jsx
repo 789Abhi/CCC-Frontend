@@ -599,7 +599,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               }));
             }
             
-            if (field.type === 'relationship' && config.filter_post_types) {
+            if (field.type === 'relationship') {
               setRelationshipConfig(prev => ({
                 ...prev,
                 filter_post_types: config.filter_post_types || [],
@@ -1220,7 +1220,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           }
         } else if (type === "relationship") {
           fieldData.config = {
-            ...relationshipConfig,
+            filter_post_types: relationshipConfig.filter_post_types || [],
+            filter_post_status: relationshipConfig.filter_post_status || [],
+            filter_taxonomy: relationshipConfig.filter_taxonomy || '',
+            filters: relationshipConfig.filters || ['search', 'post_type'],
+            max_posts: relationshipConfig.max_posts || 0,
+            return_format: relationshipConfig.return_format || 'object',
             // Include conditional logic for relationship fields
             field_condition: conditionalLogicConfig?.field_condition || 'always_show',
             conditional_logic: conditionalLogicConfig?.conditional_logic || [],
@@ -2013,9 +2018,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       className="w-full px-3 py-2 border border-gray-300 rounded-md cursor-pointer bg-white flex items-center justify-between"
                       onClick={() => setShowPostTypesDropdown(!showPostTypesDropdown)}
                     >
-                      <span className={relationshipConfig.post_types?.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
-                        {relationshipConfig.post_types?.length > 0 
-                          ? `${relationshipConfig.post_types.length} post type(s) selected`
+                      <span className={relationshipConfig.filter_post_types?.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                        {relationshipConfig.filter_post_types?.length > 0 
+                          ? `${relationshipConfig.filter_post_types.length} post type(s) selected`  
                           : 'All post types'
                         }
                       </span>
@@ -2028,9 +2033,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                           <label key={postType.value} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
                             <input
                               type="checkbox"
-                              checked={relationshipConfig.post_types?.includes(postType.value) || false}
+                              checked={relationshipConfig.filter_post_types?.includes(postType.value) || false}
                               onChange={(e) => {
-                                const currentTypes = relationshipConfig.post_types || [];
+                                const currentTypes = relationshipConfig.filter_post_types || [];
                                 let newTypes;
                                 if (e.target.checked) {
                                   newTypes = [...currentTypes, postType.value];
@@ -2039,7 +2044,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                                 }
                                 setRelationshipConfig({
                                   ...relationshipConfig,
-                                  post_types: newTypes
+                                  filter_post_types: newTypes
                                 });
                                 
                                 // Update taxonomies based on selected post types
@@ -2081,9 +2086,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       className="w-full px-3 py-2 border border-gray-300 rounded-md cursor-pointer bg-white flex items-center justify-between"
                       onClick={() => setShowPostStatusDropdown(!showPostStatusDropdown)}
                     >
-                      <span className={relationshipConfig.post_status?.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
-                        {relationshipConfig.post_status?.length > 0 
-                          ? `${relationshipConfig.post_status.length} status(es) selected`
+                      <span className={relationshipConfig.filter_post_status?.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                        {relationshipConfig.filter_post_status?.length > 0 
+                          ? `${relationshipConfig.filter_post_status.length} status(es) selected`
                           : 'Any post status'
                         }
                       </span>
@@ -2102,9 +2107,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                           <label key={status.value} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
                             <input
                               type="checkbox"
-                              checked={relationshipConfig.post_status?.includes(status.value) || false}
+                              checked={relationshipConfig.filter_post_status?.includes(status.value) || false}
                               onChange={(e) => {
-                                const currentStatuses = relationshipConfig.post_status || [];
+                                const currentStatuses = relationshipConfig.filter_post_status || [];
                                 let newStatuses;
                                 if (e.target.checked) {
                                   newStatuses = [...currentStatuses, status.value];
@@ -2113,7 +2118,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                                 }
                                 setRelationshipConfig({
                                   ...relationshipConfig,
-                                  post_status: newStatuses
+                                  filter_post_status: newStatuses
                                 });
                               }}
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
@@ -2139,9 +2144,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       className="w-full px-3 py-2 border border-gray-300 rounded-md cursor-pointer bg-white flex items-center justify-between"
                       onClick={() => setShowTaxonomyDropdown(!showTaxonomyDropdown)}
                     >
-                      <span className={relationshipConfig.taxonomy_filters?.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
-                        {relationshipConfig.taxonomy_filters?.length > 0 
-                          ? `${relationshipConfig.taxonomy_filters.length} taxonomy(ies) selected`
+                      <span className={relationshipConfig.filter_taxonomy ? 'text-gray-900' : 'text-gray-500'}>
+                        {relationshipConfig.filter_taxonomy 
+                          ? 'Taxonomy selected'
                           : 'All taxonomies'
                         }
                       </span>
@@ -2154,18 +2159,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                           <label key={taxonomy.value} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
                             <input
                               type="checkbox"
-                              checked={relationshipConfig.taxonomy_filters?.some(t => t.taxonomy === taxonomy.value) || false}
+                              checked={relationshipConfig.filter_taxonomy === taxonomy.value}
                               onChange={(e) => {
-                                const currentFilters = relationshipConfig.taxonomy_filters || [];
-                                let newFilters;
-                                if (e.target.checked) {
-                                  newFilters = [...currentFilters, { taxonomy: taxonomy.value, terms: [] }];
-                                } else {
-                                  newFilters = currentFilters.filter(f => f.taxonomy !== taxonomy.value);
-                                }
+                                const newTaxonomy = e.target.checked ? taxonomy.value : '';
                                 setRelationshipConfig({
                                   ...relationshipConfig,
-                                  taxonomy_filters: newFilters
+                                  filter_taxonomy: newTaxonomy
                                 });
                               }}
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
