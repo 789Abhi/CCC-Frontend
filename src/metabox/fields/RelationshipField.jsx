@@ -24,11 +24,6 @@ const RelationshipField = ({
   const [localValue, setLocalValue] = useState([]);
   const [availablePosts, setAvailablePosts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPostType, setSelectedPostType] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [selectedTaxonomies, setSelectedTaxonomies] = useState({});
-  const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState('');
 
   const dropdownRef = useRef(null);
@@ -76,13 +71,23 @@ const RelationshipField = ({
       const formData = new FormData();
       formData.append('action', 'ccc_get_relationship_posts');
       formData.append('nonce', window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''));
-      formData.append('post_types', post_types.join(','));
-      formData.append('post_status', post_status.join(','));
-      formData.append('search', searchTerm || '');
-      formData.append('post_type_filter', selectedPostType || '');
-      formData.append('status_filter', selectedStatus || '');
-      formData.append('taxonomy_filters', JSON.stringify(selectedTaxonomies));
-      formData.append('exclude', localValue.join(','));
+      
+      // Add filters from fieldConfig
+      if (post_types.length > 0) {
+        formData.append('post_types', JSON.stringify(post_types));
+      }
+      if (post_status.length > 0) {
+        formData.append('post_status', JSON.stringify(post_status));
+      }
+      if (taxonomy_filters.length > 0) {
+        formData.append('taxonomy_filters', JSON.stringify(taxonomy_filters));
+      }
+      
+      // Exclude already selected posts to prevent duplicate selection
+      if (localValue.length > 0) {
+        formData.append('exclude', JSON.stringify(localValue));
+      }
+      
       formData.append('per_page', '50');
 
       const response = await fetch(window.cccData?.ajaxUrl || window.ajaxurl, {
@@ -130,36 +135,6 @@ const RelationshipField = ({
   // Debounce timer ref
   const searchTimeoutRef = useRef(null);
 
-  // Manual trigger functions for filter changes
-  const handleSearchChange = (value) => {
-    setSearchTerm(value);
-    
-    // Clear existing timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    // Set new timeout for debounced search
-    searchTimeoutRef.current = setTimeout(() => {
-      fetchPosts();
-    }, 500); // 500ms debounce for better UX
-  };
-
-  const handlePostTypeChange = (value) => {
-    setSelectedPostType(value);
-    fetchPosts();
-  };
-
-  const handleStatusChange = (value) => {
-    setSelectedStatus(value);
-    fetchPosts();
-  };
-
-  const handleTaxonomyChange = (value) => {
-    setSelectedTaxonomies(value);
-    fetchPosts();
-  };
-
   // Handle adding a post
   const handleAddPost = (post) => {
     const newValue = [...localValue, post.ID];
@@ -173,6 +148,11 @@ const RelationshipField = ({
     setLocalValue(newValue);
     onChange(newValue);
     setError('');
+    
+    // Refresh available posts to remove the selected one
+    setTimeout(() => {
+      fetchPosts();
+    }, 100);
   };
 
   // Handle removing a post
@@ -181,6 +161,11 @@ const RelationshipField = ({
     setLocalValue(newValue);
     onChange(newValue);
     setError('');
+    
+    // Refresh available posts to show the removed post again
+    setTimeout(() => {
+      fetchPosts();
+    }, 100);
   };
 
   // Get selected posts for display
@@ -230,23 +215,6 @@ const RelationshipField = ({
   };
 
 
-  // Get available post types for filter
-  const getAvailablePostTypes = () => {
-    const types = [...new Set(availablePosts.map(p => p.post_type))];
-    return types.map(type => ({
-      value: type,
-      label: getPostTypeLabel(type)
-    }));
-  };
-
-  // Get available statuses for filter
-  const getAvailableStatuses = () => {
-    const statuses = [...new Set(availablePosts.map(p => p.post_status))];
-    return statuses.map(status => ({
-      value: status,
-      label: status.charAt(0).toUpperCase() + status.slice(1)
-    }));
-  };
 
   const selectedPosts = getSelectedPosts();
   const groupedPosts = getGroupedPosts();
@@ -262,82 +230,12 @@ const RelationshipField = ({
 
       {/* Two Column Layout */}
       <div className="ccc-relationship-columns">
-        {/* Left Column - Selected Posts */}
-        <div className="ccc-column ccc-selected-column">
-          <div className="ccc-selected-posts">
-            <div className="ccc-selected-header">
-              <h4>Selected Posts ({selectedPosts.length})</h4>
-              {min_posts > 0 && (
-                <span className="ccc-min-posts">
-                  Min: {min_posts}
-                </span>
-              )}
-              {max_posts > 0 && (
-                <span className="ccc-max-posts">
-                  Max: {max_posts}
-                </span>
-              )}
-            </div>
-
-            {selectedPosts.length === 0 ? (
-              <div className="ccc-no-selection">
-                <FileText className="ccc-icon" />
-                <p>No posts selected</p>
-                <small>Select posts from the right panel</small>
-              </div>
-            ) : (
-              <div className="ccc-selected-list">
-                {selectedPosts.map((post) => (
-                  <div key={post.ID} className="ccc-selected-item">
-                    <div className="ccc-post-info">
-                      {post.featured_image && (
-                        <img 
-                          src={post.featured_image} 
-                          alt={post.post_title}
-                          className="ccc-post-thumbnail"
-                        />
-                      )}
-                      <div className="ccc-post-details">
-                        <h5 className="ccc-post-title">{post.post_title}</h5>
-                        <div className="ccc-post-meta">
-                          <span className="ccc-post-type">
-                            {getPostTypeLabel(post.post_type)}
-                          </span>
-                          <span className="ccc-post-status">
-                            {post.post_status}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePost(post.ID)}
-                      className="ccc-remove-btn"
-                      title="Remove post"
-                    >
-                      <X className="ccc-icon" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column - Available Posts */}
+        {/* Left Column - Available Posts */}
         <div className="ccc-column ccc-available-column">
           <div className="ccc-available-posts">
             <div className="ccc-available-header">
               <h4>Available Posts</h4>
               <div className="ccc-header-actions">
-                <button
-                  type="button"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`ccc-filter-toggle ${showFilters ? 'active' : ''}`}
-                >
-                  <Filter className="ccc-icon" />
-                  Filters
-                </button>
                 <button
                   type="button"
                   onClick={fetchPosts}
@@ -348,64 +246,6 @@ const RelationshipField = ({
                 </button>
               </div>
             </div>
-
-            {/* Filters */}
-            {showFilters && filters.length > 0 && (
-              <div className="ccc-filters">
-                {filters.includes('search') && (
-                  <div className="ccc-filter-group">
-                    <Search className="ccc-icon" />
-                    <input
-                      type="text"
-                      placeholder="Search posts..."
-                      value={searchTerm}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      className="ccc-search-input"
-                    />
-                  </div>
-                )}
-
-                {filters.includes('post_type') && (
-                  <div className="ccc-filter-group">
-                    <FileText className="ccc-icon" />
-                    <select
-                      value={selectedPostType}
-                      onChange={(e) => handlePostTypeChange(e.target.value)}
-                      className="ccc-filter-select"
-                    >
-                      <option value="">All Post Types</option>
-                      {getAvailablePostTypes().map(type => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {filters.includes('taxonomy') && taxonomy_filters.length > 0 && (
-                  <div className="ccc-filter-group">
-                    <Tag className="ccc-icon" />
-                    <select
-                      className="ccc-filter-select"
-                      onChange={(e) => {
-                        const taxonomy = e.target.value;
-                        if (taxonomy) {
-                          handleTaxonomyChange({ [taxonomy]: [] });
-                        }
-                      }}
-                    >
-                      <option value="">All Taxonomies</option>
-                      {taxonomy_filters.map(filter => (
-                        <option key={filter.taxonomy} value={filter.taxonomy}>
-                          {filter.taxonomy}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Posts List */}
             <div className="ccc-posts-container">
@@ -477,6 +317,68 @@ const RelationshipField = ({
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Right Column - Selected Posts */}
+        <div className="ccc-column ccc-selected-column">
+          <div className="ccc-selected-posts">
+            <div className="ccc-selected-header">
+              <h4>Selected Posts ({selectedPosts.length})</h4>
+              {min_posts > 0 && (
+                <span className="ccc-min-posts">
+                  Min: {min_posts}
+                </span>
+              )}
+              {max_posts > 0 && (
+                <span className="ccc-max-posts">
+                  Max: {max_posts}
+                </span>
+              )}
+            </div>
+
+            {selectedPosts.length === 0 ? (
+              <div className="ccc-no-selection">
+                <FileText className="ccc-icon" />
+                <p>No posts selected</p>
+                <small>Select posts from the left panel</small>
+              </div>
+            ) : (
+              <div className="ccc-selected-list">
+                {selectedPosts.map((post) => (
+                  <div key={post.ID} className="ccc-selected-item">
+                    <div className="ccc-post-info">
+                      {post.featured_image && (
+                        <img 
+                          src={post.featured_image} 
+                          alt={post.post_title}
+                          className="ccc-post-thumbnail"
+                        />
+                      )}
+                      <div className="ccc-post-details">
+                        <h5 className="ccc-post-title">{post.post_title}</h5>
+                        <div className="ccc-post-meta">
+                          <span className="ccc-post-type">
+                            {getPostTypeLabel(post.post_type)}
+                          </span>
+                          <span className="ccc-post-status">
+                            {post.post_status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePost(post.ID)}
+                      className="ccc-remove-btn"
+                      title="Remove post"
+                    >
+                      <X className="ccc-icon" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

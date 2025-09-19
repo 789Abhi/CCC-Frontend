@@ -2091,51 +2091,70 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   </p>
                 </div>
 
-                {/* Available Filters */}
+                {/* Post Types Filter */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Available Filters (Metabox Display Options)
+                    Post Types Filter
                   </label>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <p className="text-xs text-blue-700 mb-3">
-                      <strong>Important:</strong> Select which filter options you want to display on the metabox when users are selecting posts. 
-                      These controls will appear above the post selection area.
-                    </p>
-                    <div className="flex flex-col gap-3">
-                      {[
-                        { key: 'search', label: 'Search Filter', description: 'Allow users to search for posts by title or content' },
-                        { key: 'post_type', label: 'Post Type Filter', description: 'Show dropdown to filter by post type (Post, Page, etc.)' },
-                        { key: 'taxonomy', label: 'Taxonomy Filter', description: 'Show dropdown to filter by taxonomy terms' }
-                    ].map((filter) => (
-                        <label key={filter.key} className="flex items-start gap-3 p-2 bg-white rounded border border-gray-200 hover:border-blue-300 transition-colors">
+                  <div className="grid grid-cols-2 gap-2">
+                    {['post', 'page', 'attachment'].map((postType) => (
+                      <label key={postType} className="flex items-center space-x-2">
                         <input
                           type="checkbox"
-                          checked={Array.isArray(relationshipConfig.filters) && relationshipConfig.filters.includes(filter.key)}
+                          checked={relationshipConfig.post_types?.includes(postType) || false}
                           onChange={(e) => {
-                            const currentFilters = Array.isArray(relationshipConfig.filters) ? relationshipConfig.filters : [];
-                            const newFilters = e.target.checked
-                              ? [...currentFilters, filter.key]
-                              : currentFilters.filter(f => f !== filter.key);
+                            const currentTypes = relationshipConfig.post_types || [];
+                            let newTypes;
+                            if (e.target.checked) {
+                              newTypes = [...currentTypes, postType];
+                            } else {
+                              newTypes = currentTypes.filter(type => type !== postType);
+                            }
                             setRelationshipConfig({
                               ...relationshipConfig,
-                              filters: newFilters
+                              post_types: newTypes
                             });
                           }}
-                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mt-0.5"
-                          disabled={isSubmitting}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
-                          <div className="flex-1">
-                            <span className="text-sm font-medium text-gray-700">{filter.label}</span>
-                            <p className="text-xs text-gray-500 mt-1">{filter.description}</p>
-                          </div>
+                        <span className="text-sm text-gray-700 capitalize">{postType}</span>
                       </label>
                     ))}
-                    </div>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    <strong>Note:</strong> At least one filter should be selected to provide a good user experience. 
-                    If no filters are selected, users will see all posts without any filtering options.
-                  </p>
+                  <p className="text-xs text-gray-500">Limit post selection to specific post types (leave empty for all types)</p>
+                </div>
+
+                {/* Post Status Filter */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Post Status Filter
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['publish', 'draft', 'pending', 'private'].map((status) => (
+                      <label key={status} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={relationshipConfig.post_status?.includes(status) || false}
+                          onChange={(e) => {
+                            const currentStatuses = relationshipConfig.post_status || [];
+                            let newStatuses;
+                            if (e.target.checked) {
+                              newStatuses = [...currentStatuses, status];
+                            } else {
+                              newStatuses = currentStatuses.filter(s => s !== status);
+                            }
+                            setRelationshipConfig({
+                              ...relationshipConfig,
+                              post_status: newStatuses
+                            });
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 capitalize">{status}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">Limit post selection to specific post statuses (leave empty for all statuses)</p>
                 </div>
 
                 {/* Max Posts */}
