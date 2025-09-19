@@ -23,6 +23,7 @@ const RelationshipField = ({
 
   const [localValue, setLocalValue] = useState([]);
   const [availablePosts, setAvailablePosts] = useState([]);
+  const [allPostsCache, setAllPostsCache] = useState([]); // Cache all posts for selected items
   const [allAvailablePostTypes, setAllAvailablePostTypes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -149,6 +150,7 @@ const RelationshipField = ({
         if (!postType && !status && Object.keys(taxonomies).length === 0) {
           const postTypes = [...new Set(posts.map(p => p.post_type))].filter(type => type !== 'attachment');
           setAllAvailablePostTypes(postTypes);
+          setAllPostsCache(posts); // Cache all posts for selected items
           console.log('RelationshipField: Updated all available post types:', postTypes);
         }
       } else {
@@ -313,10 +315,14 @@ const RelationshipField = ({
   // Get selected posts for display
   const getSelectedPosts = () => {
     return localValue.map(postId => {
-      // Try to find in available posts first
+      // First try to find in available posts (current filtered results)
       let post = availablePosts.find(p => p.ID === postId);
       if (!post) {
-        // If not found in available posts, create a basic object
+        // If not found in filtered results, try the cache of all posts
+        post = allPostsCache.find(p => p.ID === postId);
+      }
+      if (!post) {
+        // If still not found, create a basic object as fallback
         post = { ID: postId, post_title: `Post #${postId}`, post_type: 'unknown' };
       }
       return post;
