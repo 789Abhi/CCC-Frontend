@@ -24,6 +24,16 @@ const GalleryField = ({
     preview_size = 'medium'
   } = fieldConfig;
 
+  // Debug logging
+  useEffect(() => {
+    console.log('GalleryField: fieldConfig received:', fieldConfig);
+    console.log('GalleryField: max_images:', max_images);
+    console.log('GalleryField: min_images:', min_images);
+    console.log('GalleryField: allowed_types:', allowed_types);
+    console.log('GalleryField: show_preview:', show_preview);
+    console.log('GalleryField: preview_size:', preview_size);
+  }, [fieldConfig, max_images, min_images, allowed_types, show_preview, preview_size]);
+
   // Initialize local value
   useEffect(() => {
     if (Array.isArray(value)) {

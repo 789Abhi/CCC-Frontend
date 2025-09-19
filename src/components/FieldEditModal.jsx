@@ -543,6 +543,27 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 return_format: 'object'
               });
             }
+          } else if (field.type === 'gallery' && field.config) {
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              console.log("FieldEditModal: Loading gallery config:", config);
+              setGalleryConfig({
+                max_images: config.max_images || 0,
+                min_images: config.min_images || 0,
+                allowed_types: config.allowed_types || ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+                show_preview: config.show_preview !== undefined ? config.show_preview : true,
+                preview_size: config.preview_size || 'medium'
+              });
+            } catch (e) {
+              console.error("Error parsing gallery config:", e);
+              setGalleryConfig({
+                max_images: 0,
+                min_images: 0,
+                allowed_types: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+                show_preview: true,
+                preview_size: 'medium'
+              });
+            }
           }
         } catch (e) {
           console.error("Error parsing field config:", e)
@@ -1565,6 +1586,20 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         }
         console.log("User field config being sent:", config);
         formData.append("field_config", JSON.stringify(config))
+      } else if (type === "gallery") {
+        const config = {
+          max_images: galleryConfig?.max_images || 0,
+          min_images: galleryConfig?.min_images || 0,
+          allowed_types: galleryConfig?.allowed_types || ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+          show_preview: galleryConfig?.show_preview !== undefined ? galleryConfig.show_preview : true,
+          preview_size: galleryConfig?.preview_size || 'medium',
+          field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+          conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+          logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
+        }
+        console.log("Gallery field config being sent:", config);
+        console.log("Gallery fieldConfig state:", galleryConfig);
+        formData.append("field_config", JSON.stringify(config))
       } else {
         // For all other field types, include conditional logic
         const existingConfig = {};
@@ -1605,6 +1640,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           existingConfig.show_preview = fieldConfig?.show_preview !== undefined ? fieldConfig?.show_preview : true;
           existingConfig.show_download = fieldConfig?.show_download !== undefined ? fieldConfig?.show_download : true;
           existingConfig.show_delete = fieldConfig?.show_delete !== undefined ? fieldConfig?.show_delete : true;
+        } else if (type === "gallery") {
+          existingConfig.max_images = galleryConfig?.max_images || 0;
+          existingConfig.min_images = galleryConfig?.min_images || 0;
+          existingConfig.allowed_types = galleryConfig?.allowed_types || ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+          existingConfig.show_preview = galleryConfig?.show_preview !== undefined ? galleryConfig.show_preview : true;
+          existingConfig.preview_size = galleryConfig?.preview_size || 'medium';
         }
         
         // Add conditional logic to all field types
