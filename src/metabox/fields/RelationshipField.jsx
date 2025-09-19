@@ -34,6 +34,7 @@ const RelationshipField = ({
 
   const dropdownRef = useRef(null);
   const isFetchingRef = useRef(false);
+  const searchTimeoutRef = useRef(null);
 
   // Initialize local value from fieldValue prop
   useEffect(() => {
@@ -81,18 +82,18 @@ const RelationshipField = ({
       // Add filters from fieldConfig (only if not overridden by current filters)
       if (selectedPostType) {
         // If a specific post type is selected in the filter, use only that
-        formData.append('post_types', JSON.stringify([selectedPostType]));
+        formData.append('post_types', selectedPostType);
       } else if (filter_post_types.length > 0) {
         // Otherwise use configured post types
-        formData.append('post_types', JSON.stringify(filter_post_types));
+        formData.append('post_types', filter_post_types.join(','));
       }
       
       if (selectedStatus) {
         // If a specific status is selected in the filter, use only that
-        formData.append('post_status', JSON.stringify([selectedStatus]));
+        formData.append('post_status', selectedStatus);
       } else if (filter_post_status.length > 0) {
         // Otherwise use configured post statuses
-        formData.append('post_status', JSON.stringify(filter_post_status));
+        formData.append('post_status', filter_post_status.join(','));
       }
       
       if (Object.keys(selectedTaxonomies).length > 0) {
@@ -142,9 +143,8 @@ const RelationshipField = ({
     // Only fetch posts once on mount if we have the necessary configuration
     if (window.cccData && window.cccData.ajaxUrl && (window.getNonce || window.cccData?.nonce)) {
       fetchPosts();
-      // Fetch initial taxonomies based on configured post types
-      const postTypesToUse = filter_post_types.length > 0 ? filter_post_types.join(',') : 'all';
-      fetchTaxonomiesForPostType(postTypesToUse);
+      // Fetch initial taxonomies (all taxonomies since no specific filter is selected)
+      fetchTaxonomiesForPostType('all');
     } else {
       console.warn('RelationshipField: Cannot fetch posts - missing AJAX configuration');
       setError('AJAX configuration not available');
@@ -160,21 +160,22 @@ const RelationshipField = ({
     };
   }, []);
 
-  // Debounce timer ref
-  const searchTimeoutRef = useRef(null);
-
   // Manual trigger functions for filter changes
   const handleSearchChange = (value) => {
     setSearchTerm(value);
-    // Immediate search without delay
-    fetchPosts();
+    // Debounce search to prevent rapid requests
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchPosts();
+    }, 300);
   };
 
   const handlePostTypeChange = (value) => {
     setSelectedPostType(value);
-    // Fetch taxonomies for the selected post type (but respect configured post types)
-    const postTypesToUse = filter_post_types.length > 0 ? filter_post_types.join(',') : value;
-    fetchTaxonomiesForPostType(postTypesToUse);
+    // Fetch taxonomies for the selected post type
+    fetchTaxonomiesForPostType(value);
     // Clear selected taxonomies when post type changes
     setSelectedTaxonomies({});
     fetchPosts();
@@ -202,9 +203,8 @@ const RelationshipField = ({
       formData.append('action', 'ccc_get_taxonomies_for_post_type');
       formData.append('nonce', window.getNonce ? window.getNonce() : (window.cccData?.nonce || ''));
       
-      // Use configured post types if available, otherwise use the passed postType
-      const postTypesToUse = filter_post_types.length > 0 ? filter_post_types.join(',') : (postType || 'all');
-      formData.append('post_type', postTypesToUse);
+      // Use the passed postType directly
+      formData.append('post_type', postType || 'all');
       
       const response = await fetch(window.cccData?.ajaxUrl || window.ajaxurl, {
         method: 'POST',
