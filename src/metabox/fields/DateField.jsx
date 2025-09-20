@@ -83,14 +83,6 @@ const DateField = ({
     }
   }, [value, date_type, time_format]);
 
-  // Sync local value with parent component when user finishes interacting
-  const syncWithParent = () => {
-    if (localValue !== value && localValue !== '') {
-      if (onChange) {
-        onChange(localValue);
-      }
-    }
-  };
 
   // Format date based on format string
   const formatDate = (date, format) => {
@@ -176,7 +168,9 @@ const DateField = ({
       case 'date':
         const formattedDate = formatDate(date, date_format);
         setLocalValue(formattedDate);
-        // Don't call onChange immediately - wait for user to save
+        if (onChange) {
+          onChange(formattedDate);
+        }
         break;
       case 'datetime':
         const formattedDateTime = {
@@ -185,7 +179,9 @@ const DateField = ({
           timestamp: date.getTime()
         };
         setLocalValue(JSON.stringify(formattedDateTime));
-        // Don't call onChange immediately - wait for user to save
+        if (onChange) {
+          onChange(formattedDateTime);
+        }
         break;
     }
     setError('');
@@ -198,7 +194,9 @@ const DateField = ({
     switch (date_type) {
       case 'time':
         setLocalValue(time);
-        // Don't call onChange immediately - wait for user to save
+        if (onChange) {
+          onChange(time);
+        }
         break;
       case 'datetime':
         if (selectedDate) {
@@ -208,7 +206,9 @@ const DateField = ({
             timestamp: selectedDate.getTime()
           };
           setLocalValue(JSON.stringify(formattedDateTime));
-          // Don't call onChange immediately - wait for user to save
+          if (onChange) {
+            onChange(formattedDateTime);
+          }
         }
         break;
     }
@@ -227,7 +227,9 @@ const DateField = ({
     };
     
     setLocalValue(JSON.stringify(timeRange));
-    // Don't call onChange immediately - wait for user to save
+    if (onChange) {
+      onChange(timeRange);
+    }
     setError('');
   };
 
@@ -311,12 +313,6 @@ const DateField = ({
           placeholder={placeholder || `Select ${date_type.replace('_', ' ')}`}
           readOnly
           onClick={() => setIsOpen(!isOpen)}
-          onBlur={() => {
-            // Delay the sync to prevent immediate page refresh
-            setTimeout(() => {
-              syncWithParent();
-            }, 200);
-          }}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
         />
         
@@ -330,7 +326,9 @@ const DateField = ({
               setSelectedTime('');
               setTimeFrom('');
               setTimeTo('');
-              // Don't call onChange immediately - will be synced when modal closes
+              if (onChange) {
+                onChange('');
+              }
               setError('');
             }}
             className="absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -368,13 +366,7 @@ const DateField = ({
             onDateChange={handleDateChange}
             onTimeChange={handleTimeChange}
             onTimeRangeChange={handleTimeRangeChange}
-            onClose={() => {
-              setIsOpen(false);
-              // Delay the sync to prevent immediate page refresh
-              setTimeout(() => {
-                syncWithParent();
-              }, 100);
-            }}
+            onClose={() => setIsOpen(false)}
           />
         </div>
       )}
