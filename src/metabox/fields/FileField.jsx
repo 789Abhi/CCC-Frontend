@@ -383,6 +383,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     />
                     {show_delete && (
                         <button
+                            type="button"
                             onClick={() => removeFile(file.id)}
                             className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                         >
@@ -403,6 +404,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     />
                     {show_delete && (
                         <button
+                            type="button"
                             onClick={() => removeFile(file.id)}
                             className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                         >
@@ -421,6 +423,7 @@ const FileField = ({ label, fieldName, fieldConfig, fieldValue, fieldRequired, o
                     </div>
                     {show_delete && (
                         <button
+                            type="button"
                             onClick={() => removeFile(file.id)}
                             className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                         >

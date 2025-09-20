@@ -323,6 +323,14 @@ const DateField = ({
             e.stopPropagation();
             setIsOpen(!isOpen);
           }}
+          onKeyDown={(e) => {
+            // Prevent form submission on Enter key
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsOpen(!isOpen);
+            }
+          }}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
         />
         
@@ -479,6 +487,7 @@ const DatePickerModal = ({
           {dateType === 'time_range' && 'Select Time Range'}
         </h3>
         <button
+          type="button"
           onClick={onClose}
           className="text-gray-400 hover:text-gray-600"
         >
@@ -492,6 +501,7 @@ const DatePickerModal = ({
           {/* Month/Year Navigation */}
           <div className="flex justify-between items-center mb-3">
             <button
+              type="button"
               onClick={() => {
                 if (currentMonth === 0) {
                   setCurrentMonth(11);
@@ -508,6 +518,7 @@ const DatePickerModal = ({
               {monthNames[currentMonth]} {currentYear}
             </span>
             <button
+              type="button"
               onClick={() => {
                 if (currentMonth === 11) {
                   setCurrentMonth(0);
@@ -535,6 +546,7 @@ const DatePickerModal = ({
             {calendarDays.map((day, index) => (
               <button
                 key={index}
+                type="button"
                 onClick={() => day && onDateChange(day)}
                 disabled={!day}
                 className={`p-2 text-sm rounded hover:bg-gray-100 ${
@@ -611,12 +623,14 @@ const DatePickerModal = ({
       {/* Action Buttons */}
       <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
         <button
+          type="button"
           onClick={onClose}
           className="px-4 py-2 text-gray-600 hover:text-gray-800"
         >
           Cancel
         </button>
         <button
+          type="button"
           onClick={onClose}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >

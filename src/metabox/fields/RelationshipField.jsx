@@ -531,7 +531,7 @@ const RelationshipField = ({
               ) : error ? (
                 <div className="ccc-error">
                   <p>{error}</p>
-                  <button onClick={fetchPosts} className="ccc-retry-btn">
+                  <button type="button" onClick={fetchPosts} className="ccc-retry-btn">
                     Retry
                   </button>
                 </div>
@@ -540,7 +540,7 @@ const RelationshipField = ({
                   <FileText className="ccc-icon" />
                   <p>No posts found</p>
                   <small>Try adjusting your filters or search terms</small>
-                  <button onClick={fetchPosts} className="ccc-retry-btn">
+                  <button type="button" onClick={fetchPosts} className="ccc-retry-btn">
                     Refresh
                   </button>
                 </div>
