@@ -37,7 +37,7 @@ const GalleryField = ({
   // Initialize local value with enhanced image objects
   useEffect(() => {
     if (Array.isArray(value)) {
-      // Value can contain both enabled and disabled images from parent component
+        // Value can contain both enabled and disabled images from parent component
       const enhancedValue = value.map((item, index) => {
         if (typeof item === 'object') {
           return {
@@ -270,7 +270,7 @@ const GalleryField = ({
               Edit
             </button>
           )}
-          
+            
           <button
             type="button"
             onClick={openMediaLibrary}
