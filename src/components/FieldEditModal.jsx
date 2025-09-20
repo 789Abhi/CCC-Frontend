@@ -118,6 +118,17 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     logic_operator: 'AND'
   });
 
+  // Date field configuration state
+  const [dateConfig, setDateConfig] = useState({
+    date_type: 'date',
+    date_format: 'Y-m-d',
+    time_format: 'H:i',
+    min_date: '',
+    max_date: '',
+    show_timezone: false,
+    timezone: 'UTC'
+  });
+
   // Conditional logic state for all field types
   const [conditionalLogicConfig, setConditionalLogicConfig] = useState({
     field_condition: 'always_show',
@@ -242,6 +253,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     "checkbox",
     "radio",
     "toggle",
+    "date",
   ]
 
   useEffect(() => {
@@ -562,6 +574,31 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 allowed_types: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
                 show_preview: true,
                 preview_size: 'medium'
+              });
+            }
+          } else if (field.type === 'date' && field.config) {
+            try {
+              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              console.log("FieldEditModal: Loading date config:", config);
+              setDateConfig({
+                date_type: config.date_type || 'date',
+                date_format: config.date_format || 'Y-m-d',
+                time_format: config.time_format || 'H:i',
+                min_date: config.min_date || '',
+                max_date: config.max_date || '',
+                show_timezone: config.show_timezone || false,
+                timezone: config.timezone || 'UTC'
+              });
+            } catch (e) {
+              console.error("Error parsing date config:", e);
+              setDateConfig({
+                date_type: 'date',
+                date_format: 'Y-m-d',
+                time_format: 'H:i',
+                min_date: '',
+                max_date: '',
+                show_timezone: false,
+                timezone: 'UTC'
               });
             }
           }
@@ -1292,6 +1329,20 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             conditional_logic: conditionalLogicConfig?.conditional_logic || [],
             logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
           }
+        } else if (type === "date") {
+          fieldData.config = {
+            date_type: dateConfig.date_type || 'date',
+            date_format: dateConfig.date_format || 'Y-m-d',
+            time_format: dateConfig.time_format || 'H:i',
+            min_date: dateConfig.min_date || '',
+            max_date: dateConfig.max_date || '',
+            show_timezone: dateConfig.show_timezone || false,
+            timezone: dateConfig.timezone || 'UTC',
+            // Include conditional logic for date fields
+            field_condition: conditionalLogicConfig?.field_condition || 'always_show',
+            conditional_logic: conditionalLogicConfig?.conditional_logic || [],
+            logic_operator: conditionalLogicConfig?.logic_operator || 'AND'
+          }
         } else if (type === "number") {
           fieldData.config = {
             number_type: fieldConfig?.number_type || 'normal',
@@ -1646,6 +1697,14 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           existingConfig.allowed_types = galleryConfig?.allowed_types || ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
           existingConfig.show_preview = galleryConfig?.show_preview !== undefined ? galleryConfig.show_preview : true;
           existingConfig.preview_size = galleryConfig?.preview_size || 'medium';
+        } else if (type === "date") {
+          existingConfig.date_type = dateConfig?.date_type || 'date';
+          existingConfig.date_format = dateConfig?.date_format || 'Y-m-d';
+          existingConfig.time_format = dateConfig?.time_format || 'H:i';
+          existingConfig.min_date = dateConfig?.min_date || '';
+          existingConfig.max_date = dateConfig?.max_date || '';
+          existingConfig.show_timezone = dateConfig?.show_timezone || false;
+          existingConfig.timezone = dateConfig?.timezone || 'UTC';
         }
         
         // Add conditional logic to all field types
@@ -1782,7 +1841,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                         color: "Color",
                         select: "Select",
                         checkbox: "Checkbox",
-                        radio: "Radio"
+                        radio: "Radio",
+                        date: "Date & Time"
                     };
                   return (
                     <option key={fieldType} value={fieldType}>
@@ -2977,6 +3037,147 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <option value="full">Full Size</option>
                   </select>
                   <p className="text-xs text-gray-500">Size of the preview images in the gallery.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Date Field Settings */}
+            {type === "date" && (
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">Date Field Settings</h4>
+
+                {/* Date Type */}
+                <div className="space-y-2">
+                  <label htmlFor="dateType" className="block text-sm font-medium text-gray-700">
+                    Date Type
+                  </label>
+                  <select
+                    id="dateType"
+                    value={dateConfig.date_type}
+                    onChange={(e) => setDateConfig(prev => ({ ...prev, date_type: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="date">Date Picker</option>
+                    <option value="datetime">Date & Time Picker</option>
+                    <option value="time">Time Picker</option>
+                    <option value="time_range">Time Range (From - To)</option>
+                  </select>
+                  <p className="text-xs text-gray-500">Select the type of date/time picker to display.</p>
+                </div>
+
+                {/* Date Format */}
+                <div className="space-y-2">
+                  <label htmlFor="dateFormat" className="block text-sm font-medium text-gray-700">
+                    Date Format
+                  </label>
+                  <select
+                    id="dateFormat"
+                    value={dateConfig.date_format}
+                    onChange={(e) => setDateConfig(prev => ({ ...prev, date_format: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={dateConfig.date_type === 'time' || dateConfig.date_type === 'time_range'}
+                  >
+                    <option value="Y-m-d">YYYY-MM-DD</option>
+                    <option value="m/d/Y">MM/DD/YYYY</option>
+                    <option value="d/m/Y">DD/MM/YYYY</option>
+                    <option value="Y/m/d">YYYY/MM/DD</option>
+                    <option value="F j, Y">Month Day, Year</option>
+                    <option value="j F Y">Day Month Year</option>
+                  </select>
+                  <p className="text-xs text-gray-500">Select the display format for dates.</p>
+                </div>
+
+                {/* Time Format */}
+                <div className="space-y-2">
+                  <label htmlFor="timeFormat" className="block text-sm font-medium text-gray-700">
+                    Time Format
+                  </label>
+                  <select
+                    id="timeFormat"
+                    value={dateConfig.time_format}
+                    onChange={(e) => setDateConfig(prev => ({ ...prev, time_format: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={dateConfig.date_type === 'date'}
+                  >
+                    <option value="H:i">24 Hour (HH:MM)</option>
+                    <option value="g:i A">12 Hour (H:MM AM/PM)</option>
+                    <option value="H:i:s">24 Hour with Seconds</option>
+                    <option value="g:i:s A">12 Hour with Seconds</option>
+                  </select>
+                  <p className="text-xs text-gray-500">Select the display format for times.</p>
+                </div>
+
+                {/* Minimum Date */}
+                <div className="space-y-2">
+                  <label htmlFor="minDate" className="block text-sm font-medium text-gray-700">
+                    Minimum Date
+                  </label>
+                  <input
+                    id="minDate"
+                    type="date"
+                    value={dateConfig.min_date}
+                    onChange={(e) => setDateConfig(prev => ({ ...prev, min_date: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={dateConfig.date_type === 'time' || dateConfig.date_type === 'time_range'}
+                  />
+                  <p className="text-xs text-gray-500">Set the minimum selectable date. Leave empty for no limit.</p>
+                </div>
+
+                {/* Maximum Date */}
+                <div className="space-y-2">
+                  <label htmlFor="maxDate" className="block text-sm font-medium text-gray-700">
+                    Maximum Date
+                  </label>
+                  <input
+                    id="maxDate"
+                    type="date"
+                    value={dateConfig.max_date}
+                    onChange={(e) => setDateConfig(prev => ({ ...prev, max_date: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={dateConfig.date_type === 'time' || dateConfig.date_type === 'time_range'}
+                  />
+                  <p className="text-xs text-gray-500">Set the maximum selectable date. Leave empty for no limit.</p>
+                </div>
+
+                {/* Show Timezone */}
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={dateConfig.show_timezone}
+                      onChange={(e) => setDateConfig(prev => ({ ...prev, show_timezone: e.target.checked }))}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      disabled={dateConfig.date_type === 'date' || dateConfig.date_type === 'time' || dateConfig.date_type === 'time_range'}
+                    />
+                    <span className="text-sm text-gray-700">Show Timezone Selection</span>
+                  </label>
+                  <p className="text-xs text-gray-500">Display timezone selection for datetime fields.</p>
+                </div>
+
+                {/* Default Timezone */}
+                <div className="space-y-2">
+                  <label htmlFor="timezone" className="block text-sm font-medium text-gray-700">
+                    Default Timezone
+                  </label>
+                  <select
+                    id="timezone"
+                    value={dateConfig.timezone}
+                    onChange={(e) => setDateConfig(prev => ({ ...prev, timezone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={dateConfig.date_type === 'date' || dateConfig.date_type === 'time' || dateConfig.date_type === 'time_range'}
+                  >
+                    <option value="UTC">UTC</option>
+                    <option value="America/New_York">Eastern Time</option>
+                    <option value="America/Chicago">Central Time</option>
+                    <option value="America/Denver">Mountain Time</option>
+                    <option value="America/Los_Angeles">Pacific Time</option>
+                    <option value="Europe/London">London</option>
+                    <option value="Europe/Paris">Paris</option>
+                    <option value="Asia/Tokyo">Tokyo</option>
+                    <option value="Asia/Shanghai">Shanghai</option>
+                    <option value="Australia/Sydney">Sydney</option>
+                  </select>
+                  <p className="text-xs text-gray-500">Select the default timezone for datetime fields.</p>
                 </div>
               </div>
             )}
