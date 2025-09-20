@@ -162,13 +162,16 @@ const DateField = ({
 
   // Handle date selection
   const handleDateChange = (date) => {
+    console.log('CCC DateField: handleDateChange called with date:', date);
     setSelectedDate(date);
     
     switch (date_type) {
       case 'date':
         const formattedDate = formatDate(date, date_format);
+        console.log('CCC DateField: formattedDate:', formattedDate);
         setLocalValue(formattedDate);
         if (onChange) {
+          console.log('CCC DateField: calling onChange with:', formattedDate);
           onChange(formattedDate);
         }
         break;
@@ -178,8 +181,10 @@ const DateField = ({
           time: selectedTime || formatTime(date, time_format),
           timestamp: date.getTime()
         };
+        console.log('CCC DateField: formattedDateTime:', formattedDateTime);
         setLocalValue(JSON.stringify(formattedDateTime));
         if (onChange) {
+          console.log('CCC DateField: calling onChange with:', formattedDateTime);
           onChange(formattedDateTime);
         }
         break;
@@ -312,7 +317,12 @@ const DateField = ({
           value={getDisplayValue()}
           placeholder={placeholder || `Select ${date_type.replace('_', ' ')}`}
           readOnly
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={(e) => {
+            console.log('CCC DateField: input clicked, current isOpen:', isOpen);
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(!isOpen);
+          }}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
         />
         
@@ -366,7 +376,10 @@ const DateField = ({
             onDateChange={handleDateChange}
             onTimeChange={handleTimeChange}
             onTimeRangeChange={handleTimeRangeChange}
-            onClose={() => setIsOpen(false)}
+            onClose={() => {
+              console.log('CCC DateField: modal closing');
+              setIsOpen(false);
+            }}
           />
         </div>
       )}

@@ -24,15 +24,20 @@ function MetaboxApp() {
 
   // Ensure unsaved changes are tracked when a field value changes
   const handleFieldValuesChange = useCallback((values) => {
+    console.log('CCC MetaboxApp: handleFieldValuesChange called with values:', values);
     // Only update if values have actually changed
     const currentValues = fieldValuesRef.current;
     const hasChanged = JSON.stringify(currentValues) !== JSON.stringify(values);
+    
+    console.log('CCC MetaboxApp: hasChanged:', hasChanged);
+    console.log('CCC MetaboxApp: currentValues:', currentValues);
     
     if (hasChanged) {
       // Always update the state to ensure real-time updates
       fieldValuesRef.current = values;
       setFieldValuesByInstance(values);
       setHasUnsavedChanges(true);
+      console.log('CCC MetaboxApp: Field values updated, hasUnsavedChanges set to true');
     }
   }, []); // Empty dependency array to prevent re-creation
 

@@ -963,7 +963,12 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                     : (field.value !== undefined && field.value !== null ? field.value : '');
                   
                   const handleChange = (val) => {
-                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                    console.log('CCC ComponentItem: DateField handleChange called with val:', val);
+                    console.log('CCC ComponentItem: instance_id:', component.instance_id, 'field.id:', field.id);
+                    if (onFieldChange) {
+                      console.log('CCC ComponentItem: calling onFieldChange');
+                      onFieldChange(component.instance_id, field.id, val);
+                    }
                   };
                   
                   return (
