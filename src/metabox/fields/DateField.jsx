@@ -83,17 +83,14 @@ const DateField = ({
     }
   }, [value, date_type, time_format]);
 
-  // Sync local value with parent component only when component unmounts (page save)
-  useEffect(() => {
-    return () => {
-      // When component unmounts (page save), sync the final value
-      if (localValue !== value && localValue !== '') {
-        if (onChange) {
-          onChange(localValue);
-        }
+  // Sync local value with parent component when user finishes interacting
+  const syncWithParent = () => {
+    if (localValue !== value && localValue !== '') {
+      if (onChange) {
+        onChange(localValue);
       }
-    };
-  }, [localValue, value, onChange]);
+    }
+  };
 
   // Format date based on format string
   const formatDate = (date, format) => {
@@ -314,6 +311,12 @@ const DateField = ({
           placeholder={placeholder || `Select ${date_type.replace('_', ' ')}`}
           readOnly
           onClick={() => setIsOpen(!isOpen)}
+          onBlur={() => {
+            // Delay the sync to prevent immediate page refresh
+            setTimeout(() => {
+              syncWithParent();
+            }, 200);
+          }}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
         />
         
@@ -365,7 +368,13 @@ const DateField = ({
             onDateChange={handleDateChange}
             onTimeChange={handleTimeChange}
             onTimeRangeChange={handleTimeRangeChange}
-            onClose={() => setIsOpen(false)}
+            onClose={() => {
+              setIsOpen(false);
+              // Delay the sync to prevent immediate page refresh
+              setTimeout(() => {
+                syncWithParent();
+              }, 100);
+            }}
           />
         </div>
       )}
