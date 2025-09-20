@@ -23,6 +23,7 @@ import FileField from '../fields/FileField';
 import RepeaterField from '../fields/RepeaterField';
 import UserField from '../fields/UserField';
 import ToggleField from '../fields/ToggleField';
+import DateField from '../fields/DateField';
 
 const ToggleSwitch = ({ checked, onChange, disabled = false }) => {
   return (
@@ -951,6 +952,30 @@ const ComponentItem = React.memo(({ component, index, isReadOnly = false, totalC
                       instanceId={component.instance_id}
                       fieldId={field.id}
                       availableFields={getAllAvailableFields()}
+                    />
+                  );
+                }
+                if (field.type === 'date') {
+                  const isRequired = field.required || false;
+                  const instanceFieldValues = fieldValues?.[component.instance_id] || {};
+                  const value = instanceFieldValues[field.id] !== undefined
+                    ? instanceFieldValues[field.id]
+                    : (field.value !== undefined && field.value !== null ? field.value : '');
+                  
+                  const handleChange = (val) => {
+                    if (onFieldChange) onFieldChange(component.instance_id, field.id, val);
+                  };
+                  
+                  return (
+                    <DateField
+                      key={field.id}
+                      field={field}
+                      value={value}
+                      onChange={handleChange}
+                      fieldConfig={field.config || {}}
+                      isRequired={isRequired}
+                      placeholder={field.placeholder || ''}
+                      fieldId={field.id}
                     />
                   );
                 }
