@@ -536,24 +536,52 @@ const DatePickerModal = ({
     return days;
   };
 
-  // Generate time options
-  const generateTimeOptions = () => {
+  // Generate time options with configurable granularity
+  const generateTimeOptions = (intervalMinutes = 1, includeSeconds = false) => {
     const options = [];
     const is12Hour = timeFormat.includes('g');
+    const includeSecondsFormat = timeFormat.includes('s');
     
     for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 15) {
-        let timeStr;
-        
-        if (is12Hour) {
-          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-          const ampm = hour >= 12 ? 'PM' : 'AM';
-          timeStr = `${displayHour}:${String(minute).padStart(2, '0')} ${ampm}`;
+      for (let minute = 0; minute < 60; minute += intervalMinutes) {
+        if (includeSeconds) {
+          for (let second = 0; second < 60; second += (includeSecondsFormat ? 1 : 60)) {
+            let timeStr;
+            
+            if (is12Hour) {
+              const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+              const ampm = hour >= 12 ? 'PM' : 'AM';
+              if (includeSecondsFormat) {
+                timeStr = `${displayHour}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')} ${ampm}`;
+              } else {
+                timeStr = `${displayHour}:${String(minute).padStart(2, '0')} ${ampm}`;
+              }
+            } else {
+              if (includeSecondsFormat) {
+                timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+              } else {
+                timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+              }
+            }
+            
+            options.push(timeStr);
+            
+            // Break after first second if not including seconds in format
+            if (!includeSecondsFormat) break;
+          }
         } else {
-          timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+          let timeStr;
+          
+          if (is12Hour) {
+            const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            timeStr = `${displayHour}:${String(minute).padStart(2, '0')} ${ampm}`;
+          } else {
+            timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+          }
+          
+          options.push(timeStr);
         }
-        
-        options.push(timeStr);
       }
     }
     
@@ -590,7 +618,14 @@ const DatePickerModal = ({
 
       {/* Date Picker */}
       {(dateType === 'date' || dateType === 'datetime') && (
-        <div className="mb-4">
+        <div className={`mb-4 ${dateType === 'datetime' ? 'border-b border-gray-200 pb-4' : ''}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar className="w-4 h-4 text-gray-500" />
+            <h4 className="text-sm font-semibold text-gray-700">
+              {dateType === 'datetime' ? 'Select Date' : 'Select Date'}
+            </h4>
+          </div>
+          
           {/* Month/Year Navigation */}
           <div className="flex justify-between items-center mb-3">
             <button
@@ -667,55 +702,56 @@ const DatePickerModal = ({
 
       {/* Time Picker */}
       {(dateType === 'time' || dateType === 'datetime') && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
-          <select
+        <div className={`mb-4 ${dateType === 'datetime' ? 'mt-4' : ''}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <Clock className="w-4 h-4 text-gray-500" />
+            <h4 className="text-sm font-semibold text-gray-700">
+              {dateType === 'datetime' ? 'Select Time' : 'Select Time'}
+            </h4>
+          </div>
+          
+          <GranularTimePicker
             value={selectedTime}
-            onChange={(e) => onTimeChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select time</option>
-            {timeOptions.map(time => (
-              <option key={time} value={time}>{time}</option>
-            ))}
-          </select>
+            onChange={onTimeChange}
+            timeFormat={timeFormat}
+            includeSeconds={timeFormat.includes('s')}
+          />
         </div>
       )}
 
       {/* Time Range Picker */}
       {dateType === 'time_range' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">From</label>
-            <select
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="w-4 h-4 text-gray-500" />
+              <h4 className="text-sm font-semibold text-gray-700">From Time</h4>
+            </div>
+            <GranularTimePicker
               value={timeFrom}
-              onChange={(e) => onTimeRangeChange(e.target.value, timeTo)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select start time</option>
-              {timeOptions.map(time => (
-                <option key={time} value={time}>{time}</option>
-              ))}
-            </select>
+              onChange={(value) => onTimeRangeChange(value, timeTo)}
+              timeFormat={timeFormat}
+              includeSeconds={timeFormat.includes('s')}
+            />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">To</label>
-            <select
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="w-4 h-4 text-gray-500" />
+              <h4 className="text-sm font-semibold text-gray-700">To Time</h4>
+            </div>
+            <GranularTimePicker
               value={timeTo}
-              onChange={(e) => onTimeRangeChange(timeFrom, e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select end time</option>
-              {timeOptions.map(time => (
-                <option key={time} value={time}>{time}</option>
-              ))}
-            </select>
+              onChange={(value) => onTimeRangeChange(timeFrom, value)}
+              timeFormat={timeFormat}
+              includeSeconds={timeFormat.includes('s')}
+            />
           </div>
           
           {timeFrom && timeTo && (
-            <div className="text-sm text-gray-600">
-              Duration: {calculateDuration(timeFrom, timeTo)}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="text-sm font-medium text-blue-800 mb-1">Duration</div>
+              <div className="text-sm text-blue-700">{calculateDuration(timeFrom, timeTo)}</div>
             </div>
           )}
         </div>
@@ -775,6 +811,310 @@ const parseTime = (timeStr) => {
   
   const date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parsedHours, minutes || 0, seconds || 0);
   return date;
+};
+
+// Granular Time Picker Component
+const GranularTimePicker = ({ value, onChange, timeFormat, includeSeconds = false }) => {
+  const [customTime, setCustomTime] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [hour, setHour] = useState('');
+  const [minute, setMinute] = useState('');
+  const [second, setSecond] = useState('');
+  const [ampm, setAmpm] = useState('AM');
+  
+  const is12Hour = timeFormat.includes('g');
+  
+  // Parse existing time value
+  useEffect(() => {
+    if (value) {
+      const timeMatch = value.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+      if (timeMatch) {
+        let parsedHour = parseInt(timeMatch[1]);
+        const parsedMinute = timeMatch[2];
+        const parsedSecond = timeMatch[3] || '00';
+        const parsedAmpm = timeMatch[4]?.toUpperCase() || 'AM';
+        
+        if (is12Hour) {
+          setHour(parsedHour);
+          setAmpm(parsedAmpm);
+        } else {
+          setHour(String(parsedHour).padStart(2, '0'));
+        }
+        setMinute(parsedMinute);
+        if (includeSeconds) {
+          setSecond(parsedSecond);
+        }
+      }
+    }
+  }, [value, is12Hour, includeSeconds]);
+  
+  // Generate hour options
+  const generateHourOptions = () => {
+    const options = [];
+    if (is12Hour) {
+      for (let i = 1; i <= 12; i++) {
+        options.push(i);
+      }
+    } else {
+      for (let i = 0; i <= 23; i++) {
+        options.push(String(i).padStart(2, '0'));
+      }
+    }
+    return options;
+  };
+  
+  // Generate minute options (every minute)
+  const generateMinuteOptions = () => {
+    const options = [];
+    for (let i = 0; i <= 59; i++) {
+      options.push(String(i).padStart(2, '0'));
+    }
+    return options;
+  };
+  
+  // Generate second options (every second)
+  const generateSecondOptions = () => {
+    const options = [];
+    for (let i = 0; i <= 59; i++) {
+      options.push(String(i).padStart(2, '0'));
+    }
+    return options;
+  };
+  
+  // Handle time change
+  const handleTimeChange = (newHour, newMinute, newSecond, newAmpm) => {
+    let formattedTime = '';
+    
+    if (is12Hour) {
+      const displayHour = newHour;
+      formattedTime = `${displayHour}:${newMinute}`;
+      if (includeSeconds) {
+        formattedTime += `:${newSecond}`;
+      }
+      formattedTime += ` ${newAmpm}`;
+    } else {
+      formattedTime = `${newHour}:${newMinute}`;
+      if (includeSeconds) {
+        formattedTime += `:${newSecond}`;
+      }
+    }
+    
+    onChange(formattedTime);
+  };
+  
+  // Handle custom time input
+  const handleCustomTimeSubmit = () => {
+    if (customTime) {
+      // Validate custom time format
+      const timeRegex = is12Hour 
+        ? /^(1[0-2]|[1-9]):[0-5]\d(?::[0-5]\d)?\s*(AM|PM)$/i
+        : /^([01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
+      
+      if (timeRegex.test(customTime)) {
+        onChange(customTime);
+        setCustomTime('');
+        setShowCustomInput(false);
+      } else {
+        alert('Please enter a valid time format');
+      }
+    }
+  };
+  
+  return (
+    <div className="space-y-3">
+      {/* Quick Time Selection */}
+      <div className="grid grid-cols-3 gap-2">
+        {/* Hour */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Hour</label>
+          <select
+            value={hour}
+            onChange={(e) => {
+              setHour(e.target.value);
+              handleTimeChange(e.target.value, minute, second, ampm);
+            }}
+            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="">--</option>
+            {generateHourOptions().map(h => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Minute */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Minute</label>
+          <select
+            value={minute}
+            onChange={(e) => {
+              setMinute(e.target.value);
+              handleTimeChange(hour, e.target.value, second, ampm);
+            }}
+            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="">--</option>
+            {generateMinuteOptions().map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Second (if enabled) */}
+        {includeSeconds && (
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Second</label>
+            <select
+              value={second}
+              onChange={(e) => {
+                setSecond(e.target.value);
+                handleTimeChange(hour, minute, e.target.value, ampm);
+              }}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">--</option>
+              {generateSecondOptions().map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        
+        {/* AM/PM (if 12-hour format) */}
+        {is12Hour && (
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">AM/PM</label>
+            <select
+              value={ampm}
+              onChange={(e) => {
+                setAmpm(e.target.value);
+                handleTimeChange(hour, minute, second, e.target.value);
+              }}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+          </div>
+        )}
+      </div>
+      
+      {/* Custom Time Input */}
+      <div className="border-t border-gray-200 pt-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-gray-600">Custom Time</span>
+          <button
+            type="button"
+            onClick={() => setShowCustomInput(!showCustomInput)}
+            className="text-xs text-blue-600 hover:text-blue-800"
+          >
+            {showCustomInput ? 'Hide' : 'Enter manually'}
+          </button>
+        </div>
+        
+        {showCustomInput && (
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={customTime}
+              onChange={(e) => setCustomTime(e.target.value)}
+              placeholder={is12Hour ? 'e.g., 2:30:45 PM' : 'e.g., 14:30:45'}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleCustomTimeSubmit}
+                className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Set Time
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomTime('');
+                  setShowCustomInput(false);
+                }}
+                className="px-3 py-1.5 text-xs bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Quick Presets */}
+      <div className="border-t border-gray-200 pt-3">
+        <div className="text-xs font-medium text-gray-600 mb-2">Quick Presets</div>
+        <div className="grid grid-cols-4 gap-1">
+          {is12Hour ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onChange('12:00 AM')}
+                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+              >
+                Midnight
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange('12:00 PM')}
+                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+              >
+                Noon
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange('9:00 AM')}
+                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+              >
+                9:00 AM
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange('5:00 PM')}
+                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+              >
+                5:00 PM
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => onChange('00:00')}
+                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+              >
+                Midnight
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange('12:00')}
+                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+              >
+                Noon
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange('09:00')}
+                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+              >
+                09:00
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange('17:00')}
+                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+              >
+                17:00
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default DateField;
