@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import PostTypes from "./PostTypes"
 import ComponentList from "./ComponentList"
 import Taxonomies from "./Taxonomies"
+import Settings from "./Settings"
 import logo from "/CCC-Logo.svg"
 
 function Header() {
@@ -22,7 +23,7 @@ function Header() {
       'custom-craft-component': 'components',
       'custom-craft-posttypes': 'post-types',
       'custom-craft-taxonomies': 'taxonomies',
-      'custom-craft-settings': 'components' // Settings redirects to components for now
+      'custom-craft-settings': 'settings'
     };
     return pageToTabMap[page] || 'components';
   }
@@ -61,6 +62,11 @@ function Header() {
       description: "Manage taxonomy assignments",
       comingSoon: true,
     },
+    {
+      id: "settings",
+      label: "Settings",
+      description: "Configure plugin settings",
+    },
   ]
 
   const renderActiveComponent = () => {
@@ -71,6 +77,8 @@ function Header() {
         return <PostTypes />
       case "taxonomies":
         return <Taxonomies />
+      case "settings":
+        return <Settings />
       default:
         return <ComponentList />
     }
