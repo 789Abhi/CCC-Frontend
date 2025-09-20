@@ -31,22 +31,71 @@ const DateField = ({
     timezone = 'UTC'
   } = fieldConfig;
 
-  // Initialize local value
+  // Helper function to check if date is within min/max range
+  const isDateInRange = (date) => {
+    if (!date) return true;
+    
+    const dateObj = new Date(date);
+    const minDateObj = min_date ? new Date(min_date) : null;
+    const maxDateObj = max_date ? new Date(max_date) : null;
+    
+    if (minDateObj && dateObj < minDateObj) return false;
+    if (maxDateObj && dateObj > maxDateObj) return false;
+    
+    return true;
+  };
+
+  // Helper function to get validation error message
+  const getValidationMessage = () => {
+    if (min_date && max_date) {
+      const minFormatted = formatDate(new Date(min_date), date_format);
+      const maxFormatted = formatDate(new Date(max_date), date_format);
+      return `Please select a date between ${minFormatted} and ${maxFormatted}`;
+    } else if (min_date) {
+      const minFormatted = formatDate(new Date(min_date), date_format);
+      return `Please select a date on or after ${minFormatted}`;
+    } else if (max_date) {
+      const maxFormatted = formatDate(new Date(max_date), date_format);
+      return `Please select a date on or before ${maxFormatted}`;
+    }
+    return '';
+  };
+
+  // Initialize local value with validation
   useEffect(() => {
     if (value) {
-      setLocalValue(value);
-      
       // Parse value based on date type
       switch (date_type) {
         case 'datetime':
           if (typeof value === 'object' && value.date && value.time) {
-            setSelectedDate(new Date(value.date));
-            setSelectedTime(value.time);
+            const date = new Date(value.date);
+            if (!isNaN(date.getTime()) && isDateInRange(date)) {
+              setSelectedDate(date);
+              setSelectedTime(value.time);
+              setLocalValue(value);
+            } else {
+              // Invalid date - clear it
+              console.log('CCC DateField: Invalid datetime value outside range, clearing');
+              setSelectedDate(null);
+              setSelectedTime('');
+              setLocalValue('');
+              setError(getValidationMessage());
+              if (onChange) onChange('');
+            }
           } else if (typeof value === 'string') {
             const date = new Date(value);
-            if (!isNaN(date.getTime())) {
+            if (!isNaN(date.getTime()) && isDateInRange(date)) {
               setSelectedDate(date);
               setSelectedTime(formatTime(date, time_format));
+              setLocalValue(value);
+            } else {
+              // Invalid date - clear it
+              console.log('CCC DateField: Invalid datetime string outside range, clearing');
+              setSelectedDate(null);
+              setSelectedTime('');
+              setLocalValue('');
+              setError(getValidationMessage());
+              if (onChange) onChange('');
             }
           }
           break;
@@ -54,23 +103,38 @@ const DateField = ({
           if (typeof value === 'object' && value.from && value.to) {
             setTimeFrom(value.from);
             setTimeTo(value.to);
+            setLocalValue(value);
           } else if (typeof value === 'string' && value.includes('{')) {
             try {
               const parsed = JSON.parse(value);
               setTimeFrom(parsed.from || '');
               setTimeTo(parsed.to || '');
+              setLocalValue(value);
             } catch (e) {
               console.error('Failed to parse time range:', e);
+              setLocalValue('');
             }
           }
           break;
         case 'time':
           setSelectedTime(value);
+          setLocalValue(value);
           break;
         case 'date':
         default:
           if (value) {
-            setSelectedDate(new Date(value));
+            const date = new Date(value);
+            if (!isNaN(date.getTime()) && isDateInRange(date)) {
+              setSelectedDate(date);
+              setLocalValue(value);
+            } else {
+              // Invalid date - clear it
+              console.log('CCC DateField: Invalid date value outside range, clearing');
+              setSelectedDate(null);
+              setLocalValue('');
+              setError(getValidationMessage());
+              if (onChange) onChange('');
+            }
           }
           break;
       }
@@ -80,8 +144,9 @@ const DateField = ({
       setSelectedTime('');
       setTimeFrom('');
       setTimeTo('');
+      setError('');
     }
-  }, [value, date_type, time_format]);
+  }, [value, date_type, time_format, min_date, max_date, date_format]);
 
 
   // Format date based on format string
@@ -163,7 +228,16 @@ const DateField = ({
   // Handle date selection
   const handleDateChange = (date) => {
     console.log('CCC DateField: handleDateChange called with date:', date);
+    
+    // Validate date is within range
+    if (!isDateInRange(date)) {
+      console.log('CCC DateField: Date outside allowed range:', date);
+      setError(getValidationMessage());
+      return; // Don't set the date if it's outside the range
+    }
+    
     setSelectedDate(date);
+    setError(''); // Clear any existing errors
     
     switch (date_type) {
       case 'date':
@@ -189,7 +263,6 @@ const DateField = ({
         }
         break;
     }
-    setError('');
   };
 
   // Handle time selection
@@ -363,8 +436,24 @@ const DateField = ({
 
       {/* Error Message */}
       {error && (
-        <div className="mt-2 text-sm text-red-600">
+        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-700 flex items-center gap-2">
+          <X className="w-4 h-4 flex-shrink-0" />
           {error}
+        </div>
+      )}
+
+      {/* Date Range Info */}
+      {(min_date || max_date) && !error && (
+        <div className="mt-2 text-xs text-gray-500">
+          {min_date && max_date && (
+            <>Allowed range: {formatDate(new Date(min_date), date_format)} to {formatDate(new Date(max_date), date_format)}</>
+          )}
+          {min_date && !max_date && (
+            <>Minimum date: {formatDate(new Date(min_date), date_format)}</>
+          )}
+          {!min_date && max_date && (
+            <>Maximum date: {formatDate(new Date(max_date), date_format)}</>
+          )}
         </div>
       )}
 
@@ -381,6 +470,8 @@ const DateField = ({
             timeFormat={time_format}
             minDate={min_date}
             maxDate={max_date}
+            isDateInRange={isDateInRange}
+            getValidationMessage={getValidationMessage}
             onDateChange={handleDateChange}
             onTimeChange={handleTimeChange}
             onTimeRangeChange={handleTimeRangeChange}
@@ -413,6 +504,8 @@ const DatePickerModal = ({
   timeFormat,
   minDate,
   maxDate,
+  isDateInRange,
+  getValidationMessage,
   onDateChange,
   onTimeChange,
   onTimeRangeChange,
@@ -543,23 +636,31 @@ const DatePickerModal = ({
             ))}
             
             {/* Calendar Days */}
-            {calendarDays.map((day, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => day && onDateChange(day)}
-                disabled={!day}
-                className={`p-2 text-sm rounded hover:bg-gray-100 ${
-                  day && selectedDate && day.toDateString() === selectedDate.toDateString()
-                    ? 'bg-blue-500 text-white hover:bg-blue-600'
-                    : day
-                    ? 'text-gray-700'
-                    : 'text-gray-300 cursor-not-allowed'
-                }`}
-              >
-                {day ? day.getDate() : ''}
-              </button>
-            ))}
+            {calendarDays.map((day, index) => {
+              const isDateDisabled = day && !isDateInRange(day);
+              const isSelected = day && selectedDate && day.toDateString() === selectedDate.toDateString();
+              
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => day && !isDateDisabled && onDateChange(day)}
+                  disabled={!day || isDateDisabled}
+                  className={`p-2 text-sm rounded transition-colors ${
+                    isSelected
+                      ? 'bg-blue-500 text-white hover:bg-blue-600'
+                      : isDateDisabled
+                      ? 'text-gray-300 cursor-not-allowed bg-gray-100'
+                      : day
+                      ? 'text-gray-700 hover:bg-gray-100'
+                      : 'text-gray-300 cursor-not-allowed'
+                  }`}
+                  title={isDateDisabled ? getValidationMessage() : ''}
+                >
+                  {day ? day.getDate() : ''}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
