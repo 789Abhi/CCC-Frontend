@@ -51,6 +51,102 @@ const DateField = ({
     timezone = 'UTC'
   } = fieldConfig;
 
+  // Helper function to parse date string based on configured format
+  const parseDate = (dateStr, format) => {
+    if (!dateStr || !format) return null;
+    
+    // Remove any extra whitespace
+    dateStr = dateStr.trim();
+    
+    // Handle different date formats
+    let day, month, year;
+    
+    switch (format) {
+      case 'Y-m-d':
+        // 2025-09-16
+        const ymdMatch = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (ymdMatch) {
+          [, year, month, day] = ymdMatch;
+        }
+        break;
+      case 'm/d/Y':
+        // 09/16/2025
+        const mdyMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (mdyMatch) {
+          [, month, day, year] = mdyMatch;
+        }
+        break;
+      case 'd/m/Y':
+        // 16/09/2025
+        const dmyMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (dmyMatch) {
+          [, day, month, year] = dmyMatch;
+        }
+        break;
+      case 'Y/m/d':
+        // 2025/09/16
+        const ymdSlashMatch = dateStr.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+        if (ymdSlashMatch) {
+          [, year, month, day] = ymdSlashMatch;
+        }
+        break;
+      case 'F j, Y':
+        // September 16, 2025
+        try {
+          const date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            return date;
+          }
+        } catch (e) {
+          console.error('Failed to parse F j, Y format:', e);
+        }
+        break;
+      case 'j F Y':
+        // 16 September 2025
+        try {
+          const date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            return date;
+          }
+        } catch (e) {
+          console.error('Failed to parse j F Y format:', e);
+        }
+        break;
+      default:
+        // Fallback to standard Date parsing
+        try {
+          const date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            return date;
+          }
+        } catch (e) {
+          console.error('Failed to parse date with default method:', e);
+        }
+        break;
+    }
+    
+    // If we have day, month, year, create the date
+    if (day && month && year) {
+      // JavaScript Date constructor expects (year, month-1, day)
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    
+    // Final fallback - try standard Date parsing
+    try {
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    } catch (e) {
+      console.error('All date parsing methods failed for:', dateStr, 'with format:', format);
+    }
+    
+    return null;
+  };
+
   // Helper function to check if date is within min/max range
   const isDateInRange = (date) => {
     if (!date) return true;
@@ -59,8 +155,8 @@ const DateField = ({
     if (!min_date && !max_date) return true;
     
     const dateObj = new Date(date);
-    const minDateObj = min_date ? new Date(min_date) : null;
-    const maxDateObj = max_date ? new Date(max_date) : null;
+    const minDateObj = min_date ? parseDate(min_date, date_format) || new Date(min_date) : null;
+    const maxDateObj = max_date ? parseDate(max_date, date_format) || new Date(max_date) : null;
     
     // Normalize dates to compare only date parts (ignore time)
     const normalizeDate = (date) => {
@@ -104,33 +200,39 @@ const DateField = ({
       switch (date_type) {
         case 'datetime':
           if (typeof value === 'object' && value.date && value.time) {
-            const date = new Date(value.date);
-            if (!isNaN(date.getTime()) && isDateInRange(date)) {
+            console.log('CCC DateField: Parsing datetime object date:', value.date, 'with format:', date_format);
+            const date = parseDate(value.date, date_format);
+            if (date && isDateInRange(date)) {
+              console.log('CCC DateField: Successfully parsed datetime date:', date);
               setSelectedDate(date);
               setSelectedTime(value.time);
               setLocalValue(value);
+              setError(''); // Clear any existing errors
             } else {
               // Invalid date - clear it
-              console.log('CCC DateField: Invalid datetime value outside range, clearing');
+              console.log('CCC DateField: Invalid datetime value outside range, clearing. Parsed date:', date);
               setSelectedDate(null);
               setSelectedTime('');
               setLocalValue('');
-              setError(getValidationMessage());
+              setError(date ? getValidationMessage() : 'Invalid date format');
               if (onChange) onChange('');
             }
           } else if (typeof value === 'string') {
-            const date = new Date(value);
-            if (!isNaN(date.getTime()) && isDateInRange(date)) {
+            console.log('CCC DateField: Parsing datetime string:', value);
+            const date = parseDate(value, date_format);
+            if (date && isDateInRange(date)) {
+              console.log('CCC DateField: Successfully parsed datetime string:', date);
               setSelectedDate(date);
               setSelectedTime(formatTime(date, time_format));
               setLocalValue(value);
+              setError(''); // Clear any existing errors
             } else {
               // Invalid date - clear it
-              console.log('CCC DateField: Invalid datetime string outside range, clearing');
+              console.log('CCC DateField: Invalid datetime string outside range, clearing. Parsed date:', date);
               setSelectedDate(null);
               setSelectedTime('');
               setLocalValue('');
-              setError(getValidationMessage());
+              setError(date ? getValidationMessage() : 'Invalid date format');
               if (onChange) onChange('');
             }
           }
@@ -159,16 +261,19 @@ const DateField = ({
         case 'date':
         default:
           if (value) {
-            const date = new Date(value);
-            if (!isNaN(date.getTime()) && isDateInRange(date)) {
+            console.log('CCC DateField: Parsing date value:', value, 'with format:', date_format);
+            const date = parseDate(value, date_format);
+            if (date && isDateInRange(date)) {
+              console.log('CCC DateField: Successfully parsed date:', date);
               setSelectedDate(date);
               setLocalValue(value);
+              setError(''); // Clear any existing errors
             } else {
               // Invalid date - clear it
-              console.log('CCC DateField: Invalid date value outside range, clearing');
+              console.log('CCC DateField: Invalid date value or outside range, clearing. Parsed date:', date);
               setSelectedDate(null);
               setLocalValue('');
-              setError(getValidationMessage());
+              setError(date ? getValidationMessage() : 'Invalid date format');
               if (onChange) onChange('');
             }
           }
