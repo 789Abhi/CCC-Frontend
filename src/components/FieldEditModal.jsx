@@ -3138,47 +3138,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                   />
                   <p className="text-xs text-gray-500">Set the maximum selectable date. Leave empty for no limit.</p>
                 </div>
-
-                {/* Show Timezone */}
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={dateConfig.show_timezone}
-                      onChange={(e) => setDateConfig(prev => ({ ...prev, show_timezone: e.target.checked }))}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      disabled={dateConfig.date_type === 'date' || dateConfig.date_type === 'time' || dateConfig.date_type === 'time_range'}
-                    />
-                    <span className="text-sm text-gray-700">Show Timezone Selection</span>
-                  </label>
-                  <p className="text-xs text-gray-500">Display timezone selection for datetime fields.</p>
-                </div>
-
-                {/* Default Timezone */}
-                <div className="space-y-2">
-                  <label htmlFor="timezone" className="block text-sm font-medium text-gray-700">
-                    Default Timezone
-                  </label>
-                  <select
-                    id="timezone"
-                    value={dateConfig.timezone}
-                    onChange={(e) => setDateConfig(prev => ({ ...prev, timezone: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={dateConfig.date_type === 'date' || dateConfig.date_type === 'time' || dateConfig.date_type === 'time_range'}
-                  >
-                    <option value="UTC">UTC</option>
-                    <option value="America/New_York">Eastern Time</option>
-                    <option value="America/Chicago">Central Time</option>
-                    <option value="America/Denver">Mountain Time</option>
-                    <option value="America/Los_Angeles">Pacific Time</option>
-                    <option value="Europe/London">London</option>
-                    <option value="Europe/Paris">Paris</option>
-                    <option value="Asia/Tokyo">Tokyo</option>
-                    <option value="Asia/Shanghai">Shanghai</option>
-                    <option value="Australia/Sydney">Sydney</option>
-                  </select>
-                  <p className="text-xs text-gray-500">Select the default timezone for datetime fields.</p>
-                </div>
               </div>
             )}
 
