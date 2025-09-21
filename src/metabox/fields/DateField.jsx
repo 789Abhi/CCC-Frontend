@@ -22,6 +22,7 @@ const DateField = ({
   const datePickerRef = useRef(null);
   const inputRef = useRef(null);
   const changeTimeoutRef = useRef(null);
+  const prevFormatRef = useRef({ date_format: '', time_format: '' });
   
   // Handle click outside to close modal
   useEffect(() => {
@@ -290,6 +291,61 @@ const DateField = ({
     }
   }, [value, date_type, time_format, min_date, max_date, date_format]);
 
+  // Handle format changes - reformat existing date when format changes
+  useEffect(() => {
+    const hasDateFormatChanged = prevFormatRef.current.date_format !== date_format;
+    const hasTimeFormatChanged = prevFormatRef.current.time_format !== time_format;
+    
+    if (selectedDate && (hasDateFormatChanged || hasTimeFormatChanged) && !isChanging) {
+      console.log('CCC DateField: Format changed, reformatting existing date:', selectedDate, 
+        'from format:', prevFormatRef.current.date_format, 'to format:', date_format);
+      
+      // Prevent triggering onChange during format changes to avoid loops
+      setIsChanging(true);
+      
+      switch (date_type) {
+        case 'date':
+          const reformattedDate = formatDate(selectedDate, date_format);
+          console.log('CCC DateField: Reformatted date from', localValue, 'to', reformattedDate);
+          if (reformattedDate !== localValue) {
+            setLocalValue(reformattedDate);
+            if (onChange) {
+              setTimeout(() => {
+                onChange(reformattedDate);
+              }, 50); // Small delay to prevent rapid calls
+            }
+          }
+          break;
+        case 'datetime':
+          if (selectedTime) {
+            const reformattedDateTime = {
+              date: formatDate(selectedDate, date_format),
+              time: selectedTime,
+              timestamp: selectedDate.getTime()
+            };
+            const reformattedString = JSON.stringify(reformattedDateTime);
+            console.log('CCC DateField: Reformatted datetime:', reformattedDateTime);
+            if (reformattedString !== localValue) {
+              setLocalValue(reformattedString);
+              if (onChange) {
+                setTimeout(() => {
+                  onChange(reformattedDateTime);
+                }, 50); // Small delay to prevent rapid calls
+              }
+            }
+          }
+          break;
+      }
+      
+      // Reset changing flag
+      setTimeout(() => {
+        setIsChanging(false);
+      }, 100);
+    }
+    
+    // Update the previous format reference
+    prevFormatRef.current = { date_format, time_format };
+  }, [date_format, time_format]); // Only watch format changes, not selectedDate to avoid loops
 
   // Format date based on format string
   const formatDate = (date, format) => {
