@@ -299,7 +299,7 @@ const DateField = ({
         break;
       case 'datetime':
         const formattedDateTime = {
-          date: formatDate(date, 'Y-m-d'),
+          date: formatDate(date, date_format),
           time: selectedTime || formatTime(date, time_format),
           timestamp: date.getTime()
         };
@@ -331,7 +331,7 @@ const DateField = ({
       case 'datetime':
         if (selectedDate) {
           const formattedDateTime = {
-            date: formatDate(selectedDate, 'Y-m-d'),
+            date: formatDate(selectedDate, date_format),
             time: time,
             timestamp: selectedDate.getTime()
           };
