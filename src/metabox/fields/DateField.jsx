@@ -71,17 +71,29 @@ const DateField = ({
         }
         break;
       case 'm/d/Y':
-        // 09/16/2025
-        const mdyMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        // 09/16/2025 or 1/9/25
+        const mdyMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
         if (mdyMatch) {
           [, month, day, year] = mdyMatch;
+          // Handle 2-digit years (assume 2000s for years 00-50, 1900s for 51-99)
+          if (year.length === 2) {
+            const yearNum = parseInt(year);
+            year = yearNum <= 50 ? (2000 + yearNum).toString() : (1900 + yearNum).toString();
+          }
+          console.log('CCC DateField: Parsed m/d/Y format:', dateStr, '→ Month:', month, 'Day:', day, 'Year:', year);
         }
         break;
       case 'd/m/Y':
-        // 16/09/2025
-        const dmyMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        // 16/09/2025 or 9/1/25
+        const dmyMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
         if (dmyMatch) {
           [, day, month, year] = dmyMatch;
+          // Handle 2-digit years (assume 2000s for years 00-50, 1900s for 51-99)
+          if (year.length === 2) {
+            const yearNum = parseInt(year);
+            year = yearNum <= 50 ? (2000 + yearNum).toString() : (1900 + yearNum).toString();
+          }
+          console.log('CCC DateField: Parsed d/m/Y format:', dateStr, '→ Day:', day, 'Month:', month, 'Year:', year);
         }
         break;
       case 'Y/m/d':
@@ -129,9 +141,40 @@ const DateField = ({
     // If we have day, month, year, create the date
     if (day && month && year) {
       // JavaScript Date constructor expects (year, month-1, day)
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const parsedYear = parseInt(year);
+      const parsedMonth = parseInt(month) - 1; // JavaScript months are 0-based
+      const parsedDay = parseInt(day);
+      
+      // Validate the components
+      if (parsedMonth < 0 || parsedMonth > 11) {
+        console.log('CCC DateField: Invalid month:', parsedMonth + 1);
+        return null;
+      }
+      if (parsedDay < 1 || parsedDay > 31) {
+        console.log('CCC DateField: Invalid day:', parsedDay);
+        return null;
+      }
+      if (parsedYear < 1900 || parsedYear > 2100) {
+        console.log('CCC DateField: Invalid year:', parsedYear);
+        return null;
+      }
+      
+      console.log('CCC DateField: Creating date with Year:', parsedYear, 'Month:', parsedMonth + 1, 'Day:', parsedDay);
+      const date = new Date(parsedYear, parsedMonth, parsedDay);
+      
       if (!isNaN(date.getTime())) {
-        return date;
+        // Verify that the date components match what we intended (handles invalid dates like Feb 31)
+        if (date.getFullYear() === parsedYear && 
+            date.getMonth() === parsedMonth && 
+            date.getDate() === parsedDay) {
+          console.log('CCC DateField: Successfully created date:', date, 'Actual Day:', date.getDate(), 'Actual Month:', date.getMonth() + 1, 'Actual Year:', date.getFullYear());
+          return date;
+        } else {
+          console.log('CCC DateField: Date components changed during creation - invalid date like Feb 31');
+          return null;
+        }
+      } else {
+        console.log('CCC DateField: Failed to create valid date');
       }
     }
     
@@ -196,7 +239,11 @@ const DateField = ({
   useEffect(() => {
     // Only run initialization if value is different from current local value
     // This prevents clearing the date when user is actively selecting it
-    if (value && value !== localValue) {
+    // Also skip if we have a selectedDate and only the format changed (handled by format change useEffect)
+    const hasDateFormatChanged = prevFormatRef.current.date_format !== date_format;
+    const hasTimeFormatChanged = prevFormatRef.current.time_format !== time_format;
+    
+    if (value && value !== localValue && !(selectedDate && (hasDateFormatChanged || hasTimeFormatChanged))) {
       // Parse value based on date type
       switch (date_type) {
         case 'datetime':
@@ -265,7 +312,7 @@ const DateField = ({
             console.log('CCC DateField: Parsing date value:', value, 'with format:', date_format);
             const date = parseDate(value, date_format);
             if (date && isDateInRange(date)) {
-              console.log('CCC DateField: Successfully parsed date:', date);
+              console.log('CCC DateField: Successfully parsed date:', date, 'Day:', date.getDate(), 'Month:', date.getMonth() + 1, 'Year:', date.getFullYear());
               setSelectedDate(date);
               setLocalValue(value);
               setError(''); // Clear any existing errors
@@ -299,6 +346,7 @@ const DateField = ({
     if (selectedDate && (hasDateFormatChanged || hasTimeFormatChanged) && !isChanging) {
       console.log('CCC DateField: Format changed, reformatting existing date:', selectedDate, 
         'from format:', prevFormatRef.current.date_format, 'to format:', date_format);
+      console.log('CCC DateField: Selected date details - Day:', selectedDate.getDate(), 'Month:', selectedDate.getMonth() + 1, 'Year:', selectedDate.getFullYear());
       
       // Prevent triggering onChange during format changes to avoid loops
       setIsChanging(true);
@@ -354,28 +402,41 @@ const DateField = ({
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
+    
+    console.log('CCC DateField: Formatting date:', date, 'to format:', format, 'Components - Year:', year, 'Month:', month, 'Day:', day);
     const monthNames = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     const monthName = monthNames[date.getMonth()];
     
+    let result;
     switch (format) {
       case 'Y-m-d':
-        return `${year}-${month}-${day}`;
+        result = `${year}-${month}-${day}`;
+        break;
       case 'm/d/Y':
-        return `${month}/${day}/${year}`;
+        result = `${month}/${day}/${year}`;
+        break;
       case 'd/m/Y':
-        return `${day}/${month}/${year}`;
+        result = `${day}/${month}/${year}`;
+        break;
       case 'Y/m/d':
-        return `${year}/${month}/${day}`;
+        result = `${year}/${month}/${day}`;
+        break;
       case 'F j, Y':
-        return `${monthName} ${day}, ${year}`;
+        result = `${monthName} ${day}, ${year}`;
+        break;
       case 'j F Y':
-        return `${day} ${monthName} ${year}`;
+        result = `${day} ${monthName} ${year}`;
+        break;
       default:
-        return date.toISOString().split('T')[0];
+        result = date.toISOString().split('T')[0];
+        break;
     }
+    
+    console.log('CCC DateField: Formatted result:', result);
+    return result;
   };
 
   // Format time based on format string
