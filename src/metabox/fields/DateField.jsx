@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Calendar, Clock, CalendarDays, Timer, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DateField = ({ 
@@ -17,8 +17,28 @@ const DateField = ({
   const [timeFrom, setTimeFrom] = useState('');
   const [timeTo, setTimeTo] = useState('');
   const [error, setError] = useState('');
+  const [isChanging, setIsChanging] = useState(false);
   
   const datePickerRef = useRef(null);
+  const inputRef = useRef(null);
+  const changeTimeoutRef = useRef(null);
+  
+  // Handle click outside to close modal
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target) && 
+          inputRef.current && !inputRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isOpen]);
 
   // Configuration from field
   const {
@@ -154,7 +174,8 @@ const DateField = ({
           }
           break;
       }
-    } else {
+    } else if (!value) {
+      // Clear all states when value is empty
       setLocalValue('');
       setSelectedDate(null);
       setSelectedTime('');
@@ -162,7 +183,7 @@ const DateField = ({
       setTimeTo('');
       setError('');
     }
-  }, [value, date_type, time_format, min_date, max_date, date_format, localValue]);
+  }, [value, date_type, time_format, min_date, max_date, date_format]);
 
 
   // Format date based on format string
@@ -243,18 +264,34 @@ const DateField = ({
 
   // Handle date selection
   const handleDateChange = (date) => {
+    console.log('CCC DateField: handleDateChange called with:', date);
+    
+    // Prevent rapid successive calls
+    if (isChanging) {
+      console.log('CCC DateField: Already changing, skipping duplicate call');
+      return;
+    }
+    
     // Validate date is within range
     if (!isDateInRange(date)) {
       setError(getValidationMessage());
       return; // Don't set the date if it's outside the range
     }
     
+    // Prevent duplicate calls - check if the date is already selected
+    if (selectedDate && date.getTime() === selectedDate.getTime()) {
+      console.log('CCC DateField: Same date already selected, skipping duplicate call');
+      return;
+    }
+    
+    setIsChanging(true);
     setSelectedDate(date);
     setError(''); // Clear any existing errors
     
     switch (date_type) {
       case 'date':
         const formattedDate = formatDate(date, date_format);
+        console.log('CCC DateField: Setting formatted date:', formattedDate);
         setLocalValue(formattedDate);
         if (onChange) {
           onChange(formattedDate);
@@ -266,12 +303,18 @@ const DateField = ({
           time: selectedTime || formatTime(date, time_format),
           timestamp: date.getTime()
         };
+        console.log('CCC DateField: Setting formatted datetime:', formattedDateTime);
         setLocalValue(JSON.stringify(formattedDateTime));
         if (onChange) {
           onChange(formattedDateTime);
         }
         break;
     }
+    
+    // Reset changing flag after a short delay
+    setTimeout(() => {
+      setIsChanging(false);
+    }, 100);
   };
 
   // Handle time selection
@@ -393,7 +436,7 @@ const DateField = ({
       </div>
 
       {/* Input Field */}
-      <div className="relative">
+      <div className="relative" ref={inputRef}>
         <input
           type="text"
           value={getDisplayValue()}
@@ -403,14 +446,18 @@ const DateField = ({
             console.log('CCC DateField: input clicked, current isOpen:', isOpen);
             e.preventDefault();
             e.stopPropagation();
-            setIsOpen(!isOpen);
+            if (!isChanging) {
+              setIsOpen(prev => !prev);
+            }
           }}
           onKeyDown={(e) => {
             // Prevent form submission on Enter key
             if (e.key === 'Enter') {
               e.preventDefault();
               e.stopPropagation();
-              setIsOpen(!isOpen);
+              if (!isChanging) {
+                setIsOpen(prev => !prev);
+              }
             }
           }}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
@@ -468,7 +515,10 @@ const DateField = ({
 
       {/* Date/Time Picker Modal */}
       {isOpen && (
-        <div className="absolute z-50 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+        <div 
+          ref={datePickerRef}
+          className="absolute z-50 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg"
+        >
           <DatePickerModal
             dateType={date_type}
             selectedDate={selectedDate}
@@ -481,7 +531,15 @@ const DateField = ({
             maxDate={max_date}
             isDateInRange={isDateInRange}
             getValidationMessage={getValidationMessage}
-            onDateChange={handleDateChange}
+            onDateChange={(date) => {
+              handleDateChange(date);
+              // Auto close for date type, keep open for datetime
+              if (date_type === 'date') {
+                setTimeout(() => {
+                  setIsOpen(false);
+                }, 200);
+              }
+            }}
             onTimeChange={handleTimeChange}
             onTimeRangeChange={handleTimeRangeChange}
             onClose={() => {
