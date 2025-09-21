@@ -39,8 +39,31 @@ const DateField = ({
     const minDateObj = min_date ? new Date(min_date) : null;
     const maxDateObj = max_date ? new Date(max_date) : null;
     
-    if (minDateObj && dateObj < minDateObj) return false;
-    if (maxDateObj && dateObj > maxDateObj) return false;
+    // Normalize dates to compare only date parts (ignore time)
+    const normalizeDate = (date) => {
+      const normalized = new Date(date);
+      normalized.setHours(0, 0, 0, 0);
+      return normalized;
+    };
+    
+    const normalizedDateObj = normalizeDate(dateObj);
+    const normalizedMinDate = minDateObj ? normalizeDate(minDateObj) : null;
+    const normalizedMaxDate = maxDateObj ? normalizeDate(maxDateObj) : null;
+    
+    // Debug logging
+    console.log('CCC DateField: Date validation:', {
+      selectedDate: dateObj.toISOString(),
+      normalizedSelectedDate: normalizedDateObj.toISOString(),
+      minDate: min_date,
+      normalizedMinDate: normalizedMinDate?.toISOString(),
+      maxDate: max_date,
+      normalizedMaxDate: normalizedMaxDate?.toISOString(),
+      isAfterMin: normalizedMinDate ? normalizedDateObj >= normalizedMinDate : true,
+      isBeforeMax: normalizedMaxDate ? normalizedDateObj <= normalizedMaxDate : true
+    });
+    
+    if (normalizedMinDate && normalizedDateObj < normalizedMinDate) return false;
+    if (normalizedMaxDate && normalizedDateObj > normalizedMaxDate) return false;
     
     return true;
   };
@@ -63,7 +86,9 @@ const DateField = ({
 
   // Initialize local value with validation
   useEffect(() => {
-    if (value) {
+    // Only run initialization if value is different from current local value
+    // This prevents clearing the date when user is actively selecting it
+    if (value && value !== localValue) {
       // Parse value based on date type
       switch (date_type) {
         case 'datetime':
@@ -146,7 +171,7 @@ const DateField = ({
       setTimeTo('');
       setError('');
     }
-  }, [value, date_type, time_format, min_date, max_date, date_format]);
+  }, [value, date_type, time_format, min_date, max_date, date_format, localValue]);
 
 
   // Format date based on format string
