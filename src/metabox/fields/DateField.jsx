@@ -35,6 +35,9 @@ const DateField = ({
   const isDateInRange = (date) => {
     if (!date) return true;
     
+    // If no min/max dates are set, all dates are valid
+    if (!min_date && !max_date) return true;
+    
     const dateObj = new Date(date);
     const minDateObj = min_date ? new Date(min_date) : null;
     const maxDateObj = max_date ? new Date(max_date) : null;
@@ -49,18 +52,6 @@ const DateField = ({
     const normalizedDateObj = normalizeDate(dateObj);
     const normalizedMinDate = minDateObj ? normalizeDate(minDateObj) : null;
     const normalizedMaxDate = maxDateObj ? normalizeDate(maxDateObj) : null;
-    
-    // Debug logging
-    console.log('CCC DateField: Date validation:', {
-      selectedDate: dateObj.toISOString(),
-      normalizedSelectedDate: normalizedDateObj.toISOString(),
-      minDate: min_date,
-      normalizedMinDate: normalizedMinDate?.toISOString(),
-      maxDate: max_date,
-      normalizedMaxDate: normalizedMaxDate?.toISOString(),
-      isAfterMin: normalizedMinDate ? normalizedDateObj >= normalizedMinDate : true,
-      isBeforeMax: normalizedMaxDate ? normalizedDateObj <= normalizedMaxDate : true
-    });
     
     if (normalizedMinDate && normalizedDateObj < normalizedMinDate) return false;
     if (normalizedMaxDate && normalizedDateObj > normalizedMaxDate) return false;
@@ -252,11 +243,8 @@ const DateField = ({
 
   // Handle date selection
   const handleDateChange = (date) => {
-    console.log('CCC DateField: handleDateChange called with date:', date);
-    
     // Validate date is within range
     if (!isDateInRange(date)) {
-      console.log('CCC DateField: Date outside allowed range:', date);
       setError(getValidationMessage());
       return; // Don't set the date if it's outside the range
     }
@@ -267,10 +255,8 @@ const DateField = ({
     switch (date_type) {
       case 'date':
         const formattedDate = formatDate(date, date_format);
-        console.log('CCC DateField: formattedDate:', formattedDate);
         setLocalValue(formattedDate);
         if (onChange) {
-          console.log('CCC DateField: calling onChange with:', formattedDate);
           onChange(formattedDate);
         }
         break;
@@ -280,10 +266,8 @@ const DateField = ({
           time: selectedTime || formatTime(date, time_format),
           timestamp: date.getTime()
         };
-        console.log('CCC DateField: formattedDateTime:', formattedDateTime);
         setLocalValue(JSON.stringify(formattedDateTime));
         if (onChange) {
-          console.log('CCC DateField: calling onChange with:', formattedDateTime);
           onChange(formattedDateTime);
         }
         break;
@@ -553,6 +537,20 @@ const DatePickerModal = ({
       days.push(null);
     }
     
+    // Pre-calculate min/max dates for performance
+    const minDateObj = minDate ? new Date(minDate) : null;
+    const maxDateObj = maxDate ? new Date(maxDate) : null;
+    
+    // Normalize min/max dates to compare only date parts
+    const normalizeDate = (date) => {
+      const normalized = new Date(date);
+      normalized.setHours(0, 0, 0, 0);
+      return normalized;
+    };
+    
+    const normalizedMinDate = minDateObj ? normalizeDate(minDateObj) : null;
+    const normalizedMaxDate = maxDateObj ? normalizeDate(maxDateObj) : null;
+    
     // Add days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(new Date(currentYear, currentMonth, day));
@@ -697,7 +695,17 @@ const DatePickerModal = ({
             
             {/* Calendar Days */}
             {calendarDays.map((day, index) => {
-              const isDateDisabled = day && !isDateInRange(day);
+              // Optimized date validation - only check if min/max dates are set
+              let isDateDisabled = false;
+              if (day && (minDate || maxDate)) {
+                const dayTime = day.getTime();
+                const minTime = minDate ? new Date(minDate).setHours(0, 0, 0, 0) : null;
+                const maxTime = maxDate ? new Date(maxDate).setHours(23, 59, 59, 999) : null;
+                
+                if (minTime && dayTime < minTime) isDateDisabled = true;
+                if (maxTime && dayTime > maxTime) isDateDisabled = true;
+              }
+              
               const isSelected = day && selectedDate && day.toDateString() === selectedDate.toDateString();
               
               return (
