@@ -16,6 +16,8 @@ const DateField = ({
   const [selectedTime, setSelectedTime] = useState('');
   const [timeFrom, setTimeFrom] = useState('');
   const [timeTo, setTimeTo] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [error, setError] = useState('');
   const [isChanging, setIsChanging] = useState(false);
   
@@ -338,6 +340,53 @@ const DateField = ({
             }
           }
           break;
+        case 'date_range':
+          if (typeof value === 'object' && value.from && value.to) {
+            console.log('CCC DateField: Parsing date range object:', value);
+            const fromDate = parseDate(value.from, date_format);
+            const toDate = parseDate(value.to, date_format);
+            if (fromDate && toDate && isDateInRange(fromDate) && isDateInRange(toDate)) {
+              console.log('CCC DateField: Successfully parsed date range:', fromDate, 'to', toDate);
+              setDateFrom(value.from);
+              setDateTo(value.to);
+              setLocalValue(value);
+              setError(''); // Clear any existing errors
+            } else {
+              console.log('CCC DateField: Invalid date range, clearing');
+              setDateFrom('');
+              setDateTo('');
+              setLocalValue('');
+              setError('Invalid date range format');
+              if (onChange) onChange('');
+            }
+          } else if (typeof value === 'string' && value.includes('{')) {
+            try {
+              const parsed = JSON.parse(value);
+              const fromDate = parseDate(parsed.from, date_format);
+              const toDate = parseDate(parsed.to, date_format);
+              if (fromDate && toDate && isDateInRange(fromDate) && isDateInRange(toDate)) {
+                console.log('CCC DateField: Successfully parsed date range string:', parsed);
+                setDateFrom(parsed.from || '');
+                setDateTo(parsed.to || '');
+                setLocalValue(value);
+                setError(''); // Clear any existing errors
+              } else {
+                console.log('CCC DateField: Invalid date range string, clearing');
+                setDateFrom('');
+                setDateTo('');
+                setLocalValue('');
+                setError('Invalid date range format');
+                if (onChange) onChange('');
+              }
+            } catch (e) {
+              console.error('Failed to parse date range:', e);
+              setDateFrom('');
+              setDateTo('');
+              setLocalValue('');
+              setError('Invalid date range format');
+            }
+          }
+          break;
         case 'time':
           setSelectedTime(value);
           setLocalValue(value);
@@ -370,6 +419,8 @@ const DateField = ({
       setSelectedTime('');
       setTimeFrom('');
       setTimeTo('');
+      setDateFrom('');
+      setDateTo('');
       setError('');
     }
   }, [value, date_type, time_format, min_date, max_date, date_format]);
@@ -415,6 +466,30 @@ const DateField = ({
                 setTimeout(() => {
                   onChange(reformattedDateTime);
                 }, 50); // Small delay to prevent rapid calls
+              }
+            }
+          }
+          break;
+        case 'date_range':
+          if (dateFrom && dateTo) {
+            const fromDate = parseDate(dateFrom, prevFormatRef.current.date_format);
+            const toDate = parseDate(dateTo, prevFormatRef.current.date_format);
+            if (fromDate && toDate) {
+              const reformattedDateRange = {
+                from: formatDate(fromDate, date_format),
+                to: formatDate(toDate, date_format)
+              };
+              const reformattedString = JSON.stringify(reformattedDateRange);
+              console.log('CCC DateField: Reformatted date range:', reformattedDateRange);
+              if (reformattedString !== localValue) {
+                setDateFrom(reformattedDateRange.from);
+                setDateTo(reformattedDateRange.to);
+                setLocalValue(reformattedString);
+                if (onChange) {
+                  setTimeout(() => {
+                    onChange(reformattedDateRange);
+                  }, 50); // Small delay to prevent rapid calls
+                }
               }
             }
           }
@@ -621,6 +696,47 @@ const DateField = ({
     setError('');
   };
 
+  // Handle date range change
+  const handleDateRangeChange = (from, to) => {
+    console.log('CCC DateField: handleDateRangeChange called with from:', from, 'to:', to);
+    
+    // Validate both dates are within range
+    const fromDate = parseDate(from, date_format);
+    const toDate = parseDate(to, date_format);
+    
+    if (!fromDate || !toDate) {
+      setError('Invalid date format');
+      return;
+    }
+    
+    if (!isDateInRange(fromDate) || !isDateInRange(toDate)) {
+      setError(getValidationMessage());
+      return;
+    }
+    
+    // Validate that 'from' date is not after 'to' date
+    if (fromDate > toDate) {
+      setError('Start date cannot be after end date');
+      return;
+    }
+    
+    setDateFrom(from);
+    setDateTo(to);
+    
+    const dateRange = {
+      from: from,
+      to: to,
+      duration_days: Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1 // +1 to include both start and end days
+    };
+    
+    console.log('CCC DateField: Setting date range:', dateRange);
+    setLocalValue(JSON.stringify(dateRange));
+    if (onChange) {
+      onChange(dateRange);
+    }
+    setError('');
+  };
+
   // Calculate duration between two times
   const calculateDuration = (from, to) => {
     if (!from || !to) return '';
@@ -654,6 +770,11 @@ const DateField = ({
           return `${timeFrom} - ${timeTo}`;
         }
         return '';
+      case 'date_range':
+        if (dateFrom && dateTo) {
+          return `${dateFrom} to ${dateTo}`;
+        }
+        return '';
       default:
         return localValue;
     }
@@ -667,6 +788,8 @@ const DateField = ({
       case 'time':
       case 'time_range':
         return Clock;
+      case 'date_range':
+        return CalendarDays;
       default:
         return Calendar;
     }
@@ -690,6 +813,7 @@ const DateField = ({
           {date_type === 'datetime' && 'Date & Time Picker'}
           {date_type === 'time' && 'Time Picker'}
           {date_type === 'time_range' && 'Time Range Picker'}
+          {date_type === 'date_range' && 'Date Range Picker'}
         </span>
       </div>
 
@@ -731,6 +855,8 @@ const DateField = ({
               setSelectedTime('');
               setTimeFrom('');
               setTimeTo('');
+              setDateFrom('');
+              setDateTo('');
               if (onChange) {
                 onChange('');
               }
@@ -756,8 +882,8 @@ const DateField = ({
         </div>
       )}
 
-      {/* Date Range Info */}
-      {(min_date || max_date) && !error && (
+      {/* Date Range Info - Only show for date and datetime pickers */}
+      {(min_date || max_date) && !error && (date_type === 'date' || date_type === 'datetime') && (
         <div className="mt-2 text-xs text-gray-500">
           {min_date && max_date && (
             <>Allowed range: {formatDate(new Date(min_date), date_format)} to {formatDate(new Date(max_date), date_format)}</>
@@ -783,6 +909,8 @@ const DateField = ({
             selectedTime={selectedTime}
             timeFrom={timeFrom}
             timeTo={timeTo}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
             dateFormat={date_format}
             timeFormat={time_format}
             minDate={min_date}
@@ -800,6 +928,7 @@ const DateField = ({
             }}
             onTimeChange={handleTimeChange}
             onTimeRangeChange={handleTimeRangeChange}
+            onDateRangeChange={handleDateRangeChange}
             onClose={() => {
               console.log('CCC DateField: modal closing');
               setIsOpen(false);
@@ -825,6 +954,8 @@ const DatePickerModal = ({
   selectedTime,
   timeFrom,
   timeTo,
+  dateFrom,
+  dateTo,
   dateFormat,
   timeFormat,
   minDate,
@@ -834,6 +965,7 @@ const DatePickerModal = ({
   onDateChange,
   onTimeChange,
   onTimeRangeChange,
+  onDateRangeChange,
   onClose
 }) => {
   const [currentMonth, setCurrentMonth] = useState(selectedDate ? selectedDate.getMonth() : new Date().getMonth());
@@ -970,6 +1102,7 @@ const DatePickerModal = ({
           {dateType === 'datetime' && 'Select Date & Time'}
           {dateType === 'time' && 'Select Time'}
           {dateType === 'time_range' && 'Select Time Range'}
+          {dateType === 'date_range' && 'Select Date Range'}
         </h3>
         <button
           type="button"
@@ -1219,6 +1352,76 @@ const DatePickerModal = ({
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
               <div className="text-sm font-medium text-blue-800 mb-1">Duration</div>
               <div className="text-sm text-blue-700">{calculateDuration(timeFrom, timeTo)}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Date Range Picker */}
+      {dateType === 'date_range' && (
+        <div className="space-y-4">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="w-4 h-4 text-gray-500" />
+              <h4 className="text-sm font-semibold text-gray-700">From Date</h4>
+            </div>
+            
+            <div className="relative">
+              <input
+                type="text"
+                value={dateFrom}
+                placeholder={`Select start date (${dateFormat})`}
+                readOnly
+                onClick={() => {
+                  // Open calendar for start date
+                  console.log('Opening calendar for start date');
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+              />
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <Calendar className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="w-4 h-4 text-gray-500" />
+              <h4 className="text-sm font-semibold text-gray-700">To Date</h4>
+            </div>
+            
+            <div className="relative">
+              <input
+                type="text"
+                value={dateTo}
+                placeholder={`Select end date (${dateFormat})`}
+                readOnly
+                onClick={() => {
+                  // Open calendar for end date
+                  console.log('Opening calendar for end date');
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+              />
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <Calendar className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+          
+          {dateFrom && dateTo && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="text-sm font-medium text-blue-800 mb-1">Duration</div>
+              <div className="text-sm text-blue-700">
+                {(() => {
+                  const fromDate = parseDate(dateFrom, dateFormat);
+                  const toDate = parseDate(dateTo, dateFormat);
+                  if (fromDate && toDate) {
+                    const days = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
+                    return `${days} day${days !== 1 ? 's' : ''}`;
+                  }
+                  return '';
+                })()}
+              </div>
             </div>
           )}
         </div>
