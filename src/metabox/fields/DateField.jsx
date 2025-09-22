@@ -973,6 +973,11 @@ const DatePickerModal = ({
   const [showMonthSelector, setShowMonthSelector] = useState(false);
   const [showYearSelector, setShowYearSelector] = useState(false);
   
+  // Date range specific state
+  const [activeDateRangeInput, setActiveDateRangeInput] = useState(null); // 'from' or 'to' or null
+  const [tempDateRangeFrom, setTempDateRangeFrom] = useState(dateFrom || '');
+  const [tempDateRangeTo, setTempDateRangeTo] = useState(dateTo || '');
+  
   // Refs for dropdown containers
   const monthSelectorRef = useRef(null);
   const yearSelectorRef = useRef(null);
@@ -995,6 +1000,14 @@ const DatePickerModal = ({
       };
     }
   }, [showMonthSelector, showYearSelector]);
+
+  // Initialize temp values for date range
+  useEffect(() => {
+    if (dateType === 'date_range') {
+      setTempDateRangeFrom(dateFrom || '');
+      setTempDateRangeTo(dateTo || '');
+    }
+  }, [dateType, dateFrom, dateTo]);
 
   // Generate calendar days
   const generateCalendarDays = () => {
@@ -1092,6 +1105,95 @@ const DatePickerModal = ({
   ];
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Handle date range input clicks
+  const handleDateRangeInputClick = (inputType) => {
+    console.log('CCC DateField: Opening calendar for', inputType, 'date');
+    setActiveDateRangeInput(inputType);
+    setShowMonthSelector(false);
+    setShowYearSelector(false);
+  };
+
+  // Handle date selection for date range
+  const handleDateRangeDateSelect = (date) => {
+    console.log('CCC DateField: Date selected for', activeDateRangeInput, ':', date);
+    
+    if (activeDateRangeInput === 'from') {
+      setTempDateRangeFrom(formatDate(date, dateFormat));
+    } else if (activeDateRangeInput === 'to') {
+      setTempDateRangeTo(formatDate(date, dateFormat));
+    }
+    
+    // Auto-close calendar after selection
+    setActiveDateRangeInput(null);
+  };
+
+  // Handle date range confirmation
+  const handleDateRangeConfirm = () => {
+    console.log('CCC DateField: Confirming date range:', tempDateRangeFrom, 'to', tempDateRangeTo);
+    if (onDateRangeChange && tempDateRangeFrom && tempDateRangeTo) {
+      onDateRangeChange(tempDateRangeFrom, tempDateRangeTo);
+    }
+    onClose();
+  };
+
+  // Handle Today button clicks
+  const handleTodayClick = () => {
+    const now = new Date();
+    console.log('CCC DateField: Today button clicked, current time:', now);
+    
+    switch (dateType) {
+      case 'date':
+        const todayDate = formatDate(now, dateFormat);
+        console.log('CCC DateField: Setting today date:', todayDate);
+        onDateChange(now);
+        break;
+        
+      case 'datetime':
+        const todayDateTime = {
+          date: formatDate(now, dateFormat),
+          time: formatTime(now, timeFormat),
+          timestamp: now.getTime()
+        };
+        console.log('CCC DateField: Setting today datetime:', todayDateTime);
+        onDateChange(now);
+        break;
+        
+      case 'time':
+        const currentTime = formatTime(now, timeFormat);
+        console.log('CCC DateField: Setting current time:', currentTime);
+        onTimeChange(currentTime);
+        break;
+        
+      case 'time_range':
+        // For time range, set current time as both from and to
+        const currentTimeStr = formatTime(now, timeFormat);
+        console.log('CCC DateField: Setting current time range:', currentTimeStr, 'to', currentTimeStr);
+        onTimeRangeChange(currentTimeStr, currentTimeStr);
+        break;
+        
+      case 'date_range':
+        // For date range, set today as both from and to
+        const todayDateStr = formatDate(now, dateFormat);
+        console.log('CCC DateField: Setting today date range:', todayDateStr, 'to', todayDateStr);
+        setTempDateRangeFrom(todayDateStr);
+        setTempDateRangeTo(todayDateStr);
+        break;
+    }
+  };
+
+  // Handle Today button for date range inputs
+  const handleDateRangeTodayClick = (inputType) => {
+    const now = new Date();
+    const todayDateStr = formatDate(now, dateFormat);
+    console.log('CCC DateField: Today clicked for', inputType, 'date:', todayDateStr);
+    
+    if (inputType === 'from') {
+      setTempDateRangeFrom(todayDateStr);
+    } else if (inputType === 'to') {
+      setTempDateRangeTo(todayDateStr);
+    }
+  };
 
   return (
     <div className="p-4 w-80">
@@ -1251,6 +1353,17 @@ const DatePickerModal = ({
             </button>
           </div>
 
+          {/* Today Button */}
+          <div className="mb-3">
+            <button
+              type="button"
+              onClick={handleTodayClick}
+              className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+            >
+              📅 Today ({formatDate(new Date(), dateFormat)})
+            </button>
+          </div>
+
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-1">
             {/* Day Headers */}
@@ -1310,6 +1423,17 @@ const DatePickerModal = ({
             </h4>
           </div>
           
+          {/* Today Button for Time */}
+          <div className="mb-3">
+            <button
+              type="button"
+              onClick={handleTodayClick}
+              className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+            >
+              🕐 Current Time ({formatTime(new Date(), timeFormat)})
+            </button>
+          </div>
+          
           <GranularTimePicker
             value={selectedTime}
             onChange={onTimeChange}
@@ -1322,6 +1446,17 @@ const DatePickerModal = ({
       {/* Time Range Picker */}
       {dateType === 'time_range' && (
         <div className="space-y-4">
+          {/* Today Button for Time Range */}
+          <div className="mb-3">
+            <button
+              type="button"
+              onClick={handleTodayClick}
+              className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+            >
+              🕐 Current Time Range ({formatTime(new Date(), timeFormat)} - {formatTime(new Date(), timeFormat)})
+            </button>
+          </div>
+          
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Clock className="w-4 h-4 text-gray-500" />
@@ -1369,18 +1504,28 @@ const DatePickerModal = ({
             <div className="relative">
               <input
                 type="text"
-                value={dateFrom}
+                value={tempDateRangeFrom}
                 placeholder={`Select start date (${dateFormat})`}
                 readOnly
-                onClick={() => {
-                  // Open calendar for start date
-                  console.log('Opening calendar for start date');
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                onClick={() => handleDateRangeInputClick('from')}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer ${
+                  activeDateRangeInput === 'from' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                }`}
               />
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                 <Calendar className="w-4 h-4" />
               </div>
+            </div>
+            
+            {/* Today Button for From Date */}
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => handleDateRangeTodayClick('from')}
+                className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+              >
+                📅 Today ({formatDate(new Date(), dateFormat)})
+              </button>
             </div>
           </div>
 
@@ -1393,22 +1538,216 @@ const DatePickerModal = ({
             <div className="relative">
               <input
                 type="text"
-                value={dateTo}
+                value={tempDateRangeTo}
                 placeholder={`Select end date (${dateFormat})`}
                 readOnly
-                onClick={() => {
-                  // Open calendar for end date
-                  console.log('Opening calendar for end date');
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                onClick={() => handleDateRangeInputClick('to')}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer ${
+                  activeDateRangeInput === 'to' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                }`}
               />
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                 <Calendar className="w-4 h-4" />
               </div>
             </div>
+            
+            {/* Today Button for To Date */}
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => handleDateRangeTodayClick('to')}
+                className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+              >
+                📅 Today ({formatDate(new Date(), dateFormat)})
+              </button>
+            </div>
           </div>
           
-          {dateFrom && dateTo && (
+          {/* Calendar for Date Range Selection */}
+          {activeDateRangeInput && (
+            <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-md">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <h4 className="text-sm font-semibold text-gray-700">
+                  Select {activeDateRangeInput === 'from' ? 'Start' : 'End'} Date
+                </h4>
+              </div>
+              
+              {/* Month/Year Navigation */}
+              <div className="flex justify-between items-center mb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (currentMonth === 0) {
+                      setCurrentMonth(11);
+                      setCurrentYear(currentYear - 1);
+                    } else {
+                      setCurrentMonth(currentMonth - 1);
+                    }
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                {/* Clickable Month and Year */}
+                <div className="flex items-center gap-2">
+                  {/* Month Selector */}
+                  <div className="relative" ref={monthSelectorRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMonthSelector(!showMonthSelector);
+                        setShowYearSelector(false);
+                      }}
+                      className="px-2 py-1 hover:bg-gray-100 rounded font-medium text-gray-700 transition-colors"
+                    >
+                      {monthNames[currentMonth]}
+                    </button>
+                    
+                    {showMonthSelector && (
+                      <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                        <div className="py-1">
+                          {monthNames.map((month, index) => (
+                            <button
+                              key={month}
+                              type="button"
+                              onClick={() => {
+                                setCurrentMonth(index);
+                                setShowMonthSelector(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                                index === currentMonth ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                              }`}
+                            >
+                              {month}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Year Selector */}
+                  <div className="relative" ref={yearSelectorRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowYearSelector(!showYearSelector);
+                        setShowMonthSelector(false);
+                      }}
+                      className="px-2 py-1 hover:bg-gray-100 rounded font-medium text-gray-700 transition-colors"
+                    >
+                      {currentYear}
+                    </button>
+                    
+                    {showYearSelector && (
+                      <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                        <div className="py-1">
+                          {(() => {
+                            const currentYearNum = new Date().getFullYear();
+                            const startYear = currentYearNum - 20;
+                            const endYear = currentYearNum + 20;
+                            const years = [];
+                            
+                            for (let year = endYear; year >= startYear; year--) {
+                              years.push(year);
+                            }
+                            
+                            return years.map(year => {
+                              const isCurrentYear = year === currentYearNum;
+                              const isSelectedYear = year === currentYear;
+                              
+                              return (
+                                <button
+                                  key={year}
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentYear(year);
+                                    setShowYearSelector(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                                    isSelectedYear 
+                                      ? 'bg-blue-50 text-blue-600 font-medium' 
+                                      : isCurrentYear
+                                      ? 'text-blue-500 font-medium'
+                                      : 'text-gray-700'
+                                  }`}
+                                >
+                                  {year} {isCurrentYear && <span className="text-xs text-gray-500">(Today)</span>}
+                                </button>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (currentMonth === 11) {
+                      setCurrentMonth(0);
+                      setCurrentYear(currentYear + 1);
+                    } else {
+                      setCurrentMonth(currentMonth + 1);
+                    }
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Today Button for Date Range Calendar */}
+              <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={() => handleDateRangeDateSelect(new Date())}
+                  className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+                >
+                  📅 Today ({formatDate(new Date(), dateFormat)})
+                </button>
+              </div>
+
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {/* Day Headers */}
+                {dayNames.map(day => (
+                  <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+                    {day}
+                  </div>
+                ))}
+                
+                {/* Calendar Days */}
+                {calendarDays.map((day, index) => {
+                  if (!day) {
+                    return <div key={index} className="h-8"></div>;
+                  }
+                  
+                  const isToday = day.toDateString() === new Date().toDateString();
+                  const isSelected = false; // We'll handle selection differently for date range
+                  
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleDateRangeDateSelect(day)}
+                      className={`h-8 w-8 text-sm rounded hover:bg-blue-100 transition-colors ${
+                        isToday ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                      } ${isSelected ? 'bg-blue-500 text-white' : ''}`}
+                    >
+                      {day.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
+          {tempDateRangeFrom && tempDateRangeTo && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
               <div className="text-sm font-medium text-blue-800 mb-1">Duration</div>
               <div className="text-sm text-blue-700">
@@ -1438,10 +1777,10 @@ const DatePickerModal = ({
         </button>
         <button
           type="button"
-          onClick={onClose}
+          onClick={dateType === 'date_range' ? handleDateRangeConfirm : onClose}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
-          Done
+          {dateType === 'date_range' ? 'Confirm Range' : 'Done'}
         </button>
       </div>
     </div>
