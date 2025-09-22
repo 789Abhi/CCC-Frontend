@@ -1501,437 +1501,440 @@ const DatePickerModal = ({
       {/* Date Range Picker */}
       {dateType === 'date_range' && (
         <div className="space-y-4">
-          {/* From Date Section */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="w-4 h-4 text-gray-500" />
-              <h4 className="text-sm font-semibold text-gray-700">From Date</h4>
-            </div>
-            
-            <div className="relative">
-              <input
-                type="text"
-                value={tempDateRangeFrom}
-                placeholder={`Select start date (${dateFormat})`}
-                readOnly
-                onClick={() => handleDateRangeInputClick('from')}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer ${
-                  activeDateRangeInput === 'from' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-                }`}
-              />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                <Calendar className="w-4 h-4" />
+          {/* From Date and To Date in a Row */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* From Date Section */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <h4 className="text-sm font-semibold text-gray-700">From Date</h4>
               </div>
-            </div>
-            
-            {/* Today Button for From Date */}
-            <div className="mt-2">
-              <button
-                type="button"
-                onClick={() => handleDateRangeTodayClick('from')}
-                className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
-              >
-                📅 Today ({formatDate(new Date(), dateFormat)})
-              </button>
-            </div>
-
-            {/* Calendar for From Date */}
-            {activeDateRangeInput === 'from' && (
-              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-gray-500" />
-                  <h4 className="text-sm font-semibold text-gray-700">Select Start Date</h4>
-                </div>
-                
-                {/* Month/Year Navigation */}
-                <div className="flex justify-between items-center mb-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (currentMonth === 0) {
-                        setCurrentMonth(11);
-                        setCurrentYear(currentYear - 1);
-                      } else {
-                        setCurrentMonth(currentMonth - 1);
-                      }
-                    }}
-                    className="p-1 hover:bg-gray-100 rounded"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  
-                  {/* Clickable Month and Year */}
-                  <div className="flex items-center gap-2">
-                    {/* Month Selector */}
-                    <div className="relative" ref={monthSelectorRef}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowMonthSelector(!showMonthSelector);
-                          setShowYearSelector(false);
-                        }}
-                        className="px-2 py-1 hover:bg-gray-100 rounded font-medium text-gray-700 transition-colors"
-                      >
-                        {monthNames[currentMonth]}
-                      </button>
-                      
-                      {showMonthSelector && (
-                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
-                          <div className="py-1">
-                            {monthNames.map((month, index) => (
-                              <button
-                                key={month}
-                                type="button"
-                                onClick={() => {
-                                  setCurrentMonth(index);
-                                  setShowMonthSelector(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
-                                  index === currentMonth ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
-                                }`}
-                              >
-                                {month}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Year Selector */}
-                    <div className="relative" ref={yearSelectorRef}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowYearSelector(!showYearSelector);
-                          setShowMonthSelector(false);
-                        }}
-                        className="px-2 py-1 hover:bg-gray-100 rounded font-medium text-gray-700 transition-colors"
-                      >
-                        {currentYear}
-                      </button>
-                      
-                      {showYearSelector && (
-                        <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
-                          <div className="py-1">
-                            {(() => {
-                              const currentYearNum = new Date().getFullYear();
-                              const startYear = currentYearNum - 20;
-                              const endYear = currentYearNum + 20;
-                              const years = [];
-                              
-                              for (let year = endYear; year >= startYear; year--) {
-                                years.push(year);
-                              }
-                              
-                              return years.map(year => {
-                                const isCurrentYear = year === currentYearNum;
-                                const isSelectedYear = year === currentYear;
-                                
-                                return (
-                                  <button
-                                    key={year}
-                                    type="button"
-                                    onClick={() => {
-                                      setCurrentYear(year);
-                                      setShowYearSelector(false);
-                                    }}
-                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
-                                      isSelectedYear 
-                                        ? 'bg-blue-50 text-blue-600 font-medium' 
-                                        : isCurrentYear
-                                        ? 'text-blue-500 font-medium'
-                                        : 'text-gray-700'
-                                    }`}
-                                  >
-                                    {year} {isCurrentYear && <span className="text-xs text-gray-500">(Today)</span>}
-                                  </button>
-                                );
-                              });
-                            })()}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (currentMonth === 11) {
-                        setCurrentMonth(0);
-                        setCurrentYear(currentYear + 1);
-                      } else {
-                        setCurrentMonth(currentMonth + 1);
-                      }
-                    }}
-                    className="p-1 hover:bg-gray-100 rounded"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Today Button for From Date Calendar */}
-                <div className="mb-3">
-                  <button
-                    type="button"
-                    onClick={() => handleDateRangeDateSelect(new Date())}
-                    className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
-                  >
-                    📅 Today ({formatDate(new Date(), dateFormat)})
-                  </button>
-                </div>
-
-                {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-1">
-                  {/* Day Headers */}
-                  {dayNames.map(day => (
-                    <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
-                      {day}
-                    </div>
-                  ))}
-                  
-                  {/* Calendar Days */}
-                  {calendarDays.map((day, index) => {
-                    if (!day) {
-                      return <div key={index} className="h-8"></div>;
-                    }
-                    
-                    const isToday = day.toDateString() === new Date().toDateString();
-                    
-                    return (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => handleDateRangeDateSelect(day)}
-                        className={`h-8 w-8 text-sm rounded hover:bg-blue-100 transition-colors ${
-                          isToday ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
-                        }`}
-                      >
-                        {day.getDate()}
-                      </button>
-                    );
-                  })}
+              
+              <div className="relative">
+                <input
+                  type="text"
+                  value={tempDateRangeFrom}
+                  placeholder={`Select start date (${dateFormat})`}
+                  readOnly
+                  onClick={() => handleDateRangeInputClick('from')}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer ${
+                    activeDateRangeInput === 'from' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                  }`}
+                />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  <Calendar className="w-4 h-4" />
                 </div>
               </div>
-            )}
+              
+              {/* Today Button for From Date */}
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => handleDateRangeTodayClick('from')}
+                  className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+                >
+                  📅 Today ({formatDate(new Date(), dateFormat)})
+                </button>
+              </div>
+            </div>
+
+            {/* To Date Section */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <h4 className="text-sm font-semibold text-gray-700">To Date</h4>
+              </div>
+              
+              <div className="relative">
+                <input
+                  type="text"
+                  value={tempDateRangeTo}
+                  placeholder={`Select end date (${dateFormat})`}
+                  readOnly
+                  onClick={() => handleDateRangeInputClick('to')}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer ${
+                    activeDateRangeInput === 'to' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                  }`}
+                />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  <Calendar className="w-4 h-4" />
+                </div>
+              </div>
+              
+              {/* Today Button for To Date */}
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => handleDateRangeTodayClick('to')}
+                  className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+                >
+                  📅 Today ({formatDate(new Date(), dateFormat)})
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* To Date Section */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="w-4 h-4 text-gray-500" />
-              <h4 className="text-sm font-semibold text-gray-700">To Date</h4>
-            </div>
-            
-            <div className="relative">
-              <input
-                type="text"
-                value={tempDateRangeTo}
-                placeholder={`Select end date (${dateFormat})`}
-                readOnly
-                onClick={() => handleDateRangeInputClick('to')}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer ${
-                  activeDateRangeInput === 'to' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-                }`}
-              />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                <Calendar className="w-4 h-4" />
+          {/* Calendar for From Date */}
+          {activeDateRangeInput === 'from' && (
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <h4 className="text-sm font-semibold text-gray-700">Select Start Date</h4>
               </div>
-            </div>
-            
-            {/* Today Button for To Date */}
-            <div className="mt-2">
-              <button
-                type="button"
-                onClick={() => handleDateRangeTodayClick('to')}
-                className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
-              >
-                📅 Today ({formatDate(new Date(), dateFormat)})
-              </button>
-            </div>
-
-            {/* Calendar for To Date */}
-            {activeDateRangeInput === 'to' && (
-              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-gray-500" />
-                  <h4 className="text-sm font-semibold text-gray-700">Select End Date</h4>
-                </div>
+              
+              {/* Month/Year Navigation */}
+              <div className="flex justify-between items-center mb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (currentMonth === 0) {
+                      setCurrentMonth(11);
+                      setCurrentYear(currentYear - 1);
+                    } else {
+                      setCurrentMonth(currentMonth - 1);
+                    }
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
                 
-                {/* Month/Year Navigation */}
-                <div className="flex justify-between items-center mb-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (currentMonth === 0) {
-                        setCurrentMonth(11);
-                        setCurrentYear(currentYear - 1);
-                      } else {
-                        setCurrentMonth(currentMonth - 1);
-                      }
-                    }}
-                    className="p-1 hover:bg-gray-100 rounded"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  
-                  {/* Clickable Month and Year */}
-                  <div className="flex items-center gap-2">
-                    {/* Month Selector */}
-                    <div className="relative" ref={monthSelectorRef}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowMonthSelector(!showMonthSelector);
-                          setShowYearSelector(false);
-                        }}
-                        className="px-2 py-1 hover:bg-gray-100 rounded font-medium text-gray-700 transition-colors"
-                      >
-                        {monthNames[currentMonth]}
-                      </button>
-                      
-                      {showMonthSelector && (
-                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
-                          <div className="py-1">
-                            {monthNames.map((month, index) => (
-                              <button
-                                key={month}
-                                type="button"
-                                onClick={() => {
-                                  setCurrentMonth(index);
-                                  setShowMonthSelector(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
-                                  index === currentMonth ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
-                                }`}
-                              >
-                                {month}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                {/* Clickable Month and Year */}
+                <div className="flex items-center gap-2">
+                  {/* Month Selector */}
+                  <div className="relative" ref={monthSelectorRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMonthSelector(!showMonthSelector);
+                        setShowYearSelector(false);
+                      }}
+                      className="px-2 py-1 hover:bg-gray-100 rounded font-medium text-gray-700 transition-colors"
+                    >
+                      {monthNames[currentMonth]}
+                    </button>
                     
-                    {/* Year Selector */}
-                    <div className="relative" ref={yearSelectorRef}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowYearSelector(!showYearSelector);
-                          setShowMonthSelector(false);
-                        }}
-                        className="px-2 py-1 hover:bg-gray-100 rounded font-medium text-gray-700 transition-colors"
-                      >
-                        {currentYear}
-                      </button>
-                      
-                      {showYearSelector && (
-                        <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
-                          <div className="py-1">
-                            {(() => {
-                              const currentYearNum = new Date().getFullYear();
-                              const startYear = currentYearNum - 20;
-                              const endYear = currentYearNum + 20;
-                              const years = [];
-                              
-                              for (let year = endYear; year >= startYear; year--) {
-                                years.push(year);
-                              }
-                              
-                              return years.map(year => {
-                                const isCurrentYear = year === currentYearNum;
-                                const isSelectedYear = year === currentYear;
-                                
-                                return (
-                                  <button
-                                    key={year}
-                                    type="button"
-                                    onClick={() => {
-                                      setCurrentYear(year);
-                                      setShowYearSelector(false);
-                                    }}
-                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
-                                      isSelectedYear 
-                                        ? 'bg-blue-50 text-blue-600 font-medium' 
-                                        : isCurrentYear
-                                        ? 'text-blue-500 font-medium'
-                                        : 'text-gray-700'
-                                    }`}
-                                  >
-                                    {year} {isCurrentYear && <span className="text-xs text-gray-500">(Today)</span>}
-                                  </button>
-                                );
-                              });
-                            })()}
-                          </div>
+                    {showMonthSelector && (
+                      <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                        <div className="py-1">
+                          {monthNames.map((month, index) => (
+                            <button
+                              key={month}
+                              type="button"
+                              onClick={() => {
+                                setCurrentMonth(index);
+                                setShowMonthSelector(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                                index === currentMonth ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                              }`}
+                            >
+                              {month}
+                            </button>
+                          ))}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                   
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (currentMonth === 11) {
-                        setCurrentMonth(0);
-                        setCurrentYear(currentYear + 1);
-                      } else {
-                        setCurrentMonth(currentMonth + 1);
-                      }
-                    }}
-                    className="p-1 hover:bg-gray-100 rounded"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                  {/* Year Selector */}
+                  <div className="relative" ref={yearSelectorRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowYearSelector(!showYearSelector);
+                        setShowMonthSelector(false);
+                      }}
+                      className="px-2 py-1 hover:bg-gray-100 rounded font-medium text-gray-700 transition-colors"
+                    >
+                      {currentYear}
+                    </button>
+                    
+                    {showYearSelector && (
+                      <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                        <div className="py-1">
+                          {(() => {
+                            const currentYearNum = new Date().getFullYear();
+                            const startYear = currentYearNum - 20;
+                            const endYear = currentYearNum + 20;
+                            const years = [];
+                            
+                            for (let year = endYear; year >= startYear; year--) {
+                              years.push(year);
+                            }
+                            
+                            return years.map(year => {
+                              const isCurrentYear = year === currentYearNum;
+                              const isSelectedYear = year === currentYear;
+                              
+                              return (
+                                <button
+                                  key={year}
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentYear(year);
+                                    setShowYearSelector(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                                    isSelectedYear 
+                                      ? 'bg-blue-50 text-blue-600 font-medium' 
+                                      : isCurrentYear
+                                      ? 'text-blue-500 font-medium'
+                                      : 'text-gray-700'
+                                  }`}
+                                >
+                                  {year} {isCurrentYear && <span className="text-xs text-gray-500">(Today)</span>}
+                                </button>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-
-                {/* Today Button for To Date Calendar */}
-                <div className="mb-3">
-                  <button
-                    type="button"
-                    onClick={() => handleDateRangeDateSelect(new Date())}
-                    className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
-                  >
-                    📅 Today ({formatDate(new Date(), dateFormat)})
-                  </button>
-                </div>
-
-                {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-1">
-                  {/* Day Headers */}
-                  {dayNames.map(day => (
-                    <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
-                      {day}
-                    </div>
-                  ))}
-                  
-                  {/* Calendar Days */}
-                  {calendarDays.map((day, index) => {
-                    if (!day) {
-                      return <div key={index} className="h-8"></div>;
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (currentMonth === 11) {
+                      setCurrentMonth(0);
+                      setCurrentYear(currentYear + 1);
+                    } else {
+                      setCurrentMonth(currentMonth + 1);
                     }
-                    
-                    const isToday = day.toDateString() === new Date().toDateString();
-                    
-                    return (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => handleDateRangeDateSelect(day)}
-                        className={`h-8 w-8 text-sm rounded hover:bg-blue-100 transition-colors ${
-                          isToday ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
-                        }`}
-                      >
-                        {day.getDate()}
-                      </button>
-                    );
-                  })}
-                </div>
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
-            )}
-          </div>
+
+              {/* Today Button for From Date Calendar */}
+              <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={() => handleDateRangeDateSelect(new Date())}
+                  className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+                >
+                  📅 Today ({formatDate(new Date(), dateFormat)})
+                </button>
+              </div>
+
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {/* Day Headers */}
+                {dayNames.map(day => (
+                  <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+                    {day}
+                  </div>
+                ))}
+                
+                {/* Calendar Days */}
+                {calendarDays.map((day, index) => {
+                  if (!day) {
+                    return <div key={index} className="h-8"></div>;
+                  }
+                  
+                  const isToday = day.toDateString() === new Date().toDateString();
+                  
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleDateRangeDateSelect(day)}
+                      className={`h-8 w-8 text-sm rounded hover:bg-blue-100 transition-colors ${
+                        isToday ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                      }`}
+                    >
+                      {day.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Calendar for To Date */}
+          {activeDateRangeInput === 'to' && (
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <h4 className="text-sm font-semibold text-gray-700">Select End Date</h4>
+              </div>
+              
+              {/* Month/Year Navigation */}
+              <div className="flex justify-between items-center mb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (currentMonth === 0) {
+                      setCurrentMonth(11);
+                      setCurrentYear(currentYear - 1);
+                    } else {
+                      setCurrentMonth(currentMonth - 1);
+                    }
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                {/* Clickable Month and Year */}
+                <div className="flex items-center gap-2">
+                  {/* Month Selector */}
+                  <div className="relative" ref={monthSelectorRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMonthSelector(!showMonthSelector);
+                        setShowYearSelector(false);
+                      }}
+                      className="px-2 py-1 hover:bg-gray-100 rounded font-medium text-gray-700 transition-colors"
+                    >
+                      {monthNames[currentMonth]}
+                    </button>
+                    
+                    {showMonthSelector && (
+                      <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                        <div className="py-1">
+                          {monthNames.map((month, index) => (
+                            <button
+                              key={month}
+                              type="button"
+                              onClick={() => {
+                                setCurrentMonth(index);
+                                setShowMonthSelector(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                                index === currentMonth ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                              }`}
+                            >
+                              {month}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Year Selector */}
+                  <div className="relative" ref={yearSelectorRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowYearSelector(!showYearSelector);
+                        setShowMonthSelector(false);
+                      }}
+                      className="px-2 py-1 hover:bg-gray-100 rounded font-medium text-gray-700 transition-colors"
+                    >
+                      {currentYear}
+                    </button>
+                    
+                    {showYearSelector && (
+                      <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                        <div className="py-1">
+                          {(() => {
+                            const currentYearNum = new Date().getFullYear();
+                            const startYear = currentYearNum - 20;
+                            const endYear = currentYearNum + 20;
+                            const years = [];
+                            
+                            for (let year = endYear; year >= startYear; year--) {
+                              years.push(year);
+                            }
+                            
+                            return years.map(year => {
+                              const isCurrentYear = year === currentYearNum;
+                              const isSelectedYear = year === currentYear;
+                              
+                              return (
+                                <button
+                                  key={year}
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentYear(year);
+                                    setShowYearSelector(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                                    isSelectedYear 
+                                      ? 'bg-blue-50 text-blue-600 font-medium' 
+                                      : isCurrentYear
+                                      ? 'text-blue-500 font-medium'
+                                      : 'text-gray-700'
+                                  }`}
+                                >
+                                  {year} {isCurrentYear && <span className="text-xs text-gray-500">(Today)</span>}
+                                </button>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (currentMonth === 11) {
+                      setCurrentMonth(0);
+                      setCurrentYear(currentYear + 1);
+                    } else {
+                      setCurrentMonth(currentMonth + 1);
+                    }
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Today Button for To Date Calendar */}
+              <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={() => handleDateRangeDateSelect(new Date())}
+                  className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+                >
+                  📅 Today ({formatDate(new Date(), dateFormat)})
+                </button>
+              </div>
+
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {/* Day Headers */}
+                {dayNames.map(day => (
+                  <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+                    {day}
+                  </div>
+                ))}
+                
+                {/* Calendar Days */}
+                {calendarDays.map((day, index) => {
+                  if (!day) {
+                    return <div key={index} className="h-8"></div>;
+                  }
+                  
+                  const isToday = day.toDateString() === new Date().toDateString();
+                  
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleDateRangeDateSelect(day)}
+                      className={`h-8 w-8 text-sm rounded hover:bg-blue-100 transition-colors ${
+                        isToday ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                      }`}
+                    >
+                      {day.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           
           {/* Duration Display */}
           {tempDateRangeFrom && tempDateRangeTo && (
