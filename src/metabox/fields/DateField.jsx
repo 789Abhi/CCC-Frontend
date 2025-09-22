@@ -838,6 +838,31 @@ const DatePickerModal = ({
 }) => {
   const [currentMonth, setCurrentMonth] = useState(selectedDate ? selectedDate.getMonth() : new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(selectedDate ? selectedDate.getFullYear() : new Date().getFullYear());
+  const [showMonthSelector, setShowMonthSelector] = useState(false);
+  const [showYearSelector, setShowYearSelector] = useState(false);
+  
+  // Refs for dropdown containers
+  const monthSelectorRef = useRef(null);
+  const yearSelectorRef = useRef(null);
+  
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (monthSelectorRef.current && !monthSelectorRef.current.contains(event.target)) {
+        setShowMonthSelector(false);
+      }
+      if (yearSelectorRef.current && !yearSelectorRef.current.contains(event.target)) {
+        setShowYearSelector(false);
+      }
+    };
+
+    if (showMonthSelector || showYearSelector) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showMonthSelector, showYearSelector]);
 
   // Generate calendar days
   const generateCalendarDays = () => {
@@ -981,9 +1006,102 @@ const DatePickerModal = ({
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="font-medium">
-              {monthNames[currentMonth]} {currentYear}
-            </span>
+            
+            {/* Clickable Month and Year */}
+            <div className="flex items-center gap-2">
+              {/* Month Selector */}
+              <div className="relative" ref={monthSelectorRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMonthSelector(!showMonthSelector);
+                    setShowYearSelector(false); // Close year selector
+                  }}
+                  className="px-2 py-1 hover:bg-gray-100 rounded font-medium text-gray-700 transition-colors"
+                >
+                  {monthNames[currentMonth]}
+                </button>
+                
+                {showMonthSelector && (
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                    <div className="py-1">
+                      {monthNames.map((month, index) => (
+                        <button
+                          key={month}
+                          type="button"
+                          onClick={() => {
+                            setCurrentMonth(index);
+                            setShowMonthSelector(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                            index === currentMonth ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                          }`}
+                        >
+                          {month}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Year Selector */}
+              <div className="relative" ref={yearSelectorRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowYearSelector(!showYearSelector);
+                    setShowMonthSelector(false); // Close month selector
+                  }}
+                  className="px-2 py-1 hover:bg-gray-100 rounded font-medium text-gray-700 transition-colors"
+                >
+                  {currentYear}
+                </button>
+                
+                {showYearSelector && (
+                  <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                    <div className="py-1">
+                      {(() => {
+                        const currentYearNum = new Date().getFullYear();
+                        const startYear = currentYearNum - 20; // Show 20 years back
+                        const endYear = currentYearNum + 20;   // Show 20 years forward
+                        const years = [];
+                        
+                        for (let year = endYear; year >= startYear; year--) { // Reverse order (newest first)
+                          years.push(year);
+                        }
+                        
+                        return years.map(year => {
+                          const isCurrentYear = year === currentYearNum;
+                          const isSelectedYear = year === currentYear;
+                          
+                          return (
+                            <button
+                              key={year}
+                              type="button"
+                              onClick={() => {
+                                setCurrentYear(year);
+                                setShowYearSelector(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                                isSelectedYear 
+                                  ? 'bg-blue-50 text-blue-600 font-medium' 
+                                  : isCurrentYear
+                                  ? 'text-blue-500 font-medium'
+                                  : 'text-gray-700'
+                              }`}
+                            >
+                              {year} {isCurrentYear && <span className="text-xs text-gray-500">(Today)</span>}
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
             <button
               type="button"
               onClick={() => {
