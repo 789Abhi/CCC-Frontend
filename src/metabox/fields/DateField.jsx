@@ -59,6 +59,36 @@ const DateField = ({
     // Remove any extra whitespace
     dateStr = dateStr.trim();
     
+    console.log('CCC DateField: Attempting to parse:', dateStr, 'with primary format:', format);
+    
+    // First, try to parse with the specified format
+    const primaryResult = parseWithSpecificFormat(dateStr, format);
+    if (primaryResult) {
+      console.log('CCC DateField: Successfully parsed with primary format');
+      return primaryResult;
+    }
+    
+    // If primary format fails, try all other formats as fallback
+    console.log('CCC DateField: Primary format failed, trying fallback formats');
+    const allFormats = ['d/m/Y', 'm/d/Y', 'Y-m-d', 'Y/m/d', 'F j, Y', 'j F Y'];
+    
+    for (const fallbackFormat of allFormats) {
+      if (fallbackFormat !== format) { // Skip the format we already tried
+        console.log('CCC DateField: Trying fallback format:', fallbackFormat);
+        const fallbackResult = parseWithSpecificFormat(dateStr, fallbackFormat);
+        if (fallbackResult) {
+          console.log('CCC DateField: Successfully parsed with fallback format:', fallbackFormat);
+          return fallbackResult;
+        }
+      }
+    }
+    
+    console.log('CCC DateField: All parsing attempts failed');
+    return null;
+  };
+
+  // Helper function to parse with a specific format
+  const parseWithSpecificFormat = (dateStr, format) => {
     // Handle different date formats
     let day, month, year;
     
@@ -185,7 +215,7 @@ const DateField = ({
         return date;
       }
     } catch (e) {
-      console.error('All date parsing methods failed for:', dateStr, 'with format:', format);
+      console.error('Failed to parse with format:', format, 'Error:', e);
     }
     
     return null;
@@ -243,7 +273,13 @@ const DateField = ({
     const hasDateFormatChanged = prevFormatRef.current.date_format !== date_format;
     const hasTimeFormatChanged = prevFormatRef.current.time_format !== time_format;
     
-    if (value && value !== localValue && !(selectedDate && (hasDateFormatChanged || hasTimeFormatChanged))) {
+    // Skip re-parsing if we already have a selectedDate and only format changed
+    if (selectedDate && (hasDateFormatChanged || hasTimeFormatChanged)) {
+      console.log('CCC DateField: Skipping value re-parsing because we have selectedDate and format changed');
+      return;
+    }
+    
+    if (value && value !== localValue) {
       // Parse value based on date type
       switch (date_type) {
         case 'datetime':
