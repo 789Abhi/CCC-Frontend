@@ -917,6 +917,8 @@ const DateField = ({
             maxDate={max_date}
             isDateInRange={isDateInRange}
             getValidationMessage={getValidationMessage}
+            formatDate={formatDate}
+            formatTime={formatTime}
             onDateChange={(date) => {
               handleDateChange(date);
               // Auto close for date type, keep open for datetime
@@ -962,6 +964,8 @@ const DatePickerModal = ({
   maxDate,
   isDateInRange,
   getValidationMessage,
+  formatDate,
+  formatTime,
   onDateChange,
   onTimeChange,
   onTimeRangeChange,
