@@ -3061,12 +3061,13 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     <option value="datetime">Date & Time Picker</option>
                     <option value="time">Time Picker</option>
                     <option value="time_range">Time Range (From - To)</option>
+                    <option value="date_range">Date Range (From - To)</option>
                   </select>
                   <p className="text-xs text-gray-500">Select the type of date/time picker to display.</p>
                 </div>
 
                 {/* Date Format */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <label htmlFor="dateFormat" className="block text-sm font-medium text-gray-700">
                     Date Format
                   </label>
