@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Clock, Settings as SettingsIcon, CheckCircle, AlertCircle } from 'lucide-react';
+import { Save, Clock, Settings as SettingsIcon, CheckCircle, AlertCircle, Key, Shield } from 'lucide-react';
 
 const Settings = () => {
   const [settings, setSettings] = useState({
-    api_key: '',
-    other_settings: {}
+    license_key: '',
+    license_status: null,
+    license_info: null
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -18,14 +19,14 @@ const Settings = () => {
     try {
       setLoading(true);
       
-      // Load settings via AJAX
+      // Load license settings
       const response = await fetch(cccData.ajaxUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          action: 'ccc_get_settings',
+          action: 'ccc_get_license_info',
           nonce: cccData.nonce
         })
       });
@@ -33,12 +34,16 @@ const Settings = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setSettings(data.data);
+          setSettings({
+            license_key: data.data.license_key || '',
+            license_status: data.data.status,
+            license_info: data.data.info
+          });
         }
       }
     } catch (error) {
       console.error('Error loading settings:', error);
-      setMessage({ type: 'error', text: 'Failed to load settings' });
+      setMessage({ type: 'error', text: 'Failed to load license settings' });
     } finally {
       setLoading(false);
     }
@@ -55,24 +60,29 @@ const Settings = () => {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          action: 'ccc_save_settings',
+          action: 'ccc_save_license_key',
           nonce: cccData.nonce,
-          settings: JSON.stringify(settings)
+          license_key: settings.license_key
         })
       });
 
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setMessage({ type: 'success', text: 'Settings saved successfully!' });
-          setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+          setMessage({ type: 'success', text: 'License key saved and validated successfully!' });
+          setSettings(prev => ({
+            ...prev,
+            license_status: data.data.status,
+            license_info: data.data.info
+          }));
+          setTimeout(() => setMessage({ type: '', text: '' }), 5000);
         } else {
-          setMessage({ type: 'error', text: data.data || 'Failed to save settings' });
+          setMessage({ type: 'error', text: data.data || 'Failed to validate license key' });
         }
       }
     } catch (error) {
       console.error('Error saving settings:', error);
-      setMessage({ type: 'error', text: 'Failed to save settings' });
+      setMessage({ type: 'error', text: 'Failed to save license key' });
     } finally {
       setSaving(false);
     }
@@ -128,15 +138,60 @@ const Settings = () => {
 
         {/* Settings Form */}
         <div className="p-6 space-y-6">
-          {/* Future Settings */}
-          <div className="space-y-3">
+          {/* License Key Section */}
+          <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-gray-500" />
-              <h3 className="text-lg font-medium text-gray-900">Plugin Settings</h3>
+              <Key className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-medium text-gray-900">License Key</h3>
             </div>
-            <p className="text-sm text-gray-600">
-              More settings will be added here in future updates.
-            </p>
+            
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="license_key" className="block text-sm font-medium text-gray-700 mb-1">
+                  Enter your license key
+                </label>
+                <input
+                  type="text"
+                  id="license_key"
+                  value={settings.license_key}
+                  onChange={(e) => handleSettingChange('license_key', e.target.value)}
+                  placeholder="Enter your license key here..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the license key you received after purchasing Basic, Pro, or Max plan.
+                </p>
+              </div>
+
+              {/* License Status */}
+              {settings.license_status && (
+                <div className={`p-4 rounded-md border ${
+                  settings.license_status === 'valid' 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <Shield className={`w-5 h-5 ${
+                      settings.license_status === 'valid' ? 'text-green-600' : 'text-red-600'
+                    }`} />
+                    <div>
+                      <p className={`text-sm font-medium ${
+                        settings.license_status === 'valid' ? 'text-green-800' : 'text-red-800'
+                      }`}>
+                        {settings.license_status === 'valid' ? 'License Active' : 'License Invalid'}
+                      </p>
+                      {settings.license_info && (
+                        <p className={`text-xs ${
+                          settings.license_status === 'valid' ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {settings.license_info}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
