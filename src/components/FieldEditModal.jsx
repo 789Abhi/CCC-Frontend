@@ -23,6 +23,9 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 import ConditionalLogicTab from "./ConditionalLogicTab"
+import { useFieldAccess } from "../hooks/useFieldAccess"
+import ProFieldOption from "./ProFieldOption"
+import ProUpgradeModal from "./ProUpgradeModal"
 
 function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false, parentFieldType = null, siblingFields = null }) {
 
@@ -47,6 +50,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   // FieldPopup state for nested fields
   const [showFieldPopup, setShowFieldPopup] = useState(false)
   const [copiedText, setCopiedText] = useState(null)
+  
+  // PRO field access
+  const { fieldAccessData, loading: fieldAccessLoading, canAccessField } = useFieldAccess()
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgradeFieldInfo, setUpgradeFieldInfo] = useState(null)
 
   // Add state for image return type
   const [imageReturnType, setImageReturnType] = useState('url');
@@ -972,6 +980,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     }
   }
 
+  const handleUpgradeClick = (fieldType, requiredPlan, userPlan) => {
+    setUpgradeFieldInfo({ fieldType, requiredPlan, userPlan })
+    setShowUpgradeModal(true)
+  }
+
   const handleAddNestedField = (newField) => {
     console.log("FieldEditModal: Adding new nested field:", newField)
     setNestedFieldDefinitions((prev) => [...prev, newField])
@@ -1822,32 +1835,54 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               <select
                 id="type"
                 value={type}
-                onChange={(e) => setType(e.target.value)}
-                disabled={isSubmitting}
+                onChange={(e) => {
+                  const selectedType = e.target.value;
+                  const access = canAccessField(selectedType);
+                  
+                  if (!access.canAccess) {
+                    handleUpgradeClick(selectedType, access.requiredPlan, access.userPlan);
+                    return;
+                  }
+                  
+                  setType(selectedType);
+                }}
+                disabled={isSubmitting || fieldAccessLoading}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
               >
                 {availableFieldTypes.map(fieldType => {
-                                      const labels = {
-                        text: "Text",
-                        textarea: "Textarea",
-                        image: "Image",
-                        video: "Video",
-                        oembed: "O-Embed",
-                        relationship: "Relationship",
-                        link: "Link",
-                        email: "Email",
-                        repeater: "Repeater",
-                        wysiwyg: "WYSIWYG Editor",
-                        color: "Color",
-                        select: "Select",
-                        checkbox: "Checkbox",
-                        radio: "Radio",
-                        date: "Date & Time"
-                    };
+                  const labels = {
+                    text: "Text",
+                    textarea: "Textarea",
+                    image: "Image",
+                    video: "Video",
+                    oembed: "O-Embed",
+                    relationship: "Relationship",
+                    link: "Link",
+                    email: "Email",
+                    repeater: "Repeater",
+                    wysiwyg: "WYSIWYG Editor",
+                    color: "Color",
+                    select: "Select",
+                    checkbox: "Checkbox",
+                    radio: "Radio",
+                    date: "Date & Time"
+                  };
+                  
+                  const access = canAccessField(fieldType);
+                  const label = labels[fieldType] || fieldType;
+                  
                   return (
-                    <option key={fieldType} value={fieldType}>
-                      {labels[fieldType] || fieldType}
-                    </option>
+                    <ProFieldOption
+                      key={fieldType}
+                      fieldType={fieldType}
+                      label={label}
+                      isPro={access.isPro}
+                      canAccess={access.canAccess}
+                      message={access.message}
+                      requiredPlan={access.requiredPlan}
+                      userPlan={access.userPlan}
+                      onUpgradeClick={handleUpgradeClick}
+                    />
                   );
                 })}
               </select>
@@ -3342,6 +3377,20 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             siblingFields={nestedFieldDefinitions}
           />
         </>
+      )}
+
+      {/* PRO Upgrade Modal */}
+      {upgradeFieldInfo && (
+        <ProUpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => {
+            setShowUpgradeModal(false)
+            setUpgradeFieldInfo(null)
+          }}
+          fieldType={upgradeFieldInfo.fieldType}
+          requiredPlan={upgradeFieldInfo.requiredPlan}
+          userPlan={upgradeFieldInfo.userPlan}
+        />
       )}
     </div>
   )
