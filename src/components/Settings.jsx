@@ -69,15 +69,34 @@ const Settings = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setMessage({ type: 'success', text: 'License key saved and validated successfully!' });
+          const status = data.data.status;
+          const info = data.data.info;
+          
+          if (status === 'valid') {
+            setMessage({ type: 'success', text: 'License validated successfully!' });
+          } else {
+            setMessage({ type: 'error', text: 'License validation failed' });
+          }
+          
           setSettings(prev => ({
             ...prev,
-            license_status: data.data.status,
-            license_info: data.data.info
+            license_status: status,
+            license_info: info
           }));
           setTimeout(() => setMessage({ type: '', text: '' }), 5000);
         } else {
-          setMessage({ type: 'error', text: data.data || 'Failed to validate license key' });
+          // Handle error response
+          const errorMessage = data.data?.message || data.data || 'Failed to validate license key';
+          setMessage({ type: 'error', text: errorMessage });
+          
+          // Update status even on error
+          if (data.data?.status) {
+            setSettings(prev => ({
+              ...prev,
+              license_status: data.data.status,
+              license_info: data.data.info || errorMessage
+            }));
+          }
         }
       }
     } catch (error) {
@@ -164,21 +183,23 @@ const Settings = () => {
               </div>
 
               {/* License Status */}
-              {settings.license_status && (
+              {settings.license_key && settings.license_status && (
                 <div className={`p-4 rounded-md border ${
                   settings.license_status === 'valid' 
                     ? 'bg-green-50 border-green-200' 
                     : 'bg-red-50 border-red-200'
                 }`}>
                   <div className="flex items-center gap-2">
-                    <Shield className={`w-5 h-5 ${
-                      settings.license_status === 'valid' ? 'text-green-600' : 'text-red-600'
-                    }`} />
+                    {settings.license_status === 'valid' ? (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                    )}
                     <div>
                       <p className={`text-sm font-medium ${
                         settings.license_status === 'valid' ? 'text-green-800' : 'text-red-800'
                       }`}>
-                        {settings.license_status === 'valid' ? 'License Active' : 'License Invalid'}
+                        {settings.license_status === 'valid' ? 'License validated successfully' : 'License Invalid'}
                       </p>
                       {settings.license_info && (
                         <p className={`text-xs ${
