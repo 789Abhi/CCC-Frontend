@@ -2,6 +2,7 @@ import React from 'react'
 import Header from './components/Header'
 import MetaboxApp from './metabox/MetaboxApp'
 import ErrorBoundary from './ErrorBoundary'
+import FieldAccessPreloader from './components/FieldAccessPreloader'
 import { Toaster } from 'react-hot-toast'
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
   if (isMetabox) {
     return (
       <>
+        <FieldAccessPreloader />
         <ErrorBoundary>
           <MetaboxApp />
         </ErrorBoundary>
@@ -66,6 +68,7 @@ function App() {
   // Main admin app
   return (
     <>
+      <FieldAccessPreloader />
       <section className='bg-custom-gradient h-full -ml-5'>
         <div className='container mx-auto'>
          <ErrorBoundary>
