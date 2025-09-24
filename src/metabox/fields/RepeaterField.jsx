@@ -20,7 +20,7 @@ import PasswordField from './PasswordField';
 import RangeField from './RangeField';
 import RelationshipField from './RelationshipField';
 import GalleryField from './GalleryField';
-import ProFieldWrapper from './ProFieldWrapper';
+import UniversalFieldWrapper from './UniversalFieldWrapper';
 import useConditionalLogic from '../hooks/useConditionalLogic';
 
 // Sortable Repeater Item Component
@@ -810,13 +810,13 @@ const RepeaterField = ({
     }
   }, [items]);
 
-    return (
-      <ProFieldWrapper 
-        fieldType="repeater" 
-        fieldLabel={label}
-        licenseKey={licenseKey}
-        apiUrl={apiUrl}
-      >
+            return (
+              <UniversalFieldWrapper 
+                fieldType="repeater" 
+                fieldLabel={label}
+                licenseKey={licenseKey}
+                apiUrl={apiUrl}
+              >
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -908,7 +908,7 @@ const RepeaterField = ({
             </div>
           )}
         </div>
-      </ProFieldWrapper>
+              </UniversalFieldWrapper>
     );
 };
 

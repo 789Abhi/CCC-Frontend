@@ -1,43 +1,84 @@
 import React, { useState, useEffect } from 'react';
 
 /**
- * PRO Field Access Wrapper Component
- * Wraps field components to check PRO access and show upgrade notices
+ * Universal Field Wrapper Component
+ * Works with ALL field types dynamically from API
  */
-const ProFieldWrapper = ({ 
+const UniversalFieldWrapper = ({ 
   fieldType, 
   fieldLabel, 
   children, 
   licenseKey = '', 
-  apiUrl = 'https://custom-craft-component-backend.vercel.app/api/pro-features/check',
-  onAccessChange = () => {}
+  apiUrl = 'https://custom-craft-component-backend.vercel.app/api/pro-features/check' 
 }) => {
   const [accessCheck, setAccessCheck] = useState({
-    canAccess: false,
     loading: true,
+    canAccess: false,
     message: '',
     userPlan: 'free',
     requiredPlan: 'free'
   });
 
   useEffect(() => {
-    checkFieldAccess();
-  }, [fieldType, licenseKey]);
+    if (licenseKey) {
+      fetchLicenseAndProFeatures();
+    } else {
+      // No license key, check if field is free
+      checkFieldAccess();
+    }
+  }, [licenseKey, fieldType]);
 
   const checkFieldAccess = async () => {
-    if (!licenseKey) {
+    try {
+      // First check field configuration to see if it's free
+      const configResponse = await fetch('https://custom-craft-component-backend.vercel.app/api/pro-features/config');
+      const configData = await configResponse.json();
+      
+      if (configData.success && configData.fieldTypes) {
+        const fieldConfig = configData.fieldTypes[fieldType];
+        
+        if (fieldConfig && !fieldConfig.isPro) {
+          setAccessCheck({
+            loading: false,
+            canAccess: true,
+            message: 'Field is available',
+            userPlan: 'free',
+            requiredPlan: 'free'
+          });
+        } else {
+          setAccessCheck({
+            loading: false,
+            canAccess: false,
+            message: 'No license key found. This field requires a PRO license.',
+            userPlan: 'free',
+            requiredPlan: fieldConfig?.requiredPlan || 'free'
+          });
+        }
+      } else {
+        setAccessCheck({
+          loading: false,
+          canAccess: false,
+          message: 'Failed to check field configuration',
+          userPlan: 'free',
+          requiredPlan: 'free'
+        });
+      }
+    } catch (error) {
+      console.error('Error checking field configuration:', error);
       setAccessCheck({
-        canAccess: false,
         loading: false,
-        message: 'No license key found. This field requires a PRO license.',
+        canAccess: false,
+        message: 'Failed to check field configuration',
         userPlan: 'free',
         requiredPlan: 'free'
       });
-      onAccessChange(false);
-      return;
     }
+  };
 
+  const fetchLicenseAndProFeatures = async () => {
     try {
+      setAccessCheck({ loading: true, canAccess: false, message: '' });
+      
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -46,71 +87,90 @@ const ProFieldWrapper = ({
         body: JSON.stringify({
           licenseKey: licenseKey,
           siteUrl: window.location.origin,
-          siteName: document.title
+          siteName: document.title || 'WordPress Site'
         })
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
+      const data = await response.json();
+      
       if (data.success && data.proFeatures) {
-        const fieldTypes = data.proFeatures.fieldTypes;
+        const fieldConfig = data.proFeatures.fieldTypes[fieldType];
         
-        if (fieldTypes[fieldType]) {
-          const fieldAvailability = fieldTypes[fieldType];
-          
+        if (fieldConfig && fieldConfig.available) {
           setAccessCheck({
-            canAccess: fieldAvailability.available,
             loading: false,
-            message: fieldAvailability.available ? 'Access granted' : `This field requires a ${fieldAvailability.requiredPlan} plan or higher`,
-            userPlan: data.license.plan,
-            requiredPlan: fieldAvailability.requiredPlan
-          });
-          
-          onAccessChange(fieldAvailability.available);
-        } else {
-          // Field not found in PRO features, assume it's free
-          setAccessCheck({
             canAccess: true,
-            loading: false,
-            message: 'Field is available',
-            userPlan: data.license.plan,
-            requiredPlan: 'free'
+            message: 'Access granted',
+            userPlan: data.proFeatures.license?.plan || 'free',
+            requiredPlan: fieldConfig.requiredPlan || 'free'
           });
-          onAccessChange(true);
+        } else {
+          setAccessCheck({
+            loading: false,
+            canAccess: false,
+            message: `This field requires a ${fieldConfig?.requiredPlan || 'PRO'} plan or higher`,
+            userPlan: data.proFeatures.license?.plan || 'free',
+            requiredPlan: fieldConfig?.requiredPlan || 'free'
+          });
         }
       } else {
         setAccessCheck({
-          canAccess: false,
           loading: false,
-          message: data.message || 'License validation failed',
+          canAccess: false,
+          message: data.message || 'Failed to check PRO features',
           userPlan: 'free',
           requiredPlan: 'free'
         });
-        onAccessChange(false);
       }
     } catch (error) {
-      console.error('Error checking field access:', error);
+      console.error('Error checking PRO features:', error);
       setAccessCheck({
-        canAccess: false,
         loading: false,
-        message: 'Connection error: ' + error.message,
+        canAccess: false,
+        message: 'Failed to check PRO features',
         userPlan: 'free',
         requiredPlan: 'free'
       });
-      onAccessChange(false);
     }
   };
 
   const renderProFieldDisabled = () => {
     const fieldNames = {
+      'text': 'Text Field',
+      'textarea': 'Text Area Field',
+      'image': 'Image Field',
+      'video': 'Video Field',
+      'oembed': 'O-Embed Field',
+      'relationship': 'Relationship Field',
+      'link': 'Link Field',
+      'email': 'Email Field',
+      'number': 'Number Field',
+      'range': 'Range Field',
+      'file': 'File Field',
       'repeater': 'Repeater Field',
+      'wysiwyg': 'WYSIWYG Editor',
+      'color': 'Color Field',
+      'select': 'Select Field',
+      'checkbox': 'Checkbox Field',
+      'radio': 'Radio Field',
+      'toggle': 'Toggle Field',
       'gallery': 'Gallery Field',
+      'date': 'Date Field',
       'date_range': 'Date Range Field',
+      'datetime': 'Date Time Field',
+      'time': 'Time Field',
       'time_range': 'Time Range Field',
       'ai_generator': 'AI Component Generator',
       'conditional_logic': 'Conditional Logic',
       'custom_validation': 'Custom Validation',
-      'api_integration': 'API Integration'
+      'api_integration': 'API Integration',
+      'password': 'Password Field',
+      'user': 'User Field',
+      'taxonomy_term': 'Taxonomy Term Field'
     };
 
     const fieldName = fieldLabel || fieldNames[fieldType] || fieldType.charAt(0).toUpperCase() + fieldType.slice(1);
@@ -229,8 +289,30 @@ const ProFieldWrapper = ({
   if (accessCheck.loading) {
     return (
       <div className="ccc-field-loading">
-        <div className="animate-pulse bg-gray-200 h-8 rounded"></div>
-        <p className="text-sm text-gray-500 mt-2">Checking field access...</p>
+        <div className="ccc-loading-spinner"></div>
+        <p>Checking field access...</p>
+        <style jsx>{`
+          .ccc-field-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #6b7280;
+          }
+          .ccc-loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
@@ -242,4 +324,4 @@ const ProFieldWrapper = ({
   return <>{children}</>;
 };
 
-export default ProFieldWrapper;
+export default UniversalFieldWrapper;
