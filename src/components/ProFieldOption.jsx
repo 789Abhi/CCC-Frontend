@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * PRO Field Option Component
- * Renders a field type option with PRO restrictions
+ * Renders a field type option with PRO restrictions and tags
  */
 const ProFieldOption = ({ 
   fieldType, 
@@ -12,6 +12,8 @@ const ProFieldOption = ({
   message, 
   requiredPlan, 
   userPlan,
+  name,
+  icon,
   onUpgradeClick 
 }) => {
   const handleClick = (e) => {
@@ -30,6 +32,9 @@ const ProFieldOption = ({
     }
   };
 
+  // Use the name from backend API if available, otherwise use the label
+  const displayName = name || label;
+
   return (
     <option 
       value={fieldType}
@@ -42,7 +47,7 @@ const ProFieldOption = ({
         color: canAccess ? '#374151' : '#9ca3af'
       }}
     >
-      {label}
+      {icon && `${icon} `}{displayName}
       {isPro && !canAccess && ' (PRO - Upgrade Required)'}
       {isPro && canAccess && ' (PRO)'}
     </option>

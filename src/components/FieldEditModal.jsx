@@ -239,30 +239,18 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     return Array.from(uniqueTopLevelFieldsMap.values());
   }, [component?.fields, parentFieldType, field?.id, field?.name]);
 
-  const availableFieldTypes = [
-    "text",
-    "textarea",
-    "image",
-    "video",
-    "oembed",
-        "link",
-        "email",
-        "password",
-        "user",
-        "relationship",
-        "gallery",
-        "number",
-        "range",
-        "file",
-        "repeater",
-        "wysiwyg",
-        "color",
-    "select",
-    "checkbox",
-    "radio",
-    "toggle",
-    "date",
-  ]
+  // Get field types from backend API through field access data
+  const availableFieldTypes = fieldAccessData?.fieldTypes ? 
+    Object.keys(fieldAccessData.fieldTypes).sort((a, b) => {
+      const orderA = fieldAccessData.fieldTypes[a]?.order || 1;
+      const orderB = fieldAccessData.fieldTypes[b]?.order || 1;
+      return orderA - orderB;
+    }) : [
+      "text", "textarea", "image", "video", "oembed", "link", "email", 
+      "password", "user", "relationship", "gallery", "number", "range", 
+      "file", "repeater", "wysiwyg", "color", "select", "checkbox", 
+      "radio", "toggle", "date"
+    ]
 
   useEffect(() => {
 
@@ -1850,6 +1838,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
               >
                 {availableFieldTypes.map(fieldType => {
+                  const access = canAccessField(fieldType);
+                  
+                  // Use backend API data if available, otherwise fallback to hardcoded labels
                   const labels = {
                     text: "Text",
                     textarea: "Textarea",
@@ -1865,11 +1856,17 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                     select: "Select",
                     checkbox: "Checkbox",
                     radio: "Radio",
-                    date: "Date & Time"
+                    date: "Date & Time",
+                    password: "Password",
+                    user: "User",
+                    gallery: "Gallery",
+                    number: "Number",
+                    range: "Range",
+                    file: "File",
+                    toggle: "Toggle"
                   };
                   
-                  const access = canAccessField(fieldType);
-                  const label = labels[fieldType] || fieldType;
+                  const label = access.name || labels[fieldType] || fieldType;
                   
                   return (
                     <ProFieldOption
@@ -1881,6 +1878,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       message={access.message}
                       requiredPlan={access.requiredPlan}
                       userPlan={access.userPlan}
+                      name={access.name}
+                      icon={access.icon}
                       onUpgradeClick={handleUpgradeClick}
                     />
                   );

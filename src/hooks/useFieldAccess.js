@@ -60,7 +60,12 @@ export const useFieldAccess = () => {
       isPro: fieldInfo.is_pro,
       message: fieldInfo.message,
       requiredPlan: fieldInfo.required_plan,
-      userPlan: fieldInfo.user_plan
+      userPlan: fieldInfo.user_plan,
+      name: fieldInfo.name,
+      description: fieldInfo.description,
+      icon: fieldInfo.icon,
+      category: fieldInfo.category,
+      order: fieldInfo.order
     };
   };
 
