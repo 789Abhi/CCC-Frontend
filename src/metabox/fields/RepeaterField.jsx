@@ -20,6 +20,7 @@ import PasswordField from './PasswordField';
 import RangeField from './RangeField';
 import RelationshipField from './RelationshipField';
 import GalleryField from './GalleryField';
+import ProFieldWrapper from './ProFieldWrapper';
 import useConditionalLogic from '../hooks/useConditionalLogic';
 
 // Sortable Repeater Item Component
@@ -680,7 +681,9 @@ const RepeaterField = ({
   instanceId,
   children = [], // Add children prop for nested fields
   mainComponentFields = [], // Add main component fields for conditional logic evaluation
-  mainComponentFieldValues = {} // Add main component field values for conditional logic evaluation
+  mainComponentFieldValues = {}, // Add main component field values for conditional logic evaluation
+  licenseKey = '', // Add license key prop
+  apiUrl = 'https://custom-craft-component-backend.vercel.app/api/pro-features/check' // Add API URL prop
 }) => {
   const [items, setItems] = useState([]);
   const isInternalUpdate = useRef(false); // Track if update is from internal state change
@@ -808,98 +811,105 @@ const RepeaterField = ({
   }, [items]);
 
     return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <label className="block text-sm font-medium text-gray-700">
-            {label}
-            {required && <span className="text-red-500 ml-1">*</span>}
-          </label>
-          {maxSets > 0 && (
-            <span className="text-xs text-gray-500">
-              {items.length}/{maxSets}
-            </span>
-          )}
-        </div>
-      </div>
-
-            {error && (
-        <div className="text-red-500 text-sm mb-2">
-          This field is required
-        </div>
-      )}
-
-      {/* Content */}
-      {items.length === 0 ? (
-        <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
-          {nestedFields.length === 0 ? (
-            <>
-              <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-              <p className="text-sm font-medium text-red-600">No nested fields configured</p>
-              <p className="text-xs">This repeater field has no nested fields. Please configure nested fields in the component first.</p>
-            </>
-          ) : (
-            <>
-              <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p className="text-sm">No items added yet</p>
-              <p className="text-xs">Click "Add Item" to get started</p>
-            </>
-          )}
-        </div>
-      ) : (
-        <DndContext 
-          sensors={sensors} 
-          collisionDetection={closestCenter} 
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext 
-            items={items.map((_, index) => `repeater-item-${index}`)} 
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-4">
-              {items.map((item, index) => (
-                <SortableRepeaterItem
-                  key={`repeater-item-${index}`}
-                  item={item}
-                  index={index}
-                  nestedFields={nestedFields}
-                  onUpdateItem={updateItem}
-                  onRemoveItem={removeItem}
-                  onToggleHidden={toggleItemHidden}
-                  instanceId={instanceId}
-                  fieldId={fieldId}
-                  mainComponentFields={mainComponentFields}
-                  mainComponentFieldValues={mainComponentFieldValues}
-                />
-              ))}
+      <ProFieldWrapper 
+        fieldType="repeater" 
+        fieldLabel={label}
+        licenseKey={licenseKey}
+        apiUrl={apiUrl}
+      >
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {label}
+                {required && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              {maxSets > 0 && (
+                <span className="text-xs text-gray-500">
+                  {items.length}/{maxSets}
+                </span>
+              )}
             </div>
-          </SortableContext>
-        </DndContext>
-      )}
+          </div>
 
-                   {/* Add Item Button - Bottom of Repeater Field */}
-      {nestedFields.length > 0 && (
-        <div className="mt-4 flex justify-end">
-                      <button
-              type="button"
-              onClick={addItem}
-              disabled={maxSets > 0 && items.length >= maxSets}
-              className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white text-sm rounded-lg hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              title={maxSets > 0 && items.length >= maxSets ? `Maximum ${maxSets} items allowed` : "Add new item"}
+          {error && (
+            <div className="text-red-500 text-sm mb-2">
+              This field is required
+            </div>
+          )}
+
+          {/* Content */}
+          {items.length === 0 ? (
+            <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
+              {nestedFields.length === 0 ? (
+                <>
+                  <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <p className="text-sm font-medium text-red-600">No nested fields configured</p>
+                  <p className="text-xs">This repeater field has no nested fields. Please configure nested fields in the component first.</p>
+                </>
+              ) : (
+                <>
+                  <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="text-sm">No items added yet</p>
+                  <p className="text-xs">Click "Add Item" to get started</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <DndContext 
+              sensors={sensors} 
+              collisionDetection={closestCenter} 
+              onDragEnd={handleDragEnd}
             >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Add Item
-          </button>
+              <SortableContext 
+                items={items.map((_, index) => `repeater-item-${index}`)} 
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-4">
+                  {items.map((item, index) => (
+                    <SortableRepeaterItem
+                      key={`repeater-item-${index}`}
+                      item={item}
+                      index={index}
+                      nestedFields={nestedFields}
+                      onUpdateItem={updateItem}
+                      onRemoveItem={removeItem}
+                      onToggleHidden={toggleItemHidden}
+                      instanceId={instanceId}
+                      fieldId={fieldId}
+                      mainComponentFields={mainComponentFields}
+                      mainComponentFieldValues={mainComponentFieldValues}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
+
+          {/* Add Item Button - Bottom of Repeater Field */}
+          {nestedFields.length > 0 && (
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={addItem}
+                disabled={maxSets > 0 && items.length >= maxSets}
+                className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white text-sm rounded-lg hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                title={maxSets > 0 && items.length >= maxSets ? `Maximum ${maxSets} items allowed` : "Add new item"}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Item
+              </button>
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  );
+      </ProFieldWrapper>
+    );
 };
 
 export default RepeaterField; 
