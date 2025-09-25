@@ -242,8 +242,16 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   // Get field types from backend API through field access data
   const availableFieldTypes = fieldAccessData?.fieldTypes ? 
     Object.keys(fieldAccessData.fieldTypes).sort((a, b) => {
-      const orderA = fieldAccessData.fieldTypes[a]?.order || 1;
-      const orderB = fieldAccessData.fieldTypes[b]?.order || 1;
+      const fieldA = fieldAccessData.fieldTypes[a];
+      const fieldB = fieldAccessData.fieldTypes[b];
+      
+      // First, sort by availability (free fields first)
+      if (fieldA.available && !fieldB.available) return -1;
+      if (!fieldA.available && fieldB.available) return 1;
+      
+      // If both have same availability, sort by order
+      const orderA = fieldA?.order || 1;
+      const orderB = fieldB?.order || 1;
       return orderA - orderB;
     }) : [
       "text", "textarea", "image", "video", "oembed", "link", "email", 
