@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { secureFreeVersion } from '../services/SecureFreeVersion';
 
 // Global field access service singleton
 class FieldAccessService {
@@ -46,7 +47,7 @@ class FieldAccessService {
     localStorage.setItem(this.cacheKey, JSON.stringify(cacheData));
   }
 
-  // Load field access data
+  // Load field access data with secure validation
   async loadData() {
     // Return cached data if valid
     if (this.isCacheValid()) {
@@ -73,30 +74,83 @@ class FieldAccessService {
     this.error = null;
 
     try {
-      const response = await fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          action: 'ccc_get_field_access_data',
-          nonce: window.ccc_ajax_nonce || ''
-        })
+      // Get license key from WordPress settings
+      const licenseKey = window.ccc_license_key || '';
+      const siteUrl = window.location.origin || '';
+
+      if (!licenseKey) {
+        // No license key - return free version only
+        this.data = {
+          fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
+          paymentVerified: false,
+          plan: 'free',
+          isPro: false
+        };
+        this.setCachedData(this.data);
+        this.loading = false;
+        this.notifyListeners();
+        return this.data;
+      }
+
+      // Validate license with payment verification
+      const validation = await secureFreeVersion.validateLicenseWithPayment(licenseKey, siteUrl);
+      
+      if (validation.valid && validation.paymentVerified) {
+        // Valid PRO license - load PRO fields
+        const proFieldsResult = await secureFreeVersion.loadProFields(licenseKey, siteUrl);
+        
+        if (proFieldsResult.success) {
+          // Combine free and PRO fields
+          const freeFields = secureFreeVersion.getAvailableFieldTypes();
+          const proFields = proFieldsResult.fields;
+          
+          this.data = {
+            fieldTypes: { ...freeFields, ...proFields },
+            paymentVerified: true,
+            plan: validation.plan,
+            isPro: validation.isPro,
+            features: validation.features,
+            secureToken: validation.secureToken
+          };
+        } else {
+          // PRO fields loading failed - fallback to free
+          this.data = {
+            fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
+            paymentVerified: false,
+            plan: 'free',
+            isPro: false,
+            error: proFieldsResult.error
+          };
+        }
+      } else {
+        // Invalid license - return free version only
+        this.data = {
+          fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
+          paymentVerified: false,
+          plan: 'free',
+          isPro: false,
+          error: validation.error
+        };
+      }
+
+      this.setCachedData(this.data);
+      console.log('Secure field access data loaded:', {
+        fieldCount: Object.keys(this.data.fieldTypes).length,
+        paymentVerified: this.data.paymentVerified,
+        plan: this.data.plan
       });
 
-      const result = await response.json();
-      
-      if (result.success) {
-        this.data = result.data;
-        this.setCachedData(this.data);
-        console.log('Field access data loaded and cached:', this.data);
-      } else {
-        this.error = result.message || 'Failed to load field access data';
-        console.error('Failed to load field access data:', result);
-      }
     } catch (err) {
-      this.error = 'Error loading field access data: ' + err.message;
-      console.error('Error loading field access data:', err);
+      this.error = 'Error loading secure field access data: ' + err.message;
+      console.error('Error loading secure field access data:', err);
+      
+      // Fallback to free version on error
+      this.data = {
+        fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
+        paymentVerified: false,
+        plan: 'free',
+        isPro: false
+      };
     } finally {
       this.loading = false;
       this.notifyListeners();
