@@ -6,7 +6,7 @@ class SecureFreeVersion {
   constructor() {
     this.validationCache = new Map();
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
-    this.serverUrl = process.env.REACT_APP_API_URL || 'https://custom-craft-component-backend.vercel.app/api';
+    this.serverUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
   }
 
   /**
