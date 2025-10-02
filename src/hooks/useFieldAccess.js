@@ -104,6 +104,10 @@ class FieldAccessService {
           const freeFields = secureFreeVersion.getAvailableFieldTypes();
           const proFields = proFieldsResult.fields;
           
+          console.log('🔄 Free fields:', Object.keys(freeFields));
+          console.log('🔄 PRO fields from result:', Object.keys(proFields));
+          console.log('🔄 Combined fields:', Object.keys({ ...freeFields, ...proFields }));
+          
           this.data = {
             fieldTypes: { ...freeFields, ...proFields },
             paymentVerified: true,

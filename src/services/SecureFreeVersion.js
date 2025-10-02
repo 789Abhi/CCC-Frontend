@@ -335,8 +335,13 @@ class SecureFreeVersion {
         const allFields = result.proFeatures.fieldTypes;
         const proFields = {};
         
+        console.log('🔍 All fields from API:', Object.keys(allFields));
+        console.log('🔍 API Response:', result);
+        
         Object.keys(allFields).forEach(fieldType => {
           const field = allFields[fieldType];
+          console.log(`🔍 Field ${fieldType}:`, { isPro: field.isPro, available: field.available, field });
+          
           if (field.isPro && field.available) {
             proFields[fieldType] = {
               name: field.name || field.description || fieldType,
@@ -348,8 +353,11 @@ class SecureFreeVersion {
               available: true,
               requiredPlan: field.requiredPlan || 'basic'
             };
+            console.log(`✅ Added PRO field: ${fieldType}`);
           }
         });
+        
+        console.log('🎯 Final PRO fields:', Object.keys(proFields));
 
         return {
           success: true,
