@@ -137,7 +137,9 @@ class FieldAccessService {
       console.log('Secure field access data loaded:', {
         fieldCount: Object.keys(this.data.fieldTypes).length,
         paymentVerified: this.data.paymentVerified,
-        plan: this.data.plan
+        plan: this.data.plan,
+        fieldTypes: Object.keys(this.data.fieldTypes),
+        proFields: Object.keys(this.data.fieldTypes).filter(key => this.data.fieldTypes[key].isPro)
       });
 
     } catch (err) {

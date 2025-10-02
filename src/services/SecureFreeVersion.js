@@ -234,7 +234,7 @@ class SecureFreeVersion {
     }
 
     try {
-      const response = await fetch(`${this.serverUrl}/pro-features/payment-verified`, {
+      const response = await fetch(`${this.serverUrl}/pro-features/check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -242,20 +242,23 @@ class SecureFreeVersion {
         body: JSON.stringify({
           licenseKey,
           siteUrl,
-          siteName: document.title || 'Unknown Site'
+          siteName: document.title || 'Unknown Site',
+          version: '1.0.0',
+          wpVersion: '6.8.3',
+          phpVersion: '8.2.23'
         })
       });
 
       const result = await response.json();
       
-      if (result.success && result.data.paymentVerified) {
+      if (result.success && result.license.isPro) {
         const validationResult = {
           valid: true,
-          features: result.data.features || [],
-          plan: result.data.plan,
-          isPro: result.data.isPro,
+          features: result.proFeatures?.features || [],
+          plan: result.license.plan || 'pro',
+          isPro: result.license.isPro,
           paymentVerified: true,
-          secureToken: result.data.secureToken
+          secureToken: null // Not needed for check endpoint
         };
 
         // Cache the result
@@ -293,18 +296,9 @@ class SecureFreeVersion {
    * Load PRO fields dynamically from server (only if license is valid)
    */
   async loadProFields(licenseKey, siteUrl) {
-    const validation = await this.validateLicenseWithPayment(licenseKey, siteUrl);
-    
-    if (!validation.valid || !validation.paymentVerified) {
-      return {
-        success: false,
-        fields: {},
-        error: 'Valid PRO license required to load PRO fields'
-      };
-    }
-
     try {
-      const response = await fetch(`${this.serverUrl}/pro-features/load-fields`, {
+      // Use the same endpoint as validateLicenseWithPayment to get field types
+      const response = await fetch(`${this.serverUrl}/pro-features/check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -312,24 +306,47 @@ class SecureFreeVersion {
         body: JSON.stringify({
           licenseKey,
           siteUrl,
-          secureToken: validation.secureToken
+          siteName: document.title || 'Unknown Site',
+          version: '1.0.0',
+          wpVersion: '6.8.3',
+          phpVersion: '8.2.23'
         })
       });
 
       const result = await response.json();
       
-      if (result.success) {
+      if (result.success && result.license.isPro && result.proFeatures?.fieldTypes) {
+        // Extract only PRO fields from the response
+        const allFields = result.proFeatures.fieldTypes;
+        const proFields = {};
+        
+        Object.keys(allFields).forEach(fieldType => {
+          const field = allFields[fieldType];
+          if (field.isPro && field.available) {
+            proFields[fieldType] = {
+              name: field.name || field.description || fieldType,
+              description: field.description || '',
+              icon: field.icon || '🔒',
+              category: 'pro',
+              order: field.order || 100,
+              isPro: true,
+              available: true,
+              requiredPlan: field.requiredPlan || 'basic'
+            };
+          }
+        });
+
         return {
           success: true,
-          fields: result.data.fields,
-          features: result.data.features
+          fields: proFields,
+          features: result.proFeatures?.features || []
         };
       }
 
       return {
         success: false,
         fields: {},
-        error: result.message || 'Failed to load PRO fields'
+        error: 'No PRO fields available or license not valid'
       };
 
     } catch (error) {
