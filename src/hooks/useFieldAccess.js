@@ -75,7 +75,7 @@ class FieldAccessService {
 
     try {
       // Get license key from WordPress settings
-      const licenseKey = window.ccc_license_key || '';
+      const licenseKey = window.cccData?.licenseKey || window.ccc_license_key || '';
       const siteUrl = window.location.origin || '';
 
       if (!licenseKey) {
