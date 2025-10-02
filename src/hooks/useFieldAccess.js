@@ -123,13 +123,14 @@ class FieldAccessService {
           };
         }
       } else {
-        // Invalid license - return free version only
+        // Invalid license or network error - return free version only
         this.data = {
           fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
           paymentVerified: false,
           plan: 'free',
           isPro: false,
-          error: validation.error
+          error: validation.error,
+          fallbackToFree: validation.fallbackToFree || false
         };
       }
 
@@ -137,9 +138,7 @@ class FieldAccessService {
       console.log('Secure field access data loaded:', {
         fieldCount: Object.keys(this.data.fieldTypes).length,
         paymentVerified: this.data.paymentVerified,
-        plan: this.data.plan,
-        fieldTypes: Object.keys(this.data.fieldTypes),
-        proFields: Object.keys(this.data.fieldTypes).filter(key => this.data.fieldTypes[key].isPro)
+        plan: this.data.plan
       });
 
     } catch (err) {

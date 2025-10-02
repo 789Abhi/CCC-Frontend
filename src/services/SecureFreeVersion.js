@@ -6,7 +6,7 @@ class SecureFreeVersion {
   constructor() {
     this.validationCache = new Map();
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
-    this.serverUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+    this.serverUrl = process.env.REACT_APP_API_URL || 'https://custom-craft-component-backend.vercel.app/api';
   }
 
   /**
@@ -281,6 +281,21 @@ class SecureFreeVersion {
 
     } catch (error) {
       console.error('License validation error:', error);
+      
+      // If it's a CORS or network error, fallback to free version
+      if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+        console.warn('Network/CORS error, falling back to free version');
+        return {
+          valid: false,
+          features: [],
+          plan: 'free',
+          isPro: false,
+          paymentVerified: false,
+          error: 'Network error - using free version',
+          fallbackToFree: true
+        };
+      }
+      
       return {
         valid: false,
         features: [],
