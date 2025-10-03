@@ -78,7 +78,16 @@ class FieldAccessService {
       const licenseKey = window.cccData?.licenseKey || window.ccc_license_key || '';
       const siteUrl = window.location.origin || '';
 
+      console.log('🔑 License Key Check:', {
+        licenseKey: licenseKey,
+        licenseKeyLength: licenseKey.length,
+        cccDataExists: !!window.cccData,
+        cccLicenseKeyExists: !!window.cccData?.licenseKey,
+        fallbackLicenseExists: !!window.ccc_license_key
+      });
+
       if (!licenseKey) {
+        console.log('🚫 No license key found - using free version only');
         // No license key - return free version only
         this.data = {
           fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
@@ -92,6 +101,8 @@ class FieldAccessService {
         return this.data;
       }
 
+      console.log('🔑 License key found - validating...', licenseKey);
+      
       // Validate license with payment verification
       const validation = await secureFreeVersion.validateLicenseWithPayment(licenseKey, siteUrl);
       

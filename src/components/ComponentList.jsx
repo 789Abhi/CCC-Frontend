@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import toast from "react-hot-toast"
 import {
@@ -233,6 +233,9 @@ const ComponentList = () => {
   const [componentToEditName, setComponentToEditName] = useState(null)
   const [postsLoading, setPostsLoading] = useState(false)
   const [badgeUpdating, setBadgeUpdating] = useState(false)
+  
+  // Track last fetched postType to prevent infinite loops
+  const lastFetchedPostTypeRef = useRef(null)
   
   // New state for post types
   const [postTypes, setPostTypes] = useState([])
@@ -998,6 +1001,7 @@ const ComponentList = () => {
   }, [])
 
   useEffect(() => {
+    // Only fetch if postType has changed, avoid infinite loops
     fetchPosts(postType)
     setSelectAllPages(false)
     setSelectAllPosts(false)
@@ -1011,7 +1015,29 @@ const ComponentList = () => {
       setSelectAllPostTypes(false)
       setAssignedPostTypes([])
     }
-  }, [postType])
+  }, []) // Remove postType dependency to prevent infinite loops
+
+  // Separate useEffect to handle postType changes without infinite loops
+  useEffect(() => {
+    if (postType && postType !== lastFetchedPostTypeRef.current) {
+      console.log('CCC: PostType changed to:', postType, 'Previous:', lastFetchedPostTypeRef.current)
+      lastFetchedPostTypeRef.current = postType
+      
+      fetchPosts(postType)
+      setSelectAllPages(false)
+      setSelectAllPosts(false)
+      
+      // If "post" is selected, fetch available post types
+      if (postType === "post") {
+        fetchPostTypes()
+      } else {
+        // Remove post type selections when switching to pages
+        setSelectedPostTypes([])
+        setSelectAllPostTypes(false)
+        setAssignedPostTypes([])
+      }
+    }
+  }, [postType]) // This useEffect specifically handles postType changes
 
   const openFieldEditModal = async (component, field = null) => {
     // Always fetch the latest components before opening the modal

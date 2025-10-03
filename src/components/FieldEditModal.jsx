@@ -259,6 +259,11 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       "file", "repeater", "wysiwyg", "color", "select", "checkbox", 
       "radio", "toggle", "date"
     ]
+    
+  // Debug logging for field access data
+  console.log('🔍 FieldEditModal: fieldAccessData:', fieldAccessData);
+  console.log('🔍 FieldEditModal: availableFieldTypes:', availableFieldTypes);
+  console.log('🔍 FieldEditModal: fieldAccessData.fieldTypes:', fieldAccessData?.fieldTypes);
 
   // Show loading state if field access data is still loading
   if (fieldAccessLoading && !fieldAccessData) {

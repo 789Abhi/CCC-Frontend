@@ -342,6 +342,13 @@ class SecureFreeVersion {
           const field = allFields[fieldType];
           console.log(`🔍 Field ${fieldType}:`, { isPro: field.isPro, available: field.available, field });
           
+          console.log(`🔐 Field ${fieldType} access check:`, {
+            isPro: field.isPro,
+            available: field.available,
+            licenseValid: result.license.isPro,
+            resultSuccess: result.success
+          });
+          
           if (field.isPro && field.available) {
             proFields[fieldType] = {
               name: field.name || field.description || fieldType,
