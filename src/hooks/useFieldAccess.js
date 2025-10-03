@@ -51,10 +51,13 @@ class FieldAccessService {
   async loadData() {
     // Return cached data if valid
     if (this.isCacheValid()) {
+      console.log('📦 Using cached field access data:', this.getCachedData());
       this.data = this.getCachedData();
       this.notifyListeners();
       return this.data;
     }
+
+    console.log('🔄 Cache expired or missing - fetching fresh field access data');
 
     // If already loading, wait for it
     if (this.loading) {
@@ -95,6 +98,9 @@ class FieldAccessService {
           plan: 'free',
           isPro: false
         };
+        
+        // Clear any existing cache since license status changed
+        localStorage.removeItem(this.cacheKey);
         this.setCachedData(this.data);
         this.loading = false;
         this.notifyListeners();
@@ -179,6 +185,16 @@ class FieldAccessService {
   subscribe(listener) {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  // Force refresh field access data (useful when license changes)
+  async refreshData() {
+    console.log('🔄 Force refresh field access data requested');
+    // Clear cache to force fresh data fetch
+    localStorage.removeItem(this.cacheKey);
+    this.data = null;
+    this.loading = false;
+    return this.loadData();
   }
 
   // Notify all listeners
