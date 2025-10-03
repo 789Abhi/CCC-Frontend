@@ -14,6 +14,16 @@ const FieldAccessPreloader = () => {
     }).catch((error) => {
       console.error('FieldAccessPreloader: Failed to preload field access data:', error);
     });
+
+    // Check for license changes periodically
+    const licenseCheckInterval = setInterval(() => {
+      fieldAccessService.checkLicenseChange();
+    }, 5000); // Check every 5 seconds
+
+    // Cleanup interval on unmount
+    return () => {
+      clearInterval(licenseCheckInterval);
+    };
   }, []);
 
   // This component doesn't render anything

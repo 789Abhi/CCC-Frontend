@@ -346,10 +346,12 @@ class SecureFreeVersion {
             isPro: field.isPro,
             available: field.available,
             licenseValid: result.license.isPro,
-            resultSuccess: result.success
+            resultSuccess: result.success,
+            shouldAddProField: field.isPro && field.available && result.license.isPro && result.success
           });
           
-          if (field.isPro && field.available) {
+          // ONLY add PRO fields if license is valid AND result is successful
+          if (field.isPro && field.available && result.license.isPro && result.success) {
             proFields[fieldType] = {
               name: field.name || field.description || fieldType,
               description: field.description || '',

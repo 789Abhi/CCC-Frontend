@@ -197,6 +197,27 @@ class FieldAccessService {
     return this.loadData();
   }
 
+  // Check if license key has changed and refresh if needed
+  checkLicenseChange() {
+    const currentLicenseKey = window.cccData?.licenseKey || window.ccc_license_key || '';
+    const cachedData = this.getCachedData();
+    const cachedLicenseKey = cachedData?.licenseKey || '';
+    
+    console.log('🔍 License change check:', {
+      current: currentLicenseKey,
+      cached: cachedLicenseKey,
+      changed: currentLicenseKey !== cachedLicenseKey
+    });
+    
+    if (currentLicenseKey !== cachedLicenseKey) {
+      console.log('🔄 License key changed - clearing cache and refreshing');
+      this.refreshData();
+      return true;
+    }
+    
+    return false;
+  }
+
   // Notify all listeners
   notifyListeners() {
     this.listeners.forEach(listener => listener({

@@ -1023,19 +1023,22 @@ const ComponentList = () => {
       console.log('CCC: PostType changed to:', postType, 'Previous:', lastFetchedPostTypeRef.current)
       lastFetchedPostTypeRef.current = postType
       
-      fetchPosts(postType)
-      setSelectAllPages(false)
-      setSelectAllPosts(false)
-      
-      // If "post" is selected, fetch available post types
-      if (postType === "post") {
-        fetchPostTypes()
-      } else {
-        // Remove post type selections when switching to pages
-        setSelectedPostTypes([])
-        setSelectAllPostTypes(false)
-        setAssignedPostTypes([])
-      }
+      // Use setTimeout to break any potential render loops
+      setTimeout(() => {
+        fetchPosts(postType)
+        setSelectAllPages(false)
+        setSelectAllPosts(false)
+        
+        // If "post" is selected, fetch available post types
+        if (postType === "post") {
+          fetchPostTypes()
+        } else {
+          // Remove post type selections when switching to pages
+          setSelectedPostTypes([])
+          setSelectAllPostTypes(false)
+          setAssignedPostTypes([])
+        }
+      }, 0)
     }
   }, [postType]) // This useEffect specifically handles postType changes
 
