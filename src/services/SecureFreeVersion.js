@@ -205,16 +205,6 @@ class SecureFreeVersion {
         isPro: false,
         available: true,
         requiredPlan: 'free'
-      },
-      taxonomy_term: {
-        name: 'Taxonomy Term Field',
-        description: 'Select taxonomy terms',
-        icon: '🏷️',
-        category: 'advanced',
-        order: 20,
-        isPro: false,
-        available: true,
-        requiredPlan: 'free'
       }
     };
   }
