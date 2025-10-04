@@ -1867,33 +1867,8 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 {availableFieldTypes.map(fieldType => {
                   const access = canAccessField(fieldType);
                   
-                  // Use backend API data if available, otherwise fallback to hardcoded labels
-                  const labels = {
-                    text: "Text",
-                    textarea: "Textarea",
-                    image: "Image",
-                    video: "Video",
-                    oembed: "O-Embed",
-                    relationship: "Relationship",
-                    link: "Link",
-                    email: "Email",
-                    repeater: "Repeater",
-                    wysiwyg: "WYSIWYG Editor",
-                    color: "Color",
-                    select: "Select",
-                    checkbox: "Checkbox",
-                    radio: "Radio",
-                    date: "Date & Time",
-                    password: "Password",
-                    user: "User",
-                    gallery: "Gallery",
-                    number: "Number",
-                    range: "Range",
-                    file: "File",
-                    toggle: "Toggle"
-                  };
-                  
-                  const label = access.name || labels[fieldType] || fieldType;
+                  // Use simple field type names without icons
+                  const label = fieldType;
                   
                   return (
                     <ProFieldOption
@@ -1906,7 +1881,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                       requiredPlan={access.requiredPlan}
                       userPlan={access.userPlan}
                       name={access.name}
-                      icon={access.icon}
+                      icon={null} // Remove icons
                       onUpgradeClick={handleUpgradeClick}
                     />
                   );

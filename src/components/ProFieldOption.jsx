@@ -32,8 +32,16 @@ const ProFieldOption = ({
     }
   };
 
-  // Use the name from backend API if available, otherwise use the label
-  const displayName = name || label;
+  // Use the label directly (simple field type name)
+  const displayName = label;
+
+  // Format the display name with (pro) prefix for PRO fields without access
+  const formatDisplayName = () => {
+    if (isPro && !canAccess) {
+      return `(pro) ${displayName}`;
+    }
+    return displayName;
+  };
 
   return (
     <option 
@@ -47,8 +55,7 @@ const ProFieldOption = ({
         color: canAccess ? '#374151' : '#9ca3af'
       }}
     >
-      {icon && `${icon} `}{displayName}
-      {isPro && !canAccess && ' (PRO - Upgrade Required)'}
+      {formatDisplayName()}
       {isPro && canAccess && ' (PRO)'}
     </option>
   );
