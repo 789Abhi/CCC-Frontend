@@ -8,12 +8,12 @@ import logo from "/CCC-Logo.svg"
 function Header() {
   // Get current page from WordPress
   const getCurrentPage = () => {
-    console.log('CCC: Checking for cccData:', typeof cccData, cccData);
+    // console.log('CCC: Checking for cccData:', typeof cccData, cccData);
     if (typeof cccData !== 'undefined' && cccData.currentPage) {
-      console.log('CCC: Current page from WordPress:', cccData.currentPage);
+      // console.log('CCC: Current page from WordPress:', cccData.currentPage);
       return cccData.currentPage;
     }
-    console.log('CCC: No page data from WordPress, defaulting to components');
+    // console.log('CCC: No page data from WordPress, defaulting to components');
     return 'custom-craft-component'; // Default to components
   }
 
@@ -31,7 +31,7 @@ function Header() {
   const [activeTab, setActiveTab] = useState(() => {
     const currentPage = getCurrentPage();
     const tab = getTabFromPage(currentPage);
-    console.log('CCC: Setting initial active tab:', tab, 'from page:', currentPage);
+    // console.log('CCC: Setting initial active tab:', tab, 'from page:', currentPage);
     return tab;
   });
 

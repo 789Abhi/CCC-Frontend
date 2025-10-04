@@ -422,34 +422,34 @@ const ComponentList = () => {
           }
         }
       } catch (error) {
-        console.error(`CCC: Error checking assignments for post type ${postType.value}:`, error);
+        // console.error(`CCC: Error checking assignments for post type ${postType.value}:`, error);
       }
     }
     
-    console.log('CCC: Post types with assigned components:', postTypesWithAssignments);
+    // console.log('CCC: Post types with assigned components:', postTypesWithAssignments);
     
     return postTypesWithAssignments;
   };
 
   const fetchPostTypes = async () => {
     try {
-      console.log('CCC: Fetching available post types');
-      console.log('CCC: AJAX URL:', window.cccData.ajaxUrl);
-      console.log('CCC: Nonce:', window.cccData.nonce);
+      // console.log('CCC: Fetching available post types');
+      // console.log('CCC: AJAX URL:', window.cccData.ajaxUrl);
+      // console.log('CCC: Nonce:', window.cccData.nonce);
       
       const formData = new FormData();
       formData.append("action", "ccc_get_available_post_types");
       formData.append("nonce", window.cccData.nonce);
       
       // Log the FormData contents
-      console.log('CCC: FormData contents:');
-      for (let [key, value] of formData.entries()) {
-        console.log('  ', key, ':', value);
-      }
+      // console.log('CCC: FormData contents:');
+      // for (let [key, value] of formData.entries()) {
+      //   console.log('  ', key, ':', value);
+      // }
       
       const response = await axios.post(window.cccData.ajaxUrl, formData);
 
-      console.log('CCC: fetchPostTypes response:', response.data);
+      // console.log('CCC: fetchPostTypes response:', response.data);
 
       // Check if response is successful and contains data
       if (response.data.success && response.data.data && Array.isArray(response.data.data)) {
@@ -458,7 +458,7 @@ const ComponentList = () => {
           postType.value !== 'page' && postType.value !== 'attachment'
         );
         
-        console.log('CCC: Filtered post types:', filteredPostTypes);
+        // console.log('CCC: Filtered post types:', filteredPostTypes);
         
         // Check which post types have components assigned
         const assignedPostTypes = await checkPostTypeAssignments(filteredPostTypes);
@@ -467,14 +467,14 @@ const ComponentList = () => {
         setSelectedPostTypes(assignedPostTypes);
         setSelectAllPostTypes(assignedPostTypes.length > 0 && assignedPostTypes.length === filteredPostTypes.length);
       } else {
-        console.error('CCC: Invalid response format from getAvailablePostTypes');
-        console.error('CCC: Response data:', response.data);
+        // console.error('CCC: Invalid response format from getAvailablePostTypes');
+        // console.error('CCC: Response data:', response.data);
       }
     } catch (error) {
-      console.error('CCC: Failed to fetch post types:', error);
+      // console.error('CCC: Failed to fetch post types:', error);
       if (error.response) {
-        console.error('CCC: Error response status:', error.response.status);
-        console.error('CCC: Error response data:', error.response.data);
+        // console.error('CCC: Error response status:', error.response.status);
+        // console.error('CCC: Error response data:', error.response.data);
       }
     }
   };
@@ -483,12 +483,12 @@ const ComponentList = () => {
     try {
       // Validate post type
       if (!type || typeof type !== 'string') {
-        console.error('CCC: Invalid post type:', type)
+        // console.error('CCC: Invalid post type:', type)
         setError("Invalid post type specified.")
         return
       }
       
-      console.log('CCC: Fetching posts for post type:', type)
+      // console.log('CCC: Fetching posts for post type:', type)
       setPostsLoading(true)
       setError("") // Clear any previous errors
       
@@ -500,10 +500,10 @@ const ComponentList = () => {
       try {
         response = await axios.post(window.cccData.ajaxUrl, formData)
       } catch (ajaxError) {
-        console.error('CCC: AJAX request failed:', ajaxError)
-        console.error('CCC: AJAX error response:', ajaxError.response)
-        console.error('CCC: AJAX error status:', ajaxError.response?.status)
-        console.error('CCC: AJAX error data:', ajaxError.response?.data)
+        // console.error('CCC: AJAX request failed:', ajaxError)
+        // console.error('CCC: AJAX error response:', ajaxError.response)
+        // console.error('CCC: AJAX error status:', ajaxError.response?.status)
+        // console.error('CCC: AJAX error data:', ajaxError.response?.data)
         throw ajaxError
       }
       
@@ -559,7 +559,7 @@ const ComponentList = () => {
         setSelectAllPosts(false)
         const errorMessage = response.data.message || "Failed to fetch posts."
         setError(errorMessage)
-        console.error("Failed to fetch posts - server returned failure:", response.data)
+        // console.error("Failed to fetch posts - server returned failure:", response.data)
       }
     } catch (err) {
       let errorMessage = "Failed to fetch posts. Please try again."
@@ -579,7 +579,7 @@ const ComponentList = () => {
       }
       
       setError(errorMessage)
-      console.error("Failed to fetch posts", err)
+      // console.error("Failed to fetch posts", err)
     } finally {
       setPostsLoading(false)
     }
@@ -665,11 +665,11 @@ const ComponentList = () => {
                   if (fieldResponse.data.success) {
                     successCount++;
                   } else {
-                    console.error("Failed to create field:", field.name, fieldResponse.data);
+                    // console.error("Failed to create field:", field.name, fieldResponse.data);
                     errorCount++;
                   }
                 } catch (fieldError) {
-                  console.error("Error creating field:", field.name, fieldError);
+                  // console.error("Error creating field:", field.name, fieldError);
                   errorCount++;
                 }
               }
@@ -680,7 +680,7 @@ const ComponentList = () => {
                 toast.error("Component created but failed to copy any fields. Please add fields manually.")
               }
             } catch (error) {
-              console.error("Error copying fields:", error);
+              // console.error("Error copying fields:", error);
               toast.error("Component created but failed to copy fields. Please add fields manually.")
             }
           } else {
@@ -712,10 +712,10 @@ const ComponentList = () => {
         }
         
         toast.error(errorMessage)
-        console.error("Component creation failed:", response.data)
+        // console.error("Component creation failed:", response.data)
       }
     } catch (error) {
-      console.error("Error creating component:", error)
+      // console.error("Error creating component:", error)
       
       // Handle different types of errors
       let errorMessage = "Error connecting to server. Please try again."
@@ -764,7 +764,7 @@ const ComponentList = () => {
         toast.error(response.data.message || "Failed to delete component.")
       }
     } catch (error) {
-      console.error("Error deleting component:", error)
+      // console.error("Error deleting component:", error)
       toast.error("Error connecting to server. Please try again.")
     }
   }
@@ -807,7 +807,7 @@ const ComponentList = () => {
         toast.error("Could not load component fields. Duplicating without fields.")
       }
     } catch (error) {
-      console.error("Error fetching component fields:", error)
+      // console.error("Error fetching component fields:", error)
       // Fallback to original component
       const duplicateName = `${component.name} Duplicate`
       const duplicateHandle = generateHandle(duplicateName)
@@ -839,7 +839,7 @@ const ComponentList = () => {
         toast.error(response.data.message || "Failed to delete field.")
       }
     } catch (error) {
-      console.error("Error deleting field:", error)
+      // console.error("Error deleting field:", error)
       toast.error("Error connecting to server. Please try again.")
     }
   }
@@ -864,7 +864,7 @@ const ComponentList = () => {
         return false
       }
     } catch (error) {
-      console.error("Error updating component fields:", error)
+      // console.error("Error updating component fields:", error)
       toast.error("Error connecting to server. Please try again.")
       return false
     }
@@ -924,7 +924,7 @@ const ComponentList = () => {
         toast.error(response.data.message || "Failed to save assignments.")
       }
     } catch (error) {
-      console.error("Error saving assignments:", error)
+      // console.error("Error saving assignments:", error)
       toast.error("Error connecting to server. Please try again.")
     }
   }
@@ -993,7 +993,7 @@ const ComponentList = () => {
         formData.append("nonce", window.cccData.nonce)
         const response = await axios.post(window.cccData.ajaxUrl, formData)
       } catch (err) {
-        console.error('CCC: Test AJAX failed:', err)
+        // console.error('CCC: Test AJAX failed:', err)
       }
     }
     
@@ -1020,7 +1020,7 @@ const ComponentList = () => {
   // Separate useEffect to handle postType changes without infinite loops
   useEffect(() => {
     if (postType && postType !== lastFetchedPostTypeRef.current) {
-      console.log('CCC: PostType changed to:', postType, 'Previous:', lastFetchedPostTypeRef.current)
+      // console.log('CCC: PostType changed to:', postType, 'Previous:', lastFetchedPostTypeRef.current)
       lastFetchedPostTypeRef.current = postType
       
       // Use setTimeout to break any potential render loops
@@ -1411,7 +1411,7 @@ const ComponentList = () => {
         setImportError(response.data.message || "Failed to create component")
       }
     } catch (error) {
-      console.error("Error importing component:", error)
+      // console.error("Error importing component:", error)
       setImportError("Error connecting to server. Please try again.")
     }
   }
@@ -1455,7 +1455,7 @@ const ComponentList = () => {
         try {
           // Validate required fields
           if (!componentData.name || !componentData.handle_name || !Array.isArray(componentData.fields)) {
-            console.error("Invalid component data:", componentData)
+            // console.error("Invalid component data:", componentData)
             errorCount++
             continue
           }
@@ -1463,7 +1463,7 @@ const ComponentList = () => {
           // Check if component with same handle already exists
           const existingComponent = components.find(comp => comp.handle_name === componentData.handle_name)
           if (existingComponent) {
-            console.warn(`Component with handle "${componentData.handle_name}" already exists, skipping`)
+            // console.warn(`Component with handle "${componentData.handle_name}" already exists, skipping`)
             errorCount++
             continue
           }
@@ -1504,11 +1504,11 @@ const ComponentList = () => {
                   }
                 }
               } catch (searchError) {
-                console.error(`Error searching for component "${componentData.name}":`, searchError)
+                // console.error(`Error searching for component "${componentData.name}":`, searchError)
               }
               
               if (!newComponentId) {
-                console.error(`Component created but no ID returned. Response:`, response.data)
+                // console.error(`Component created but no ID returned. Response:`, response.data)
                 throw new Error("Component created but no ID returned from server")
               }
             }
@@ -1596,21 +1596,21 @@ const ComponentList = () => {
                     fieldSuccessCount++
                   } else {
                     fieldErrorCount++
-                    console.error(`Failed to create field "${field.name}":`, fieldResponse.data.message)
+                    // console.error(`Failed to create field "${field.name}":`, fieldResponse.data.message)
                   }
                 } catch (fieldError) {
                   fieldErrorCount++
-                  console.error(`Error creating field "${field.name}":`, fieldError)
+                  // console.error(`Error creating field "${field.name}":`, fieldError)
                 }
               }
             }
             successCount++
           } else {
             errorCount++
-            console.error(`Failed to create component "${componentData.name}":`, response.data.message)
+            // console.error(`Failed to create component "${componentData.name}":`, response.data.message)
           }
         } catch (error) {
-          console.error("Error importing component:", componentData.name, error)
+          // console.error("Error importing component:", componentData.name, error)
           errorCount++
         }
       }
@@ -1630,7 +1630,7 @@ const ComponentList = () => {
         setImportError(`Failed to import any components. ${errorCount} errors occurred.`)
       }
     } catch (error) {
-      console.error("Error importing components:", error)
+      // console.error("Error importing components:", error)
       setImportError("Error connecting to server. Please try again.")
     }
   }
@@ -1673,7 +1673,7 @@ const ComponentList = () => {
             deleteFormData.append("nonce", window.cccData.nonce)
             await axios.post(window.cccData.ajaxUrl, deleteFormData)
           } catch (error) {
-            console.error("Error deleting existing field:", field.id, error)
+            // console.error("Error deleting existing field:", field.id, error)
           }
         }
       }
@@ -1753,7 +1753,7 @@ const ComponentList = () => {
 
           await axios.post(window.cccData.ajaxUrl, fieldFormData)
         } catch (error) {
-          console.error("Error creating field:", field.name, error)
+          // console.error("Error creating field:", field.name, error)
         }
       }
 
@@ -1764,7 +1764,7 @@ const ComponentList = () => {
       fetchComponents()
       fetchPosts(postType)
     } catch (error) {
-      console.error("Error importing fields:", error)
+      // console.error("Error importing fields:", error)
       setImportError("Error connecting to server. Please try again.")
     }
   }
@@ -1861,7 +1861,7 @@ const ComponentList = () => {
         // Revert the change if the request failed
         setComponents(components)
         toast.error("Failed to update field order. Please try again.")
-        console.error("Error updating field order:", error)
+        // console.error("Error updating field order:", error)
       }
     }
   }

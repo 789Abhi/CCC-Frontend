@@ -219,7 +219,7 @@ class SecureFreeVersion {
     if (this.validationCache.has(cacheKey)) {
       const cached = this.validationCache.get(cacheKey);
       if (Date.now() - cached.timestamp < this.cacheTimeout) {
-        console.log('📦 Using cached license validation');
+        // console.log('📦 Using cached license validation');
         return cached.data;
       }
     }
@@ -229,7 +229,7 @@ class SecureFreeVersion {
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     try {
-      console.log('🔄 Validating license with server...');
+      // console.log('🔄 Validating license with server...');
       const response = await fetch(`${this.serverUrl}/pro-features/check`, {
         method: 'POST',
         headers: {
@@ -270,11 +270,11 @@ class SecureFreeVersion {
           timestamp: Date.now()
         });
 
-        console.log('✅ License validation successful');
+        // console.log('✅ License validation successful');
         return validationResult;
       }
 
-      console.log('❌ License validation failed:', result.message);
+      // console.log('❌ License validation failed:', result.message);
       return {
         valid: false,
         features: [],
@@ -290,7 +290,7 @@ class SecureFreeVersion {
       
       // If it's a CORS or network error, fallback to free version
       if (error.name === 'AbortError' || error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-        console.warn('Network/CORS error, falling back to free version');
+        // console.warn('Network/CORS error, falling back to free version');
         
         // Cache the fallback result to prevent repeated failed requests
         const fallbackResult = {
@@ -331,7 +331,7 @@ class SecureFreeVersion {
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     try {
-      console.log('🔄 Loading PRO fields from server...');
+      // console.log('🔄 Loading PRO fields from server...');
       // Use the same endpoint as validateLicenseWithPayment to get field types
       const response = await fetch(`${this.serverUrl}/pro-features/check`, {
         method: 'POST',
@@ -362,7 +362,7 @@ class SecureFreeVersion {
         const allFields = result.proFeatures.fieldTypes;
         const proFields = {};
         
-        console.log('🔍 All fields from API:', Object.keys(allFields));
+        // console.log('🔍 All fields from API:', Object.keys(allFields));
         
         Object.keys(allFields).forEach(fieldType => {
           const field = allFields[fieldType];
@@ -385,11 +385,11 @@ class SecureFreeVersion {
               available: true,
               requiredPlan: field.requiredPlan || 'basic'
             };
-            console.log(`✅ Added PRO field: ${fieldType}`);
+            // console.log(`✅ Added PRO field: ${fieldType}`);
           }
         });
         
-        console.log('🎯 Final PRO fields:', Object.keys(proFields));
+        // console.log('🎯 Final PRO fields:', Object.keys(proFields));
 
         return {
           success: true,
@@ -398,7 +398,7 @@ class SecureFreeVersion {
         };
       }
 
-      console.log('❌ No PRO fields available or license not valid');
+      // console.log('❌ No PRO fields available or license not valid');
       return {
         success: false,
         fields: {},
@@ -411,7 +411,7 @@ class SecureFreeVersion {
       
       // Handle network errors gracefully
       if (error.name === 'AbortError' || error.message.includes('Failed to fetch')) {
-        console.warn('Network error loading PRO fields, falling back to free version');
+        // console.warn('Network error loading PRO fields, falling back to free version');
         return {
           success: false,
           fields: {},

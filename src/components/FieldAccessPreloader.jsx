@@ -8,9 +8,9 @@ import { fieldAccessService } from '../hooks/useFieldAccess';
 const FieldAccessPreloader = () => {
   useEffect(() => {
     // Preload field access data immediately when component mounts
-    console.log('FieldAccessPreloader: Preloading field access data...');
+    // console.log('FieldAccessPreloader: Preloading field access data...');
     fieldAccessService.loadData().then(() => {
-      console.log('FieldAccessPreloader: Field access data preloaded successfully');
+      // console.log('FieldAccessPreloader: Field access data preloaded successfully');
     }).catch((error) => {
       console.error('FieldAccessPreloader: Failed to preload field access data:', error);
     });
