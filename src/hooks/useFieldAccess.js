@@ -100,7 +100,7 @@ class FieldAccessService {
       });
 
       if (!currentLicenseKey) {
-        console.log('🚫 No license key found - using free version with disabled PRO fields');
+        // console.log('🚫 No license key found - using free version with disabled PRO fields');
         // No license key - return free version with disabled PRO fields
         this.data = {
           fieldTypes: this.getFreeVersionWithDisabledProFields(),
@@ -116,7 +116,7 @@ class FieldAccessService {
         return this.data;
       }
 
-      console.log('🔑 License key found - validating...', currentLicenseKey);
+      // console.log('🔑 License key found - validating...', currentLicenseKey);
       
       // Validate license with payment verification
       const validation = await secureFreeVersion.validateLicenseWithPayment(currentLicenseKey, siteUrl);
@@ -130,9 +130,9 @@ class FieldAccessService {
           const freeFields = secureFreeVersion.getAvailableFieldTypes();
           const proFields = proFieldsResult.fields;
           
-          console.log('🔄 Free fields:', Object.keys(freeFields));
-          console.log('🔄 PRO fields from result:', Object.keys(proFields));
-          console.log('🔄 Combined fields:', Object.keys({ ...freeFields, ...proFields }));
+          // console.log('🔄 Free fields:', Object.keys(freeFields));
+          // console.log('🔄 PRO fields from result:', Object.keys(proFields));
+          // console.log('🔄 Combined fields:', Object.keys({ ...freeFields, ...proFields }));
           
           this.data = {
             fieldTypes: { ...freeFields, ...proFields },
@@ -168,12 +168,12 @@ class FieldAccessService {
       }
 
       this.setCachedData(this.data);
-      console.log('Secure field access data loaded:', {
-        fieldCount: Object.keys(this.data.fieldTypes).length,
-        paymentVerified: this.data.paymentVerified,
-        plan: this.data.plan,
-        licenseKey: this.data.licenseKey
-      });
+      // console.log('Secure field access data loaded:', {
+      //   fieldCount: Object.keys(this.data.fieldTypes).length,
+      //   paymentVerified: this.data.paymentVerified,
+      //   plan: this.data.plan,
+      //   licenseKey: this.data.licenseKey
+      // });
 
     } catch (err) {
       this.error = 'Error loading secure field access data: ' + err.message;
@@ -225,17 +225,17 @@ class FieldAccessService {
       return false;
     }
     
-    console.log('🔍 License change detected:', {
-      current: currentLicenseKey,
-      previous: this.lastLicenseKey,
-      changed: currentLicenseKey !== this.lastLicenseKey,
-      currentLength: currentLicenseKey.length,
-      previousLength: this.lastLicenseKey?.length || 0
-    });
+    // console.log('🔍 License change detected:', {
+    //   current: currentLicenseKey,
+    //   previous: this.lastLicenseKey,
+    //   changed: currentLicenseKey !== this.lastLicenseKey,
+    //   currentLength: currentLicenseKey.length,
+    //   previousLength: this.lastLicenseKey?.length || 0
+    // });
     
     // If license key was removed (went from having a key to empty), clear immediately
     if (this.lastLicenseKey && this.lastLicenseKey.length > 0 && currentLicenseKey.length === 0) {
-      console.log('🚫 License key removed - immediately updating to free version with disabled PRO fields');
+      // console.log('🚫 License key removed - immediately updating to free version with disabled PRO fields');
       this.clearAllCaches();
       this.lastLicenseKey = currentLicenseKey;
       // Force immediate update to free version with disabled PRO fields
@@ -253,7 +253,7 @@ class FieldAccessService {
     
     // Debounce the license change handling for adding/changing license
     this.debounceTimer = setTimeout(() => {
-      console.log('🔄 License key changed - clearing cache and refreshing');
+      // console.log('🔄 License key changed - clearing cache and refreshing');
       // Clear all caches immediately
       this.clearAllCaches();
       this.lastLicenseKey = currentLicenseKey;
@@ -330,7 +330,7 @@ class FieldAccessService {
 
   // Manual license check (can be called from settings page)
   manualLicenseCheck() {
-    console.log('🔍 Manual license check triggered');
+    // console.log('🔍 Manual license check triggered');
     // Force refresh the license data from WordPress
     this.refreshLicenseDataFromBackend();
     this.checkLicenseChange();
@@ -339,7 +339,7 @@ class FieldAccessService {
   // Refresh license data from WordPress backend
   async refreshLicenseDataFromBackend() {
     try {
-      console.log('🔄 Refreshing license data from WordPress backend...');
+      // console.log('🔄 Refreshing license data from WordPress backend...');
       const response = await fetch(window.cccData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
         method: 'POST',
         headers: {
@@ -358,7 +358,7 @@ class FieldAccessService {
           if (window.cccData) {
             window.cccData.licenseKey = data.data.license_key;
           }
-          console.log('✅ License data refreshed from backend:', data.data.license_key);
+          // console.log('✅ License data refreshed from backend:', data.data.license_key);
         }
       }
     } catch (error) {

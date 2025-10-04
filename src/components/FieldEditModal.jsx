@@ -224,7 +224,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           uniqueValidationFieldsMap.set(stableId, f);
         }
       });
-      console.log('FieldEditModal: Validation fields for nested field:', Array.from(uniqueValidationFieldsMap.values()).map(f => ({ id: f.id, name: f.name })));
+      // console.log('FieldEditModal: Validation fields for nested field:', Array.from(uniqueValidationFieldsMap.values()).map(f => ({ id: f.id, name: f.name })));
       return Array.from(uniqueValidationFieldsMap.values());
     }
     
@@ -271,9 +271,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   })()
     
   // Debug logging for field access data
-  console.log('🔍 FieldEditModal: fieldAccessData:', fieldAccessData);
-  console.log('🔍 FieldEditModal: availableFieldTypes:', availableFieldTypes);
-  console.log('🔍 FieldEditModal: fieldAccessData.fieldTypes:', fieldAccessData?.fieldTypes);
+  // console.log('🔍 FieldEditModal: fieldAccessData:', fieldAccessData);
+  // console.log('🔍 FieldEditModal: availableFieldTypes:', availableFieldTypes);
+  // console.log('🔍 FieldEditModal: fieldAccessData.fieldTypes:', fieldAccessData?.fieldTypes);
 
   // Show loading state if field access data is still loading
   if (fieldAccessLoading && !fieldAccessData) {
@@ -308,7 +308,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   useEffect(() => {
 
     if (field) {
-      console.log("Loading field data:", field)
+      // console.log("Loading field data:", field)
       setLabel(field.label || "")
       setName(field.name || "")
       setType(field.type || "text")
@@ -319,7 +319,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       if (field.config) {
         try {
           const config = typeof field.config === "string" ? JSON.parse(field.config) : field.config
-          console.log("Field config:", config)
+          // console.log("Field config:", config)
 
           if (field.type === "repeater") {
             setMaxSets(config.max_sets || "")
@@ -327,7 +327,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             const nestedFields = (Array.isArray(field.children) && field.children.length > 0)
               ? field.children
               : (config.nested_fields || [])
-            console.log("Loading nested field definitions:", nestedFields)
+            // console.log("Loading nested field definitions:", nestedFields)
             
 
             
@@ -628,7 +628,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           } else if (field.type === 'date' && field.config) {
             try {
               const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
-              console.log("FieldEditModal: Loading date config:", config);
+              // console.log("FieldEditModal: Loading date config:", config);
               setDateConfig({
                 date_type: config.date_type || 'date',
                 date_format: config.date_format || 'Y-m-d',
@@ -764,7 +764,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           }
         }
       } else {
-        console.log("No field config found")
+        // console.log("No field config found")
         if (field.type === "repeater") {
           setNestedFieldDefinitions([])
         }
