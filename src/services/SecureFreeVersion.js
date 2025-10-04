@@ -379,8 +379,14 @@ class SecureFreeVersion {
           
           // ONLY add PRO fields if license is valid AND result is successful
           if (field.isPro && field.available && result.license.isPro && result.success) {
+            // Use correct field names
+            const fieldNames = {
+              repeater: 'Repeater',
+              gallery: 'Gallery'
+            };
+            
             proFields[fieldType] = {
-              name: field.name || field.description || fieldType,
+              name: fieldNames[fieldType] || field.name || field.description || fieldType,
               description: field.description || '',
               icon: field.icon || '🔒',
               category: 'pro',

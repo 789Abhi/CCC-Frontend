@@ -100,10 +100,10 @@ class FieldAccessService {
       });
 
       if (!currentLicenseKey) {
-        console.log('🚫 No license key found - using free version only');
-        // No license key - return free version only
+        console.log('🚫 No license key found - using free version with disabled PRO fields');
+        // No license key - return free version with disabled PRO fields
         this.data = {
-          fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
+          fieldTypes: this.getFreeVersionWithDisabledProFields(),
           paymentVerified: false,
           plan: 'free',
           isPro: false,
@@ -144,9 +144,9 @@ class FieldAccessService {
             licenseKey: currentLicenseKey // Store current license key
           };
         } else {
-          // PRO fields loading failed - fallback to free
+          // PRO fields loading failed - fallback to free with disabled PRO fields
           this.data = {
-            fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
+            fieldTypes: this.getFreeVersionWithDisabledProFields(),
             paymentVerified: false,
             plan: 'free',
             isPro: false,
@@ -155,9 +155,9 @@ class FieldAccessService {
           };
         }
       } else {
-        // Invalid license or network error - return free version only
+        // Invalid license or network error - return free version with disabled PRO fields
         this.data = {
-          fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
+          fieldTypes: this.getFreeVersionWithDisabledProFields(),
           paymentVerified: false,
           plan: 'free',
           isPro: false,
@@ -181,7 +181,7 @@ class FieldAccessService {
       
       // Fallback to free version on error
       this.data = {
-        fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
+        fieldTypes: this.getFreeVersionWithDisabledProFields(),
         paymentVerified: false,
         plan: 'free',
         isPro: false,
@@ -235,12 +235,12 @@ class FieldAccessService {
     
     // If license key was removed (went from having a key to empty), clear immediately
     if (this.lastLicenseKey && this.lastLicenseKey.length > 0 && currentLicenseKey.length === 0) {
-      console.log('🚫 License key removed - immediately clearing PRO fields');
+      console.log('🚫 License key removed - immediately updating to free version with disabled PRO fields');
       this.clearAllCaches();
       this.lastLicenseKey = currentLicenseKey;
-      // Force immediate update to free version
+      // Force immediate update to free version with disabled PRO fields
       this.data = {
-        fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
+        fieldTypes: this.getFreeVersionWithDisabledProFields(),
         paymentVerified: false,
         plan: 'free',
         isPro: false,
@@ -261,6 +261,39 @@ class FieldAccessService {
     }, this.debounceDelay);
     
     return true;
+  }
+
+  // Get free version with disabled PRO fields (shows PRO fields but disabled)
+  getFreeVersionWithDisabledProFields() {
+    const freeFields = secureFreeVersion.getAvailableFieldTypes();
+    
+    // Add PRO fields but mark them as disabled
+    const proFields = {
+      repeater: {
+        name: 'Repeater',
+        description: 'Repeatable field group',
+        icon: '🔄',
+        category: 'pro',
+        order: 21,
+        isPro: true,
+        available: false, // Disabled
+        requiredPlan: 'basic',
+        disabled: true
+      },
+      gallery: {
+        name: 'Gallery',
+        description: 'Multiple image uploads',
+        icon: '🖼️',
+        category: 'pro',
+        order: 22,
+        isPro: true,
+        available: false, // Disabled
+        requiredPlan: 'basic',
+        disabled: true
+      }
+    };
+    
+    return { ...freeFields, ...proFields };
   }
 
   // Clear all caches including validation cache
@@ -400,17 +433,21 @@ export const useFieldAccess = () => {
       return { canAccess: true, isPro: false, message: 'Field not found' };
     }
 
+    // For PRO fields that are disabled, show them but mark as not accessible
+    const isDisabled = fieldInfo.disabled || (fieldInfo.is_pro && !fieldInfo.available);
+    
     return {
-      canAccess: fieldInfo.available,
+      canAccess: fieldInfo.available && !isDisabled,
       isPro: fieldInfo.is_pro,
-      message: fieldInfo.message,
+      message: isDisabled ? 'PRO field - License required' : fieldInfo.message,
       requiredPlan: fieldInfo.required_plan,
       userPlan: fieldInfo.user_plan,
       name: fieldInfo.name,
       description: fieldInfo.description,
       icon: fieldInfo.icon,
       category: fieldInfo.category,
-      order: fieldInfo.order
+      order: fieldInfo.order,
+      disabled: isDisabled
     };
   };
 
