@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import axios from "axios"
 import { Plus, X, GripVertical, Edit, Eye, ChevronDown } from "lucide-react"
 import {
@@ -239,26 +239,36 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     return Array.from(uniqueTopLevelFieldsMap.values());
   }, [component?.fields, parentFieldType, field?.id, field?.name]);
 
-  // Get field types from backend API through field access data
-  const availableFieldTypes = fieldAccessData?.fieldTypes ? 
-    Object.keys(fieldAccessData.fieldTypes).sort((a, b) => {
-      const fieldA = fieldAccessData.fieldTypes[a];
-      const fieldB = fieldAccessData.fieldTypes[b];
-      
-      // First, sort by availability (free fields first)
-      if (fieldA.available && !fieldB.available) return -1;
-      if (!fieldA.available && fieldB.available) return 1;
-      
-      // If both have same availability, sort by order
-      const orderA = fieldA?.order || 1;
-      const orderB = fieldB?.order || 1;
-      return orderA - orderB;
-    }) : [
+  // Get field types from backend API through field access data with error handling
+  const availableFieldTypes = (() => {
+    try {
+      if (fieldAccessData?.fieldTypes) {
+        return Object.keys(fieldAccessData.fieldTypes).sort((a, b) => {
+          const fieldA = fieldAccessData.fieldTypes[a];
+          const fieldB = fieldAccessData.fieldTypes[b];
+          
+          // First, sort by availability (free fields first)
+          if (fieldA.available && !fieldB.available) return -1;
+          if (!fieldA.available && fieldB.available) return 1;
+          
+          // If both have same availability, sort by order
+          const orderA = fieldA?.order || 1;
+          const orderB = fieldB?.order || 1;
+          return orderA - orderB;
+        });
+      }
+    } catch (error) {
+      console.error('Error processing field access data:', error);
+    }
+    
+    // Fallback field types
+    return [
       "text", "textarea", "image", "video", "oembed", "link", "email", 
       "password", "user", "relationship", "gallery", "number", "range", 
       "file", "repeater", "wysiwyg", "color", "select", "checkbox", 
       "radio", "toggle", "date"
-    ]
+    ];
+  })()
     
   // Debug logging for field access data
   console.log('🔍 FieldEditModal: fieldAccessData:', fieldAccessData);
@@ -273,6 +283,22 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
           <div className="flex items-center justify-center space-x-3">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500"></div>
             <span className="text-gray-700">Loading field options...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Safety check to prevent crashes when field access data is not available
+  if (!fieldAccessData || !fieldAccessData.fieldTypes) {
+    console.warn('FieldEditModal: Field access data not available, using fallback');
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500 mx-auto mb-3"></div>
+            <p className="text-gray-700">Loading field options...</p>
+            <p className="text-sm text-gray-500 mt-2">Please wait a moment...</p>
           </div>
         </div>
       </div>
@@ -1865,26 +1891,36 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-colors shadow-sm"
               >
                 {availableFieldTypes.map(fieldType => {
-                  const access = canAccessField(fieldType);
-                  
-                  // Use simple field type names without icons
-                  const label = fieldType;
-                  
-                  return (
-                    <ProFieldOption
-                      key={fieldType}
-                      fieldType={fieldType}
-                      label={label}
-                      isPro={access.isPro}
-                      canAccess={access.canAccess}
-                      message={access.message}
-                      requiredPlan={access.requiredPlan}
-                      userPlan={access.userPlan}
-                      name={access.name}
-                      icon={null} // Remove icons
-                      onUpgradeClick={handleUpgradeClick}
-                    />
-                  );
+                  try {
+                    const access = canAccessField(fieldType);
+                    
+                    // Capitalize first letter of field type name
+                    const label = fieldType.charAt(0).toUpperCase() + fieldType.slice(1);
+                    
+                    return (
+                      <ProFieldOption
+                        key={fieldType}
+                        fieldType={fieldType}
+                        label={label}
+                        isPro={access?.isPro || false}
+                        canAccess={access?.canAccess !== false}
+                        message={access?.message || ''}
+                        requiredPlan={access?.requiredPlan}
+                        userPlan={access?.userPlan}
+                        name={access?.name}
+                        icon={null} // Remove icons
+                        onUpgradeClick={handleUpgradeClick}
+                      />
+                    );
+                  } catch (error) {
+                    console.error(`Error rendering field option for ${fieldType}:`, error);
+                    // Fallback rendering
+                    return (
+                      <option key={fieldType} value={fieldType}>
+                        {fieldType.charAt(0).toUpperCase() + fieldType.slice(1)}
+                      </option>
+                    );
+                  }
                 })}
               </select>
             </div>
@@ -3395,4 +3431,54 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   )
 }
 
-export default FieldEditModal
+// Error Boundary Component
+class FieldEditModalErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('FieldEditModal Error Boundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="text-center">
+              <div className="text-red-500 mb-2">⚠️</div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Something went wrong</h3>
+              <p className="text-gray-600 mb-4">There was an error loading the field editor.</p>
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.reload();
+                }}
+                className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Wrap the main component with error boundary
+const FieldEditModalWithErrorBoundary = (props) => (
+  <FieldEditModalErrorBoundary>
+    <FieldEditModal {...props} />
+  </FieldEditModalErrorBoundary>
+);
+
+export default FieldEditModalWithErrorBoundary
