@@ -74,8 +74,22 @@ const Settings = () => {
           
           if (status === 'valid') {
             setMessage({ type: 'success', text: 'License validated successfully!' });
+            // Trigger manual license check to update field access immediately
+            if (window.checkCCCLicense) {
+              console.log('🔄 Triggering manual license check after successful validation');
+              setTimeout(() => {
+                window.checkCCCLicense();
+              }, 1000); // Small delay to ensure the license key is updated in the backend
+            }
           } else {
             setMessage({ type: 'error', text: 'License validation failed' });
+            // Also trigger check for invalid license to clear PRO fields
+            if (window.checkCCCLicense) {
+              console.log('🔄 Triggering manual license check after failed validation');
+              setTimeout(() => {
+                window.checkCCCLicense();
+              }, 1000);
+            }
           }
           
           setSettings(prev => ({
@@ -189,26 +203,41 @@ const Settings = () => {
                     ? 'bg-green-50 border-green-200' 
                     : 'bg-red-50 border-red-200'
                 }`}>
-                  <div className="flex items-center gap-2">
-                    {settings.license_status === 'valid' ? (
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <AlertCircle className="w-5 h-5 text-red-600" />
-                    )}
-                    <div>
-                      <p className={`text-sm font-medium ${
-                        settings.license_status === 'valid' ? 'text-green-800' : 'text-red-800'
-                      }`}>
-                        {settings.license_status === 'valid' ? 'License validated successfully' : 'License Invalid'}
-                      </p>
-                      {settings.license_info && (
-                        <p className={`text-xs ${
-                          settings.license_status === 'valid' ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {settings.license_info}
-                        </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {settings.license_status === 'valid' ? (
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-red-600" />
                       )}
+                      <div>
+                        <p className={`text-sm font-medium ${
+                          settings.license_status === 'valid' ? 'text-green-800' : 'text-red-800'
+                        }`}>
+                          {settings.license_status === 'valid' ? 'License validated successfully' : 'License Invalid'}
+                        </p>
+                        {settings.license_info && (
+                          <p className={`text-xs ${
+                            settings.license_status === 'valid' ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {settings.license_info}
+                          </p>
+                        )}
+                      </div>
                     </div>
+                    
+                    {/* Manual License Check Button */}
+                    <button
+                      onClick={() => {
+                        if (window.checkCCCLicense) {
+                          console.log('🔄 Manual license check triggered from settings');
+                          window.checkCCCLicense();
+                        }
+                      }}
+                      className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                    >
+                      Refresh Fields
+                    </button>
                   </div>
                 </div>
               )}

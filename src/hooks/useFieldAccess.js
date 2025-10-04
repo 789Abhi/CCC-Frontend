@@ -228,10 +228,30 @@ class FieldAccessService {
     console.log('🔍 License change detected:', {
       current: currentLicenseKey,
       previous: this.lastLicenseKey,
-      changed: currentLicenseKey !== this.lastLicenseKey
+      changed: currentLicenseKey !== this.lastLicenseKey,
+      currentLength: currentLicenseKey.length,
+      previousLength: this.lastLicenseKey?.length || 0
     });
     
-    // Debounce the license change handling
+    // If license key was removed (went from having a key to empty), clear immediately
+    if (this.lastLicenseKey && this.lastLicenseKey.length > 0 && currentLicenseKey.length === 0) {
+      console.log('🚫 License key removed - immediately clearing PRO fields');
+      this.clearAllCaches();
+      this.lastLicenseKey = currentLicenseKey;
+      // Force immediate update to free version
+      this.data = {
+        fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
+        paymentVerified: false,
+        plan: 'free',
+        isPro: false,
+        licenseKey: currentLicenseKey
+      };
+      this.setCachedData(this.data);
+      this.notifyListeners();
+      return true;
+    }
+    
+    // Debounce the license change handling for adding/changing license
     this.debounceTimer = setTimeout(() => {
       console.log('🔄 License key changed - clearing cache and refreshing');
       // Clear all caches immediately
@@ -269,10 +289,48 @@ class FieldAccessService {
 
   // Start periodic license checking
   startLicenseMonitoring() {
-    // Check for license changes every 5 seconds
+    // Check for license changes every 2 seconds for more responsive updates
     this.licenseCheckInterval = setInterval(() => {
       this.checkLicenseChange();
-    }, 5000);
+    }, 2000);
+  }
+
+  // Manual license check (can be called from settings page)
+  manualLicenseCheck() {
+    console.log('🔍 Manual license check triggered');
+    // Force refresh the license data from WordPress
+    this.refreshLicenseDataFromBackend();
+    this.checkLicenseChange();
+  }
+
+  // Refresh license data from WordPress backend
+  async refreshLicenseDataFromBackend() {
+    try {
+      console.log('🔄 Refreshing license data from WordPress backend...');
+      const response = await fetch(window.cccData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          action: 'ccc_get_license_info',
+          nonce: window.cccData?.nonce || ''
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data.license_key) {
+          // Update the global cccData with the latest license key
+          if (window.cccData) {
+            window.cccData.licenseKey = data.data.license_key;
+          }
+          console.log('✅ License data refreshed from backend:', data.data.license_key);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing license data from backend:', error);
+    }
   }
 
   // Stop periodic license checking
@@ -287,8 +345,15 @@ class FieldAccessService {
 // Global instance
 const fieldAccessService = new FieldAccessService();
 
-// Cleanup on page unload
+// Make it globally available for manual license checking
 if (typeof window !== 'undefined') {
+  window.cccFieldAccessService = fieldAccessService;
+  
+  // Add global method for manual license checking
+  window.checkCCCLicense = () => {
+    fieldAccessService.manualLicenseCheck();
+  };
+  
   window.addEventListener('beforeunload', () => {
     fieldAccessService.stopLicenseMonitoring();
   });
@@ -353,12 +418,17 @@ export const useFieldAccess = () => {
     fieldAccessService.refresh();
   };
 
+  const manualLicenseCheck = () => {
+    fieldAccessService.manualLicenseCheck();
+  };
+
   return {
     fieldAccessData,
     loading,
     error,
     canAccessField,
-    refreshFieldAccessData
+    refreshFieldAccessData,
+    manualLicenseCheck
   };
 };
 
