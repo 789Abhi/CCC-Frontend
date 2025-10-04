@@ -16,12 +16,10 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
   // Auto-generation state
   const [autoGenerationStep, setAutoGenerationStep] = useState("");
   const [autoGenerationProgress, setAutoGenerationProgress] = useState(0);
-  const [apiKey, setApiKey] = useState(""); // API key from plugin settings
   const [useAutoGeneration, setUseAutoGeneration] = useState(false);
-  const [showApiKeySettings, setShowApiKeySettings] = useState(false);
-  const [isSavingApiKey, setIsSavingApiKey] = useState(false);
   const [showManualSection, setShowManualSection] = useState(false);
   const [isUsingCachedStructure, setIsUsingCachedStructure] = useState(false);
+  const [licenseKey, setLicenseKey] = useState(""); // License key for AI generation
 
   // API Configuration
   const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -64,68 +62,31 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
     saveComponentCache(cache);
   };
 
-    // Clear any existing cache to force API usage and load API key
+    // Load license key for AI generation
   React.useEffect(() => {
     // Clear any existing component cache to force API usage
     localStorage.removeItem('ccc_component_cache');
     
-    // First try to load from localStorage
-    const savedApiKey = localStorage.getItem('ccc_openai_api_key');
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-    } else {
-      // If not in localStorage, try to load from WordPress options
-      const loadApiKeyFromWordPress = async () => {
-        try {
-          const formData = new FormData();
-          formData.append("action", "ccc_get_api_key");
-          formData.append("nonce", window.cccData.nonce);
+    // Load license key from WordPress options
+    const loadLicenseKey = async () => {
+      try {
+        const formData = new FormData();
+        formData.append("action", "ccc_get_license_key");
+        formData.append("nonce", window.cccData.nonce);
 
-          const response = await axios.post(window.cccData.ajaxUrl, formData);
-          
-          if (response.data.success && response.data.data.has_key) {
-            // We can't get the full key for security, but we can show it's configured
-            // The actual key will be retrieved from WordPress options when needed
-            setApiKey("***configured***"); // Placeholder to show it's configured
-          }
-        } catch (error) {
-          console.error("Error loading API key from WordPress:", error);
+        const response = await axios.post(window.cccData.ajaxUrl, formData);
+        
+        if (response.data.success && response.data.data.license_key) {
+          setLicenseKey(response.data.data.license_key);
         }
-      };
-      
-      loadApiKeyFromWordPress();
-    }
-      }, []);
+      } catch (error) {
+        console.error("Error loading license key:", error);
+      }
+    };
+    
+    loadLicenseKey();
+  }, []);
 
-  // Save API key to localStorage
-  const saveApiKey = async () => {
-    if (!apiKey.trim()) {
-      showMessage("Please enter your OpenAI API key", "error");
-      return;
-    }
-
-    setIsSavingApiKey(true);
-    try {
-      // Save to localStorage
-      localStorage.setItem('ccc_openai_api_key', apiKey.trim());
-      
-      // Also save to WordPress options via AJAX
-      const formData = new FormData();
-      formData.append("action", "ccc_save_api_key");
-      formData.append("api_key", apiKey.trim());
-      formData.append("nonce", window.cccData.nonce);
-
-      await axios.post(window.cccData.ajaxUrl, formData);
-      
-      showMessage("API key saved successfully!", "success");
-      setShowApiKeySettings(false);
-    } catch (error) {
-      console.error("Error saving API key:", error);
-      showMessage("Failed to save API key. Please try again.", "error");
-    } finally {
-      setIsSavingApiKey(false);
-    }
-  };
 
   // Progress bar animation functions
   const startProgressAnimation = (targetProgress, duration = 2000) => {
@@ -183,38 +144,6 @@ const ChatGPTModal = ({ isOpen, onClose, onComponentCreated }) => {
     });
   };
 
-  // Get the current API key (from localStorage, WordPress options, or environment)
-  const getCurrentApiKey = async () => {
-    // First check localStorage
-    if (apiKey && apiKey !== "***configured***") {
-      return apiKey;
-    }
-    
-    // Then check environment variable
-    if (process.env.REACT_APP_OPENAI_API_KEY) {
-      return process.env.REACT_APP_OPENAI_API_KEY;
-    }
-    
-    // Finally, try to get from WordPress options
-    try {
-      const formData = new FormData();
-      formData.append("action", "ccc_get_api_key");
-      formData.append("nonce", window.cccData.nonce);
-
-      const response = await axios.post(window.cccData.ajaxUrl, formData);
-      
-      if (response.data.success && response.data.data.has_key) {
-        // For security, we need to get the actual key from WordPress
-        // This would require a separate endpoint that returns the full key
-        // For now, we'll use a placeholder and handle it in the generation function
-        return "***wordpress_stored***";
-      }
-    } catch (error) {
-      console.error("Error getting API key from WordPress:", error);
-    }
-    
-    return "";
-  };
 
   const showMessage = (message, type = "info") => {
     // You can implement your own toast/notification system here
@@ -502,18 +431,16 @@ ${hasRepeater ? 'IMPORTANT: This component needs to support multiple instances (
 Please return ONLY the JSON response, no additional text or explanations.`;
   };
 
-  // Auto-generation function using direct OpenAI API
+  // Auto-generation function using backend API
   const generateComponentWithAI = async () => {
     if (!contextPrompt.trim()) {
       showMessage("Please describe what component you want to create", "error");
       return;
     }
 
-    // Check if API key is available
-    const apiKey = localStorage.getItem('ccc_openai_api_key');
-    if (!apiKey) {
-      showMessage("Please configure your OpenAI API key first", "error");
-      setShowApiKeySettings(true);
+    // Check if license key is available
+    if (!licenseKey) {
+      showMessage("Please configure your license key first", "error");
       return;
     }
 
@@ -522,104 +449,59 @@ Please return ONLY the JSON response, no additional text or explanations.`;
     setAutoGenerationProgress(10);
 
     try {
-      // Always use AI generation - skip cache detection
       setAutoGenerationStep("Generating component with AI...");
       setAutoGenerationProgress(20);
       
-      // Create the prompt for AI generation
-      const aiPrompt = generateAutoGenerationPrompt();
-
-      // Debug: Log the prompt being sent
-      console.log("=== DEBUG: Prompt being sent to OpenAI ===");
-             console.log("Model: gpt-4.1-mini");
-      console.log("API Key (first 12 chars):", apiKey.substring(0, 12) + "...");
-      console.log("Prompt:", aiPrompt);
-      console.log("==========================================");
-
-      setAutoGenerationStep("Sending request to OpenAI...");
+      setAutoGenerationStep("Sending request to AI service...");
       setAutoGenerationProgress(40);
 
-      // Call OpenAI API directly
-      const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-                 model: "gpt-4.1-mini",
-        messages: [
-          {
-            role: "user",
-            content: aiPrompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
-      }, {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        }
+      // Call backend API for AI generation
+      const response = await axios.post('https://custom-craft-component-backend.vercel.app/api/admin/openai/generate-component', {
+        license_key: licenseKey,
+        prompt: contextPrompt,
+        site_url: window.location.origin
       });
-
-      // Debug: Log the full response
-      console.log("=== DEBUG: OpenAI API Response ===");
-      console.log("Status:", response.status);
-      console.log("Full Response:", JSON.stringify(response.data, null, 2));
-      console.log("==================================");
 
       setAutoGenerationStep("Processing AI response...");
       setAutoGenerationProgress(60);
 
-      // Extract the JSON from the response
-      const aiResponse = response.data.choices?.[0]?.message?.content;
-      
-      if (!aiResponse) {
-        console.error("Full response:", response.data);
-        throw new Error("No response received from AI. Please check your API key.");
+      if (!response.data.success) {
+        throw new Error(response.data.message || "AI generation failed");
       }
 
       setAutoGenerationStep("Parsing AI response...");
       setAutoGenerationProgress(70);
 
-      // Try to extract JSON from the response
-      let jsonData;
-      try {
-        // Look for JSON in the response
-        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          jsonData = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error("No valid JSON found in response");
-        }
-      } catch (parseError) {
-        console.error("Failed to parse AI response:", aiResponse);
-        throw new Error("Invalid JSON response from AI. Please try again.");
+      // Get the component data from response
+      const jsonData = response.data.data.component;
+      
+      if (!jsonData || !jsonData.component || !jsonData.fields || !Array.isArray(jsonData.fields)) {
+        throw new Error("Invalid component structure received from AI");
       }
+
+      console.log("=== DEBUG: AI Response Before Normalization ===");
+      console.log("Raw AI response:", jsonData);
+      console.log("==========================================");
+
+      setParsedComponent(jsonData);
 
       setAutoGenerationStep("Validating component structure...");
       setAutoGenerationProgress(80);
 
-             // Validate the component structure
-       if (!jsonData.component || !jsonData.fields || !Array.isArray(jsonData.fields)) {
-         throw new Error("Invalid component structure received from AI");
-       }
-
-       console.log("=== DEBUG: AI Response Before Normalization ===");
-       console.log("Raw AI response:", jsonData);
-       console.log("==========================================");
-
-       setParsedComponent(jsonData);
-
-             setAutoGenerationStep("Creating component in WordPress...");
-       setAutoGenerationProgress(90);
-
-       // Auto-create the component - but first normalize the data
-       const normalizedData = validateAndParseChatGPTJson(jsonData);
-       if (!normalizedData.isValid) {
-         throw new Error("Failed to normalize component data");
-       }
-       
-       console.log("=== DEBUG: Normalized Data Before Processing ===");
-       console.log("Normalized data:", normalizedData.data);
-       console.log("==========================================");
-       
-       await processChatGPTJson(normalizedData.data);
+      // Auto-create the component - but first normalize the data
+      const normalizedData = validateAndParseChatGPTJson(jsonData);
+      if (!normalizedData.isValid) {
+        throw new Error("Failed to normalize component data");
+      }
+      
+      console.log("=== DEBUG: Normalized Data Before Processing ===");
+      console.log("Normalized data:", normalizedData.data);
+      console.log("==========================================");
+      
+      setAutoGenerationStep("Creating component in WordPress...");
+      setAutoGenerationProgress(90);
+      
+      await processChatGPTJson(normalizedData.data);
 
       setAutoGenerationStep("Component created successfully!");
       setAutoGenerationProgress(100);
@@ -627,12 +509,15 @@ Please return ONLY the JSON response, no additional text or explanations.`;
       showMessage("Component generated and created successfully!", "success");
     } catch (error) {
       console.error("AI generation error:", error);
+      
       if (error.response?.status === 401) {
-        showMessage("Invalid API key. Please check your OpenAI API key.", "error");
+        showMessage("Invalid license key. Please check your license key.", "error");
+      } else if (error.response?.status === 503) {
+        showMessage("AI service not configured by administrator. Please contact support.", "error");
       } else if (error.response?.status === 429) {
         showMessage("Rate limit exceeded. Please try again later.", "error");
       } else if (error.response?.status === 402) {
-        showMessage("Insufficient API credits. Please add credits to your OpenAI account.", "error");
+        showMessage("Insufficient AI credits. Please contact administrator.", "error");
       } else if (error.message.includes("No response received from AI")) {
         showMessage("AI service temporarily unavailable. Please try again later.", "error");
       } else {
@@ -1449,7 +1334,7 @@ Please return ONLY the JSON response, no additional text.`;
 
            {/* Content - Scrollable */}
            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
-                                                   {/* Proxy Key Status */}
+                                                   {/* License Key Status */}
               <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -1470,98 +1355,45 @@ Please return ONLY the JSON response, no additional text.`;
                     </div>
                     <div>
                       <h3 className="font-medium text-gray-800 text-sm">
-                        OpenAI API Key
+                        AI Component Generation
                       </h3>
                       <p className="text-xs text-gray-600">
-                        Configure your OpenAI API key for AI generation
+                        Generate components using AI (requires valid license)
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setShowApiKeySettings(!showApiKeySettings)}
-                    className="text-xs text-pink-600 hover:text-pink-700 transition-colors px-2 py-1 rounded hover:bg-pink-100"
-                  >
-                    {showApiKeySettings ? "Hide" : "Configure"}
-                  </button>
                 </div>
 
-                {/* Proxy Key Status */}
+                {/* License Key Status */}
                 <div className="flex items-center gap-2 mb-3">
-                  {localStorage.getItem('ccc_openai_api_key') ? (
+                  {licenseKey ? (
                     <>
                       <div className="w-2 h-2 rounded-full bg-green-500"></div>
                       <span className="text-xs text-gray-700">
-                        API key configured
+                        License key configured
                       </span>
                       <span className="text-xs text-gray-500">
-                        (Key: {localStorage.getItem('ccc_openai_api_key').substring(0, 12)}...)
+                        (Key: {licenseKey.substring(0, 12)}...)
                       </span>
                     </>
                   ) : (
                     <>
                       <div className="w-2 h-2 rounded-full bg-red-500"></div>
                       <span className="text-xs text-gray-700">
-                        No API key configured
+                        No license key configured
                       </span>
                     </>
                   )}
                 </div>
 
-                {/* API Key Management */}
-                {showApiKeySettings && (
-                  <div className="space-y-3 p-3 bg-pink-100 rounded border-2 border-pink-300">
-                    <div>
-                      <p className="text-xs text-gray-700 mb-2">
-                        <strong>Enter your OpenAI API key:</strong> This key will be stored locally in your browser and used for AI generation.
-                      </p>
-                      <input
-                        type="password"
-                        placeholder="sk-..."
-                        value={localStorage.getItem('ccc_openai_api_key') || ''}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value) {
-                            localStorage.setItem('ccc_openai_api_key', value);
-                          } else {
-                            localStorage.removeItem('ccc_openai_api_key');
-                          }
-                          setShowApiKeySettings(false);
-                          setShowApiKeySettings(true); // Force re-render
-                        }}
-                        className="w-full p-2 text-sm border border-pink-300 rounded focus:ring-1 focus:ring-pink-500 focus:border-pink-500"
-                      />
-                      <p className="text-xs text-gray-600 mt-1">
-                        Your API key is stored locally and never sent to our servers.
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                                              <button
-                          onClick={() => {
-                            localStorage.removeItem('ccc_openai_api_key');
-                            setShowApiKeySettings(false);
-                            setShowApiKeySettings(true); // Force re-render
-                            showMessage("API key removed", "success");
-                          }}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
-                        >
-                          <svg
-                            className="h-3 w-3"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                          Remove Key
-                        </button>
-                    </div>
-                  </div>
-                               )}
+                <div className="p-3 bg-pink-100 rounded border-2 border-pink-300">
+                  <p className="text-xs text-gray-700 mb-2">
+                    <strong>AI Generation:</strong> The AI component generation feature uses OpenAI's API through our secure backend. No API key configuration needed - just a valid license key!
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Your license key is automatically used to authenticate with our AI service.
+                  </p>
+                </div>
                </div>
              
                            {/* Context Prompt Input */}
