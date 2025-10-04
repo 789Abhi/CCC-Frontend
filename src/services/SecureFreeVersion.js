@@ -229,11 +229,17 @@ class SecureFreeVersion {
     if (this.validationCache.has(cacheKey)) {
       const cached = this.validationCache.get(cacheKey);
       if (Date.now() - cached.timestamp < this.cacheTimeout) {
+        console.log('📦 Using cached license validation');
         return cached.data;
       }
     }
 
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     try {
+      console.log('🔄 Validating license with server...');
       const response = await fetch(`${this.serverUrl}/pro-features/check`, {
         method: 'POST',
         headers: {
@@ -246,8 +252,15 @@ class SecureFreeVersion {
           version: '1.0.0',
           wpVersion: '6.8.3',
           phpVersion: '8.2.23'
-        })
+        }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
       const result = await response.json();
       
@@ -267,9 +280,11 @@ class SecureFreeVersion {
           timestamp: Date.now()
         });
 
+        console.log('✅ License validation successful');
         return validationResult;
       }
 
+      console.log('❌ License validation failed:', result.message);
       return {
         valid: false,
         features: [],
@@ -280,12 +295,15 @@ class SecureFreeVersion {
       };
 
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error('License validation error:', error);
       
       // If it's a CORS or network error, fallback to free version
-      if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+      if (error.name === 'AbortError' || error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
         console.warn('Network/CORS error, falling back to free version');
-        return {
+        
+        // Cache the fallback result to prevent repeated failed requests
+        const fallbackResult = {
           valid: false,
           features: [],
           plan: 'free',
@@ -294,6 +312,13 @@ class SecureFreeVersion {
           error: 'Network error - using free version',
           fallbackToFree: true
         };
+        
+        this.validationCache.set(cacheKey, {
+          data: fallbackResult,
+          timestamp: Date.now()
+        });
+        
+        return fallbackResult;
       }
       
       return {
@@ -311,7 +336,12 @@ class SecureFreeVersion {
    * Load PRO fields dynamically from server (only if license is valid)
    */
   async loadProFields(licenseKey, siteUrl) {
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     try {
+      console.log('🔄 Loading PRO fields from server...');
       // Use the same endpoint as validateLicenseWithPayment to get field types
       const response = await fetch(`${this.serverUrl}/pro-features/check`, {
         method: 'POST',
@@ -325,8 +355,15 @@ class SecureFreeVersion {
           version: '1.0.0',
           wpVersion: '6.8.3',
           phpVersion: '8.2.23'
-        })
+        }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
       const result = await response.json();
       
@@ -336,19 +373,9 @@ class SecureFreeVersion {
         const proFields = {};
         
         console.log('🔍 All fields from API:', Object.keys(allFields));
-        console.log('🔍 API Response:', result);
         
         Object.keys(allFields).forEach(fieldType => {
           const field = allFields[fieldType];
-          console.log(`🔍 Field ${fieldType}:`, { isPro: field.isPro, available: field.available, field });
-          
-          console.log(`🔐 Field ${fieldType} access check:`, {
-            isPro: field.isPro,
-            available: field.available,
-            licenseValid: result.license.isPro,
-            resultSuccess: result.success,
-            shouldAddProField: field.isPro && field.available && result.license.isPro && result.success
-          });
           
           // ONLY add PRO fields if license is valid AND result is successful
           if (field.isPro && field.available && result.license.isPro && result.success) {
@@ -375,6 +402,7 @@ class SecureFreeVersion {
         };
       }
 
+      console.log('❌ No PRO fields available or license not valid');
       return {
         success: false,
         fields: {},
@@ -382,7 +410,20 @@ class SecureFreeVersion {
       };
 
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error('PRO fields loading error:', error);
+      
+      // Handle network errors gracefully
+      if (error.name === 'AbortError' || error.message.includes('Failed to fetch')) {
+        console.warn('Network error loading PRO fields, falling back to free version');
+        return {
+          success: false,
+          fields: {},
+          error: 'Network error - using free version only',
+          fallbackToFree: true
+        };
+      }
+      
       return {
         success: false,
         fields: {},
@@ -432,8 +473,23 @@ class SecureFreeVersion {
    */
   clearCache() {
     this.validationCache.clear();
+    console.log('🧹 Validation cache cleared');
+  }
+
+  /**
+   * Clear cache for specific license key
+   */
+  clearCacheForLicense(licenseKey, siteUrl) {
+    const cacheKey = `license_${licenseKey}_${siteUrl}`;
+    this.validationCache.delete(cacheKey);
+    console.log('🧹 Cache cleared for license:', licenseKey);
   }
 }
 
 // Export singleton instance
 export const secureFreeVersion = new SecureFreeVersion();
+
+// Make it globally available for cache clearing
+if (typeof window !== 'undefined') {
+  window.secureFreeVersion = secureFreeVersion;
+}

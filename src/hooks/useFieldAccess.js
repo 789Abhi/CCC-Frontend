@@ -10,6 +10,9 @@ class FieldAccessService {
     this.listeners = new Set();
     this.cacheKey = 'ccc_field_access_data';
     this.cacheDuration = 5 * 60 * 1000; // 5 minutes
+    this.debounceTimer = null;
+    this.debounceDelay = 1000; // 1 second debounce
+    this.lastLicenseKey = null;
   }
 
   // Check if cached data is still valid
@@ -49,9 +52,18 @@ class FieldAccessService {
 
   // Load field access data with secure validation
   async loadData() {
-    // Return cached data if valid
-    if (this.isCacheValid()) {
-      console.log('📦 Using cached field access data:', this.getCachedData());
+    const currentLicenseKey = window.cccData?.licenseKey || window.ccc_license_key || '';
+    
+    // Check if license key has changed - if so, clear cache immediately
+    if (currentLicenseKey !== this.lastLicenseKey) {
+      console.log('🔄 License key changed, clearing all caches');
+      this.clearAllCaches();
+      this.lastLicenseKey = currentLicenseKey;
+    }
+    
+    // Return cached data if valid and license hasn't changed
+    if (this.isCacheValid() && currentLicenseKey === this.lastLicenseKey) {
+      console.log('📦 Using cached field access data');
       this.data = this.getCachedData();
       this.notifyListeners();
       return this.data;
@@ -77,44 +89,41 @@ class FieldAccessService {
     this.error = null;
 
     try {
-      // Get license key from WordPress settings
-      const licenseKey = window.cccData?.licenseKey || window.ccc_license_key || '';
       const siteUrl = window.location.origin || '';
 
       console.log('🔑 License Key Check:', {
-        licenseKey: licenseKey,
-        licenseKeyLength: licenseKey.length,
+        licenseKey: currentLicenseKey,
+        licenseKeyLength: currentLicenseKey.length,
         cccDataExists: !!window.cccData,
         cccLicenseKeyExists: !!window.cccData?.licenseKey,
         fallbackLicenseExists: !!window.ccc_license_key
       });
 
-      if (!licenseKey) {
+      if (!currentLicenseKey) {
         console.log('🚫 No license key found - using free version only');
         // No license key - return free version only
         this.data = {
           fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
           paymentVerified: false,
           plan: 'free',
-          isPro: false
+          isPro: false,
+          licenseKey: currentLicenseKey // Store current license key
         };
         
-        // Clear any existing cache since license status changed
-        localStorage.removeItem(this.cacheKey);
         this.setCachedData(this.data);
         this.loading = false;
         this.notifyListeners();
         return this.data;
       }
 
-      console.log('🔑 License key found - validating...', licenseKey);
+      console.log('🔑 License key found - validating...', currentLicenseKey);
       
       // Validate license with payment verification
-      const validation = await secureFreeVersion.validateLicenseWithPayment(licenseKey, siteUrl);
+      const validation = await secureFreeVersion.validateLicenseWithPayment(currentLicenseKey, siteUrl);
       
       if (validation.valid && validation.paymentVerified) {
         // Valid PRO license - load PRO fields
-        const proFieldsResult = await secureFreeVersion.loadProFields(licenseKey, siteUrl);
+        const proFieldsResult = await secureFreeVersion.loadProFields(currentLicenseKey, siteUrl);
         
         if (proFieldsResult.success) {
           // Combine free and PRO fields
@@ -131,7 +140,8 @@ class FieldAccessService {
             plan: validation.plan,
             isPro: validation.isPro,
             features: validation.features,
-            secureToken: validation.secureToken
+            secureToken: validation.secureToken,
+            licenseKey: currentLicenseKey // Store current license key
           };
         } else {
           // PRO fields loading failed - fallback to free
@@ -140,7 +150,8 @@ class FieldAccessService {
             paymentVerified: false,
             plan: 'free',
             isPro: false,
-            error: proFieldsResult.error
+            error: proFieldsResult.error,
+            licenseKey: currentLicenseKey
           };
         }
       } else {
@@ -151,7 +162,8 @@ class FieldAccessService {
           plan: 'free',
           isPro: false,
           error: validation.error,
-          fallbackToFree: validation.fallbackToFree || false
+          fallbackToFree: validation.fallbackToFree || false,
+          licenseKey: currentLicenseKey
         };
       }
 
@@ -159,7 +171,8 @@ class FieldAccessService {
       console.log('Secure field access data loaded:', {
         fieldCount: Object.keys(this.data.fieldTypes).length,
         paymentVerified: this.data.paymentVerified,
-        plan: this.data.plan
+        plan: this.data.plan,
+        licenseKey: this.data.licenseKey
       });
 
     } catch (err) {
@@ -171,7 +184,8 @@ class FieldAccessService {
         fieldTypes: secureFreeVersion.getAvailableFieldTypes(),
         paymentVerified: false,
         plan: 'free',
-        isPro: false
+        isPro: false,
+        licenseKey: currentLicenseKey
       };
     } finally {
       this.loading = false;
@@ -197,25 +211,45 @@ class FieldAccessService {
     return this.loadData();
   }
 
-  // Check if license key has changed and refresh if needed
+  // Check if license key has changed and refresh if needed (with debouncing)
   checkLicenseChange() {
     const currentLicenseKey = window.cccData?.licenseKey || window.ccc_license_key || '';
-    const cachedData = this.getCachedData();
-    const cachedLicenseKey = cachedData?.licenseKey || '';
     
-    console.log('🔍 License change check:', {
-      current: currentLicenseKey,
-      cached: cachedLicenseKey,
-      changed: currentLicenseKey !== cachedLicenseKey
-    });
-    
-    if (currentLicenseKey !== cachedLicenseKey) {
-      console.log('🔄 License key changed - clearing cache and refreshing');
-      this.refreshData();
-      return true;
+    // Clear any existing debounce timer
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
     }
     
-    return false;
+    // If license key hasn't changed, don't do anything
+    if (currentLicenseKey === this.lastLicenseKey) {
+      return false;
+    }
+    
+    console.log('🔍 License change detected:', {
+      current: currentLicenseKey,
+      previous: this.lastLicenseKey,
+      changed: currentLicenseKey !== this.lastLicenseKey
+    });
+    
+    // Debounce the license change handling
+    this.debounceTimer = setTimeout(() => {
+      console.log('🔄 License key changed - clearing cache and refreshing');
+      // Clear all caches immediately
+      this.clearAllCaches();
+      this.lastLicenseKey = currentLicenseKey;
+      this.refreshData();
+    }, this.debounceDelay);
+    
+    return true;
+  }
+
+  // Clear all caches including validation cache
+  clearAllCaches() {
+    localStorage.removeItem(this.cacheKey);
+    // Also clear the validation cache in SecureFreeVersion
+    if (window.secureFreeVersion) {
+      window.secureFreeVersion.clearCache();
+    }
   }
 
   // Notify all listeners
@@ -232,10 +266,33 @@ class FieldAccessService {
     localStorage.removeItem(this.cacheKey);
     return this.loadData();
   }
+
+  // Start periodic license checking
+  startLicenseMonitoring() {
+    // Check for license changes every 5 seconds
+    this.licenseCheckInterval = setInterval(() => {
+      this.checkLicenseChange();
+    }, 5000);
+  }
+
+  // Stop periodic license checking
+  stopLicenseMonitoring() {
+    if (this.licenseCheckInterval) {
+      clearInterval(this.licenseCheckInterval);
+      this.licenseCheckInterval = null;
+    }
+  }
 }
 
 // Global instance
 const fieldAccessService = new FieldAccessService();
+
+// Cleanup on page unload
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    fieldAccessService.stopLicenseMonitoring();
+  });
+}
 
 /**
  * Hook to fetch and manage field access data for PRO features
@@ -258,7 +315,14 @@ export const useFieldAccess = () => {
       fieldAccessService.loadData();
     }
 
-    return unsubscribe;
+    // Start monitoring for license changes
+    fieldAccessService.startLicenseMonitoring();
+
+    return () => {
+      unsubscribe();
+      // Note: We don't stop monitoring here as other components might be using it
+      // The monitoring will be stopped when the page unloads
+    };
   }, []);
 
   const canAccessField = (fieldType) => {
