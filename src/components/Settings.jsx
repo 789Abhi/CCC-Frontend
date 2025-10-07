@@ -233,19 +233,6 @@ const Settings = () => {
                         )}
                       </div>
                     </div>
-                    
-                    {/* Manual License Check Button */}
-                    <button
-                      onClick={() => {
-                        if (window.checkCCCLicense) {
-                          console.log('🔄 Manual license check triggered from settings');
-                          window.checkCCCLicense();
-                        }
-                      }}
-                      className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-                    >
-                      Refresh Fields
-                    </button>
                   </div>
                 </div>
               )}
