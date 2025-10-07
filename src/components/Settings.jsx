@@ -81,6 +81,10 @@ const Settings = () => {
                 window.checkCCCLicense();
               }, 1000); // Small delay to ensure the license key is updated in the backend
             }
+            // Reload the page shortly after save to refresh field access state
+            setTimeout(() => {
+              window.location.reload();
+            }, 1200);
           } else {
             setMessage({ type: 'error', text: 'License validation failed' });
             // Also trigger check for invalid license to clear PRO fields
@@ -90,6 +94,10 @@ const Settings = () => {
                 window.checkCCCLicense();
               }, 1000);
             }
+            // Reload to ensure UI reflects free-only fields when invalid/no key
+            setTimeout(() => {
+              window.location.reload();
+            }, 1200);
           }
           
           setSettings(prev => ({
