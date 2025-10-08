@@ -1641,7 +1641,7 @@ Please return ONLY the JSON response, no additional text.`;
                )}
 
                {/* Action Buttons */}
-               <div className="mt-3 flex gap-2">
+               <div className="mt-4 flex gap-2">
                                    <button
                     onClick={() => {
                       const result = validateAndParseChatGPTJson();
