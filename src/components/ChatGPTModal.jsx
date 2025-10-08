@@ -1339,69 +1339,7 @@ Please return ONLY the JSON response, no additional text.`;
 
            {/* Content - Scrollable */}
            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
-                                                   {/* License Key Status */}
-              <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-6 w-6 bg-pink-500 rounded-full flex items-center justify-center">
-                      <svg
-                        className="h-3 w-3 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-800 text-sm">
-                        AI Component Generation
-                      </h3>
-                      <p className="text-xs text-gray-600">
-                        Generate components using AI (requires valid license)
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* License Key Status */}
-                <div className="flex items-center gap-2 mb-3">
-                  {licenseKey ? (
-                    <>
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      <span className="text-xs text-gray-700">
-                        License key configured
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        (Key: {licenseKey.substring(0, 12)}...)
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                      <span className="text-xs text-gray-700">
-                        No license key configured
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                <div className="p-3 bg-pink-100 rounded border-2 border-pink-300">
-                  <p className="text-xs text-gray-700 mb-2">
-                    <strong>AI Generation:</strong> The AI component generation feature uses OpenAI's API through our secure backend. No API key configuration needed - just a valid license key!
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    Your license key is automatically used to authenticate with our AI service.
-                  </p>
-                </div>
-               </div>
-             
-                           {/* Context Prompt Input */}
+             {/* Context Prompt Input */}
              <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-4">
                <div className="flex items-center gap-3 mb-3">
                  <div className="h-6 w-6 bg-pink-500 rounded-full flex items-center justify-center">
