@@ -455,11 +455,16 @@ Please return ONLY the JSON response, no additional text or explanations.`;
       setAutoGenerationStep("Sending request to AI service...");
       setAutoGenerationProgress(40);
 
-      // Call backend API for AI generation
-      const response = await axios.post('https://custom-craft-component-backend.vercel.app/api/admin/openai/generate-component', {
-        license_key: licenseKey,
+      // Call WordPress AJAX to get OpenAI key and generate component
+      const response = await axios.post(window.cccData.ajaxUrl, new URLSearchParams({
+        action: 'ccc_generate_component_with_ai',
+        nonce: window.cccData.nonce,
         prompt: contextPrompt,
         site_url: window.location.origin
+      }), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        }
       });
 
       setAutoGenerationStep("Processing AI response...");
