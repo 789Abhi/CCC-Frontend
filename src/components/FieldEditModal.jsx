@@ -29,6 +29,9 @@ import ProUpgradeModal from "./ProUpgradeModal"
 
 function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false, parentFieldType = null, siblingFields = null }) {
 
+  // Memoize field to prevent unnecessary re-renders
+  const stableField = useMemo(() => field, [field?.id, field?.name, field?.type, field?.config, JSON.stringify(field?.children)]);
+
   const [label, setLabel] = useState("")
   const [name, setName] = useState("")
   const [type, setType] = useState("text")
@@ -307,25 +310,25 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
 
   useEffect(() => {
 
-    if (field) {
-      // console.log("Loading field data:", field)
-      setLabel(field.label || "")
-      setName(field.name || "")
-      setType(field.type || "text")
-      setIsRequired(field.required || false)
-      setPlaceholder(field.placeholder || "")
+    if (stableField) {
+      // console.log("Loading field data:", stableField)
+      setLabel(stableField.label || "")
+      setName(stableField.name || "")
+      setType(stableField.type || "text")
+      setIsRequired(stableField.required || false)
+      setPlaceholder(stableField.placeholder || "")
 
       // Handle field configuration based on type
-      if (field.config) {
+      if (stableField.config) {
         try {
-          const config = typeof field.config === "string" ? JSON.parse(field.config) : field.config
+          const config = typeof stableField.config === "string" ? JSON.parse(stableField.config) : stableField.config
           // console.log("Field config:", config)
 
-          if (field.type === "repeater") {
+          if (stableField.type === "repeater") {
             setMaxSets(config.max_sets || "")
             // Prefer DB children if available, fallback to config.nested_fields
-            const nestedFields = (Array.isArray(field.children) && field.children.length > 0)
-              ? field.children
+            const nestedFields = (Array.isArray(stableField.children) && stableField.children.length > 0)
+              ? stableField.children
               : (config.nested_fields || [])
             // console.log("Loading nested field definitions:", nestedFields)
             
@@ -395,25 +398,25 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
               conditional_logic: config.conditional_logic || [],
               logic_operator: config.logic_operator || 'AND'
             })
-          } else if (["select", "checkbox", "radio"].includes(field.type)) {
+          } else if (["select", "checkbox", "radio"].includes(stableField.type)) {
             const options = config.options || {}
             setFieldOptions(Object.entries(options).map(([value, label]) => ({ value, label })))
-          } else if (field.type === "wysiwyg") {
+          } else if (stableField.type === "wysiwyg") {
             setWysiwygSettings({
               media_buttons: config.editor_settings?.media_buttons ?? true,
               teeny: config.editor_settings?.teeny ?? false,
               textarea_rows: config.editor_settings?.textarea_rows ?? 10,
             })
-          } else if (field.type === 'image' && field.config) {
+          } else if (stableField.type === 'image' && stableField.config) {
             try {
-              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              const config = typeof stableField.config === 'string' ? JSON.parse(stableField.config) : stableField.config;
               setImageReturnType(config.return_type || 'url');
             } catch (e) {
               setImageReturnType('url');
             }
-          } else if (field.type === 'video' && field.config) {
+          } else if (stableField.type === 'video' && stableField.config) {
             try {
-              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              const config = typeof stableField.config === 'string' ? JSON.parse(stableField.config) : stableField.config;
               setVideoReturnType(config.return_type || 'url');
               setVideoSources(config.sources || ['file', 'youtube', 'vimeo', 'url']);
               setVideoPlayerOptions(config.player_options || {
@@ -434,9 +437,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 download: true
               });
             }
-          } else if (field.type === 'link' && field.config) {
+          } else if (stableField.type === 'link' && stableField.config) {
             try {
-              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              const config = typeof stableField.config === 'string' ? JSON.parse(stableField.config) : stableField.config;
               setLinkConfig({
                 link_types: config.link_types || ['internal', 'external'],
                 default_type: config.default_type || 'internal',
@@ -454,9 +457,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 show_title: true
               });
             }
-          } else if (field.type === 'number' && field.config) {
+          } else if (stableField.type === 'number' && stableField.config) {
             try {
-              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              const config = typeof stableField.config === 'string' ? JSON.parse(stableField.config) : stableField.config;
               setFieldConfig({
                 number_type: config.number_type || 'normal',
                 unique: config.unique || false,
@@ -480,9 +483,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                 append: ''
               });
             }
-                     } else if (field.type === 'range' && field.config) {
+                     } else if (stableField.type === 'range' && stableField.config) {
              try {
-               const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+               const config = typeof stableField.config === 'string' ? JSON.parse(stableField.config) : stableField.config;
                setFieldConfig({
                  min_value: config.min_value !== undefined && config.min_value !== null ? config.min_value : null,
                  max_value: config.max_value !== undefined && config.max_value !== null ? config.max_value : null,
@@ -498,9 +501,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
                  append: ''
                });
              }
-          } else if (field.type === 'toggle' && field.config) {
+          } else if (stableField.type === 'toggle' && stableField.config) {
             try {
-              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              const config = typeof stableField.config === 'string' ? JSON.parse(stableField.config) : stableField.config;
               setToggleConfig({
                 default_value: config.default_value !== undefined ? config.default_value : false,
                 field_condition: config.field_condition || 'always_show',
@@ -579,12 +582,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
             }
           }
           
-          if (field.type === 'select' && field.config) {
-            const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+          if (stableField.type === 'select' && stableField.config) {
+            const config = typeof stableField.config === 'string' ? JSON.parse(stableField.config) : stableField.config;
             setSelectMultiple(!!config.multiple);
-          } else if (field.type === 'relationship' && field.config) {
+          } else if (stableField.type === 'relationship' && stableField.config) {
             try {
-              const config = typeof field.config === 'string' ? JSON.parse(field.config) : field.config;
+              const config = typeof stableField.config === 'string' ? JSON.parse(stableField.config) : stableField.config;
               setRelationshipConfig({
                 filter_post_types: config.filter_post_types || [],
                 filter_post_status: config.filter_post_status || [],
@@ -765,7 +768,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         }
       } else {
         // console.log("No field config found")
-        if (field.type === "repeater") {
+        if (stableField.type === "repeater") {
           setNestedFieldDefinitions([])
         }
       }
@@ -849,19 +852,19 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     setEditingNestedFieldIndex(null)
     setShowFieldPopup(false)
     setCurrentNestedField(null)
-  }, [field, isOpen])
+  }, [stableField, isOpen])
 
   // Reset field configuration when type changes
   useEffect(() => {
-    // Only set defaults for new fields, not when editing existing ones
-    if (!field && type === 'range') {
+        // Only set defaults for new fields, not when editing existing ones
+        if (!stableField && type === 'range') {
       setFieldConfig({
         min_value: null,
         max_value: null,
         prepend: '',
         append: ''
       });
-    } else if (!field && type === 'number') {
+    } else if (!stableField && type === 'number') {
       setFieldConfig({
         number_type: 'normal',
         unique: false,
@@ -872,7 +875,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         prepend: '',
         append: ''
       });
-    } else if (!field && type === 'file') {
+    } else if (!stableField && type === 'file') {
       setFieldConfig({
         allowed_types: ['image', 'video', 'document', 'audio', 'archive'],
         max_file_size: 25,
@@ -883,7 +886,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
         show_delete: true
       });
     }
-  }, [type, field]);
+  }, [type]); // Removed 'field' dependency to prevent infinite loop
 
   // Fetch available post types and taxonomies for relationship field
   useEffect(() => {
