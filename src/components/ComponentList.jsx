@@ -166,7 +166,7 @@ const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText 
             </code>
           </div>
           <div className="flex items-center gap-2">
-            <span className="bg-blue-200 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
+            <span className="bg-blue-100 border border-[#F2080C] text-bgSecondary px-2 py-1 rounded-full text-sm font-medium capitalize">
               {field.type}
             </span>
             <button
