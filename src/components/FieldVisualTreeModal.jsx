@@ -13,6 +13,31 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
   // Add state for adding a nested field to a repeater
   const [addingToRepeaterId, setAddingToRepeaterId] = useState(null)
 
+  // License validation state
+  const [licenseKey, setLicenseKey] = useState("")
+  const [hasValidLicense, setHasValidLicense] = useState(false)
+
+  // Load license key for PRO features
+  useEffect(() => {
+    const loadLicenseKey = async () => {
+      try {
+        const formData = new FormData();
+        formData.append("action", "ccc_get_license_key");
+        formData.append("nonce", window.cccData.nonce);
+        const response = await axios.post(window.cccData.ajaxUrl, formData);
+        if (response.data.success && response.data.data.license_key) {
+          setLicenseKey(response.data.data.license_key);
+          setHasValidLicense(true);
+        } else {
+          setHasValidLicense(false);
+        }
+      } catch (error) {
+        setHasValidLicense(false);
+      }
+    };
+    if (isOpen) loadLicenseKey();
+  }, [isOpen]);
+
   // Process fields into visual tree structure
   useEffect(() => {
     if (fields && Array.isArray(fields) && fields.length > 0) {
@@ -474,6 +499,13 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
               <X className="w-6 h-6" />
             </button>
           </div>
+
+          {/* PRO Tag */}
+          <div className="flex items-center gap-2 ml-2">
+            <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs px-2 py-1 rounded-full font-semibold shadow-md">
+              PRO
+            </span>
+          </div>
         </div>
 
         {/* Visual Tree Content */}
@@ -577,4 +609,4 @@ function FieldVisualTreeModal({ isOpen, fields, onClose, onFieldUpdate, onFieldU
   )
 }
 
-export default FieldVisualTreeModal 
+export default FieldVisualTreeModal
