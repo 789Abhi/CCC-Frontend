@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Treebeard } from "react-treebeard"
-import { X, Edit, Eye, ChevronRight, ChevronDown } from "lucide-react"
+import { X, Edit, Eye, ChevronRight, ChevronDown, Lock } from "lucide-react"
 import FieldEditModal from "./FieldEditModal"
+import axios from "axios"
 
 function FieldTreeModal({ isOpen, fields, onClose, onFieldUpdate, component }) {
   const [treeData, setTreeData] = useState(null)
@@ -11,6 +12,35 @@ function FieldTreeModal({ isOpen, fields, onClose, onFieldUpdate, component }) {
   const [showFieldEditModal, setShowFieldEditModal] = useState(false)
   const [editingField, setEditingField] = useState(null)
   const [editingPath, setEditingPath] = useState([])
+  const [licenseKey, setLicenseKey] = useState("")
+  const [hasValidLicense, setHasValidLicense] = useState(false)
+
+  // Load license key and validate it
+  useEffect(() => {
+    const loadLicenseKey = async () => {
+      try {
+        const formData = new FormData();
+        formData.append("action", "ccc_get_license_key");
+        formData.append("nonce", window.cccData.nonce);
+
+        const response = await axios.post(window.cccData.ajaxUrl, formData);
+        
+        if (response.data.success && response.data.data.license_key) {
+          setLicenseKey(response.data.data.license_key);
+          setHasValidLicense(true);
+        } else {
+          setHasValidLicense(false);
+        }
+      } catch (error) {
+        console.error("Error loading license key:", error);
+        setHasValidLicense(false);
+      }
+    };
+    
+    if (isOpen) {
+      loadLicenseKey();
+    }
+  }, [isOpen]);
 
   // Convert fields to tree structure
   useEffect(() => {
@@ -61,6 +91,11 @@ function FieldTreeModal({ isOpen, fields, onClose, onFieldUpdate, component }) {
   }
 
   const handleEditField = (node) => {
+    if (!hasValidLicense) {
+      alert("This is a PRO feature. Please upgrade to a valid license to edit fields.");
+      return;
+    }
+    
     setEditingField(node.field)
     setEditingPath(node.path)
     setShowFieldEditModal(true)
@@ -216,10 +251,13 @@ function FieldTreeModal({ isOpen, fields, onClose, onFieldUpdate, component }) {
                 <Eye className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-bold">Field Tree Structure</h3>
-                <p className="text-sm text-white/80 mt-1">
-                  View and edit nested fields in a hierarchical structure
-                </p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-bold">Field Tree Structure</h3>
+                  <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs px-2 py-1 rounded-full font-semibold shadow-md">
+                    PRO
+                  </span>
+                </div>
+                <p className="text-sm text-white/80 mt-1">{!hasValidLicense ? "Upgrade to PRO to access this feature" : "View and manage your component's field structure"}</p>
               </div>
             </div>
             <button
@@ -233,7 +271,16 @@ function FieldTreeModal({ isOpen, fields, onClose, onFieldUpdate, component }) {
 
         {/* Tree Content */}
         <div className="p-6 h-[calc(90vh-120px)] overflow-y-auto">
-          {treeData ? (
+          {!hasValidLicense ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Lock className="w-16 h-16 mx-auto" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-600 mb-2">PRO Feature</h3>
+              <p className="text-gray-500 mb-4">Field Tree Structure is a PRO feature.</p>
+              <p className="text-gray-500 text-sm">Please upgrade to a valid license to access this feature.</p>
+            </div>
+          ) : treeData ? (
             <div className="space-y-4">
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Field Hierarchy</h4>

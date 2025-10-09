@@ -248,6 +248,10 @@ const ComponentList = () => {
   const [showTreeModal, setShowTreeModal] = useState(false)
   const [selectedComponentForTree, setSelectedComponentForTree] = useState(null)
 
+  // License validation state
+  const [licenseKey, setLicenseKey] = useState("")
+  const [hasValidLicense, setHasValidLicense] = useState(false)
+
   // ChatGPT modal state
   const [showChatGPTModal, setShowChatGPTModal] = useState(false)
   
@@ -997,7 +1001,29 @@ const ComponentList = () => {
       }
     }
     
+    // Load license key for PRO features
+    const loadLicenseKey = async () => {
+      try {
+        const formData = new FormData();
+        formData.append("action", "ccc_get_license_key");
+        formData.append("nonce", window.cccData.nonce);
+
+        const response = await axios.post(window.cccData.ajaxUrl, formData);
+        
+        if (response.data.success && response.data.data.license_key) {
+          setLicenseKey(response.data.data.license_key);
+          setHasValidLicense(true);
+        } else {
+          setHasValidLicense(false);
+        }
+      } catch (error) {
+        console.error("Error loading license key:", error);
+        setHasValidLicense(false);
+      }
+    };
+    
     testAjax()
+    loadLicenseKey()
   }, [])
 
   useEffect(() => {
@@ -2170,14 +2196,17 @@ const ComponentList = () => {
                       {comp.fields && comp.fields.length > 0 && (
                         <>
                           <div
-                            className="w-[25px] h-[25px] cursor-pointer text-emerald-600 hover:text-emerald-800 transition-colors duration-200"
-                            title="View Field Structure"
+                            className="relative w-[25px] h-[25px] cursor-pointer text-emerald-600 hover:text-emerald-800 transition-colors duration-200"
+                            title={hasValidLicense ? "View Field Structure" : "View Field Structure (PRO)"}
                             onClick={() => {
                               setSelectedComponentForTree(comp)
                               setShowTreeModal(true)
                             }}
                           >
                             <GitBranch className="w-[25px] h-[25px]" />
+                            <span className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs px-1 py-0.5 rounded-full font-semibold text-[8px] leading-none">
+                              PRO
+                            </span>
                           </div>
                           <div
                             className="w-[25px] h-[25px] cursor-pointer text-orange-600 hover:text-orange-800 transition-colors duration-200"
