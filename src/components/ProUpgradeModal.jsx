@@ -22,14 +22,15 @@ const ProUpgradeModal = ({
     'ai_generator': 'AI Component Generator',
     'conditional_logic': 'Conditional Logic',
     'custom_validation': 'Custom Validation',
-    'api_integration': 'API Integration'
+    'api_integration': 'API Integration',
+    'field_structure': 'View Field Structure'
   };
 
   const fieldName = fieldLabels[fieldType] || fieldType.charAt(0).toUpperCase() + fieldType.slice(1);
 
   const planFeatures = {
     basic: ['Repeater Fields', 'Gallery Fields', 'Basic Templates'],
-    pro: ['Date Range Fields', 'Time Range Fields', 'Advanced Templates', 'Priority Support'],
+    pro: ['Date Range Fields', 'Time Range Fields', 'View Field Structure', 'Advanced Templates', 'Priority Support'],
     max: ['AI Component Generator', 'Conditional Logic', 'Custom Validation', 'API Integration', 'White-label Options']
   };
 

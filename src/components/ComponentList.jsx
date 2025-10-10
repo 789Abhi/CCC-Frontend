@@ -34,6 +34,7 @@ import ChatGPTModal from "./ChatGPTModal"
 import ComponentEditNameModal from "./ComponentEditModal"
 import FieldVisualTreeModal from "./FieldVisualTreeModal"
 import DesignChatGPTModal from "./DesignChatGPTModal"
+import ProUpgradeModal from "./ProUpgradeModal"
 
 // Sortable Field Component - moved outside main component to fix re-rendering issues
 const SortableField = ({ field, component, onEdit, onDelete, onCopy, copiedText }) => {
@@ -270,6 +271,9 @@ const ComponentList = () => {
   const [componentToExport, setComponentToExport] = useState(null)
   const [importJson, setImportJson] = useState("")
   const [importError, setImportError] = useState("")
+  
+  // ProUpgradeModal state
+  const [showProUpgradeModal, setShowProUpgradeModal] = useState(false)
   
   // New state for revised import/export functionality
   const [showExportAllModal, setShowExportAllModal] = useState(false)
@@ -2196,11 +2200,19 @@ const ComponentList = () => {
                       {comp.fields && comp.fields.length > 0 && (
                         <>
                           <div
-                            className="relative w-[25px] h-[25px] cursor-pointer text-emerald-600 hover:text-emerald-800 transition-colors duration-200"
+                            className={`relative w-[25px] h-[25px] transition-colors duration-200 ${
+                              hasValidLicense 
+                                ? "cursor-pointer text-emerald-600 hover:text-emerald-800" 
+                                : "cursor-pointer text-gray-400 hover:text-gray-600"
+                            }`}
                             title={hasValidLicense ? "View Field Structure" : "View Field Structure (PRO)"}
                             onClick={() => {
-                              setSelectedComponentForTree(comp)
-                              setShowTreeModal(true)
+                              if (hasValidLicense) {
+                                setSelectedComponentForTree(comp)
+                                setShowTreeModal(true)
+                              } else {
+                                setShowProUpgradeModal(true)
+                              }
                             }}
                           >
                             <GitBranch className="w-[25px] h-[25px]" />
@@ -2713,6 +2725,15 @@ const ComponentList = () => {
           component={selectedComponentForTree}
         />
       )}
+
+      {/* ProUpgradeModal */}
+      <ProUpgradeModal
+        isOpen={showProUpgradeModal}
+        onClose={() => setShowProUpgradeModal(false)}
+        fieldType="field_structure"
+        requiredPlan="pro"
+        userPlan="free"
+      />
 
       {/* ChatGPT Modal */}
       <ChatGPTModal
