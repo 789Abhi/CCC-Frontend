@@ -50,6 +50,19 @@ const ProFieldWrapper = ({
         })
       });
 
+      // If license server is down (>=500), fail-open to avoid breaking editor UX
+      if (!response.ok && response.status >= 500) {
+        setAccessCheck({
+          canAccess: true,
+          loading: false,
+          message: 'Temporary license server outage - allowing editing',
+          userPlan: 'unknown',
+          requiredPlan: 'free'
+        });
+        onAccessChange(true);
+        return;
+      }
+
       const data = await response.json();
 
       if (data.success && data.proFeatures) {
@@ -90,14 +103,15 @@ const ProFieldWrapper = ({
       }
     } catch (error) {
       console.error('Error checking field access:', error);
+      // Network/CORS/timeout: fail-open so fields render in metabox
       setAccessCheck({
-        canAccess: false,
+        canAccess: true,
         loading: false,
-        message: 'Connection error: ' + error.message,
-        userPlan: 'free',
+        message: 'Temporary connection issue - allowing editing',
+        userPlan: 'unknown',
         requiredPlan: 'free'
       });
-      onAccessChange(false);
+      onAccessChange(true);
     }
   };
 

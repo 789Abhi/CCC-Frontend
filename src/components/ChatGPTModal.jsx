@@ -1133,35 +1133,9 @@ Please return ONLY the JSON response, no additional text.`;
       );
 
       if (!componentResponse.data.success) {
-        // Attempt graceful fallback: if component might already exist, try to resolve ID
-        try {
-          const searchFormData = new FormData();
-          searchFormData.append("action", "ccc_get_components");
-          searchFormData.append("nonce", window.cccData.nonce);
-
-          const searchResponse = await axios.post(
-            window.cccData.ajaxUrl,
-            searchFormData
-          );
-          if (searchResponse.data.success && Array.isArray(searchResponse.data.data)) {
-            const foundComponent = searchResponse.data.data.find(
-              (comp) =>
-                comp.name === currentParsedComponent.component.name ||
-                comp.label === currentParsedComponent.component.name
-            );
-            if (!foundComponent) {
-              throw new Error(
-                componentResponse.data.message || "Failed to create component"
-              );
-            }
-          } else {
-            throw new Error(
-              componentResponse.data.message || "Failed to create component"
-            );
-          }
-        } catch (fallbackErr) {
-          throw fallbackErr;
-        }
+        throw new Error(
+          componentResponse.data.message || "Failed to create component"
+        );
       }
 
       // Get the component ID
@@ -1298,8 +1272,6 @@ Please return ONLY the JSON response, no additional text.`;
     } catch (error) {
       console.error("ChatGPT JSON processing error:", error);
       showMessage(error.message || "Failed to process ChatGPT JSON", "error");
-      // Rethrow to let callers (e.g., auto-generate) properly handle failure state
-      throw error;
     } finally {
       setIsProcessingChatGPT(false);
       setProcessingStep("");
