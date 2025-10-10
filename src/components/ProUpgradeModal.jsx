@@ -28,15 +28,10 @@ const ProUpgradeModal = ({
 
   const fieldName = fieldLabels[fieldType] || fieldType.charAt(0).toUpperCase() + fieldType.slice(1);
 
-  const planFeatures = {
-    basic: ['Repeater Fields', 'Gallery Fields', 'Basic Templates'],
-    pro: ['Date Range Fields', 'Time Range Fields', 'View Field Structure', 'Advanced Templates', 'Priority Support'],
-    max: ['AI Component Generator', 'Conditional Logic', 'Custom Validation', 'API Integration', 'White-label Options']
-  };
 
   const handleUpgradeClick = () => {
     // Open upgrade page
-    window.open('https://custom-craft-component.com/upgrade', '_blank');
+    window.open('https://www.customcraftcomponents.com/pricing', '_blank');
   };
 
   return (
@@ -78,19 +73,6 @@ const ProUpgradeModal = ({
                 </span>
               )}
             </p>
-          </div>
-
-          {/* Plan Features */}
-          <div className="mb-6">
-            <h5 className="text-sm font-semibold text-gray-900 mb-3">What you'll get with {requiredPlan} plan:</h5>
-            <ul className="space-y-2">
-              {planFeatures[requiredPlan]?.map((feature, index) => (
-                <li key={index} className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="h-1.5 w-1.5 bg-purple-500 rounded-full"></div>
-                  {feature}
-                </li>
-              ))}
-            </ul>
           </div>
 
           {/* Action Buttons */}
