@@ -30,7 +30,14 @@ import ProUpgradeModal from "./ProUpgradeModal"
 function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false, parentFieldType = null, siblingFields = null }) {
 
   // Memoize field to prevent unnecessary re-renders
-  const stableField = useMemo(() => field, [field?.id, field?.name, field?.type, field?.config, JSON.stringify(field?.children)]);
+  const stableField = useMemo(() => {
+    if (!field) return null;
+    return {
+      ...field,
+      // Create a stable reference for children array
+      children: field.children || []
+    };
+  }, [field?.id, field?.name, field?.type, field?.config, field?.children?.length]);
 
   const [label, setLabel] = useState("")
   const [name, setName] = useState("")
@@ -309,7 +316,9 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   }
 
   useEffect(() => {
-
+    // Only run when modal is open and field data is available
+    if (!isOpen) return;
+    
     if (stableField) {
       // console.log("Loading field data:", stableField)
       setLabel(stableField.label || "")
@@ -852,7 +861,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     setEditingNestedFieldIndex(null)
     setShowFieldPopup(false)
     setCurrentNestedField(null)
-  }, [stableField, isOpen])
+  }, [isOpen, stableField?.id, stableField?.name, stableField?.type, stableField?.config])
 
   // Reset field configuration when type changes
   useEffect(() => {
