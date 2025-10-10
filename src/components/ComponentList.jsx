@@ -274,6 +274,7 @@ const ComponentList = () => {
   
   // ProUpgradeModal state
   const [showProUpgradeModal, setShowProUpgradeModal] = useState(false)
+  const [currentProFeature, setCurrentProFeature] = useState("field_structure")
   
   // New state for revised import/export functionality
   const [showExportAllModal, setShowExportAllModal] = useState(false)
@@ -2020,15 +2021,36 @@ const ComponentList = () => {
                 />
               </button>
               
-              <button
-                onClick={() => setShowChatGPTModal(true)}
-                className="text-white px-6 py-3 text-lg rounded-custom flex border border-green-600 bg-green-600 hover:bg-green-700 items-center gap-3 font-medium transition-colors"
-              >
-                <svg className="h-[30px] w-[30px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                Use AI
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    if (hasValidLicense) {
+                      setShowChatGPTModal(true)
+                    } else {
+                      setCurrentProFeature("use_ai")
+                      setShowProUpgradeModal(true)
+                    }
+                  }}
+                  className={`px-6 py-3 text-lg rounded-custom flex border items-center gap-3 font-medium transition-colors ${
+                    hasValidLicense 
+                      ? "text-white border-green-600 bg-green-600 hover:bg-green-700" 
+                      : "text-gray-400 border-gray-400 bg-gray-100 hover:bg-gray-200"
+                  }`}
+                  title={hasValidLicense ? "Use AI" : "Use AI (PRO)"}
+                >
+                  <svg className="h-[30px] w-[30px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Use AI
+                </button>
+                <span className={`absolute -top-1 -right-1 text-white text-xs px-1 py-0.5 rounded-full font-semibold text-[8px] leading-none ${
+                  hasValidLicense 
+                    ? "bg-gradient-to-r from-green-400 to-emerald-500" 
+                    : "bg-gradient-to-r from-yellow-400 to-orange-500"
+                }`}>
+                  PRO
+                </span>
+              </div>
 
               {/* Only show export button if there are components */}
               {components.length > 0 && (
@@ -2211,12 +2233,17 @@ const ComponentList = () => {
                                 setSelectedComponentForTree(comp)
                                 setShowTreeModal(true)
                               } else {
+                                setCurrentProFeature("field_structure")
                                 setShowProUpgradeModal(true)
                               }
                             }}
                           >
                             <GitBranch className="w-[25px] h-[25px]" />
-                            <span className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs px-1 py-0.5 rounded-full font-semibold text-[8px] leading-none">
+                            <span className={`absolute -top-1 -right-1 text-white text-xs px-1 py-0.5 rounded-full font-semibold text-[8px] leading-none ${
+                              hasValidLicense 
+                                ? "bg-gradient-to-r from-green-400 to-emerald-500" 
+                                : "bg-gradient-to-r from-yellow-400 to-orange-500"
+                            }`}>
                               PRO
                             </span>
                           </div>
@@ -2228,11 +2255,29 @@ const ComponentList = () => {
                             <Copy className="w-[25px] h-[25px]" />
                           </div>
                           <div
-                            className="w-[25px] h-[25px] cursor-pointer text-purple-600 hover:text-purple-800 transition-colors duration-200"
-                            title="Design with ChatGPT"
-                            onClick={() => openDesignModal(comp)}
+                            className={`relative w-[25px] h-[25px] transition-colors duration-200 ${
+                              hasValidLicense 
+                                ? "cursor-pointer text-purple-600 hover:text-purple-800" 
+                                : "cursor-pointer text-gray-400 hover:text-gray-600"
+                            }`}
+                            title={hasValidLicense ? "Design with ChatGPT" : "Design with ChatGPT (PRO)"}
+                            onClick={() => {
+                              if (hasValidLicense) {
+                                openDesignModal(comp)
+                              } else {
+                                setCurrentProFeature("design_chatgpt")
+                                setShowProUpgradeModal(true)
+                              }
+                            }}
                           >
                             <Palette className="w-[25px] h-[25px]" />
+                            <span className={`absolute -top-1 -right-1 text-white text-xs px-1 py-0.5 rounded-full font-semibold text-[8px] leading-none ${
+                              hasValidLicense 
+                                ? "bg-gradient-to-r from-green-400 to-emerald-500" 
+                                : "bg-gradient-to-r from-yellow-400 to-orange-500"
+                            }`}>
+                              PRO
+                            </span>
                           </div>
                         </>
                       )}
@@ -2730,7 +2775,7 @@ const ComponentList = () => {
       <ProUpgradeModal
         isOpen={showProUpgradeModal}
         onClose={() => setShowProUpgradeModal(false)}
-        fieldType="field_structure"
+        fieldType={currentProFeature}
         requiredPlan="pro"
         userPlan="free"
       />

@@ -23,7 +23,9 @@ const ProUpgradeModal = ({
     'conditional_logic': 'Conditional Logic',
     'custom_validation': 'Custom Validation',
     'api_integration': 'API Integration',
-    'field_structure': 'View Field Structure'
+    'field_structure': 'View Field Structure',
+    'use_ai': 'Use AI (Auto Generate)',
+    'design_chatgpt': 'Design with ChatGPT'
   };
 
   const fieldName = fieldLabels[fieldType] || fieldType.charAt(0).toUpperCase() + fieldType.slice(1);
