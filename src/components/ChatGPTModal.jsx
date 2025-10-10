@@ -1614,7 +1614,7 @@ Please return ONLY the JSON response, no additional text.`;
                       }
                     }}
                     disabled={!parsedComponent || isProcessingChatGPT}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-1 px-4 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                   >
                    <svg
                      className="h-3 w-3"
