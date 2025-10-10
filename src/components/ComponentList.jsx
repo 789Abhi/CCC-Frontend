@@ -2022,7 +2022,7 @@ const ComponentList = () => {
               </button>
               
               <div className="relative">
-                <button
+              <button
                   onClick={() => {
                     if (hasValidLicense) {
                       setShowChatGPTModal(true)
@@ -2037,12 +2037,12 @@ const ComponentList = () => {
                       : "text-gray-400 border-gray-400 bg-gray-100 hover:bg-gray-200"
                   }`}
                   title={hasValidLicense ? "Use AI" : "Use AI (PRO)"}
-                >
-                  <svg className="h-[30px] w-[30px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Use AI
-                </button>
+              >
+                <svg className="h-[30px] w-[30px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Use AI
+              </button>
                 <span className={`absolute -top-1 -right-1 text-white text-xs px-1 py-0.5 rounded-full font-semibold text-[8px] leading-none ${
                   hasValidLicense 
                     ? "bg-gradient-to-r from-green-400 to-emerald-500" 
@@ -2230,8 +2230,8 @@ const ComponentList = () => {
                             title={hasValidLicense ? "View Field Structure" : "View Field Structure (PRO)"}
                             onClick={() => {
                               if (hasValidLicense) {
-                                setSelectedComponentForTree(comp)
-                                setShowTreeModal(true)
+                              setSelectedComponentForTree(comp)
+                              setShowTreeModal(true)
                               } else {
                                 setCurrentProFeature("field_structure")
                                 setShowProUpgradeModal(true)
