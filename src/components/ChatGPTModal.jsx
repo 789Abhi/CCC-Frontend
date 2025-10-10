@@ -460,6 +460,7 @@ Please return ONLY the JSON response, no additional text or explanations.`;
         action: 'ccc_generate_component_with_ai',
         nonce: window.cccData.nonce,
         prompt: contextPrompt,
+        has_repeater: hasRepeater,
         site_url: window.location.origin
       }), {
         headers: {
