@@ -176,56 +176,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     setToggleConfig(prev => ({ ...prev, ...config }));
   }, []);
 
-  // Show loading state if field access data is still loading
-  if (fieldAccessLoading && !fieldAccessData) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-          <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-full mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Safety check to prevent crashes when field access data is not available
-  if (!fieldAccessData || !fieldAccessData.fieldTypes) {
-    console.warn('FieldEditModal: Field access data not available, using fallback');
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-          <h2 className="text-xl font-semibold mb-4">Error</h2>
-          <p className="text-red-500 mb-4">Unable to load field configuration. Please try again later.</p>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.dropdown-container')) {
-        setShowPostTypesDropdown(false);
-        setShowPostStatusDropdown(false);
-        setShowTaxonomyDropdown(false);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, []);
-
   // Memoized available fields to prevent array recreation on every render
   const availableFields = useMemo(() => {
     // If we're editing a nested field (inside a repeater), only include sibling fields
@@ -312,24 +262,21 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     ];
   }, [fieldAccessData])
     
-  // Debug logging for field access data
-  // console.log('🔍 FieldEditModal: fieldAccessData:', fieldAccessData);
-  // console.log('🔍 FieldEditModal: availableFieldTypes:', availableFieldTypes);
-  // console.log('🔍 FieldEditModal: fieldAccessData.fieldTypes:', fieldAccessData?.fieldTypes);
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.dropdown-container')) {
+        setShowPostTypesDropdown(false);
+        setShowPostStatusDropdown(false);
+        setShowTaxonomyDropdown(false);
+      }
+    };
 
-  // Show loading state if field access data is still loading
-  if (fieldAccessLoading && !fieldAccessData) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-          <div className="flex items-center justify-center space-x-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500"></div>
-            <span className="text-gray-700">Loading field options...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
 
   // Effect for cleanup
   useEffect(() => {
@@ -345,22 +292,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     }
   }, [cleanup]);
 
-  // Safety check to prevent crashes when field access data is not available
-  if (!fieldAccessData || !fieldAccessData.fieldTypes) {
-    console.warn('FieldEditModal: Field access data not available, using fallback');
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500 mx-auto mb-3"></div>
-            <p className="text-gray-700">Loading field options...</p>
-            <p className="text-sm text-gray-500 mt-2">Please wait a moment...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Load field data when modal opens or field changes
   useEffect(() => {
     let mounted = true;
     
@@ -952,6 +884,41 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       fetchAvailableTaxonomies('all'); // Fetch all taxonomies initially
     }
   }, [isOpen, type]);
+
+  // Debug logging for field access data
+  // console.log('🔍 FieldEditModal: fieldAccessData:', fieldAccessData);
+  // console.log('🔍 FieldEditModal: availableFieldTypes:', availableFieldTypes);
+  // console.log('🔍 FieldEditModal: fieldAccessData.fieldTypes:', fieldAccessData?.fieldTypes);
+
+  // Show loading state if field access data is still loading
+  if (fieldAccessLoading && !fieldAccessData) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="flex items-center justify-center space-x-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500"></div>
+            <span className="text-gray-700">Loading field options...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Safety check to prevent crashes when field access data is not available
+  if (!fieldAccessData || !fieldAccessData.fieldTypes) {
+    console.warn('FieldEditModal: Field access data not available, using fallback');
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500 mx-auto mb-3"></div>
+            <p className="text-gray-700">Loading field options...</p>
+            <p className="text-sm text-gray-500 mt-2">Please wait a moment...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const fetchAvailablePostTypes = async () => {
     try {
