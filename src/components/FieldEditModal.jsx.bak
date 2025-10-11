@@ -28,26 +28,45 @@ import ProFieldOption from "./ProFieldOption"
 import ProUpgradeModal from "./ProUpgradeModal"
 
 function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false, parentFieldType = null, siblingFields = null, cleanup = false }) {
-  // All hooks must be called unconditionally at the top
-  const { fieldAccessData, loading: fieldAccessLoading, canAccessField } = useFieldAccess();
+
+  // Memoize field to prevent unnecessary re-renders
+  const stableField = useMemo(() => {
+    if (!field) return null;
+    return {
+      ...field,
+      // Create a stable reference for children array
+      children: field.children || []
+    };
+  }, [field?.id, field?.name, field?.type, field?.config, field?.children?.length]);
+
+  const [label, setLabel] = useState("")
+  const [name, setName] = useState("")
+  const [type, setType] = useState("text")
+  const [isRequired, setIsRequired] = useState(false)
+  const [placeholder, setPlaceholder] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState("")
+  const [maxSets, setMaxSets] = useState("")
+  const [nestedFieldDefinitions, setNestedFieldDefinitions] = useState([])
+  const [editingNestedFieldIndex, setEditingNestedFieldIndex] = useState(null)
+  const [currentNestedField, setCurrentNestedField] = useState(null)
+  const [fieldOptions, setFieldOptions] = useState([])
+  const [wysiwygSettings, setWysiwygSettings] = useState({
+    media_buttons: true,
+    teeny: false,
+    textarea_rows: 10,
+  })
+
+  // FieldPopup state for nested fields
+  const [showFieldPopup, setShowFieldPopup] = useState(false)
+  const [copiedText, setCopiedText] = useState(null)
   
-  // State hooks
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeFieldInfo, setUpgradeFieldInfo] = useState(null);
-  const [label, setLabel] = useState("");
-  const [name, setName] = useState("");
-  const [type, setType] = useState("text");
-  const [isRequired, setIsRequired] = useState(false);
-  const [placeholder, setPlaceholder] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [maxSets, setMaxSets] = useState("");
-  const [nestedFieldDefinitions, setNestedFieldDefinitions] = useState([]);
-  const [editingNestedFieldIndex, setEditingNestedFieldIndex] = useState(null);
-  const [currentNestedField, setCurrentNestedField] = useState(null);
-  const [fieldOptions, setFieldOptions] = useState([]);
-  const [showFieldPopup, setShowFieldPopup] = useState(false);
-  const [copiedText, setCopiedText] = useState(null);
+  // PRO field access
+  const { fieldAccessData, loading: fieldAccessLoading, canAccessField } = useFieldAccess()
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgradeFieldInfo, setUpgradeFieldInfo] = useState(null)
+
+  // Add state for image return type
   const [imageReturnType, setImageReturnType] = useState('url');
   const [selectMultiple, setSelectMultiple] = useState(false);
   const [videoReturnType, setVideoReturnType] = useState('url');
@@ -58,22 +77,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     muted: false,
     loop: false,
     download: true
-  });
-
-  // Memoized values
-  const stableField = useMemo(() => {
-    if (!field) return null;
-    return {
-      ...field,
-      children: field.children || []
-    };
-  }, [field?.id, field?.name, field?.type, field?.config, field?.children?.length]);
-
-  // Derived state and configuration
-  const [wysiwygSettings, setWysiwygSettings] = useState({
-    media_buttons: true,
-    teeny: false,
-    textarea_rows: 10,
   });
 
   // Relationship field configuration state
@@ -104,7 +107,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     show_title: true
   });
 
-  // Field configuration state
+  // Number field configuration state
   const [fieldConfig, setFieldConfig] = useState({
     unique: false,
     min_value: null,
@@ -128,7 +131,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   // Toggle field configuration state
   const [toggleConfig, setToggleConfig] = useState({
     default_value: false,
-    field_condition: 'always_show',
+    field_condition: 'always_show', // 'always_show', 'show_when', 'hide_when'
     conditional_logic: [],
     logic_operator: 'AND'
   });
@@ -160,56 +163,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   const [showPostStatusDropdown, setShowPostStatusDropdown] = useState(false);
   const [showTaxonomyDropdown, setShowTaxonomyDropdown] = useState(false);
 
-  // Other state variables
-  const isEditing = !!field;
-
-  // Add the missing generateHandle function
-  const generateHandle = (name) => {
-    return name
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^a-z0-9_]+/g, "")
-  }
-
-  // Memoized callback for toggle config changes to prevent unnecessary rerenders
-  const handleToggleConfigChange = useCallback((config) => {
-    setToggleConfig(prev => ({ ...prev, ...config }));
-  }, []);
-
-  // Show loading state if field access data is still loading
-  if (fieldAccessLoading && !fieldAccessData) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-          <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-full mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Safety check to prevent crashes when field access data is not available
-  if (!fieldAccessData || !fieldAccessData.fieldTypes) {
-    console.warn('FieldEditModal: Field access data not available, using fallback');
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-          <h2 className="text-xl font-semibold mb-4">Error</h2>
-          <p className="text-red-500 mb-4">Unable to load field configuration. Please try again later.</p>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -224,6 +177,21 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
+  }, []);
+
+  const isEditing = !!field
+
+  // Add the missing generateHandle function
+  const generateHandle = (name) => {
+    return name
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_]+/g, "")
+  }
+
+  // Memoized callback for toggle config changes to prevent unnecessary rerenders
+  const handleToggleConfigChange = useCallback((config) => {
+    setToggleConfig(prev => ({ ...prev, ...config }));
   }, []);
 
   // Memoized available fields to prevent array recreation on every render
