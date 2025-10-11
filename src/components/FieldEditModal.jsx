@@ -27,7 +27,7 @@ import { useFieldAccess } from "../hooks/useFieldAccess"
 import ProFieldOption from "./ProFieldOption"
 import ProUpgradeModal from "./ProUpgradeModal"
 
-function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false, parentFieldType = null, siblingFields = null }) {
+function FieldEditModal({ isOpen, component, field, onClose, onSave, preventDatabaseSave = false, parentFieldType = null, siblingFields = null, cleanup = false }) {
 
   // Memoize field to prevent unnecessary re-renders
   const stableField = useMemo(() => {
@@ -250,7 +250,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   }, [component?.fields, parentFieldType, field?.id, field?.name]);
 
   // Get field types from backend API through field access data with error handling
-  const availableFieldTypes = (() => {
+  const availableFieldTypes = useMemo(() => {
     try {
       if (fieldAccessData?.fieldTypes) {
         return Object.keys(fieldAccessData.fieldTypes).sort((a, b) => {
@@ -278,7 +278,7 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       "file", "repeater", "wysiwyg", "color", "select", "checkbox", 
       "radio", "toggle", "date"
     ];
-  })()
+  }, [fieldAccessData])
     
   // Debug logging for field access data
   // console.log('🔍 FieldEditModal: fieldAccessData:', fieldAccessData);
@@ -299,6 +299,20 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     );
   }
 
+  // Effect for cleanup
+  useEffect(() => {
+    if (cleanup) {
+      setShowPostTypesDropdown(false);
+      setShowPostStatusDropdown(false);
+      setShowTaxonomyDropdown(false);
+      setShowFieldPopup(false);
+      setCurrentNestedField(null);
+      setEditingNestedFieldIndex(null);
+      setError("");
+      setIsSubmitting(false);
+    }
+  }, [cleanup]);
+
   // Safety check to prevent crashes when field access data is not available
   if (!fieldAccessData || !fieldAccessData.fieldTypes) {
     console.warn('FieldEditModal: Field access data not available, using fallback');
@@ -316,10 +330,12 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
   }
 
   useEffect(() => {
+    let mounted = true;
+    
     // Only run when modal is open and field data is available
     if (!isOpen) return;
     
-    if (stableField) {
+    if (stableField && mounted) {
       // console.log("Loading field data:", stableField)
       setLabel(stableField.label || "")
       setName(stableField.name || "")
@@ -3487,10 +3503,27 @@ class FieldEditModalErrorBoundary extends React.Component {
 }
 
 // Wrap the main component with error boundary
-const FieldEditModalWithErrorBoundary = (props) => (
-  <FieldEditModalErrorBoundary>
-    <FieldEditModal {...props} />
-  </FieldEditModalErrorBoundary>
-);
+const FieldEditModalWithErrorBoundary = (props) => {
+  const [cleanup, setCleanup] = useState(false);
+
+  // Add cleanup effects
+  useEffect(() => {
+    if (!props.isOpen) {
+      setCleanup(true);
+    }
+  }, [props.isOpen]);
+
+  useEffect(() => {
+    return () => {
+      setCleanup(true);
+    };
+  }, []);
+
+  return (
+    <FieldEditModalErrorBoundary>
+      <FieldEditModal {...props} cleanup={cleanup} />
+    </FieldEditModalErrorBoundary>
+  );
+};
 
 export default FieldEditModalWithErrorBoundary

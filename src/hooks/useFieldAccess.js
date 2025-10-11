@@ -401,22 +401,32 @@ export const useFieldAccess = () => {
   const [error, setError] = useState(fieldAccessService.error);
 
   useEffect(() => {
+    let mounted = true;
+
     // Subscribe to service updates
     const unsubscribe = fieldAccessService.subscribe(({ data, loading, error }) => {
-      setFieldAccessData(data);
-      setLoading(loading);
-      setError(error);
+      if (mounted) {
+        setFieldAccessData(data);
+        setLoading(loading);
+        setError(error);
+      }
     });
 
     // Load data if not already loaded
     if (!fieldAccessService.data && !fieldAccessService.loading) {
-      fieldAccessService.loadData();
+      fieldAccessService.loadData().catch(err => {
+        if (mounted) {
+          console.error('Failed to load field access data:', err);
+          setError(err);
+        }
+      });
     }
 
     // Start monitoring for license changes
     fieldAccessService.startLicenseMonitoring();
 
     return () => {
+      mounted = false;
       unsubscribe();
       // Note: We don't stop monitoring here as other components might be using it
       // The monitoring will be stopped when the page unloads
