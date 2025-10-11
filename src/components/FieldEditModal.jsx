@@ -885,6 +885,18 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
     }
   }, [isOpen, type]);
 
+  // Drag and drop sensors for nested fields
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   // Debug logging for field access data
   // console.log('🔍 FieldEditModal: fieldAccessData:', fieldAccessData);
   // console.log('🔍 FieldEditModal: availableFieldTypes:', availableFieldTypes);
@@ -1076,17 +1088,6 @@ function FieldEditModal({ isOpen, component, field, onClose, onSave, preventData
       setNestedFieldDefinitions((prev) => prev.filter((_, i) => i !== indexToDelete))
     }
   }
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  )
 
   const onDragEnd = (event) => {
     const { active, over } = event
