@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react"
-import PostTypes from "./PostTypes"
 import ComponentList from "./ComponentList"
-import Taxonomies from "./Taxonomies"
 import Settings from "./Settings"
 import logo from "/CCC-Logo.svg"
 
@@ -21,8 +19,6 @@ function Header() {
   const getTabFromPage = (page) => {
     const pageToTabMap = {
       'custom-craft-component': 'components',
-      'custom-craft-posttypes': 'post-types',
-      'custom-craft-taxonomies': 'taxonomies',
       'custom-craft-settings': 'settings'
     };
     return pageToTabMap[page] || 'components';
@@ -51,18 +47,6 @@ function Header() {
       description: "Create and manage custom components",
     },
     {
-      id: "post-types",
-      label: "Post Types",
-      description: "Assign components to content types",
-      comingSoon: true,
-    },
-    {
-      id: "taxonomies",
-      label: "Taxonomies",
-      description: "Manage taxonomy assignments",
-      comingSoon: true,
-    },
-    {
       id: "settings",
       label: "Settings",
       description: "Configure plugin settings",
@@ -73,10 +57,6 @@ function Header() {
     switch (activeTab) {
       case "components":
         return <ComponentList />
-      case "post-types":
-        return <PostTypes />
-      case "taxonomies":
-        return <Taxonomies />
       case "settings":
         return <Settings />
       default:
